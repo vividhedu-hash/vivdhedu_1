@@ -8,6 +8,8 @@ import {
   GraduationCap, DollarSign, MapPin, Target, Award, Brain,
   BookOpen, Lightbulb, ChevronRight, ChevronLeft, Loader2, CheckCircle
 } from "lucide-react";
+import { AdaptiveDiagnosticEngine } from "@/components/AdaptiveDiagnosticEngine";
+
 
 // ── Section types ─────────────────────────────────────────────────
 interface IntakeFormData {
@@ -826,6 +828,7 @@ function validateSection(section: number, data?: IntakeFormData): ValidationErro
 
 // ── Main wizard ────────────────────────────────────────────────────
 export default function AnalyzePage() {
+  const [useLegacy, setUseLegacy] = useState(false);
   const [section, setSection] = useState(1);
   const [data, setData] = useState<IntakeFormData>(INITIAL_DATA);
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -834,6 +837,32 @@ export default function AnalyzePage() {
   const [completedToken, setCompletedToken] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
   const router = useRouter();
+
+  if (!useLegacy) {
+    return (
+      <div className="container-lg py-8">
+        <div className="flex justify-end mb-4">
+          <button
+            type="button"
+            onClick={() => setUseLegacy(true)}
+            style={{
+              fontSize: 11,
+              color: "#8B8BA7",
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              padding: "6px 12px",
+              borderRadius: 8,
+              cursor: "pointer",
+            }}
+          >
+            Switch to Legacy Linear Intake Form
+          </button>
+        </div>
+        <AdaptiveDiagnosticEngine />
+      </div>
+    );
+  }
+
 
   const handleShare = () => {
     if (typeof window !== "undefined") {
@@ -863,13 +892,15 @@ export default function AnalyzePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      if (!res.ok) throw new Error(`Analyze failed (${res.status})`);
       const analyzeResult = await res.json();
-      
+
       const saveRes = await fetch("/api/report/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(analyzeResult),
       });
+      if (!saveRes.ok) throw new Error(`Save failed (${saveRes.status})`);
       const savedData = await saveRes.json();
       
       clearInterval(interval);

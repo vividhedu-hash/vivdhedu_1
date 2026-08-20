@@ -26,13 +26,6 @@ interface UseModelStatusReturn {
   refetch: () => void;
 }
 
-const SEED_STATUS: ModelStatus = {
-  champion: { version_tag: "v1.0-seed", training_records: 15 },
-  programs_indexed: 15,
-  last_data_update: null,
-  model_health: "seed_mode",
-};
-
 export function useModelStatus(): UseModelStatusReturn {
   const [status, setStatus] = useState<ModelStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,23 +45,13 @@ export function useModelStatus(): UseModelStatusReturn {
         const data: ModelStatus = await resp.json();
         if (!cancelled) setStatus(data);
       } catch {
-        // Fallback to FastAPI health endpoint
-        try {
-          const resp2 = await fetch("http://localhost:8000/api/health").catch(() => null);
-          if (resp2 && resp2.ok) {
-            const health = await resp2.json();
-            if (!cancelled) {
-              setStatus({
-                ...SEED_STATUS,
-                champion: { version_tag: health.model_version || "v1.0-seed" },
-                model_health: health.ml_status === "ready" ? "healthy" : "seed_mode",
-              });
-            }
-          } else {
-            if (!cancelled) setStatus(SEED_STATUS);
-          }
-        } catch {
-          if (!cancelled) setStatus(SEED_STATUS);
+        if (!cancelled) {
+          setStatus({
+            champion: null,
+            programs_indexed: 0,
+            last_data_update: null,
+            model_health: "unavailable",
+          });
         }
       } finally {
         if (!cancelled) setIsLoading(false);

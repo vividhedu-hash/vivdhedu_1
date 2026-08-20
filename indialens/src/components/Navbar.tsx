@@ -6,11 +6,11 @@ import { BarChart2, Search, Zap, BookOpen, Shield, Menu, X, Sparkles, Scale, Com
 import { useState, useEffect } from "react";
 
 const NAV_LINKS = [
-  { href: "/explore", label: "Explore Colleges", icon: <Compass size={14} /> },
-  { href: "/analyze", label: "Calculate ROI", icon: <Search size={14} /> },
-  { href: "/advisor", label: "AI Advisor", icon: <Sparkles size={14} className="text-emerald-400" /> },
+  { href: "/explore", label: "Colleges", icon: <Compass size={14} /> },
+  { href: "/analyze", label: "My ROI", icon: <Search size={14} /> },
+  { href: "/advisor", label: "Career Advisor", icon: <Sparkles size={14} className="text-emerald-400" /> },
   { href: "/compare", label: "Compare", icon: <Scale size={14} /> },
-  { href: "/methodology", label: "Methodology", icon: <BookOpen size={14} /> },
+  { href: "/methodology", label: "How we score", icon: <BookOpen size={14} /> },
 ];
 
 export function Navbar() {
@@ -78,7 +78,7 @@ export function Navbar() {
               href="/analyze"
               className="px-4 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-300 hover:opacity-90 rounded-xl shadow-lg shadow-emerald-500/10 transition-all"
             >
-              Find My ROI
+              Get my report
             </Link>
           </div>
 
@@ -113,7 +113,7 @@ export function Navbar() {
             onClick={() => setMobileOpen(false)}
             className="w-full mt-3 py-2.5 text-center text-xs font-bold text-slate-950 bg-emerald-400 rounded-xl block"
           >
-            Find My ROI
+            Get my report
           </Link>
         </div>
       )}

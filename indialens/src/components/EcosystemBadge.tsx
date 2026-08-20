@@ -21,10 +21,10 @@ export default function EcosystemBadge({
           const json = await res.json();
           setData(json);
         } else {
-          fallback();
+          setData(null);
         }
       } catch (e) {
-        fallback();
+        setData(null);
       } finally {
         setLoading(false);
       }
@@ -32,16 +32,12 @@ export default function EcosystemBadge({
     load();
   }, [universityName]);
 
-  const fallback = () => {
-    setData({
-      university: universityName,
-      github: { total_organizations: 14, tech_activity_index: 84 },
-      wikidata: { established: "1958", wikidata_id: "Q3918" },
-    });
-  };
-
   if (loading) {
     return <div className="text-xs text-slate-400">Loading ecosystem telemetry...</div>;
+  }
+
+  if (!data) {
+    return <div className="text-xs text-slate-400">Ecosystem data unavailable from the live API.</div>;
   }
 
   return (
@@ -59,13 +55,13 @@ export default function EcosystemBadge({
         <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
           <span className="text-slate-400 text-[11px] block">Tech Activity Index</span>
           <span className="text-base font-bold text-emerald-400">
-            {data?.github?.tech_activity_index ?? 80} / 100
+            {data?.github?.tech_activity_index != null ? `${data.github.tech_activity_index} / 100` : "—"}
           </span>
         </div>
         <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
           <span className="text-slate-400 text-[11px] block">Est. Inception Year</span>
           <span className="text-base font-bold text-indigo-400 flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5" /> {data?.wikidata?.established ?? "1958"}
+            <Calendar className="w-3.5 h-3.5" /> {data?.wikidata?.established ?? "—"}
           </span>
         </div>
       </div>

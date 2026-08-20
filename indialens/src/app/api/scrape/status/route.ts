@@ -1,20 +1,27 @@
 import { NextResponse } from "next/server";
-import { PLATFORM_STATS } from "../../../../lib/mock-data";
+import { allowMockFallback, fetchBackend, unavailablePayload } from "../../../../lib/backend";
 
 export async function GET() {
-  return NextResponse.json({
-    status: "success",
-    lastRun: {
-      startedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      completedAt: new Date(Date.now() - 2.7 * 60 * 60 * 1000).toISOString(),
-      recordsScraped: 12847,
-      recordsUpdated: 342,
-      recordsFlagged: 7,
-      sources: ["NIRF", "AmbitionBox", "Naukri", "PLFS", "WorldBank"],
-    },
-    nextRunAt: new Date(
-      Date.now() + (7 - ((Date.now() / (1000 * 60 * 60 * 24)) % 7)) * 24 * 60 * 60 * 1000
-    ).toISOString(),
-    stats: PLATFORM_STATS,
-  });
+  const resp = await fetchBackend("/api/ml/status", { timeoutMs: 5000 });
+  if (resp?.ok) {
+    const data = await resp.json();
+    return NextResponse.json({
+      status: data.model_health ?? "ok",
+      last_data_update: data.last_data_update ?? null,
+      programs_indexed: data.programs_indexed ?? 0,
+      champion: data.champion ?? null,
+      _source: "database",
+    });
+  }
+
+  if (allowMockFallback()) {
+    return NextResponse.json({
+      status: "demo",
+      last_data_update: null,
+      programs_indexed: 0,
+      _source: "mock",
+    });
+  }
+
+  return NextResponse.json(unavailablePayload("Scrape status unavailable"), { status: 503 });
 }

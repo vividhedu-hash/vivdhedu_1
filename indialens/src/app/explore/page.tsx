@@ -304,7 +304,7 @@ export default function ROIIndexPage() {
                   letterSpacing: "0.08em",
                 }}
               >
-                {isLoading ? "LOADING…" : isLive ? "● LIVE DB" : "● SEED DATA"}
+                {isLoading ? "LOADING…" : error ? "● BACKEND ERROR" : isLive ? "● LIVE DB" : "● SEED DATA"}
               </span>
             </div>
             <h1
@@ -314,7 +314,7 @@ export default function ROIIndexPage() {
               Degree ROI Index
             </h1>
             <p style={{ fontSize: 14, color: "#8B8BA7" }}>
-              {isLoading ? "Loading programs…" : `${filteredData.length} programs`}
+              {isLoading ? "Loading programs…" : error ? `Backend error: ${error}` : `${filteredData.length} programs`}
               {" "}· Sorted by composite ROI score ·{" "}
               <button
                 onClick={() => setShowMethodology((v) => !v)}

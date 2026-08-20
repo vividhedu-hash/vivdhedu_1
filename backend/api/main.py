@@ -14,7 +14,7 @@ from slowapi.errors import RateLimitExceeded
 import uvicorn
 import sentry_sdk
 
-from .routers import colleges, analyze, admin, scrape, external as external_router, ai as ai_router
+from .routers import colleges, analyze, admin, scrape, external as external_router, ai as ai_router, analytics as analytics_router
 from .db.database import init_db
 from .config import settings
 
@@ -116,6 +116,7 @@ app.include_router(admin.router,    prefix="/api/admin",    tags=["admin"])
 app.include_router(scrape.router,   prefix="/api/scrape",   tags=["scrape"])
 app.include_router(external_router.router, prefix="/api/v1", tags=["external"])
 app.include_router(ai_router.router,       prefix="/api/v1", tags=["ai"])
+app.include_router(analytics_router.router, prefix="/api/v1/analytics", tags=["analytics"])
 
 # Week 3: ML management endpoints
 try:

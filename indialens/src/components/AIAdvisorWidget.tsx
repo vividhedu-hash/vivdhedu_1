@@ -52,27 +52,19 @@ export default function AIAdvisorWidget({
         const data = await res.json();
         setResponse(data);
       } else {
-        // Fallback response
         setResponse({
-          engine: "gemini-1.5-flash (local)",
-          summary: `For a ₹${targetBudget}L budget in ${targetField}, tier-1/tier-2 government & autonomous institutes offer optimal 20-year Net Present Value (NPV).`,
-          recommendations: [
-            "Prioritize institutes with consistent placement rates (>85%) over brand prestige alone.",
-            "Focus on developing specialized domain skills to shield against 10-year AI automation exposure.",
-            "Explore early internships in major tech hubs (Bengaluru / NCR / Hyderabad).",
-          ],
-          risk_warning: "Degrees costing over ₹15 Lakhs increase student loan payback horizon beyond 4.5 years.",
+          engine: "unavailable",
+          summary: "Advisor service is not available. No generated advice was substituted.",
+          recommendations: [],
+          risk_warning: "Live advisor requires the FastAPI backend.",
         });
       }
     } catch (e) {
       setResponse({
-        engine: "gemini-1.5-flash (fallback)",
-        summary: `Strategic analysis for ₹${targetBudget}L budget in ${targetField}: Public & tier-1 autonomous programs provide highest risk-adjusted IRR.`,
-        recommendations: [
-          "Target tier-1/tier-2 institutes to maximize Net Present Value.",
-          "Upskill in high-demand technical areas to mitigate automation risk.",
-        ],
-        risk_warning: "High tuition costs increase payback horizon beyond 4 years.",
+        engine: "unavailable",
+        summary: "Advisor service is not available. No generated advice was substituted.",
+        recommendations: [],
+        risk_warning: "Live advisor requires the FastAPI backend.",
       });
     } finally {
       setLoading(false);

@@ -3,21 +3,25 @@ import { fetchBackend, unavailablePayload } from "../../../../lib/backend";
 
 async function proxy(request: Request, path: string[], method: string) {
   const subpath = (path ?? []).join("/");
-  const apiKey = request.headers.get("x-api-key") ?? "";
+  const url = new URL(request.url);
+  const qs = url.search;
+  const headers: Record<string, string> = {};
+  const contentType = request.headers.get("content-type");
+  if (contentType) headers["Content-Type"] = contentType;
+  const apiKey = request.headers.get("x-api-key");
+  if (apiKey) headers["X-API-KEY"] = apiKey;
+
   const body = method === "GET" || method === "HEAD" ? undefined : await request.text();
 
-  const resp = await fetchBackend(`/api/ml/${subpath}`, {
+  const resp = await fetchBackend(`/api/v1/${subpath}${qs}`, {
     method,
-    headers: {
-      ...(apiKey ? { "X-API-KEY": apiKey } : {}),
-      ...(body ? { "Content-Type": "application/json" } : {}),
-    },
+    headers,
     body: body || undefined,
-    timeoutMs: 30000,
+    timeoutMs: 20000,
   });
 
   if (!resp) {
-    return NextResponse.json(unavailablePayload("ML service unavailable"), { status: 503 });
+    return NextResponse.json(unavailablePayload("Upstream API unavailable"), { status: 503 });
   }
 
   const text = await resp.text();

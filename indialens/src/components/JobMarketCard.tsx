@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Briefcase, MapPin, TrendingUp, DollarSign, Building2, CheckCircle2 } from "lucide-react";
+import { Briefcase, TrendingUp, DollarSign, Building2 } from "lucide-react";
 
 interface JobMarketCardProps {
   initialField?: string;
@@ -38,24 +38,13 @@ export default function JobMarketCard({
         const json = await res.json();
         setData(json);
       } else {
-        fallbackData(c);
+        setData(null);
       }
     } catch (e) {
-      fallbackData(c);
+      setData(null);
     } finally {
       setLoading(false);
     }
-  };
-
-  const fallbackData = (c: string) => {
-    setData({
-      source: "adzuna_benchmark",
-      field: field,
-      city: c.toUpperCase(),
-      total_active_postings: c === "bengaluru" ? 4200 : 2800,
-      avg_salary_inr: c === "bengaluru" ? 1250000 : 980000,
-      demand_score: c === "bengaluru" ? 95 : 84,
-    });
   };
 
   return (
@@ -89,7 +78,7 @@ export default function JobMarketCard({
       {loading ? (
         <div className="py-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
           <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-          Fetching live Adzuna / JSearch data...
+          Fetching live hiring data...
         </div>
       ) : data ? (
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -98,9 +87,8 @@ export default function JobMarketCard({
               <Building2 className="w-3.5 h-3.5 text-indigo-400" /> Active Job Postings
             </div>
             <div className="text-xl font-black text-white">
-              {data.total_active_postings?.toLocaleString() ?? "3,500+"}
+              {data.total_active_postings != null ? data.total_active_postings.toLocaleString() : "—"}
             </div>
-            <div className="text-[10px] text-emerald-400 font-medium mt-0.5">High hiring activity</div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80">
@@ -108,20 +96,22 @@ export default function JobMarketCard({
               <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Avg Starting Salary
             </div>
             <div className="text-xl font-black text-emerald-400">
-              ₹{((data.avg_salary_inr ?? 1000000) / 100000).toFixed(1)} LPA
+              {data.avg_salary_inr != null ? `₹${(data.avg_salary_inr / 100000).toFixed(1)} LPA` : "—"}
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">Base compensation index</div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80">
             <div className="text-xs text-slate-400 mb-1 flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-amber-400" /> Market Demand Score
             </div>
-            <div className="text-xl font-black text-amber-400">{data.demand_score ?? 88} / 100</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">Geographic mobility rank</div>
+            <div className="text-xl font-black text-amber-400">
+              {data.demand_score != null ? `${data.demand_score} / 100` : "—"}
+            </div>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <p className="mt-4 text-xs text-slate-400">Job market data unavailable from the live API.</p>
+      )}
     </div>
   );
 }

@@ -117,17 +117,12 @@ export function usePlatformStats() {
   useEffect(() => {
     let cancelled = false;
     fetch("/api/colleges/stats")
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((d) => { if (!cancelled) setStats(d); })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d) => {
+        if (!cancelled) setStats(d);
+      })
       .catch(() => {
-        if (!cancelled) setStats({
-          programs_indexed: 15,
-          data_points_collected: 4_280,
-          median_roi_pct: 187,
-          last_updated: null,
-          model_version: "v1.0-seed",
-          _source: "mock",
-        });
+        if (!cancelled) setStats(null);
       })
       .finally(() => { if (!cancelled) setIsLoading(false); });
 
@@ -181,8 +176,8 @@ export function useAdminQueue(apiKey: string) {
         fetch("/api/admin/anomalies", { headers }).then((r) => r.json()),
         fetch("/api/admin/scrape-runs", { headers }).then((r) => r.json()),
       ]);
-      setAnomalies(aq.anomalies ?? []);
-      setScrapeRuns(sr.runs ?? []);
+      setAnomalies(aq.data ?? aq.anomalies ?? []);
+      setScrapeRuns(sr.data ?? sr.runs ?? []);
     } catch (e) {
       setError("Failed to load admin data. Check API key.");
     } finally {

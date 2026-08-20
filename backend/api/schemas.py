@@ -243,6 +243,10 @@ class StudentProfile(BaseModel):
     exciting_industries: List[str] = []
     one_thing_never: Optional[str] = None
 
+    # CAT Psychometrics & Archetype Integration
+    cat_traits: Optional[dict] = Field(None, description="2PL IRT traits: risk, value, autonomy, ai_adaptability")
+    archetype: Optional[str] = Field(None, description="Derived student career archetype")
+
 
 class AnalyzeResponse(BaseModel):
     token: str

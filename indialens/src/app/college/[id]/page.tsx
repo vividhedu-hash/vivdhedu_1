@@ -24,14 +24,18 @@ import JobMarketCard from "@/components/JobMarketCard";
 import EcosystemBadge from "@/components/EcosystemBadge";
 import PsychometricsRadar from "@/components/PsychometricsRadar";
 import AIAdvisorWidget from "@/components/AIAdvisorWidget";
-import { MOCK_DATA, formatInr } from "../../../lib/mock-data";
-import { useCollege } from "@/hooks/useData";
+import { formatInr } from "../../../lib/mock-data";
+import { useCollege, useColleges } from "@/hooks/useData";
 
 export default function CollegeDetailPage() {
   const params = useParams();
   const id = params?.id as string;
 
   const { data: record, isLoading, error } = useCollege(id);
+  const { response: similarResp } = useColleges({
+    field: record?.degree?.field,
+    per_page: 6,
+  });
 
   if (isLoading) {
     return (
@@ -66,9 +70,9 @@ export default function CollegeDetailPage() {
   } : null;
 
 
-  const similar = MOCK_DATA.filter(
-    (r) => r.id !== record.id && r.degree.field === record.degree.field
-  ).slice(0, 3);
+  const similar = (similarResp?.data ?? [])
+    .filter((r) => r.id !== record.id)
+    .slice(0, 3);
 
   const { college, degree, roi, salary, placement, risk, costs, meta } = record;
 

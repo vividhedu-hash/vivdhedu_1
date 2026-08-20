@@ -16,87 +16,11 @@ import JobMarketCard from "@/components/JobMarketCard";
 import EcosystemBadge from "@/components/EcosystemBadge";
 import PsychometricsRadar from "@/components/PsychometricsRadar";
 import AIAdvisorWidget from "@/components/AIAdvisorWidget";
-import { MOCK_DATA, formatInr } from "../../../lib/mock-data";
+import { MultiDirectionalAnalysis } from "@/components/MultiDirectionalAnalysis";
+import { GlobalAnalyticsSuite } from "@/components/GlobalAnalyticsSuite";
+import { formatInr } from "../../../lib/mock-data";
 import { useState } from "react";
 import { useReport } from "@/hooks/useData";
-
-// Sample report data (in production, fetched by token from API)
-const SAMPLE_REPORT = {
-  profileSummary: {
-    parsed: {
-      stream: "Science PCM",
-      academicStrength: "High (12th: 91%)",
-      budget: "₹25L total",
-      goalPrimary: "High Salary + Prestige",
-      riskAppetite: "Moderate (6/10)",
-      wlbPriority: "4/10",
-      location: "Open to anywhere in India",
-      flags: [
-        {
-          type: "contradiction",
-          msg: "You ranked Work-Life Balance at 4/10 but also selected Investment Banking as an interest — these are in direct conflict. IB associates routinely work 80–100 hours/week.",
-        },
-      ],
-    },
-  },
-  recommendations: MOCK_DATA.slice(0, 5).map((r, i) => ({
-    rank: i + 1,
-    ...r,
-    fitScore: 95 - i * 8,
-    reasons: [
-      `Strong alignment with your Science PCM background and stated goal of high salary`,
-      `Financial ROI of ${r.roi.financialRoiPct.toLocaleString()}% exceeds your budget of ₹25L by ${Math.round(r.roi.financialRoiPct / 100)}×`,
-      `${r.college.state} location is within your relocation preference`,
-    ],
-    topRisks: [
-      `AI automation risk at ${Math.round(r.risk.aiAutomationProbability * 100)}% — mitigated by early specialization`,
-      `Credential inflation growing at ${Math.round(r.risk.credentialInflation * 10)}% YoY in this field`,
-    ],
-  })),
-  hiddenGem: {
-    ...MOCK_DATA[3], // IIIT Hyderabad CSE
-    gemReason: "IIIT Hyderabad has 34% less competition than IITs for research roles, and alumni data shows 22% higher LinkedIn seniority index at the 10-year mark than expected for its rank. Your strong Math background is a better fit for its dual-degree research track than standard B.Tech programs.",
-    modelConfidence: 68,
-  },
-  roadmap: {
-    college: MOCK_DATA[0],
-    years: [
-      {
-        year: "Year 1",
-        focus: "Foundation",
-        skills: ["Data Structures & Algorithms", "Linear Algebra", "Python fundamentals", "One open source contribution"],
-        milestone: "Join at least 1 research lab or competitive programming club",
-      },
-      {
-        year: "Year 2",
-        focus: "Technical depth",
-        skills: ["Machine Learning basics", "Database systems", "Web development fundamentals", "1 internship (target: ₹30K+/mo stipend)"],
-        milestone: "Complete a Kaggle competition or contribute to an ML paper",
-      },
-      {
-        year: "Year 3",
-        focus: "Specialization + Network",
-        skills: ["Cloud (AWS/GCP)", "System design", "Domain specialization (AI/Systems/Security)", "2nd internship (target: ₹60K+/mo)"],
-        milestone: "Pre-placement offer or research publication",
-      },
-      {
-        year: "Year 4",
-        focus: "Placement + Launch",
-        skills: ["Interview prep (DSA + system design)", "MBA/MS GRE prep (if targeting)", "Personal brand (GitHub/LinkedIn/blog)"],
-        milestone: "₹15–25L CTC placement or FAANG interview",
-      },
-    ],
-  },
-  pathNotTaken: {
-    title: "Product Management at a tech startup",
-    description: "Your combination of technical aptitude (92% PCM), high-agency personality (took charge in Q1), and dislike of purely solo work strongly signals Product Management. A CS degree + 3 years SWE experience + MBA path typically yields ₹40–80L by age 30 — comparable to the IIT CSE base case trajectory but with significantly better work-life balance.",
-    roiComparison: {
-      recommended: 94,
-      alternative: 78,
-      note: "Lower composite ROI but 40% better WLB score",
-    },
-  },
-};
 
 export default function ReportPage() {
   const params = useParams();
@@ -131,14 +55,21 @@ export default function ReportPage() {
     );
   }
 
-  // Map backend structure to frontend structure expected by the template
-  // If backend is already close to reportData, we use it directly, else fallback to reportData for structure mapping (since it is a mock)
-  const reportData = (data.results || SAMPLE_REPORT) as typeof SAMPLE_REPORT;
+  const payload = data as Record<string, any>;
+  const results = payload.results && typeof payload.results === "object" ? payload.results : payload;
+  const parsed = results.profileSummary?.parsed || payload.student_input || payload.profile_parsed || {};
+  const profileSummary = {
+    parsed: {
+      ...parsed,
+      flags: Array.isArray(parsed.flags) ? parsed.flags : [],
+    },
+  };
+  const recommendations: any[] = results.recommendations || payload.recommendations || [];
+  const hiddenGem = results.hiddenGem;
+  const roadmap = results.roadmap;
+  const pathNotTaken = results.pathNotTaken;
   const expiresAt = data.expires_at ? new Date(data.expires_at) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-
-
-  const { profileSummary, recommendations, hiddenGem, roadmap, pathNotTaken } = reportData;
 
   
   const reportHeader = (
@@ -226,7 +157,7 @@ export default function ReportPage() {
                   </div>
                 ))}
             </div>
-            {profileSummary.parsed.flags.map((flag, i) => (
+            {profileSummary.parsed.flags?.map((flag: { msg: string }, i: number) => (
               <div
                 key={i}
                 style={{
@@ -255,6 +186,19 @@ export default function ReportPage() {
 
           {/* AI Career Advisor Live Consultation Widget */}
           <AIAdvisorWidget initialBudget={20} initialField="engineering-cs" />
+
+          {/* Multi-Directional Strategic Pathways & Macro Stress Testing */}
+          <MultiDirectionalAnalysis
+            recommendations={recommendations}
+            pathways={(data?.results as any)?.pathways || (data as any)?.pathways}
+          />
+
+          {/* Global Standards Institutional Analytics Suite */}
+          <GlobalAnalyticsSuite
+            startingSalary={(recommendations[0] as any)?.salary?.year1?.p50 || (recommendations[0] as any)?.predictedSalaryY1 || 1000000}
+            totalCost={(recommendations[0] as any)?.costs?.totalCostOfDegreeInr || (recommendations[0] as any)?.totalCostInr || 1200000}
+            tier={String((recommendations[0] as any)?.college?.tier || (recommendations[0] as any)?.tier || "1")}
+          />
 
           {/* 2 — Top 5 Recommendations */}
           <ReportSection
@@ -377,7 +321,7 @@ export default function ReportPage() {
             </div>
           </ReportSection>
 
-          {/* 3 — Hidden Gem */}
+          {hiddenGem?.college && (
           <ReportSection
             icon={<Gem size={16} />}
             title="Hidden Gem Pick"
@@ -406,8 +350,9 @@ export default function ReportPage() {
               </div>
             </div>
           </ReportSection>
+          )}
 
-          {/* 4 — Coursework Roadmap */}
+          {roadmap?.years && (
           <ReportSection
             icon={<BookOpen size={16} />}
             title="Coursework Roadmap"
@@ -415,7 +360,7 @@ export default function ReportPage() {
             defaultOpen={false}
           >
             <div className="space-y-4">
-              {roadmap.years.map((yr, i) => (
+              {roadmap.years.map((yr: { year: string; focus: string; skills: string[]; milestone: string }, i: number) => (
                 <div
                   key={yr.year}
                   style={{
@@ -472,8 +417,9 @@ export default function ReportPage() {
               ))}
             </div>
           </ReportSection>
+          )}
 
-          {/* 5 — Risk Dashboard */}
+          {recommendations[0]?.risk && (
           <ReportSection
             icon={<LayoutGrid size={16} />}
             title="Risk Dashboard"
@@ -482,17 +428,18 @@ export default function ReportPage() {
           >
             <RiskGrid
               items={[
-                { label: "AI Automation Risk", value: 0.32, description: "32% probability of automation in 10 years" },
-                { label: "Credential Inflation", value: 0.15, description: "CS grads growing at 8% YoY vs 12% job growth" },
-                { label: "Burnout Risk", value: 0.55, description: "Based on your WLB priority (4/10) + field avg" },
-                { label: "Geographic Concentration", value: 0.2, description: "CSE jobs available in 15+ Indian cities" },
-                { label: "Financial Downside Risk", value: 0.18, description: "P25 salary still covers loan repayment" },
-                { label: "Industry Cyclicality", value: 0.35, description: "Tech sector recessions ~every 8 years" },
-              ]}
+                { label: "AI Automation Risk", value: recommendations[0].risk.aiAutomationProbability, description: "Probability occupation is automated in 10 years" },
+                { label: "Salary Volatility", value: recommendations[0].risk.salaryVolatility, description: "Std deviation of salary distribution" },
+                { label: "Industry Cyclicality", value: recommendations[0].risk.industryCyclicality, description: "Sensitivity to economic cycles" },
+                { label: "Credential Inflation", value: recommendations[0].risk.credentialInflation, description: "Graduate supply vs job demand" },
+                { label: "Geographic Concentration", value: recommendations[0].risk.geographicConcentration, description: "Jobs concentrated in few cities" },
+                { label: "Work-Life Quality", value: 1 - (recommendations[0].risk.workLifeQuality ?? 0), description: "Burnout risk (higher = worse WLB)" },
+              ].filter((item) => item.value != null)}
             />
           </ReportSection>
+          )}
 
-          {/* 6 — Path Not Taken */}
+          {pathNotTaken?.title && (
           <ReportSection
             icon={<Lightbulb size={16} />}
             title="The Path Not Taken"
@@ -532,6 +479,7 @@ export default function ReportPage() {
               </div>
             </div>
           </ReportSection>
+          )}
 
           {/* 7 — Data transparency */}
           <div
@@ -541,12 +489,9 @@ export default function ReportPage() {
             <div className="flex items-start gap-2">
               <Info size={13} style={{ color: "#4A4A6A", marginTop: 2, flexShrink: 0 }} />
               <p style={{ fontSize: 12, color: "#4A4A6A", lineHeight: 1.6 }}>
-                This report used data last updated{" "}
-                <span style={{ color: "#8B8BA7" }}>3 hours ago</span> · Model version{" "}
-                <span className="font-mono" style={{ color: "#8B8BA7" }}>v1.0-seed</span> ·
-                Confidence:{" "}
-                <span style={{ color: "#22C55E" }}>High</span> · 847 colleges in our database ·
-                15 programs indexed for your field ·{" "}
+                Model version{" "}
+                <span className="font-mono" style={{ color: "#8B8BA7" }}>{payload.model_version || "unknown"}</span> ·
+                {recommendations.length} programs in this report ·{" "}
                 <Link href="/methodology" style={{ color: "#4F6EF7", textDecoration: "none" }}>
                   Full methodology →
                 </Link>

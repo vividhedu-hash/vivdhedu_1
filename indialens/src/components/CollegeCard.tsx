@@ -44,7 +44,7 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
       >
         <div className="flex items-start gap-4">
           {/* Score Ring */}
-          <ScoreRing score={roi.compositeScore} size={72} strokeWidth={5} />
+          <ScoreRing score={roi?.compositeScore ?? 0} size={72} strokeWidth={5} />
 
           {/* Info */}
           <div className="flex-1 min-w-0">
@@ -65,7 +65,7 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
                   {college.shortName}
                 </span>
               </div>
-              <DataFreshnessBadge days={meta.dataFreshnessDays} />
+              <DataFreshnessBadge days={meta?.dataFreshnessDays ?? 0} />
             </div>
 
             <h3
@@ -76,8 +76,8 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
             </h3>
 
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <span className={`badge ${AI_RISK_CLASS[meta.aiRiskLabel]}`}>
-                AI Risk: {meta.aiRiskLabel}
+              <span className={`badge ${AI_RISK_CLASS[meta?.aiRiskLabel] ?? "badge-yellow"}`}>
+                AI Risk: {meta?.aiRiskLabel ?? "—"}
               </span>
               <span className="badge badge-blue">{TIER_LABELS[college.tier]}</span>
               <span
@@ -98,17 +98,17 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
             <StatBlock
               icon={<TrendingUp size={12} />}
               label="Median Y1"
-              value={formatInr(salary.year1.p50)}
+              value={formatInr(salary?.year1?.p50 ?? placement?.medianSalaryInr ?? 0)}
             />
             <StatBlock
               icon={<TrendingUp size={12} />}
               label="Median Y10"
-              value={formatInr(salary.year10.p50)}
+              value={formatInr(salary?.year10?.p50 ?? 0)}
             />
             <StatBlock
               icon={<Users size={12} />}
               label="Placement"
-              value={`${placement.rate}%`}
+              value={`${placement?.rate ?? "—"}%`}
             />
           </div>
         )}
@@ -126,7 +126,7 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
           >
             <div
               style={{
-                width: `${roi.compositeScore}%`,
+                width: `${roi?.compositeScore ?? 0}%`,
                 height: "100%",
                 background: "linear-gradient(90deg, #4F6EF7, #8BA4FF)",
                 borderRadius: 2,
@@ -137,7 +137,7 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
             className="text-xs font-mono whitespace-nowrap"
             style={{ color: "#4A4A6A" }}
           >
-            CI: {roi.confidenceIntervalLow}–{roi.confidenceIntervalHigh}
+            CI: {roi?.confidenceIntervalLow ?? "—"}–{roi?.confidenceIntervalHigh ?? "—"}
           </span>
         </div>
       </div>

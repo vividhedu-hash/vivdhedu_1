@@ -24,8 +24,9 @@ function LoginGate({ onLogin }: { onLogin: (key: string) => void }) {
     const resp = await fetch("/api/admin/health", {
       headers: { "X-API-KEY": key },
     }).catch(() => null);
-    if (resp && resp.status === 401) {
-      setError("Invalid API key"); return;
+    if (!resp || !resp.ok) {
+      setError(resp?.status === 401 ? "Invalid API key" : "Admin service unavailable");
+      return;
     }
     onLogin(key.trim());
   };
