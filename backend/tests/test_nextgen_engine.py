@@ -24,7 +24,8 @@ def test_monte_carlo_simulation():
     assert res["loan_analytics"]["annual_emi_inr"] > 0
     assert "net_worth_trajectories" in res
     assert len(res["net_worth_trajectories"]["p50"]) == 20
-    assert "ai_disruption_index" in res
+    assert "ai_job_security" in res
+
 
 
 def test_psychometric_match_engine():
@@ -36,3 +37,17 @@ def test_psychometric_match_engine():
     assert fit["overall_fit_score"] >= 80
     assert fit["compatibility_tier"] in ["Excellent Match", "Strong Match"]
     assert len(fit["key_reasons"]) > 0
+
+
+def test_ai_job_security_engine():
+    from backend.ml.nextgen_engine import AIJobSecurityEngine
+    matrix = AIJobSecurityEngine.get_profession_safety_matrix()
+    assert len(matrix) >= 10
+    assert "Clinical Medicine & Surgery" in matrix
+    assert matrix["Clinical Medicine & Surgery"]["safety_score"] >= 95
+
+    eval_res = AIJobSecurityEngine.evaluate_job_security("engineering-cs", "1", 0.5)
+    assert eval_res["job_security_score"] > 70
+    assert "vulnerable_tasks" in eval_res["role_breakdown"]
+    assert "resilient_skills" in eval_res["role_breakdown"]
+

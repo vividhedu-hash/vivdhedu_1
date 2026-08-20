@@ -114,3 +114,33 @@ async def evaluate_traits(payload: CATItemRequest):
         "confidence_score": round(min(0.98, 0.60 + (len(payload.response_history) * 0.06)), 2),
     }
 
+
+@router.get("/professions-safety")
+async def get_professions_safety_matrix():
+    """
+    Returns comprehensive AI Safety Scores (0-100), 5y/10y displacement risk,
+    vulnerable tasks, and resilient skills across all major career professions.
+    """
+    from backend.ml.nextgen_engine import AIJobSecurityEngine
+    return {
+        "matrix": AIJobSecurityEngine.get_profession_safety_matrix(),
+        "total_professions": len(AIJobSecurityEngine.get_profession_safety_matrix()),
+        "horizon": "2026-2035",
+    }
+
+
+@router.post("/job-security")
+async def evaluate_single_job_security(
+    degree_field: str = "engineering-cs",
+    college_tier: str = "2",
+    student_ai_adaptability: float = 0.0,
+):
+    """Evaluates AI Job Security index & displacement analytics for a specific field and tier."""
+    from backend.ml.nextgen_engine import AIJobSecurityEngine
+    return AIJobSecurityEngine.evaluate_job_security(
+        degree_field=degree_field,
+        college_tier=college_tier,
+        student_ai_adaptability=student_ai_adaptability,
+    )
+
+
