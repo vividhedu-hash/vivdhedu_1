@@ -8,6 +8,9 @@ from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
 from backend.services.gemini_advisor import gemini_advisor_service
 from backend.services.adaptive_cat import adaptive_cat_service
+from backend.services.psychometrics import psychometrics_service
+
+router = APIRouter(prefix="/ai", tags=["AI Advisor & Psychometrics"])
 
 
 class AdvisorRequest(BaseModel):
