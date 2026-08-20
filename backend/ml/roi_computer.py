@@ -27,6 +27,7 @@ over 20-year horizon.
 import numpy as np
 import logging
 from typing import Dict, Any, Optional
+from backend.ml.nextgen_engine import monte_carlo_engine
 
 logger = logging.getLogger(__name__)
 
@@ -264,6 +265,22 @@ def compute_roi(
 
     confidence_level = "High" if overall_confidence > 0.8 else ("Medium" if overall_confidence > 0.5 else "Low")
 
+    # Build baseline trajectory dict for Monte Carlo
+    mc_base_trajectory = {
+        1: trajectory.get("y1", {}).get("p50", 600000),
+        5: trajectory.get("y5", {}).get("p50", 1200000),
+        10: trajectory.get("y10", {}).get("p50", 2500000),
+        20: trajectory.get("y20", {}).get("p50", 6000000),
+    }
+
+    # Run Monte Carlo stochastic simulation
+    mc_results = monte_carlo_engine.simulate_student_trajectory(
+        base_salary_trajectory=mc_base_trajectory,
+        total_cost_inr=total_cost,
+        loan_amount_inr=float(program.get("loan_amount_inr") or 0.0),
+        degree_field=field,
+    )
+
     return {
         "composite_score": composite_score,
         "financial_roi_pct": financial_roi_pct,
@@ -283,6 +300,7 @@ def compute_roi(
             "satisfaction": round(satisfaction, 3),
             "network": round(network, 3),
         },
+        "monte_carlo_analytics": mc_results,
         "formula_weights": WEIGHTS,
         "npv_inputs": {
             "discount_rate": DISCOUNT_RATE,
@@ -291,3 +309,4 @@ def compute_roi(
             "duration_years": duration_years,
         },
     }
+

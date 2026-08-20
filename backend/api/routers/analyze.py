@@ -25,6 +25,7 @@ except ImportError:
     async def send_report_email(*args, **kwargs): return False
 
 from backend.services.tavily_auto_service import tavily_auto_service
+from backend.ml.nextgen_engine import monte_carlo_engine, psychometric_match_engine
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -212,6 +213,36 @@ def _score_program_multi_dimensional(
         },
     }
 
+    # ── Monte Carlo Simulation Engine (10,000 Stochastic Iterations) ──
+    mc_base_trajectory = {
+        1: y1_p50,
+        5: y5_p50,
+        10: y10_p50,
+        20: int(y10_p50 * 2.2),
+    }
+
+    loan_amt = float(getattr(profile, "loan_amount_inr", 0.0) or 0.0)
+    loan_rate = float(getattr(profile, "loan_interest_rate", 0.105) or 0.105)
+
+    mc_results = monte_carlo_engine.simulate_student_trajectory(
+        base_salary_trajectory=mc_base_trajectory,
+        total_cost_inr=cost,
+        loan_amount_inr=loan_amt,
+        loan_interest_rate=loan_rate,
+        degree_field=field,
+    )
+
+    # ── Psychometric Trait & Archetype Matching ─────────────────────
+    psychometric_match = psychometric_match_engine.calculate_program_alignment(
+        student_traits=cat,
+        program_profile={
+            "field": field,
+            "tier": tier,
+            "college_type": program.get("college_type", "private"),
+            "placement_rate": placement_rate,
+        },
+    )
+
     return {
         "fit_score": final_fit_score,
         "vectors": {
@@ -225,7 +256,10 @@ def _score_program_multi_dimensional(
         "y5_p50": y5_p50,
         "payback_years": round(payback_years, 1),
         "macro_scenarios": macro_scenarios,
+        "monte_carlo_analytics": mc_results,
+        "psychometric_match": psychometric_match,
     }
+
 
 
 def _generate_flags(profile: StudentProfile, recommendations: list) -> list:
@@ -380,11 +414,14 @@ async def analyze(
             "totalCostInr": r.get("total_cost_of_degree_inr"),
             "placementRate": r.get("placement_rate"),
             "macroScenarios": r["macro_scenarios"],
+            "monteCarloAnalytics": r.get("monte_carlo_analytics", {}),
+            "psychometricMatch": r.get("psychometric_match", {}),
             "reasons": _build_reasons(r, r, profile),
             "topRisks": [
                 f"AI automation probability: {(r.get('ai_automation_prob') or 0.3) * 100:.0f}%",
                 "Credential inflation in this cohort: ~7% YoY",
             ],
+
         }
         for i, r in enumerate(top)
     ]
