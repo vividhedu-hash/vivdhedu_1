@@ -280,7 +280,7 @@ export default function ReportPage() {
                           <p style={{ fontSize: 11, fontWeight: 700, color: "#22C55E", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                             Why it fits you
                           </p>
-                          {rec.reasons.map((r, ri) => (
+                          {rec.reasons?.map((r: string, ri: number) => (
                             <div key={ri} className="flex items-start gap-2 mb-2">
                               <span style={{ color: "#22C55E", marginTop: 4, flexShrink: 0 }}>·</span>
                               <p style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.6 }}>{r}</p>
@@ -291,7 +291,7 @@ export default function ReportPage() {
                           <p style={{ fontSize: 11, fontWeight: 700, color: "#EF4444", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                             Top risks for you
                           </p>
-                          {rec.topRisks.map((r, ri) => (
+                          {rec.topRisks?.map((r: string, ri: number) => (
                             <div key={ri} className="flex items-start gap-2 mb-2">
                               <AlertTriangle size={12} style={{ color: "#EF4444", marginTop: 3, flexShrink: 0 }} />
                               <p style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.6 }}>{r}</p>

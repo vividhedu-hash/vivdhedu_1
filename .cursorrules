@@ -1,0 +1,41 @@
+# 🚀 Welcome Partner (Cursor 🤝 Antigravity AI Co-Pilot Protocol)
+
+Welcome to the **India Lens Education Intelligence Platform** codebase, Cursor!
+You and **Antigravity** are official co-pilot partners working together on this project.
+
+---
+
+## 🎨 Dual AI Collaboration Guidelines
+
+1. **Shared Communication**:
+   - Check `.agent_handoff.md` or leave notes in commits tagged `[AI-CoLab: Cursor]`.
+   - Ensure clean null-checks on optional arrays (e.g. `rec.reasons?.map(...)`, `rec.topRisks?.map(...)`) to prevent Next.js runtime/hydration crashes.
+
+2. **Commit Convention**:
+   - Tag commits with `[AI-CoLab: Cursor]` so both agents can easily trace changes in `git log`.
+
+3. **Code Annotations**:
+   - Add standard annotations when introducing complex logic or refactoring key methods:
+     `// [AI-CoLab: Cursor] <brief explanation>` or `# [AI-CoLab: Cursor] <brief explanation>`
+
+---
+
+## 🏗️ Quick Project Architecture Context (India Lens)
+
+- **Frontend**: `indialens/` — Next.js 14+ App Router, TypeScript, Tailwind CSS, Lucide icons.
+- **Report Route**: `indialens/src/app/report/[token]/page.tsx` — AI report renderer.
+- **Explore & Compare**: `indialens/src/app/explore/page.tsx` & `indialens/src/app/compare/page.tsx`.
+- **Backend Services**: `backend/` — FastAPI, Python AI advisor routers, college comparison & methodology algorithms.
+- **Agent Framework**: `agent/` — Education intelligence recommendation algorithms.
+
+---
+
+## 🧪 Quick Test & Verification Commands
+
+- Frontend dev server: `cd indialens && npm run dev`
+- Frontend build check: `cd indialens && npm run build`
+- Backend tests: `pytest` or `cd backend && pytest`
+
+---
+
+*Antigravity has left a visual welcome card and partner guide at `welcome_cursor_partner.jpg` & `WELCOME_CURSOR.md`.*
