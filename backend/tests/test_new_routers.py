@@ -75,3 +75,16 @@ def test_scrape_trigger():
     data = response.json()
     assert data["status"] == "triggered"
     assert "run_id" in data
+
+
+def test_college_roi_index():
+    response = client.get("/api/colleges/roi-index")
+    assert response.status_code == 200
+    data = response.json()
+    assert "leaderboard" in data
+    assert len(data["leaderboard"]) > 0
+    top = data["leaderboard"][0]
+    assert "icri_score" in top
+    assert "rating_tier" in top
+    assert top["icri_score"] > 80
+

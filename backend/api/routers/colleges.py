@@ -195,12 +195,305 @@ async def list_colleges(
         }
 
 
+@router.get("/colleges/roi-index")
+async def get_college_roi_index(
+    field: Optional[str] = None,
+    tier: Optional[str] = None,
+    state: Optional[str] = None,
+    q: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+):
+    """
+    Returns the official IndiaLens College ROI Index (ICRI) Leaderboard (0-100 Rating).
+    Evaluates Net Present Value (NPV), payback speed, loan default risk, AI disruption safety,
+    and alumni network multipliers across top Indian higher education institutes.
+    """
+    from backend.ml.nextgen_engine import AIJobSecurityEngine
+    from backend.ml.roi_computer import compute_roi
+
+    BENCHMARK_COLLEGES = [
+        {
+            "id": "iit-b-cs",
+            "college_name": "Indian Institute of Technology (IIT), Bombay",
+            "college_short": "IIT Bombay",
+            "state": "Maharashtra",
+            "tier": "1",
+            "college_type": "IIT",
+            "degree_name": "B.Tech Computer Science & Engineering",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 1100000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.98,
+            "y1_salary_p50": 2400000,
+            "y5_salary_p50": 4200000,
+            "y10_salary_p50": 8500000,
+            "y20_salary_p50": 18000000,
+            "nirf_rank": 3,
+        },
+        {
+            "id": "iim-a-pgp",
+            "college_name": "Indian Institute of Management (IIM), Ahmedabad",
+            "college_short": "IIM Ahmedabad",
+            "state": "Gujarat",
+            "tier": "1",
+            "college_type": "autonomous",
+            "degree_name": "PGP (MBA) Master of Business Administration",
+            "degree_field": "management",
+            "total_cost_inr": 2500000,
+            "duration_years": 2,
+            "placement_rate_pct": 1.00,
+            "y1_salary_p50": 3400000,
+            "y5_salary_p50": 6500000,
+            "y10_salary_p50": 14000000,
+            "y20_salary_p50": 32000000,
+            "nirf_rank": 1,
+        },
+        {
+            "id": "bits-pilani-cs",
+            "college_name": "Birla Institute of Technology & Science (BITS), Pilani",
+            "college_short": "BITS Pilani",
+            "state": "Rajasthan",
+            "tier": "1",
+            "college_type": "deemed",
+            "degree_name": "B.E. Computer Science",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 2200000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.94,
+            "y1_salary_p50": 2000000,
+            "y5_salary_p50": 3600000,
+            "y10_salary_p50": 7200000,
+            "y20_salary_p50": 15000000,
+            "nirf_rank": 20,
+        },
+        {
+            "id": "nit-trichy-cs",
+            "college_name": "National Institute of Technology (NIT), Tiruchirappalli",
+            "college_short": "NIT Trichy",
+            "state": "Tamil Nadu",
+            "tier": "1",
+            "college_type": "NIT",
+            "degree_name": "B.Tech Computer Science & Engineering",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 650000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.92,
+            "y1_salary_p50": 1600000,
+            "y5_salary_p50": 2800000,
+            "y10_salary_p50": 5500000,
+            "y20_salary_p50": 11500000,
+            "nirf_rank": 9,
+        },
+        {
+            "id": "aiims-delhi-mbbs",
+            "college_name": "All India Institute of Medical Sciences (AIIMS), New Delhi",
+            "college_short": "AIIMS Delhi",
+            "state": "Delhi",
+            "tier": "1",
+            "college_type": "central",
+            "degree_name": "MBBS Bachelor of Medicine & Surgery",
+            "degree_field": "medicine",
+            "total_cost_inr": 15000,
+            "duration_years": 5.5,
+            "placement_rate_pct": 1.00,
+            "y1_salary_p50": 1400000,
+            "y5_salary_p50": 2600000,
+            "y10_salary_p50": 5800000,
+            "y20_salary_p50": 14500000,
+            "nirf_rank": 1,
+        },
+        {
+            "id": "dtu-cs",
+            "college_name": "Delhi Technological University (DTU)",
+            "college_short": "DTU Delhi",
+            "state": "Delhi",
+            "tier": "1",
+            "college_type": "autonomous",
+            "degree_name": "B.Tech Software Engineering",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 950000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.89,
+            "y1_salary_p50": 1500000,
+            "y5_salary_p50": 2600000,
+            "y10_salary_p50": 5200000,
+            "y20_salary_p50": 11000000,
+            "nirf_rank": 29,
+        },
+        {
+            "id": "nls-bangalore-llb",
+            "college_name": "National Law School of India University (NLSIU), Bengaluru",
+            "college_short": "NLSIU Bengaluru",
+            "state": "Karnataka",
+            "tier": "1",
+            "college_type": "central",
+            "degree_name": "B.A. LL.B. (Hons)",
+            "degree_field": "law",
+            "total_cost_inr": 1400000,
+            "duration_years": 5,
+            "placement_rate_pct": 0.95,
+            "y1_salary_p50": 1800000,
+            "y5_salary_p50": 3200000,
+            "y10_salary_p50": 6800000,
+            "y20_salary_p50": 16000000,
+            "nirf_rank": 1,
+        },
+        {
+            "id": "vit-vellore-cs",
+            "college_name": "Vellore Institute of Technology (VIT), Vellore",
+            "college_short": "VIT Vellore",
+            "state": "Tamil Nadu",
+            "tier": "2",
+            "college_type": "deemed",
+            "degree_name": "B.Tech Computer Science & Engineering",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 1400000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.82,
+            "y1_salary_p50": 850000,
+            "y5_salary_p50": 1600000,
+            "y10_salary_p50": 3200000,
+            "y20_salary_p50": 7000000,
+            "nirf_rank": 11,
+        },
+        {
+            "id": "manipal-cse",
+            "college_name": "Manipal Institute of Technology (MAHE)",
+            "college_short": "Manipal Tech",
+            "state": "Karnataka",
+            "tier": "2",
+            "college_type": "deemed",
+            "degree_name": "B.Tech Computer Science",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 1850000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.79,
+            "y1_salary_p50": 820000,
+            "y5_salary_p50": 1500000,
+            "y10_salary_p50": 3000000,
+            "y20_salary_p50": 6500000,
+            "nirf_rank": 61,
+        },
+        {
+            "id": "srm-kattankulathur-cs",
+            "college_name": "SRM Institute of Science and Technology",
+            "college_short": "SRM University",
+            "state": "Tamil Nadu",
+            "tier": "2",
+            "college_type": "private",
+            "degree_name": "B.Tech Computer Science",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 1600000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.74,
+            "y1_salary_p50": 650000,
+            "y5_salary_p50": 1200000,
+            "y10_salary_p50": 2400000,
+            "y20_salary_p50": 5200000,
+            "nirf_rank": 28,
+        },
+    ]
+
+    index_results = []
+
+    for item in BENCHMARK_COLLEGES:
+        if field and item["degree_field"] != field:
+            continue
+        if tier and item["tier"] != tier:
+            continue
+        if state and item["state"] != state:
+            continue
+        if q:
+            q_lower = q.lower()
+            if q_lower not in item["college_name"].lower() and q_lower not in item["degree_name"].lower():
+                continue
+
+        sal_traj = {
+            "y1": {"p50": item["y1_salary_p50"]},
+            "y5": {"p50": item["y5_salary_p50"]},
+            "y10": {"p50": item["y10_salary_p50"]},
+            "y20": {"p50": item["y20_salary_p50"]},
+        }
+
+        roi_data = compute_roi(item, sal_traj)
+        ai_sec = AIJobSecurityEngine.evaluate_job_security(item["degree_field"], item["tier"])
+
+        icri_raw = (
+            0.35 * min(100.0, roi_data["financial_roi_pct"] / 3.5) +
+            0.25 * min(100.0, (item["y1_salary_p50"] / 2500000.0) * 100.0) +
+            0.20 * ai_sec["job_security_score"] +
+            0.10 * (100.0 - roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"]) +
+            0.10 * (100.0 if item["tier"] == "1" else 75.0)
+        )
+        icri_score = round(max(30.0, min(99.9, icri_raw)), 1)
+
+        if icri_score >= 88.0:
+            rating_tier = "AAA+ Elite"
+        elif icri_score >= 75.0:
+            rating_tier = "AA High Yield"
+        elif icri_score >= 62.0:
+            rating_tier = "A Moderate Yield"
+        elif icri_score >= 48.0:
+            rating_tier = "BBB Speculative"
+        else:
+            rating_tier = "C Debt Risk"
+
+        index_results.append({
+            "college_id": item["id"],
+            "college_name": item["college_name"],
+            "college_short": item["college_short"],
+            "degree_name": item["degree_name"],
+            "degree_field": item["degree_field"],
+            "state": item["state"],
+            "tier": item["tier"],
+            "icri_score": icri_score,
+            "rating_tier": rating_tier,
+            "financial_roi_pct": roi_data["financial_roi_pct"],
+            "breakeven_months": roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_months"],
+            "breakeven_years": roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_years"],
+            "npv_net_earnings_20y_inr": roi_data["monte_carlo_analytics"]["npv_net_earnings_inr"],
+            "total_cost_inr": item["total_cost_inr"],
+            "placement_rate_pct": round(item["placement_rate_pct"] * 100, 1),
+            "median_salary_y1_inr": item["y1_salary_p50"],
+            "ai_job_security_score": ai_sec["job_security_score"],
+            "ai_risk_label": ai_sec["security_label"],
+            "loan_default_risk_pct": roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"],
+        })
+
+    index_results.sort(key=lambda x: x["icri_score"], reverse=True)
+
+    for rank, item in enumerate(index_results, start=1):
+        item["rank"] = rank
+
+    total = len(index_results)
+    start = (page - 1) * per_page
+    paged = index_results[start : start + per_page]
+
+    return {
+        "index_name": "IndiaLens College ROI Index (ICRI)",
+        "version": settings.current_model_version,
+        "total_colleges_evaluated": total,
+        "page": page,
+        "per_page": per_page,
+        "methodology": {
+            "financial_irr_npv_weight": "35%",
+            "salary_liquidity_weight": "25%",
+            "ai_job_security_weight": "20%",
+            "loan_default_safety_weight": "10%",
+            "network_brand_weight": "10%",
+        },
+        "leaderboard": paged,
+    }
+
+
 @router.get("/colleges/{program_id}")
 async def get_college_detail(
     program_id: str,
     db: AsyncSession = Depends(get_db),
 ):
     """Full program detail with salary trajectories, risk indicators, costs."""
+
     try:
         query = text("""
             SELECT
@@ -332,12 +625,309 @@ async def get_college_detail(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/colleges/roi-index")
+async def get_college_roi_index(
+    field: Optional[str] = None,
+    tier: Optional[str] = None,
+    state: Optional[str] = None,
+    q: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+):
+    """
+    Returns the official IndiaLens College ROI Index (ICRI) Leaderboard (0-100 Rating).
+    Evaluates Net Present Value (NPV), payback speed, loan default risk, AI disruption safety,
+    and alumni network multipliers across top Indian higher education institutes.
+    """
+    from backend.ml.nextgen_engine import AIJobSecurityEngine, MonteCarloROIEngine
+    from backend.ml.roi_computer import compute_roi
+
+    # Seed catalog of top benchmark programs across India for instantaneous ICRI Index computation
+    BENCHMARK_COLLEGES = [
+        {
+            "id": "iit-b-cs",
+            "college_name": "Indian Institute of Technology (IIT), Bombay",
+            "college_short": "IIT Bombay",
+            "state": "Maharashtra",
+            "tier": "1",
+            "college_type": "IIT",
+            "degree_name": "B.Tech Computer Science & Engineering",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 1100000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.98,
+            "y1_salary_p50": 2400000,
+            "y5_salary_p50": 4200000,
+            "y10_salary_p50": 8500000,
+            "y20_salary_p50": 18000000,
+            "nirf_rank": 3,
+        },
+        {
+            "id": "iim-a-pgp",
+            "college_name": "Indian Institute of Management (IIM), Ahmedabad",
+            "college_short": "IIM Ahmedabad",
+            "state": "Gujarat",
+            "tier": "1",
+            "college_type": "autonomous",
+            "degree_name": "PGP (MBA) Master of Business Administration",
+            "degree_field": "management",
+            "total_cost_inr": 2500000,
+            "duration_years": 2,
+            "placement_rate_pct": 1.00,
+            "y1_salary_p50": 3400000,
+            "y5_salary_p50": 6500000,
+            "y10_salary_p50": 14000000,
+            "y20_salary_p50": 32000000,
+            "nirf_rank": 1,
+        },
+        {
+            "id": "bits-pilani-cs",
+            "college_name": "Birla Institute of Technology & Science (BITS), Pilani",
+            "college_short": "BITS Pilani",
+            "state": "Rajasthan",
+            "tier": "1",
+            "college_type": "deemed",
+            "degree_name": "B.E. Computer Science",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 2200000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.94,
+            "y1_salary_p50": 2000000,
+            "y5_salary_p50": 3600000,
+            "y10_salary_p50": 7200000,
+            "y20_salary_p50": 15000000,
+            "nirf_rank": 20,
+        },
+        {
+            "id": "nit-trichy-cs",
+            "college_name": "National Institute of Technology (NIT), Tiruchirappalli",
+            "college_short": "NIT Trichy",
+            "state": "Tamil Nadu",
+            "tier": "1",
+            "college_type": "NIT",
+            "degree_name": "B.Tech Computer Science & Engineering",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 650000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.92,
+            "y1_salary_p50": 1600000,
+            "y5_salary_p50": 2800000,
+            "y10_salary_p50": 5500000,
+            "y20_salary_p50": 11500000,
+            "nirf_rank": 9,
+        },
+        {
+            "id": "aiims-delhi-mbbs",
+            "college_name": "All India Institute of Medical Sciences (AIIMS), New Delhi",
+            "college_short": "AIIMS Delhi",
+            "state": "Delhi",
+            "tier": "1",
+            "college_type": "central",
+            "degree_name": "MBBS Bachelor of Medicine & Surgery",
+            "degree_field": "medicine",
+            "total_cost_inr": 15000,
+            "duration_years": 5.5,
+            "placement_rate_pct": 1.00,
+            "y1_salary_p50": 1400000,
+            "y5_salary_p50": 2600000,
+            "y10_salary_p50": 5800000,
+            "y20_salary_p50": 14500000,
+            "nirf_rank": 1,
+        },
+        {
+            "id": "dtu-cs",
+            "college_name": "Delhi Technological University (DTU)",
+            "college_short": "DTU Delhi",
+            "state": "Delhi",
+            "tier": "1",
+            "college_type": "autonomous",
+            "degree_name": "B.Tech Software Engineering",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 950000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.89,
+            "y1_salary_p50": 1500000,
+            "y5_salary_p50": 2600000,
+            "y10_salary_p50": 5200000,
+            "y20_salary_p50": 11000000,
+            "nirf_rank": 29,
+        },
+        {
+            "id": "nls-bangalore-llb",
+            "college_name": "National Law School of India University (NLSIU), Bengaluru",
+            "college_short": "NLSIU Bengaluru",
+            "state": "Karnataka",
+            "tier": "1",
+            "college_type": "central",
+            "degree_name": "B.A. LL.B. (Hons)",
+            "degree_field": "law",
+            "total_cost_inr": 1400000,
+            "duration_years": 5,
+            "placement_rate_pct": 0.95,
+            "y1_salary_p50": 1800000,
+            "y5_salary_p50": 3200000,
+            "y10_salary_p50": 6800000,
+            "y20_salary_p50": 16000000,
+            "nirf_rank": 1,
+        },
+        {
+            "id": "vit-vellore-cs",
+            "college_name": "Vellore Institute of Technology (VIT), Vellore",
+            "college_short": "VIT Vellore",
+            "state": "Tamil Nadu",
+            "tier": "2",
+            "college_type": "deemed",
+            "degree_name": "B.Tech Computer Science & Engineering",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 1400000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.82,
+            "y1_salary_p50": 850000,
+            "y5_salary_p50": 1600000,
+            "y10_salary_p50": 3200000,
+            "y20_salary_p50": 7000000,
+            "nirf_rank": 11,
+        },
+        {
+            "id": "manipal-cse",
+            "college_name": "Manipal Institute of Technology (MAHE)",
+            "college_short": "Manipal Tech",
+            "state": "Karnataka",
+            "tier": "2",
+            "college_type": "deemed",
+            "degree_name": "B.Tech Computer Science",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 1850000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.79,
+            "y1_salary_p50": 820000,
+            "y5_salary_p50": 1500000,
+            "y10_salary_p50": 3000000,
+            "y20_salary_p50": 6500000,
+            "nirf_rank": 61,
+        },
+        {
+            "id": "srm-kattankulathur-cs",
+            "college_name": "SRM Institute of Science and Technology",
+            "college_short": "SRM University",
+            "state": "Tamil Nadu",
+            "tier": "2",
+            "college_type": "private",
+            "degree_name": "B.Tech Computer Science",
+            "degree_field": "engineering-cs",
+            "total_cost_inr": 1600000,
+            "duration_years": 4,
+            "placement_rate_pct": 0.74,
+            "y1_salary_p50": 650000,
+            "y5_salary_p50": 1200000,
+            "y10_salary_p50": 2400000,
+            "y20_salary_p50": 5200000,
+            "nirf_rank": 28,
+        },
+    ]
+
+    index_results = []
+
+    for item in BENCHMARK_COLLEGES:
+        if field and item["degree_field"] != field:
+            continue
+        if tier and item["tier"] != tier:
+            continue
+        if state and item["state"] != state:
+            continue
+        if q:
+            q_lower = q.lower()
+            if q_lower not in item["college_name"].lower() and q_lower not in item["degree_name"].lower():
+                continue
+
+        # Build trajectory input
+        sal_traj = {
+            "y1": {"p50": item["y1_salary_p50"]},
+            "y5": {"p50": item["y5_salary_p50"]},
+            "y10": {"p50": item["y10_salary_p50"]},
+            "y20": {"p50": item["y20_salary_p50"]},
+        }
+
+        roi_data = compute_roi(item, sal_traj)
+        ai_sec = AIJobSecurityEngine.evaluate_job_security(item["degree_field"], item["tier"])
+
+        icri_raw = (
+            0.35 * min(100.0, roi_data["financial_roi_pct"] / 3.5) +
+            0.25 * min(100.0, (item["y1_salary_p50"] / 2500000.0) * 100.0) +
+            0.20 * ai_sec["job_security_score"] +
+            0.10 * (100.0 - roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"]) +
+            0.10 * (100.0 if item["tier"] == "1" else 75.0)
+        )
+        icri_score = round(max(30.0, min(99.9, icri_raw)), 1)
+
+        if icri_score >= 88.0:
+            rating_tier = "AAA+ Elite"
+        elif icri_score >= 75.0:
+            rating_tier = "AA High Yield"
+        elif icri_score >= 62.0:
+            rating_tier = "A Moderate Yield"
+        elif icri_score >= 48.0:
+            rating_tier = "BBB Speculative"
+        else:
+            rating_tier = "C Debt Risk"
+
+        index_results.append({
+            "college_id": item["id"],
+            "college_name": item["college_name"],
+            "college_short": item["college_short"],
+            "degree_name": item["degree_name"],
+            "degree_field": item["degree_field"],
+            "state": item["state"],
+            "tier": item["tier"],
+            "icri_score": icri_score,
+            "rating_tier": rating_tier,
+            "financial_roi_pct": roi_data["financial_roi_pct"],
+            "breakeven_months": roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_months"],
+            "breakeven_years": roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_years"],
+            "npv_net_earnings_20y_inr": roi_data["monte_carlo_analytics"]["npv_net_earnings_inr"],
+            "total_cost_inr": item["total_cost_inr"],
+            "placement_rate_pct": round(item["placement_rate_pct"] * 100, 1),
+            "median_salary_y1_inr": item["y1_salary_p50"],
+            "ai_job_security_score": ai_sec["job_security_score"],
+            "ai_risk_label": ai_sec["security_label"],
+            "loan_default_risk_pct": roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"],
+        })
+
+    # Sort index results descending by icri_score
+    index_results.sort(key=lambda x: x["icri_score"], reverse=True)
+
+    # Attach rank
+    for rank, item in enumerate(index_results, start=1):
+        item["rank"] = rank
+
+    total = len(index_results)
+    start = (page - 1) * per_page
+    paged = index_results[start : start + per_page]
+
+    return {
+        "index_name": "IndiaLens College ROI Index (ICRI)",
+        "version": settings.current_model_version,
+        "total_colleges_evaluated": total,
+        "page": page,
+        "per_page": per_page,
+        "methodology": {
+            "financial_irr_npv_weight": "35%",
+            "salary_liquidity_weight": "25%",
+            "ai_job_security_weight": "20%",
+            "loan_default_safety_weight": "10%",
+            "network_brand_weight": "10%",
+        },
+        "leaderboard": paged,
+    }
+
+
 @router.get("/colleges/export/csv")
 async def export_colleges_csv(
     db: AsyncSession = Depends(get_db),
     field: Optional[str] = None,
     state: Optional[str] = None,
 ):
+
     """Stream CSV export of filtered programs."""
     # In production: query DB and stream. For now, return structure.
     async def generate():
