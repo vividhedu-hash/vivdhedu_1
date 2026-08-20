@@ -182,6 +182,7 @@ class AIJobSecurityEngine:
     """
     Evaluates job safety scores (0-100), 5y/10y displacement probabilities,
     and profession safety matrices under AI automation (2026-2035).
+    Takes decisions on the spot for ANY arbitrary profession.
     """
 
     @staticmethod
@@ -189,12 +190,112 @@ class AIJobSecurityEngine:
         """Returns full ranked matrix of all professions with safety scores."""
         return PROFESSIONS_SAFETY_MATRIX
 
-    @staticmethod
+    @classmethod
+    def evaluate_any_profession_on_the_spot(
+        cls,
+        profession_name: str,
+        college_tier: str = "2",
+        student_ai_adaptability: float = 0.0,
+    ) -> Dict[str, Any]:
+        """
+        Dynamically computes on-the-spot AI Job Safety Score, task vulnerability,
+        resilient skills, and 10y displacement risk for ANY arbitrary profession string.
+        """
+        prof_lower = profession_name.strip().lower()
+
+        # 1. Check exact word matches in known matrix
+        import re
+        for known_name, data in PROFESSIONS_SAFETY_MATRIX.items():
+            pattern = r'\b' + re.escape(known_name.lower()) + r'\b'
+            if re.search(pattern, prof_lower):
+                res = cls.evaluate_job_security(data["field"], college_tier, student_ai_adaptability)
+                res["profession"] = profession_name
+                res["evaluation_mode"] = "On-The-Spot Model Match"
+                return res
+
+
+        # 2. Dynamic Feature & Heuristic NLP Extraction for ANY unknown profession
+        is_physical_hands_on = any(w in prof_lower for w in ["doctor", "surgeon", "nurse", "physio", "dentist", "civil", "construction", "site", "hardware", "robotics", "lab", "chemist", "mechanic", "pilot", "chef", "vet"])
+        is_high_order_systems = any(w in prof_lower for w in ["architect", "chief", "lead", "director", "manager", "principal", "consultant", "founder", "m&a", "litigator", "advocate", "quant", "researcher", "scientist"])
+        is_routine_repetitive = any(w in prof_lower for w in ["entry", "junior", "assistant", "clerk", "typist", "qa", "tester", "writer", "copywriter", "data entry", "transcriber", "telemarketer", "bookkeeper"])
+
+        if is_physical_hands_on:
+            base_disruption_pct = 12.0
+            human_resilience_pct = 95.0
+            category = "Physical / Hands-on Domain"
+        elif is_high_order_systems:
+            base_disruption_pct = 25.0
+            human_resilience_pct = 88.0
+            category = "High-Order Systems & Leadership Domain"
+        elif is_routine_repetitive:
+            base_disruption_pct = 65.0
+            human_resilience_pct = 45.0
+            category = "Routine Transactional Domain"
+        else:
+            base_disruption_pct = 32.0
+            human_resilience_pct = 80.0
+            category = "General Knowledge Domain"
+
+
+        tier_boost = {"1": 4, "2": 0, "3": -4}.get(college_tier, 0)
+        adaptability_boost = int(round(student_ai_adaptability * 3.5))
+
+        computed_safety_score = max(30, min(99, int(round((1.0 - (base_disruption_pct / 100.0) * (1.0 - (human_resilience_pct / 100.0))) * 100.0)) + tier_boost + adaptability_boost))
+
+        if computed_safety_score >= 85:
+            label = "Safe (AI-Resilient)"
+            color = "#22C55E"
+        elif computed_safety_score >= 70:
+            label = "AI-Augmented (Moderate Risk)"
+            color = "#3B82F6"
+        else:
+            label = "High Disruption Risk"
+            color = "#EF4444"
+
+        layoff_5y = round(max(1.5, min(35.0, (100.0 - computed_safety_score) * 0.35)), 1)
+        layoff_10y = round(max(3.0, min(50.0, (100.0 - computed_safety_score) * 0.60)), 1)
+        upskill_capital = int(150000 * (1.0 + (100.0 - computed_safety_score) / 100.0))
+
+        return {
+            "profession": profession_name,
+            "evaluation_mode": "On-The-Spot Dynamic Model Decision",
+            "category": category,
+            "job_security_score": computed_safety_score,
+            "security_label": label,
+            "risk_color": color,
+            "base_disruption_pct": base_disruption_pct,
+            "human_resilience_pct": human_resilience_pct,
+            "displacement_risk": {
+                "layoff_probability_5y_pct": layoff_5y,
+                "layoff_probability_10y_pct": layoff_10y,
+            },
+            "upskilling_requirements": {
+                "estimated_capital_10y_inr": upskill_capital,
+                "recommended_annual_hours": int(80 + (100 - computed_safety_score) * 1.5),
+            },
+            "role_breakdown": {
+                "vulnerable_tasks": [
+                    f"Routine template generation in {profession_name}",
+                    f"Standard manual data parsing for {profession_name}",
+                    f"Basic documentation & boilerplate scripting",
+                ],
+                "resilient_skills": [
+                    f"High-order problem solving in {profession_name}",
+                    f"Complex stakeholder & client negotiation",
+                    f"Domain leadership & emergency crisis handling",
+                ],
+            },
+            "strategic_advice": f"Leverage generative AI models as a productivity multiplier while mastering high-order system architecture and client leadership in {profession_name}.",
+        }
+
+    @classmethod
     def evaluate_job_security(
+        cls,
         degree_field: str,
         college_tier: str = "2",
         student_ai_adaptability: float = 0.0,
     ) -> Dict[str, Any]:
+
         """
         Evaluates job security metrics for a specific degree field.
         """

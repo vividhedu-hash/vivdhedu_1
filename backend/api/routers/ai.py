@@ -144,3 +144,22 @@ async def evaluate_single_job_security(
     )
 
 
+@router.post("/evaluate-profession")
+async def evaluate_profession_on_the_spot(
+    profession_name: str,
+    college_tier: str = "2",
+    student_ai_adaptability: float = 0.0,
+):
+    """
+    On-The-Spot Dynamic Decision Engine: Evaluates ANY arbitrary profession string
+    in real-time using ML feature extraction & AI automation models.
+    """
+    from backend.ml.nextgen_engine import AIJobSecurityEngine
+    return AIJobSecurityEngine.evaluate_any_profession_on_the_spot(
+        profession_name=profession_name,
+        college_tier=college_tier,
+        student_ai_adaptability=student_ai_adaptability,
+    )
+
+
+

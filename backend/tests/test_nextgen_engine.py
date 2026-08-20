@@ -51,3 +51,22 @@ def test_ai_job_security_engine():
     assert "vulnerable_tasks" in eval_res["role_breakdown"]
     assert "resilient_skills" in eval_res["role_breakdown"]
 
+
+def test_on_the_spot_profession_decision():
+    from backend.ml.nextgen_engine import AIJobSecurityEngine
+    
+    # Test arbitrary novel profession 1: Hands-on / Clinical
+    surge_res = AIJobSecurityEngine.evaluate_any_profession_on_the_spot("Robotic Surgery Technician", "1", 0.5)
+    assert surge_res["job_security_score"] >= 85
+    assert surge_res["security_label"] == "Safe (AI-Resilient)"
+
+    # Test arbitrary novel profession 2: High Routine / Repetitive
+    clerk_res = AIJobSecurityEngine.evaluate_any_profession_on_the_spot("Junior Copywriter & Data Entry Typist", "3", -0.5)
+    assert clerk_res["job_security_score"] < 70
+    assert clerk_res["security_label"] == "High Disruption Risk"
+
+    # Test arbitrary novel profession 3: High-Order Systems
+    arch_res = AIJobSecurityEngine.evaluate_any_profession_on_the_spot("Principal Quantum Systems Architect", "1", 1.0)
+    assert arch_res["job_security_score"] >= 80
+
+
