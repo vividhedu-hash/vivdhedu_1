@@ -70,3 +70,18 @@ def test_on_the_spot_profession_decision():
     assert arch_res["job_security_score"] >= 80
 
 
+def test_global_coursework_tailor_engine():
+    from backend.ml.nextgen_engine import GlobalCourseworkTailorEngine
+    res = GlobalCourseworkTailorEngine.tailor_coursework_strategy(
+        college_name="Carnegie Mellon University (CMU)",
+        degree_name="M.S. Computer Science",
+        degree_field="engineering-cs",
+        study_location="Abroad",
+    )
+    assert res["college"] == "Carnegie Mellon University (CMU)"
+    assert "p90_highest_package_benchmark" in res
+    assert len(res["tailored_coursework_blueprint"]["recommended_core_electives"]) > 0
+    assert "mandatory_lab_capstone" in res["tailored_coursework_blueprint"]
+
+
+

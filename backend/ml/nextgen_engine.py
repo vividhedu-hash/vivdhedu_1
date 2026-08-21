@@ -521,7 +521,118 @@ class AdvancedPsychometricMatchEngine:
         }
 
 
+class GlobalCourseworkTailorEngine:
+    """
+    Evaluates highest package sub-tracks and generates tailored coursework,
+    elective selection, and lab capstone strategies for both domestic and global abroad colleges.
+    """
+
+    HIGHEST_PACKAGE_MAP = {
+        "engineering-cs": {
+            "top_track": "Distributed Systems, AI Infrastructure & Low-Latency Systems",
+            "p90_package_india_inr": 4800000,
+            "p90_package_abroad_usd": 220000,
+            "top_employers": ["OpenAI", "Google DeepMind", "Nvidia", "Jane Street", "Citadel", "Anthropic", "Apple SPG"],
+            "core_electives": [
+                "Advanced Distributed Systems (Raft / Paxos Consensus)",
+                "LLM Systems Engineering & CUDA Kernel Optimization",
+                "Low-Latency C++ Systems & Network Sockets",
+                "Cloud-Native Infrastructure & Kubernetes Internals"
+            ],
+            "lab_capstone_project": "Build a distributed, fault-tolerant KV storage engine in Rust/C++ with Raft Consensus & benchmark 100k QPS throughput.",
+            "tech_stack": ["C++20", "Rust", "CUDA", "PyTorch", "gRPC", "Docker/K8s", "Go"],
+            "certifications_or_skills": ["AWS Solutions Architect Professional", "Certified Kubernetes Administrator (CKA)", "CUDA Parallel Computing"],
+            "internship_blueprint": "Apply by August for summer internship cycles. Build 2 public open-source repos with >100 GitHub stars demonstrating C++ or PyTorch kernel work."
+        },
+        "management": {
+            "top_track": "Private Equity M&A, Tech Product Strategy & Quantitative Management",
+            "p90_package_india_inr": 3800000,
+            "p90_package_abroad_usd": 185000,
+            "top_employers": ["McKinsey & Co", "Boston Consulting Group (BCG)", "Goldman Sachs TMT", "Blackstone", "Kohlberg Kravis Roberts (KKR)"],
+            "core_electives": [
+                "Advanced Corporate Valuation & LBO Modeling",
+                "AI-Driven Product Strategy & Growth Hacking",
+                "Cross-Border M&A Structuring & Antitrust Regulation",
+                "Strategic Negotiations & Executive Leadership"
+            ],
+            "lab_capstone_project": "Conduct a live buy-side LBO valuation and turn-around plan for an AIM-listed SaaS company with sensitivity analysis.",
+            "tech_stack": ["Financial Modeling (Excel)", "SQL", "Tableau/PowerBI", "CapitalIQ", "PitchBook"],
+            "certifications_or_skills": ["CFA Level I/II", "Wall Street Prep Financial Modeling", "PMI Agile Product Management"],
+            "internship_blueprint": "Target early autumn campus consulting presentations. Participate in national case competitions (BCG Strategy Lab, HBR Case Challenge)."
+        },
+        "medicine": {
+            "top_track": "Surgical Robotics, Clinical Oncology & Interventional Radiology",
+            "p90_package_india_inr": 3200000,
+            "p90_package_abroad_usd": 380000,
+            "top_employers": ["Mayo Clinic", "Johns Hopkins Hospital", "Cleveland Clinic", "Apollo Hospitals Group", "Fortis Healthcare"],
+            "core_electives": [
+                "Minimally Invasive Robotic Surgery (da Vinci Systems)",
+                "Molecular Diagnostic Oncology & Immunotherapy",
+                "Interventional Radiology & AI Image Diagnostic Assist",
+                "Biostatistical Clinical Trial Design"
+            ],
+            "lab_capstone_project": "Complete a 6-month clinical rotation in Robotic Surgical Intervention & co-author a PubMed indexed clinical outcome trial.",
+            "tech_stack": ["3D Slicer", "DICOM Imaging", "da Vinci Simulator", "R/Bioconductor"],
+            "certifications_or_skills": ["USMLE Step 1/2 CK", "Advanced Trauma Life Support (ATLS)", "Robotic Surgery Simulation Certificate"],
+            "internship_blueprint": "Secure clinical electives in Tier-1 university medical centers during 4th year rotations. Maintain top 5% USMLE/NEET-PG score percentile."
+        },
+        "law": {
+            "top_track": "Cross-Border M&A Litigation, AI Regulatory Compliance & IP Patent Strategy",
+            "p90_package_india_inr": 2800000,
+            "p90_package_abroad_usd": 215000,
+            "top_employers": ["Cyril Amarchand Mangaldas", "AZB & Partners", "Latham & Watkins", "Skadden, Arps", "Kirkland & Ellis"],
+            "core_electives": [
+                "Cross-Border Commercial Arbitration (LCIA / SIAC)",
+                "Artificial Intelligence & Tech Antitrust Regulation",
+                "Biotech & Semiconductor Patent Litigation",
+                "Corporate Debt Restructuring & Bankruptcy Code"
+            ],
+            "lab_capstone_project": "Draft a multi-jurisdictional M&A transaction agreement with AI IP licensing and antitrust clearance strategy.",
+            "tech_stack": ["Westlaw", "LexisNexis", "Kira Systems AI", "Relativity eDiscovery"],
+            "certifications_or_skills": ["NY State Bar / All India Bar Examination", "Certified Information Privacy Professional (CIPP/E)"],
+            "internship_blueprint": "Publish 2 articles in peer-reviewed law journals. Secure 4-week winter/summer judicial or Tier-1 law firm clerkships."
+        },
+    }
+
+    @classmethod
+    def tailor_coursework_strategy(
+        cls,
+        college_name: str,
+        degree_name: str,
+        degree_field: str = "engineering-cs",
+        study_location: str = "India",
+        target_salary_tier: str = "P90 Top Package",
+    ) -> Dict[str, Any]:
+        """
+        Generates a tailored high-package coursework & elective blueprint for ANY college and degree.
+        """
+        match = cls.HIGHEST_PACKAGE_MAP.get(degree_field, cls.HIGHEST_PACKAGE_MAP["engineering-cs"])
+        
+        is_abroad = study_location.strip().lower() in ["abroad", "us", "usa", "uk", "germany", "singapore", "canada", "australia"]
+        p90_val = f"${match['p90_package_abroad_usd']:,} / year" if is_abroad else f"₹{match['p90_package_india_inr'] / 100000:.1f} Lakhs / year"
+
+        return {
+            "college": college_name,
+            "degree": degree_name,
+            "study_location": "Abroad (Global)" if is_abroad else "India (Domestic)",
+            "target_tier": target_salary_tier,
+            "p90_highest_package_benchmark": p90_val,
+            "highest_package_specialization_track": match["top_track"],
+            "top_recruiting_companies": match["top_employers"],
+            "tailored_coursework_blueprint": {
+                "recommended_core_electives": match["core_electives"],
+                "mandatory_lab_capstone": match["lab_capstone_project"],
+                "essential_tech_stack": match["tech_stack"],
+                "recommended_certifications": match["certifications_or_skills"],
+                "strategic_internship_roadmap": match["internship_blueprint"],
+            },
+            "growth_advice": f"To land the top {p90_val} package at {college_name}, align your 3rd & 4th-year electives specifically toward {match['top_track']}. Complete the mandatory lab capstone before campus placement season opens.",
+        }
+
+
 # Singleton Instances
 ai_job_security_engine = AIJobSecurityEngine()
 monte_carlo_engine = MonteCarloROIEngine()
 psychometric_match_engine = AdvancedPsychometricMatchEngine()
+global_coursework_engine = GlobalCourseworkTailorEngine()
+

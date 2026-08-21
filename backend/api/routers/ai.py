@@ -9,6 +9,7 @@ from typing import Dict, Any, List, Optional
 from backend.services.gemini_advisor import gemini_advisor_service
 from backend.services.adaptive_cat import adaptive_cat_service
 from backend.services.psychometrics import psychometrics_service
+from backend.services.external_apis import IntegrationUnavailable
 
 router = APIRouter(prefix="/ai", tags=["AI Advisor & Psychometrics"])
 
@@ -40,16 +41,22 @@ async def consult_ai_advisor(payload: AdvisorRequest):
         "risk_tolerance": payload.risk_tolerance,
         "preferred_cities": payload.preferred_cities,
     }
-    return await gemini_advisor_service.generate_career_advice(
-        student_profile=student_profile,
-        top_programs=payload.top_programs,
-    )
+    try:
+        return await gemini_advisor_service.generate_career_advice(
+            student_profile=student_profile,
+            top_programs=payload.top_programs,
+        )
+    except IntegrationUnavailable as e:
+        raise HTTPException(status_code=e.status, detail=e.as_http_detail())
 
 
 @router.post("/psychometrics")
 async def evaluate_psychometrics(payload: PsychometricsRequest):
     """Run Hugging Face sentiment analysis & Cronbach's alpha psychometrics on review texts."""
-    return await psychometrics_service.analyze_student_reviews(reviews=payload.reviews)
+    try:
+        return await psychometrics_service.analyze_student_reviews(reviews=payload.reviews)
+    except IntegrationUnavailable as e:
+        raise HTTPException(status_code=e.status, detail=e.as_http_detail())
 
 
 @router.post("/adaptive-next-item")
@@ -67,18 +74,20 @@ async def get_adaptive_next_item(payload: CATItemRequest):
     # Select next best pre-calibrated item
     next_item, is_converged = adaptive_cat_service.select_next_item(answered_ids, traits)
 
-    # If converged or reaching end, check if generative micro-dilemma is desired
+    # If converged or reaching end, try a live Gemini micro-dilemma
     if is_converged and len(answered_ids) < 6:
-        # Generate 1 personalized micro-dilemma from Gemini
-        dilemma = await gemini_advisor_service.generate_micro_dilemma_scenario(
-            payload.student_profile, traits
-        )
-        return {
-            "traits": traits,
-            "next_item": dilemma,
-            "is_converged": False,
-            "items_completed": len(answered_ids),
-        }
+        try:
+            dilemma = await gemini_advisor_service.generate_micro_dilemma_scenario(
+                payload.student_profile, traits
+            )
+            return {
+                "traits": traits,
+                "next_item": dilemma,
+                "is_converged": False,
+                "items_completed": len(answered_ids),
+            }
+        except IntegrationUnavailable:
+            pass
 
     return {
         "traits": traits,
@@ -160,6 +169,29 @@ async def evaluate_profession_on_the_spot(
         college_tier=college_tier,
         student_ai_adaptability=student_ai_adaptability,
     )
+
+
+@router.post("/tailor-coursework")
+async def tailor_coursework_strategy(
+    college_name: str = "Carnegie Mellon University (CMU)",
+    degree_name: str = "M.S. Computer Science",
+    degree_field: str = "engineering-cs",
+    study_location: str = "Abroad",
+    target_salary_tier: str = "P90 Top Package",
+):
+    """
+    Generates a tailored high-package coursework blueprint, elective roadmap,
+    and lab capstone strategy for any domestic or global college and degree.
+    """
+    from backend.ml.nextgen_engine import GlobalCourseworkTailorEngine
+    return GlobalCourseworkTailorEngine.tailor_coursework_strategy(
+        college_name=college_name,
+        degree_name=degree_name,
+        degree_field=degree_field,
+        study_location=study_location,
+        target_salary_tier=target_salary_tier,
+    )
+
 
 
 

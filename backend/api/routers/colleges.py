@@ -1,34 +1,81 @@
 """
-/api/colleges — ROI Index endpoints
-GET /colleges          — paginated, filtered list
-GET /colleges/{id}     — full program detail
-GET /colleges/compare  — side-by-side comparison
+/api/colleges — programs, ROI index, compare, CSV export.
+All responses come from Postgres. Empty catalog is empty — never invented.
 """
-from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, text
-from typing import Optional, List
-from uuid import UUID
 from datetime import datetime
-import io
 import csv
+import io
+from typing import Optional, Tuple
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
 from ..db.database import get_db
-from ..schemas import (
-    ProgramListResponse, ProgramDetail, ProgramListItem,
-    DegreeField, CollegeTier
-)
 from ..config import settings
+
+try:
+    from ml.nextgen_engine import AIJobSecurityEngine
+    from ml.roi_computer import compute_roi
+except ImportError:
+    from backend.ml.nextgen_engine import AIJobSecurityEngine
+    from backend.ml.roi_computer import compute_roi
 
 router = APIRouter()
 
+PROGRAM_SELECT = """
+    SELECT
+        p.id AS program_id,
+        c.id AS college_id, c.short_name AS college_short_name,
+        c.full_name AS college_full_name, c.state, c.city, c.tier,
+        c.college_type, c.nirf_rank, c.naac_grade, c.established_year,
+        d.id AS degree_id, d.short_name AS degree_short_name,
+        d.full_name AS degree_full_name, d.field AS degree_field,
+        d.level AS degree_level, d.duration_years,
+        p.annual_tuition_inr, p.total_seats,
+        r.composite_score, r.financial_roi_pct, r.risk_score,
+        r.optionality_score, r.mobility_score, r.satisfaction_score,
+        r.network_score, r.ci_low, r.ci_high, r.confidence_level, r.model_version,
+        ri.ai_automation_prob, ri.salary_volatility, ri.industry_cyclicality,
+        ri.credential_inflation, ri.geographic_concentration, ri.regulatory_risk,
+        ri.physical_health_risk, ri.work_life_quality, ri.ai_risk_label,
+        pl.placement_rate_pct, pl.highest_salary_inr, pl.median_salary_inr,
+        pl.average_salary_inr, pl.companies_visited, pl.academic_year,
+        cd.total_tuition_inr, cd.hostel_living_inr, cd.exam_prep_costs_inr,
+        cd.opportunity_cost_inr, cd.total_cost_of_degree
+    FROM programs p
+    JOIN colleges c ON c.id = p.college_id
+    JOIN degrees d ON d.id = p.degree_id
+    LEFT JOIN roi_scores r ON r.program_id = p.id AND r.is_current = TRUE
+    LEFT JOIN risk_indicators ri ON ri.program_id = p.id AND ri.is_current = TRUE
+    LEFT JOIN placement_data pl ON pl.program_id = p.id AND pl.is_current = TRUE
+    LEFT JOIN cost_data cd ON cd.program_id = p.id AND cd.is_current = TRUE
+"""
 
-# ── Helper: build mock-compatible response from DB row ─────────────
+
+def _program_filters(field, state, tier, ai_risk, q) -> Tuple[str, dict]:
+    filters = ["p.is_active = TRUE"]
+    params: dict = {}
+    if field:
+        filters.append("d.field = :field")
+        params["field"] = field
+    if state:
+        filters.append("c.state = :state")
+        params["state"] = state
+    if tier:
+        filters.append("c.tier = :tier")
+        params["tier"] = tier
+    if ai_risk:
+        filters.append("ri.ai_risk_label = :ai_risk")
+        params["ai_risk"] = ai_risk
+    if q:
+        filters.append("(c.full_name ILIKE :q OR d.full_name ILIKE :q OR c.short_name ILIKE :q)")
+        params["q"] = f"%{q}%"
+    return " AND ".join(filters), params
+
+
 def _build_program_item(row: dict) -> dict:
-    """
-    Maps flat DB row (from v_programs_full) into nested API response.
-    In Week 2 this still falls back to mock data when DB is empty.
-    """
     return {
         "id": str(row.get("program_id", "")),
         "college": {
@@ -50,22 +97,127 @@ def _build_program_item(row: dict) -> dict:
             "level": row.get("degree_level", "UG"),
         },
         "roi": {
-            "compositeScore": float(row.get("composite_score", 0)),
-            "financialRoiPct": float(row.get("financial_roi_pct", 0)),
-            "riskScore": float(row.get("risk_score", 0.5)),
-            "confidenceIntervalLow": float(row.get("ci_low", 0)),
-            "confidenceIntervalHigh": float(row.get("ci_high", 0)),
-            "confidenceLevel": row.get("confidence_level", "Medium"),
-            "modelVersion": row.get("model_version", settings.current_model_version),
+            "compositeScore": float(row.get("composite_score") or 0),
+            "financialRoiPct": float(row.get("financial_roi_pct") or 0),
+            "riskScore": float(row.get("risk_score") or 0),
+            "confidenceIntervalLow": float(row.get("ci_low") or 0),
+            "confidenceIntervalHigh": float(row.get("ci_high") or 0),
+            "confidenceLevel": row.get("confidence_level") or "Medium",
+            "modelVersion": row.get("model_version") or settings.current_model_version,
         },
         "meta": {
-            "aiRiskLabel": row.get("ai_risk_label", "Medium"),
+            "aiRiskLabel": row.get("ai_risk_label") or "Medium",
             "dataFreshnessDays": 0,
         },
         "placement": {
-            "rate": float(row.get("placement_rate_pct", 0)),
+            "rate": float(row.get("placement_rate_pct") or 0),
             "medianSalaryInr": row.get("median_salary_inr"),
         },
+    }
+
+
+def _rating_tier(score: float) -> str:
+    if score >= 88:
+        return "AAA+ Elite"
+    if score >= 75:
+        return "AA High Yield"
+    if score >= 62:
+        return "A Moderate Yield"
+    if score >= 48:
+        return "BBB Speculative"
+    return "C Debt Risk"
+
+
+async def _salary_traj(db: AsyncSession, program_id: str) -> dict:
+    result = await db.execute(text("""
+        SELECT year_number, p25_inr, p50_inr, p75_inr, p10_inr, p90_inr
+        FROM salary_trajectories
+        WHERE program_id = :pid AND is_current = TRUE
+        ORDER BY year_number
+    """), {"pid": program_id})
+    traj = {}
+    for r in result:
+        traj[f"y{r.year_number}"] = {
+            "p10": r.p10_inr,
+            "p25": r.p25_inr,
+            "p50": r.p50_inr,
+            "p75": r.p75_inr,
+            "p90": r.p90_inr,
+        }
+    return traj
+
+
+def _icri_entry(row: dict, traj: dict) -> dict:
+    program = {
+        "degree_field": row.get("degree_field"),
+        "tier": str(row.get("tier")),
+        "college_type": row.get("college_type"),
+        "state": row.get("state"),
+        "nirf_rank": row.get("nirf_rank"),
+        "total_cost_of_degree_inr": row.get("total_cost_of_degree") or row.get("annual_tuition_inr"),
+        "duration_years": row.get("duration_years"),
+        "placement_rate_pct": (row.get("placement_rate_pct") or 0) / 100.0
+            if (row.get("placement_rate_pct") or 0) > 1
+            else (row.get("placement_rate_pct") or 0),
+        "ai_automation_prob": row.get("ai_automation_prob"),
+        "salary_volatility": row.get("salary_volatility"),
+        "industry_cyclicality": row.get("industry_cyclicality"),
+        "credential_inflation": row.get("credential_inflation"),
+        "geographic_concentration": row.get("geographic_concentration"),
+        "work_life_quality": row.get("work_life_quality"),
+    }
+    roi_data = compute_roi(program, traj) if traj else None
+    ai_sec = AIJobSecurityEngine.evaluate_job_security(
+        row.get("degree_field") or "engineering-cs",
+        str(row.get("tier") or "2"),
+    )
+
+    stored = float(row.get("composite_score") or 0)
+    if roi_data:
+        icri_raw = (
+            0.35 * min(100.0, roi_data["financial_roi_pct"] / 3.5) +
+            0.25 * min(100.0, ((row.get("median_salary_inr") or 0) / 2_500_000.0) * 100.0) +
+            0.20 * ai_sec["job_security_score"] +
+            0.10 * (100.0 - roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"]) +
+            0.10 * (100.0 if str(row.get("tier")) == "1" else 75.0)
+        )
+        icri_score = round(max(0.0, min(99.9, icri_raw)), 1)
+        financial_roi = roi_data["financial_roi_pct"]
+        breakeven_months = roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_months"]
+        breakeven_years = roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_years"]
+        npv = roi_data["monte_carlo_analytics"]["npv_net_earnings_inr"]
+        loan_risk = roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"]
+    else:
+        icri_score = round(stored, 1)
+        financial_roi = float(row.get("financial_roi_pct") or 0)
+        breakeven_months = None
+        breakeven_years = None
+        npv = None
+        loan_risk = None
+
+    placement = row.get("placement_rate_pct") or 0
+    placement_pct = round(placement * 100, 1) if placement <= 1 else round(float(placement), 1)
+
+    return {
+        "college_id": str(row["program_id"]),
+        "college_name": row["college_full_name"],
+        "college_short": row["college_short_name"],
+        "degree_name": row["degree_full_name"],
+        "degree_field": row["degree_field"],
+        "state": row["state"],
+        "tier": str(row["tier"]),
+        "icri_score": icri_score,
+        "rating_tier": _rating_tier(icri_score),
+        "financial_roi_pct": financial_roi,
+        "breakeven_months": breakeven_months,
+        "breakeven_years": breakeven_years,
+        "npv_net_earnings_20y_inr": npv,
+        "total_cost_inr": row.get("total_cost_of_degree"),
+        "placement_rate_pct": placement_pct,
+        "median_salary_y1_inr": row.get("median_salary_inr"),
+        "ai_job_security_score": ai_sec["job_security_score"],
+        "ai_risk_label": ai_sec["security_label"],
+        "loan_default_risk_pct": loan_risk,
     }
 
 
@@ -82,41 +234,17 @@ async def list_colleges(
     sort_by: str = "composite_score",
     sort_dir: str = "desc",
 ):
-    """
-    Returns paginated list of programs from the database.
-    Falls back to mock data JSON if DB is empty (Week 2 transition period).
-    """
+    where_clause, params = _program_filters(field, state, tier, ai_risk, q)
+    sort_col = {
+        "composite_score": "r.composite_score",
+        "financial_roi": "r.financial_roi_pct",
+        "placement_rate": "pl.placement_rate_pct",
+        "risk_score": "r.risk_score",
+    }.get(sort_by, "r.composite_score")
+    sort_direction = "DESC" if sort_dir == "desc" else "ASC"
+
     try:
-        # Try DB first
-        filters = ["p.is_active = TRUE"]
-        params: dict = {}
-
-        if field:
-            filters.append("d.field = :field")
-            params["field"] = field
-        if state:
-            filters.append("c.state = :state")
-            params["state"] = state
-        if tier:
-            filters.append("c.tier = :tier")
-            params["tier"] = tier
-        if ai_risk:
-            filters.append("ri.ai_risk_label = :ai_risk")
-            params["ai_risk"] = ai_risk
-        if q:
-            filters.append("(c.full_name ILIKE :q OR d.full_name ILIKE :q)")
-            params["q"] = f"%{q}%"
-
-        where_clause = " AND ".join(filters)
-        sort_col = {
-            "composite_score": "r.composite_score",
-            "financial_roi": "r.financial_roi_pct",
-            "placement_rate": "pl.placement_rate_pct",
-            "risk_score": "r.risk_score",
-        }.get(sort_by, "r.composite_score")
-        sort_direction = "DESC" if sort_dir == "desc" else "ASC"
-
-        count_query = text(f"""
+        total_result = await db.execute(text(f"""
             SELECT COUNT(*) FROM programs p
             JOIN colleges c ON c.id = p.college_id
             JOIN degrees d ON d.id = p.degree_id
@@ -124,53 +252,17 @@ async def list_colleges(
             LEFT JOIN risk_indicators ri ON ri.program_id = p.id AND ri.is_current = TRUE
             LEFT JOIN placement_data pl ON pl.program_id = p.id AND pl.is_current = TRUE
             WHERE {where_clause}
-        """)
+        """), params)
+        total = total_result.scalar() or 0
 
-        data_query = text(f"""
-            SELECT
-                p.id AS program_id,
-                c.id AS college_id, c.short_name AS college_short_name,
-                c.full_name AS college_full_name, c.state, c.city, c.tier,
-                c.college_type, c.nirf_rank,
-                d.id AS degree_id, d.short_name AS degree_short_name,
-                d.full_name AS degree_full_name, d.field AS degree_field,
-                d.level AS degree_level, d.duration_years,
-                r.composite_score, r.financial_roi_pct, r.risk_score,
-                r.ci_low, r.ci_high, r.confidence_level, r.model_version,
-                ri.ai_risk_label,
-                pl.placement_rate_pct, pl.median_salary_inr
-            FROM programs p
-            JOIN colleges c ON c.id = p.college_id
-            JOIN degrees d ON d.id = p.degree_id
-            LEFT JOIN roi_scores r ON r.program_id = p.id AND r.is_current = TRUE
-            LEFT JOIN risk_indicators ri ON ri.program_id = p.id AND ri.is_current = TRUE
-            LEFT JOIN placement_data pl ON pl.program_id = p.id AND pl.is_current = TRUE
+        params = {**params, "limit": per_page, "offset": (page - 1) * per_page}
+        rows = await db.execute(text(f"""
+            {PROGRAM_SELECT}
             WHERE {where_clause}
             ORDER BY {sort_col} {sort_direction} NULLS LAST
             LIMIT :limit OFFSET :offset
-        """)
-
-        params["limit"] = per_page
-        params["offset"] = (page - 1) * per_page
-
-        total_result = await db.execute(count_query, params)
-        total = total_result.scalar() or 0
-
-        if total == 0:
-            # DB is empty — return mock indicator for frontend fallback
-            return {
-                "data": [],
-                "total": 0,
-                "page": page,
-                "per_page": per_page,
-                "model_version": settings.current_model_version,
-                "generated_at": datetime.utcnow().isoformat(),
-                "_source": "empty_db_use_mock",
-            }
-
-        rows = await db.execute(data_query, params)
+        """), params)
         programs = [_build_program_item(dict(row._mapping)) for row in rows]
-
         return {
             "data": programs,
             "total": total,
@@ -180,23 +272,15 @@ async def list_colleges(
             "generated_at": datetime.utcnow().isoformat(),
             "_source": "database",
         }
-
+    except HTTPException:
+        raise
     except Exception as e:
-        # Graceful degradation — let Next.js fall back to mock
-        return {
-            "data": [],
-            "total": 0,
-            "page": page,
-            "per_page": per_page,
-            "model_version": settings.current_model_version,
-            "generated_at": datetime.utcnow().isoformat(),
-            "_source": "error",
-            "_error": str(e),
-        }
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
 
 
 @router.get("/colleges/roi-index")
 async def get_college_roi_index(
+    db: AsyncSession = Depends(get_db),
     field: Optional[str] = None,
     tier: Optional[str] = None,
     state: Optional[str] = None,
@@ -204,287 +288,123 @@ async def get_college_roi_index(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
 ):
-    """
-    Returns the official IndiaLens College ROI Index (ICRI) Leaderboard (0-100 Rating).
-    Evaluates Net Present Value (NPV), payback speed, loan default risk, AI disruption safety,
-    and alumni network multipliers across top Indian higher education institutes.
-    """
-    from backend.ml.nextgen_engine import AIJobSecurityEngine
-    from backend.ml.roi_computer import compute_roi
+    where_clause, params = _program_filters(field, state, tier, None, q)
+    try:
+        rows = await db.execute(text(f"""
+            {PROGRAM_SELECT}
+            WHERE {where_clause}
+            ORDER BY r.composite_score DESC NULLS LAST
+        """), params)
+        index_results = []
+        for row in rows:
+            mapping = dict(row._mapping)
+            traj = await _salary_traj(db, str(mapping["program_id"]))
+            entry = _icri_entry(mapping, traj)
+            index_results.append(entry)
 
-    BENCHMARK_COLLEGES = [
-        {
-            "id": "iit-b-cs",
-            "college_name": "Indian Institute of Technology (IIT), Bombay",
-            "college_short": "IIT Bombay",
-            "state": "Maharashtra",
-            "tier": "1",
-            "college_type": "IIT",
-            "degree_name": "B.Tech Computer Science & Engineering",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 1100000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.98,
-            "y1_salary_p50": 2400000,
-            "y5_salary_p50": 4200000,
-            "y10_salary_p50": 8500000,
-            "y20_salary_p50": 18000000,
-            "nirf_rank": 3,
-        },
-        {
-            "id": "iim-a-pgp",
-            "college_name": "Indian Institute of Management (IIM), Ahmedabad",
-            "college_short": "IIM Ahmedabad",
-            "state": "Gujarat",
-            "tier": "1",
-            "college_type": "autonomous",
-            "degree_name": "PGP (MBA) Master of Business Administration",
-            "degree_field": "management",
-            "total_cost_inr": 2500000,
-            "duration_years": 2,
-            "placement_rate_pct": 1.00,
-            "y1_salary_p50": 3400000,
-            "y5_salary_p50": 6500000,
-            "y10_salary_p50": 14000000,
-            "y20_salary_p50": 32000000,
-            "nirf_rank": 1,
-        },
-        {
-            "id": "bits-pilani-cs",
-            "college_name": "Birla Institute of Technology & Science (BITS), Pilani",
-            "college_short": "BITS Pilani",
-            "state": "Rajasthan",
-            "tier": "1",
-            "college_type": "deemed",
-            "degree_name": "B.E. Computer Science",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 2200000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.94,
-            "y1_salary_p50": 2000000,
-            "y5_salary_p50": 3600000,
-            "y10_salary_p50": 7200000,
-            "y20_salary_p50": 15000000,
-            "nirf_rank": 20,
-        },
-        {
-            "id": "nit-trichy-cs",
-            "college_name": "National Institute of Technology (NIT), Tiruchirappalli",
-            "college_short": "NIT Trichy",
-            "state": "Tamil Nadu",
-            "tier": "1",
-            "college_type": "NIT",
-            "degree_name": "B.Tech Computer Science & Engineering",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 650000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.92,
-            "y1_salary_p50": 1600000,
-            "y5_salary_p50": 2800000,
-            "y10_salary_p50": 5500000,
-            "y20_salary_p50": 11500000,
-            "nirf_rank": 9,
-        },
-        {
-            "id": "aiims-delhi-mbbs",
-            "college_name": "All India Institute of Medical Sciences (AIIMS), New Delhi",
-            "college_short": "AIIMS Delhi",
-            "state": "Delhi",
-            "tier": "1",
-            "college_type": "central",
-            "degree_name": "MBBS Bachelor of Medicine & Surgery",
-            "degree_field": "medicine",
-            "total_cost_inr": 15000,
-            "duration_years": 5.5,
-            "placement_rate_pct": 1.00,
-            "y1_salary_p50": 1400000,
-            "y5_salary_p50": 2600000,
-            "y10_salary_p50": 5800000,
-            "y20_salary_p50": 14500000,
-            "nirf_rank": 1,
-        },
-        {
-            "id": "dtu-cs",
-            "college_name": "Delhi Technological University (DTU)",
-            "college_short": "DTU Delhi",
-            "state": "Delhi",
-            "tier": "1",
-            "college_type": "autonomous",
-            "degree_name": "B.Tech Software Engineering",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 950000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.89,
-            "y1_salary_p50": 1500000,
-            "y5_salary_p50": 2600000,
-            "y10_salary_p50": 5200000,
-            "y20_salary_p50": 11000000,
-            "nirf_rank": 29,
-        },
-        {
-            "id": "nls-bangalore-llb",
-            "college_name": "National Law School of India University (NLSIU), Bengaluru",
-            "college_short": "NLSIU Bengaluru",
-            "state": "Karnataka",
-            "tier": "1",
-            "college_type": "central",
-            "degree_name": "B.A. LL.B. (Hons)",
-            "degree_field": "law",
-            "total_cost_inr": 1400000,
-            "duration_years": 5,
-            "placement_rate_pct": 0.95,
-            "y1_salary_p50": 1800000,
-            "y5_salary_p50": 3200000,
-            "y10_salary_p50": 6800000,
-            "y20_salary_p50": 16000000,
-            "nirf_rank": 1,
-        },
-        {
-            "id": "vit-vellore-cs",
-            "college_name": "Vellore Institute of Technology (VIT), Vellore",
-            "college_short": "VIT Vellore",
-            "state": "Tamil Nadu",
-            "tier": "2",
-            "college_type": "deemed",
-            "degree_name": "B.Tech Computer Science & Engineering",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 1400000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.82,
-            "y1_salary_p50": 850000,
-            "y5_salary_p50": 1600000,
-            "y10_salary_p50": 3200000,
-            "y20_salary_p50": 7000000,
-            "nirf_rank": 11,
-        },
-        {
-            "id": "manipal-cse",
-            "college_name": "Manipal Institute of Technology (MAHE)",
-            "college_short": "Manipal Tech",
-            "state": "Karnataka",
-            "tier": "2",
-            "college_type": "deemed",
-            "degree_name": "B.Tech Computer Science",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 1850000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.79,
-            "y1_salary_p50": 820000,
-            "y5_salary_p50": 1500000,
-            "y10_salary_p50": 3000000,
-            "y20_salary_p50": 6500000,
-            "nirf_rank": 61,
-        },
-        {
-            "id": "srm-kattankulathur-cs",
-            "college_name": "SRM Institute of Science and Technology",
-            "college_short": "SRM University",
-            "state": "Tamil Nadu",
-            "tier": "2",
-            "college_type": "private",
-            "degree_name": "B.Tech Computer Science",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 1600000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.74,
-            "y1_salary_p50": 650000,
-            "y5_salary_p50": 1200000,
-            "y10_salary_p50": 2400000,
-            "y20_salary_p50": 5200000,
-            "nirf_rank": 28,
-        },
-    ]
+        index_results.sort(key=lambda x: x["icri_score"], reverse=True)
+        for rank, item in enumerate(index_results, start=1):
+            item["rank"] = rank
 
-    index_results = []
-
-    for item in BENCHMARK_COLLEGES:
-        if field and item["degree_field"] != field:
-            continue
-        if tier and item["tier"] != tier:
-            continue
-        if state and item["state"] != state:
-            continue
-        if q:
-            q_lower = q.lower()
-            if q_lower not in item["college_name"].lower() and q_lower not in item["degree_name"].lower():
-                continue
-
-        sal_traj = {
-            "y1": {"p50": item["y1_salary_p50"]},
-            "y5": {"p50": item["y5_salary_p50"]},
-            "y10": {"p50": item["y10_salary_p50"]},
-            "y20": {"p50": item["y20_salary_p50"]},
+        start = (page - 1) * per_page
+        return {
+            "index_name": "IndiaLens College ROI Index (ICRI)",
+            "version": settings.current_model_version,
+            "total_colleges_evaluated": len(index_results),
+            "page": page,
+            "per_page": per_page,
+            "_source": "database",
+            "methodology": {
+                "financial_irr_npv_weight": "35%",
+                "salary_liquidity_weight": "25%",
+                "ai_job_security_weight": "20%",
+                "loan_default_safety_weight": "10%",
+                "network_brand_weight": "10%",
+            },
+            "leaderboard": index_results[start:start + per_page],
         }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
 
-        roi_data = compute_roi(item, sal_traj)
-        ai_sec = AIJobSecurityEngine.evaluate_job_security(item["degree_field"], item["tier"])
 
-        icri_raw = (
-            0.35 * min(100.0, roi_data["financial_roi_pct"] / 3.5) +
-            0.25 * min(100.0, (item["y1_salary_p50"] / 2500000.0) * 100.0) +
-            0.20 * ai_sec["job_security_score"] +
-            0.10 * (100.0 - roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"]) +
-            0.10 * (100.0 if item["tier"] == "1" else 75.0)
+@router.get("/colleges/compare")
+async def compare_colleges(
+    ids: str = Query(..., description="Comma-separated program UUIDs"),
+    db: AsyncSession = Depends(get_db),
+):
+    program_ids = [i.strip() for i in ids.split(",") if i.strip()]
+    if not program_ids:
+        raise HTTPException(status_code=400, detail="ids required")
+    if len(program_ids) > 6:
+        raise HTTPException(status_code=400, detail="Compare at most 6 programs")
+
+    try:
+        placeholders = ", ".join(f":id{i}" for i in range(len(program_ids)))
+        params = {f"id{i}": pid for i, pid in enumerate(program_ids)}
+        rows = await db.execute(text(f"""
+            {PROGRAM_SELECT}
+            WHERE p.id IN ({placeholders})
+        """), params)
+        found = {str(r.program_id): _build_program_item(dict(r._mapping)) for r in rows}
+        missing = [pid for pid in program_ids if pid not in found]
+        if missing:
+            raise HTTPException(status_code=404, detail={"error": "program_not_found", "ids": missing})
+        return {
+            "data": [found[pid] for pid in program_ids],
+            "_source": "database",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
+
+
+@router.get("/colleges/export/csv")
+async def export_colleges_csv(
+    db: AsyncSession = Depends(get_db),
+    field: Optional[str] = None,
+    state: Optional[str] = None,
+):
+    where_clause, params = _program_filters(field, state, None, None, None)
+    try:
+        rows = await db.execute(text(f"""
+            {PROGRAM_SELECT}
+            WHERE {where_clause}
+            ORDER BY r.composite_score DESC NULLS LAST
+        """), params)
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "Program ID", "College", "Degree", "State", "Tier",
+            "Composite Score", "Financial ROI %", "AI Risk", "Placement Rate %",
+            "Median Salary Y1 (INR)", "Model Version",
+        ])
+        for row in rows:
+            r = dict(row._mapping)
+            writer.writerow([
+                r.get("program_id"),
+                r.get("college_full_name"),
+                r.get("degree_full_name"),
+                r.get("state"),
+                r.get("tier"),
+                r.get("composite_score"),
+                r.get("financial_roi_pct"),
+                r.get("ai_risk_label"),
+                r.get("placement_rate_pct"),
+                r.get("median_salary_inr"),
+                r.get("model_version") or settings.current_model_version,
+            ])
+
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=indialens-export.csv"},
         )
-        icri_score = round(max(30.0, min(99.9, icri_raw)), 1)
-
-        if icri_score >= 88.0:
-            rating_tier = "AAA+ Elite"
-        elif icri_score >= 75.0:
-            rating_tier = "AA High Yield"
-        elif icri_score >= 62.0:
-            rating_tier = "A Moderate Yield"
-        elif icri_score >= 48.0:
-            rating_tier = "BBB Speculative"
-        else:
-            rating_tier = "C Debt Risk"
-
-        index_results.append({
-            "college_id": item["id"],
-            "college_name": item["college_name"],
-            "college_short": item["college_short"],
-            "degree_name": item["degree_name"],
-            "degree_field": item["degree_field"],
-            "state": item["state"],
-            "tier": item["tier"],
-            "icri_score": icri_score,
-            "rating_tier": rating_tier,
-            "financial_roi_pct": roi_data["financial_roi_pct"],
-            "breakeven_months": roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_months"],
-            "breakeven_years": roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_years"],
-            "npv_net_earnings_20y_inr": roi_data["monte_carlo_analytics"]["npv_net_earnings_inr"],
-            "total_cost_inr": item["total_cost_inr"],
-            "placement_rate_pct": round(item["placement_rate_pct"] * 100, 1),
-            "median_salary_y1_inr": item["y1_salary_p50"],
-            "ai_job_security_score": ai_sec["job_security_score"],
-            "ai_risk_label": ai_sec["security_label"],
-            "loan_default_risk_pct": roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"],
-        })
-
-    index_results.sort(key=lambda x: x["icri_score"], reverse=True)
-
-    for rank, item in enumerate(index_results, start=1):
-        item["rank"] = rank
-
-    total = len(index_results)
-    start = (page - 1) * per_page
-    paged = index_results[start : start + per_page]
-
-    return {
-        "index_name": "IndiaLens College ROI Index (ICRI)",
-        "version": settings.current_model_version,
-        "total_colleges_evaluated": total,
-        "page": page,
-        "per_page": per_page,
-        "methodology": {
-            "financial_irr_npv_weight": "35%",
-            "salary_liquidity_weight": "25%",
-            "ai_job_security_weight": "20%",
-            "loan_default_safety_weight": "10%",
-            "network_brand_weight": "10%",
-        },
-        "leaderboard": paged,
-    }
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
 
 
 @router.get("/colleges/{program_id}")
@@ -492,61 +412,25 @@ async def get_college_detail(
     program_id: str,
     db: AsyncSession = Depends(get_db),
 ):
-    """Full program detail with salary trajectories, risk indicators, costs."""
-
     try:
-        query = text("""
-            SELECT
-                p.id AS program_id, p.annual_tuition_inr, p.total_seats,
-                c.id AS college_id, c.short_name AS college_short_name,
-                c.full_name AS college_full_name, c.state, c.city, c.tier,
-                c.college_type, c.nirf_rank, c.naac_grade, c.established_year,
-                d.id AS degree_id, d.short_name AS degree_short_name,
-                d.full_name AS degree_full_name, d.field AS degree_field,
-                d.level AS degree_level, d.duration_years,
-                r.composite_score, r.financial_roi_pct, r.risk_score,
-                r.optionality_score, r.mobility_score, r.satisfaction_score,
-                r.network_score, r.ci_low, r.ci_high, r.confidence_level, r.model_version,
-                ri.ai_automation_prob, ri.salary_volatility, ri.industry_cyclicality,
-                ri.credential_inflation, ri.geographic_concentration, ri.regulatory_risk,
-                ri.physical_health_risk, ri.work_life_quality, ri.ai_risk_label,
-                pl.placement_rate_pct, pl.highest_salary_inr, pl.median_salary_inr,
-                pl.average_salary_inr, pl.companies_visited, pl.academic_year,
-                cd.total_tuition_inr, cd.hostel_living_inr, cd.exam_prep_costs_inr,
-                cd.opportunity_cost_inr, cd.total_cost_of_degree
-            FROM programs p
-            JOIN colleges c ON c.id = p.college_id
-            JOIN degrees d ON d.id = p.degree_id
-            LEFT JOIN roi_scores r ON r.program_id = p.id AND r.is_current = TRUE
-            LEFT JOIN risk_indicators ri ON ri.program_id = p.id AND ri.is_current = TRUE
-            LEFT JOIN placement_data pl ON pl.program_id = p.id AND pl.is_current = TRUE
-            LEFT JOIN cost_data cd ON cd.program_id = p.id AND cd.is_current = TRUE
+        result = await db.execute(text(f"""
+            {PROGRAM_SELECT}
             WHERE p.id = :program_id
-        """)
-
-        result = await db.execute(query, {"program_id": program_id})
+        """), {"program_id": program_id})
         row = result.fetchone()
-
         if not row:
             raise HTTPException(status_code=404, detail="Program not found")
 
         row_dict = dict(row._mapping)
-
-        # Fetch salary trajectory
-        sal_query = text("""
-            SELECT year_number, p25_inr, p50_inr, p75_inr
-            FROM salary_trajectories
-            WHERE program_id = :program_id AND is_current = TRUE
-            ORDER BY year_number
-        """)
-        sal_result = await db.execute(sal_query, {"program_id": program_id})
-        sal_rows = {r.year_number: r for r in sal_result}
+        traj = await _salary_traj(db, program_id)
 
         def sal_band(year: int) -> dict:
-            r = sal_rows.get(year)
-            if r:
-                return {"p25": r.p25_inr, "p50": r.p50_inr, "p75": r.p75_inr}
-            return {"p25": 0, "p50": 0, "p75": 0}
+            band = traj.get(f"y{year}") or {}
+            return {
+                "p25": band.get("p25") or 0,
+                "p50": band.get("p50") or 0,
+                "p75": band.get("p75") or 0,
+            }
 
         return {
             "id": program_id,
@@ -572,11 +456,11 @@ async def get_college_detail(
             "roi": {
                 "compositeScore": float(row_dict["composite_score"] or 0),
                 "financialRoiPct": float(row_dict["financial_roi_pct"] or 0),
-                "riskScore": float(row_dict["risk_score"] or 0.5),
-                "optionalityScore": float(row_dict["optionality_score"] or 0.5),
-                "mobilityScore": float(row_dict["mobility_score"] or 0.5),
-                "satisfactionScore": float(row_dict["satisfaction_score"] or 0.5),
-                "networkScore": float(row_dict["network_score"] or 0.5),
+                "riskScore": float(row_dict["risk_score"] or 0),
+                "optionalityScore": float(row_dict["optionality_score"] or 0),
+                "mobilityScore": float(row_dict["mobility_score"] or 0),
+                "satisfactionScore": float(row_dict["satisfaction_score"] or 0),
+                "networkScore": float(row_dict["network_score"] or 0),
                 "confidenceIntervalLow": float(row_dict["ci_low"] or 0),
                 "confidenceIntervalHigh": float(row_dict["ci_high"] or 0),
                 "confidenceLevel": row_dict["confidence_level"] or "Medium",
@@ -596,7 +480,7 @@ async def get_college_detail(
                 "geographicConcentration": float(row_dict["geographic_concentration"] or 0),
                 "regulatoryRisk": float(row_dict["regulatory_risk"] or 0),
                 "physicalHealthRisk": float(row_dict["physical_health_risk"] or 0),
-                "workLifeQuality": float(row_dict["work_life_quality"] or 0.5),
+                "workLifeQuality": float(row_dict["work_life_quality"] or 0),
                 "aiRiskLabel": row_dict["ai_risk_label"] or "Medium",
             },
             "placement": {
@@ -617,331 +501,9 @@ async def get_college_detail(
                 "modelVersion": row_dict["model_version"] or settings.current_model_version,
                 "dataFreshnessDays": 0,
             },
+            "_source": "database",
         }
-
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/colleges/roi-index")
-async def get_college_roi_index(
-    field: Optional[str] = None,
-    tier: Optional[str] = None,
-    state: Optional[str] = None,
-    q: Optional[str] = None,
-    page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=100),
-):
-    """
-    Returns the official IndiaLens College ROI Index (ICRI) Leaderboard (0-100 Rating).
-    Evaluates Net Present Value (NPV), payback speed, loan default risk, AI disruption safety,
-    and alumni network multipliers across top Indian higher education institutes.
-    """
-    from backend.ml.nextgen_engine import AIJobSecurityEngine, MonteCarloROIEngine
-    from backend.ml.roi_computer import compute_roi
-
-    # Seed catalog of top benchmark programs across India for instantaneous ICRI Index computation
-    BENCHMARK_COLLEGES = [
-        {
-            "id": "iit-b-cs",
-            "college_name": "Indian Institute of Technology (IIT), Bombay",
-            "college_short": "IIT Bombay",
-            "state": "Maharashtra",
-            "tier": "1",
-            "college_type": "IIT",
-            "degree_name": "B.Tech Computer Science & Engineering",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 1100000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.98,
-            "y1_salary_p50": 2400000,
-            "y5_salary_p50": 4200000,
-            "y10_salary_p50": 8500000,
-            "y20_salary_p50": 18000000,
-            "nirf_rank": 3,
-        },
-        {
-            "id": "iim-a-pgp",
-            "college_name": "Indian Institute of Management (IIM), Ahmedabad",
-            "college_short": "IIM Ahmedabad",
-            "state": "Gujarat",
-            "tier": "1",
-            "college_type": "autonomous",
-            "degree_name": "PGP (MBA) Master of Business Administration",
-            "degree_field": "management",
-            "total_cost_inr": 2500000,
-            "duration_years": 2,
-            "placement_rate_pct": 1.00,
-            "y1_salary_p50": 3400000,
-            "y5_salary_p50": 6500000,
-            "y10_salary_p50": 14000000,
-            "y20_salary_p50": 32000000,
-            "nirf_rank": 1,
-        },
-        {
-            "id": "bits-pilani-cs",
-            "college_name": "Birla Institute of Technology & Science (BITS), Pilani",
-            "college_short": "BITS Pilani",
-            "state": "Rajasthan",
-            "tier": "1",
-            "college_type": "deemed",
-            "degree_name": "B.E. Computer Science",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 2200000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.94,
-            "y1_salary_p50": 2000000,
-            "y5_salary_p50": 3600000,
-            "y10_salary_p50": 7200000,
-            "y20_salary_p50": 15000000,
-            "nirf_rank": 20,
-        },
-        {
-            "id": "nit-trichy-cs",
-            "college_name": "National Institute of Technology (NIT), Tiruchirappalli",
-            "college_short": "NIT Trichy",
-            "state": "Tamil Nadu",
-            "tier": "1",
-            "college_type": "NIT",
-            "degree_name": "B.Tech Computer Science & Engineering",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 650000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.92,
-            "y1_salary_p50": 1600000,
-            "y5_salary_p50": 2800000,
-            "y10_salary_p50": 5500000,
-            "y20_salary_p50": 11500000,
-            "nirf_rank": 9,
-        },
-        {
-            "id": "aiims-delhi-mbbs",
-            "college_name": "All India Institute of Medical Sciences (AIIMS), New Delhi",
-            "college_short": "AIIMS Delhi",
-            "state": "Delhi",
-            "tier": "1",
-            "college_type": "central",
-            "degree_name": "MBBS Bachelor of Medicine & Surgery",
-            "degree_field": "medicine",
-            "total_cost_inr": 15000,
-            "duration_years": 5.5,
-            "placement_rate_pct": 1.00,
-            "y1_salary_p50": 1400000,
-            "y5_salary_p50": 2600000,
-            "y10_salary_p50": 5800000,
-            "y20_salary_p50": 14500000,
-            "nirf_rank": 1,
-        },
-        {
-            "id": "dtu-cs",
-            "college_name": "Delhi Technological University (DTU)",
-            "college_short": "DTU Delhi",
-            "state": "Delhi",
-            "tier": "1",
-            "college_type": "autonomous",
-            "degree_name": "B.Tech Software Engineering",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 950000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.89,
-            "y1_salary_p50": 1500000,
-            "y5_salary_p50": 2600000,
-            "y10_salary_p50": 5200000,
-            "y20_salary_p50": 11000000,
-            "nirf_rank": 29,
-        },
-        {
-            "id": "nls-bangalore-llb",
-            "college_name": "National Law School of India University (NLSIU), Bengaluru",
-            "college_short": "NLSIU Bengaluru",
-            "state": "Karnataka",
-            "tier": "1",
-            "college_type": "central",
-            "degree_name": "B.A. LL.B. (Hons)",
-            "degree_field": "law",
-            "total_cost_inr": 1400000,
-            "duration_years": 5,
-            "placement_rate_pct": 0.95,
-            "y1_salary_p50": 1800000,
-            "y5_salary_p50": 3200000,
-            "y10_salary_p50": 6800000,
-            "y20_salary_p50": 16000000,
-            "nirf_rank": 1,
-        },
-        {
-            "id": "vit-vellore-cs",
-            "college_name": "Vellore Institute of Technology (VIT), Vellore",
-            "college_short": "VIT Vellore",
-            "state": "Tamil Nadu",
-            "tier": "2",
-            "college_type": "deemed",
-            "degree_name": "B.Tech Computer Science & Engineering",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 1400000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.82,
-            "y1_salary_p50": 850000,
-            "y5_salary_p50": 1600000,
-            "y10_salary_p50": 3200000,
-            "y20_salary_p50": 7000000,
-            "nirf_rank": 11,
-        },
-        {
-            "id": "manipal-cse",
-            "college_name": "Manipal Institute of Technology (MAHE)",
-            "college_short": "Manipal Tech",
-            "state": "Karnataka",
-            "tier": "2",
-            "college_type": "deemed",
-            "degree_name": "B.Tech Computer Science",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 1850000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.79,
-            "y1_salary_p50": 820000,
-            "y5_salary_p50": 1500000,
-            "y10_salary_p50": 3000000,
-            "y20_salary_p50": 6500000,
-            "nirf_rank": 61,
-        },
-        {
-            "id": "srm-kattankulathur-cs",
-            "college_name": "SRM Institute of Science and Technology",
-            "college_short": "SRM University",
-            "state": "Tamil Nadu",
-            "tier": "2",
-            "college_type": "private",
-            "degree_name": "B.Tech Computer Science",
-            "degree_field": "engineering-cs",
-            "total_cost_inr": 1600000,
-            "duration_years": 4,
-            "placement_rate_pct": 0.74,
-            "y1_salary_p50": 650000,
-            "y5_salary_p50": 1200000,
-            "y10_salary_p50": 2400000,
-            "y20_salary_p50": 5200000,
-            "nirf_rank": 28,
-        },
-    ]
-
-    index_results = []
-
-    for item in BENCHMARK_COLLEGES:
-        if field and item["degree_field"] != field:
-            continue
-        if tier and item["tier"] != tier:
-            continue
-        if state and item["state"] != state:
-            continue
-        if q:
-            q_lower = q.lower()
-            if q_lower not in item["college_name"].lower() and q_lower not in item["degree_name"].lower():
-                continue
-
-        # Build trajectory input
-        sal_traj = {
-            "y1": {"p50": item["y1_salary_p50"]},
-            "y5": {"p50": item["y5_salary_p50"]},
-            "y10": {"p50": item["y10_salary_p50"]},
-            "y20": {"p50": item["y20_salary_p50"]},
-        }
-
-        roi_data = compute_roi(item, sal_traj)
-        ai_sec = AIJobSecurityEngine.evaluate_job_security(item["degree_field"], item["tier"])
-
-        icri_raw = (
-            0.35 * min(100.0, roi_data["financial_roi_pct"] / 3.5) +
-            0.25 * min(100.0, (item["y1_salary_p50"] / 2500000.0) * 100.0) +
-            0.20 * ai_sec["job_security_score"] +
-            0.10 * (100.0 - roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"]) +
-            0.10 * (100.0 if item["tier"] == "1" else 75.0)
-        )
-        icri_score = round(max(30.0, min(99.9, icri_raw)), 1)
-
-        if icri_score >= 88.0:
-            rating_tier = "AAA+ Elite"
-        elif icri_score >= 75.0:
-            rating_tier = "AA High Yield"
-        elif icri_score >= 62.0:
-            rating_tier = "A Moderate Yield"
-        elif icri_score >= 48.0:
-            rating_tier = "BBB Speculative"
-        else:
-            rating_tier = "C Debt Risk"
-
-        index_results.append({
-            "college_id": item["id"],
-            "college_name": item["college_name"],
-            "college_short": item["college_short"],
-            "degree_name": item["degree_name"],
-            "degree_field": item["degree_field"],
-            "state": item["state"],
-            "tier": item["tier"],
-            "icri_score": icri_score,
-            "rating_tier": rating_tier,
-            "financial_roi_pct": roi_data["financial_roi_pct"],
-            "breakeven_months": roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_months"],
-            "breakeven_years": roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_years"],
-            "npv_net_earnings_20y_inr": roi_data["monte_carlo_analytics"]["npv_net_earnings_inr"],
-            "total_cost_inr": item["total_cost_inr"],
-            "placement_rate_pct": round(item["placement_rate_pct"] * 100, 1),
-            "median_salary_y1_inr": item["y1_salary_p50"],
-            "ai_job_security_score": ai_sec["job_security_score"],
-            "ai_risk_label": ai_sec["security_label"],
-            "loan_default_risk_pct": roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"],
-        })
-
-    # Sort index results descending by icri_score
-    index_results.sort(key=lambda x: x["icri_score"], reverse=True)
-
-    # Attach rank
-    for rank, item in enumerate(index_results, start=1):
-        item["rank"] = rank
-
-    total = len(index_results)
-    start = (page - 1) * per_page
-    paged = index_results[start : start + per_page]
-
-    return {
-        "index_name": "IndiaLens College ROI Index (ICRI)",
-        "version": settings.current_model_version,
-        "total_colleges_evaluated": total,
-        "page": page,
-        "per_page": per_page,
-        "methodology": {
-            "financial_irr_npv_weight": "35%",
-            "salary_liquidity_weight": "25%",
-            "ai_job_security_weight": "20%",
-            "loan_default_safety_weight": "10%",
-            "network_brand_weight": "10%",
-        },
-        "leaderboard": paged,
-    }
-
-
-@router.get("/colleges/export/csv")
-async def export_colleges_csv(
-    db: AsyncSession = Depends(get_db),
-    field: Optional[str] = None,
-    state: Optional[str] = None,
-):
-
-    """Stream CSV export of filtered programs."""
-    # In production: query DB and stream. For now, return structure.
-    async def generate():
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow([
-            "Program ID", "College", "Degree", "State", "Tier",
-            "Composite Score", "Financial ROI %", "AI Risk", "Placement Rate %",
-            "Median Salary Y1 (INR)", "Model Version"
-        ])
-        yield output.getvalue()
-
-    return StreamingResponse(
-        generate(),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=indialens-export.csv"},
-    )
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
