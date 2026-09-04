@@ -3,6 +3,8 @@ import { reportStore } from "../../../../lib/report-store";
 import { fetchBackend } from "../../../../lib/backend";
 import { fetchSupabaseRest } from "../../../../lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(_request: NextRequest, { params }: { params: { token: string } }) {
   const { token } = params;
 

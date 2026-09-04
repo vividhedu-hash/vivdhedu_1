@@ -5,6 +5,8 @@ import { allowMockFallback, fetchBackend, unavailablePayload } from "../../../li
 import { reportStore } from "../../../lib/report-store";
 import { fetchSupabaseRest } from "../../../lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 function buildMockTrajectory(baseSalary: number, field: string) {
   const growthRates: Record<string, number> = {
     "engineering-cs": 0.18, "management": 0.16, "medicine": 0.13,

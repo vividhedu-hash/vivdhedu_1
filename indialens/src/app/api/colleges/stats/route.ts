@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { MOCK_DATA } from "../../../../lib/mock-data";
 import { fetchSupabaseRest } from "../../../../lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const rows = await fetchSupabaseRest<Array<{ composite_score?: number }>>(
