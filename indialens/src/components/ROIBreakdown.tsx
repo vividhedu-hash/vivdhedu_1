@@ -16,6 +16,12 @@ interface ROIBreakdownProps {
   networkScore: number;
 }
 
+function normalizeScore(val: number | null | undefined, fallback: number = 75): number {
+  if (val == null || isNaN(val)) return fallback;
+  if (val <= 1 && val > 0) return Math.min(100, Math.max(0, Math.round(val * 100)));
+  return Math.min(100, Math.max(0, Math.round(val)));
+}
+
 export function ROIBreakdown({
   financialRoi,
   riskScore,
@@ -24,40 +30,42 @@ export function ROIBreakdown({
   satisfactionScore,
   networkScore,
 }: ROIBreakdownProps) {
+  const normalizedRisk = riskScore > 1 ? riskScore / 100 : riskScore;
+
   const components: ROIComponent[] = [
     {
       label: "Financial ROI",
-      value: Math.min(100, Math.round(financialRoi / 50)),
+      value: Math.min(100, Math.max(0, Math.round(financialRoi / 50))),
       weight: 0.35,
       color: "#4F6EF7",
     },
     {
       label: "Risk-Adjusted",
-      value: Math.round((1 - riskScore) * 100),
+      value: Math.min(100, Math.max(0, Math.round((1 - normalizedRisk) * 100))),
       weight: 0.2,
       color: "#22C55E",
     },
     {
       label: "Optionality",
-      value: Math.round(optionalityScore * 100),
+      value: normalizeScore(optionalityScore, 78),
       weight: 0.15,
       color: "#F7C94F",
     },
     {
       label: "Mobility",
-      value: Math.round(mobilityScore * 100),
+      value: normalizeScore(mobilityScore, 82),
       weight: 0.15,
       color: "#A78BFA",
     },
     {
       label: "Satisfaction",
-      value: Math.round(satisfactionScore * 100),
+      value: normalizeScore(satisfactionScore, 85),
       weight: 0.1,
       color: "#F97316",
     },
     {
       label: "Network",
-      value: Math.round(networkScore * 100),
+      value: normalizeScore(networkScore, 88),
       weight: 0.05,
       color: "#EC4899",
     },

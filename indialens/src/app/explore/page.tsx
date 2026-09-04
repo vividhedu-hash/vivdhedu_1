@@ -73,7 +73,7 @@ function downloadCSV(data: CollegeDegreeRecord[]) {
       r.roi.compositeScore,
       r.roi.financialRoiPct,
       r.meta.aiRiskLabel,
-      r.placement.rate,
+      (r.placement?.rate ?? 0) <= 1 ? Math.round((r.placement?.rate ?? 0) * 100) : Math.round(r.placement?.rate ?? 0),
       r.salary.year1.p50,
       r.salary.year10.p50,
       r.meta.dataFreshnessDays,
@@ -210,31 +210,35 @@ export default function ROIIndexPage() {
       columnHelper.accessor("placement.rate", {
         id: "placementRate",
         header: "Placement %",
-        cell: ({ getValue }) => (
-          <div className="flex items-center gap-2">
-            <div
-              style={{
-                width: 36,
-                height: 4,
-                background: "#1E1E2E",
-                borderRadius: 2,
-                overflow: "hidden",
-              }}
-            >
+        cell: ({ getValue }) => {
+          const raw = getValue();
+          const pct = raw <= 1 ? Math.round(raw * 100) : Math.round(raw);
+          return (
+            <div className="flex items-center gap-2">
               <div
                 style={{
-                  width: `${getValue()}%`,
-                  height: "100%",
-                  background: "#22C55E",
+                  width: 36,
+                  height: 4,
+                  background: "#1E1E2E",
                   borderRadius: 2,
+                  overflow: "hidden",
                 }}
-              />
+              >
+                <div
+                  style={{
+                    width: `${pct}%`,
+                    height: "100%",
+                    background: "#22C55E",
+                    borderRadius: 2,
+                  }}
+                />
+              </div>
+              <span className="font-mono text-xs" style={{ color: "#8B8BA7" }}>
+                {pct}%
+              </span>
             </div>
-            <span className="font-mono text-xs" style={{ color: "#8B8BA7" }}>
-              {getValue()}%
-            </span>
-          </div>
-        ),
+          );
+        },
       }),
       columnHelper.display({
         id: "salaryY1",

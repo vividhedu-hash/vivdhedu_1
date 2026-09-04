@@ -92,8 +92,15 @@ export async function POST(request: Request) {
     };
 
     return {
-      rank: i + 1,
+      id: r.id,
       programId: r.id,
+      rank: i + 1,
+      college: r.college,
+      degree: r.degree,
+      roi: r.roi,
+      salary: r.salary,
+      risk: r.risk,
+      placement: r.placement,
       collegeName: r.college.name,
       degreeName: r.degree.name,
       state: r.college.state,
@@ -106,7 +113,7 @@ export async function POST(request: Request) {
       predictedSalaryY5: trajectory.y5.p50,
       paybackYears,
       totalCostInr: cost,
-      placementRate: r.placement?.rate ? r.placement.rate / 100 : 0.75,
+      placementRate: r.placement?.rate ? (r.placement.rate > 1 ? r.placement.rate : r.placement.rate * 100) : 75,
       macroScenarios,
       reasons: [
         `Multi-vector fit score based on your stated goals & CAT psychometric traits`,
@@ -115,7 +122,7 @@ export async function POST(request: Request) {
         "Resilient placement history across major employment hubs",
       ],
       topRisks: [
-        `AI automation risk: ${(r.roi.riskScore * 100).toFixed(0)}% — mitigated by specialization`,
+        `AI automation risk: ${((r.roi.riskScore <= 1 ? r.roi.riskScore : r.roi.riskScore / 100) * 100).toFixed(0)}% — mitigated by specialization`,
         "Credential inflation ~7% YoY in this cohort",
       ],
     };
@@ -162,10 +169,68 @@ export async function POST(request: Request) {
     });
   }
 
+  const topMatch = MOCK_DATA[0];
+  const hiddenGemMatch = MOCK_DATA.find((p, idx) => idx > 1 && (p.college.tier === 2 || p.roi.financialRoiPct > 1500)) || MOCK_DATA[4];
+
+  const hiddenGem = {
+    id: hiddenGemMatch.id,
+    college: hiddenGemMatch.college,
+    degree: hiddenGemMatch.degree,
+    roi: hiddenGemMatch.roi,
+    modelConfidence: 89,
+    gemReason: `High-conviction value opportunity: ${hiddenGemMatch.college.shortName} delivers top-quartile financial ROI (${hiddenGemMatch.roi.financialRoiPct}%) at significantly lower capital outlay than premier private counterparts.`,
+  };
+
+  const roadmap = {
+    college: {
+      college: topMatch.college,
+      degree: topMatch.degree,
+    },
+    years: [
+      {
+        year: "Year 1: Foundation & Core Signals",
+        focus: "Fundamentals & Tooling Mastery",
+        skills: ["Programming & Algorithms", "Systems Thinking", "Statistical Foundations", "Git & CI/CD"],
+        milestone: "Ship 3 production-grade projects and achieve top 10% cohort GPA",
+      },
+      {
+        year: "Year 2: Applied Engineering & Specialization",
+        focus: "Domain Depth & Competitive Moats",
+        skills: ["Distributed Architectures", "Modern AI Toolchains", "Database Internals", "Open Source Traction"],
+        milestone: "Complete first industrial research or venture studio internship",
+      },
+      {
+        year: "Year 3: Market Leverage & Systems Design",
+        focus: "High-Leverage Execution",
+        skills: ["Scalable Cloud Microservices", "Quant Modeling", "Product Leadership", "Technical Writing"],
+        milestone: "Secure pre-placement offer (PPO) or launch verified public MVP",
+      },
+      {
+        year: "Year 4: Capstone & Career Launch",
+        focus: "Strategic Positioning",
+        skills: ["Executive Communication", "Equity Valuation", "Negotiation", "Multi-offer Strategy"],
+        milestone: "Close offer exceeding p75 tier benchmark with accelerated equity",
+      },
+    ],
+  };
+
+  const pathNotTaken = {
+    title: "Alternative Path: Early Venture Fellowship vs Traditional Tier-1 Degree",
+    description: "Given your high autonomy trait, entering a high-growth startup or venture fellowship early yields an immediate trajectory acceleration, though traditional degree credentialing provides higher downside safety.",
+    roiComparison: {
+      recommended: topMatch.roi.compositeScore,
+      alternative: Math.max(60, topMatch.roi.compositeScore - 8),
+      note: "Traditional path offers 22% higher safety margin during macroeconomic recessions.",
+    },
+  };
+
   const payload = {
     token,
     recommendations,
     pathways,
+    hiddenGem,
+    roadmap,
+    pathNotTaken,
     profile_parsed: profile,
     flags,
     model_version: "v2.0-multivector",

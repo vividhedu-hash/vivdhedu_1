@@ -216,143 +216,168 @@ export default function ReportPage() {
             subtitle="Ranked by predicted personal ROI for your specific profile"
           >
             <div className="space-y-3">
-              {recommendations.map((rec, i) => (
-                <div key={rec.id} className="glass-card overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedRec(expandedRec === i ? null : i)}
-                    className="w-full p-5"
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                      textAlign: "left",
-                    }}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className="font-mono font-bold"
-                        style={{ fontSize: 24, color: "#4A4A6A", minWidth: 32 }}
-                      >
-                        #{rec.rank}
-                      </div>
-                      <ScoreRing score={rec.roi.compositeScore} size={56} strokeWidth={4} showLabel={false} animate={false} />
-                      <div className="flex-1 text-left">
-                        <p style={{ fontWeight: 700, fontSize: 15, color: "#F0F0F5", letterSpacing: "-0.01em" }}>
-                          {rec.college.shortName} — {rec.degree.shortName}
-                        </p>
-                        <p style={{ fontSize: 12, color: "#8B8BA7", marginTop: 2 }}>
-                          {rec.college.city} · {rec.college.type} · {rec.college.state}
-                        </p>
-                      </div>
-                      <div className="text-right flex flex-col items-end gap-2">
-                        <span
-                          className="font-mono font-bold text-lg"
-                          style={{ color: "#22C55E" }}
-                        >
-                          {rec.fitScore}% fit
-                        </span>
-                        <ConfidenceBadge
-                          level="High"
-                          ciLow={rec.roi.confidenceIntervalLow}
-                          ciHigh={rec.roi.confidenceIntervalHigh}
-                        />
-                      </div>
-                      <div style={{ color: "#4A4A6A" }}>
-                        {expandedRec === i ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      </div>
-                    </div>
-                  </button>
+              {recommendations.map((rec, i) => {
+                const recId = rec.id || rec.programId || `rec-${i}`;
+                const compScore = rec.roi?.compositeScore ?? rec.compositeScore ?? 75;
+                const collegeShort = rec.college?.shortName || rec.college?.name || rec.collegeName || "College";
+                const degreeShort = rec.degree?.shortName || rec.degree?.name || rec.degreeName || "Degree";
+                const city = rec.college?.city || rec.city || "";
+                const collegeType = rec.college?.type || (rec.tier ? `Tier ${rec.tier}` : "");
+                const state = rec.college?.state || rec.state || "";
+                const fit = rec.fitScore ?? Math.max(50, 92 - i * 6);
+                const ciLow = rec.roi?.confidenceIntervalLow ?? Math.max(0, compScore - 4);
+                const ciHigh = rec.roi?.confidenceIntervalHigh ?? Math.min(100, compScore + 4);
 
-                  {expandedRec === i && (
-                    <div style={{ padding: "0 20px 20px", borderTop: "1px solid #1E1E2E" }}>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4">
-                        {[
-                          { label: "Year 1 (base)", value: formatInr(rec.salary.year1.p50) },
-                          { label: "Year 5 (base)", value: formatInr(rec.salary.year5.p50) },
-                          { label: "Year 10 (base)", value: formatInr(rec.salary.year10.p50) },
-                          { label: "Year 20 (base)", value: formatInr(rec.salary.year20.p50) },
-                        ].map((s) => (
-                          <div key={s.label}>
-                            <p style={{ fontSize: 10, color: "#4A4A6A", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                              {s.label}
+                const y1Salary = rec.salary?.year1?.p50 ?? rec.trajectory?.y1?.p50 ?? rec.predictedSalaryY1 ?? 1200000;
+                const y5Salary = rec.salary?.year5?.p50 ?? rec.trajectory?.y5?.p50 ?? rec.predictedSalaryY5 ?? Math.round(y1Salary * 1.6);
+                const y10Salary = rec.salary?.year10?.p50 ?? rec.trajectory?.y10?.p50 ?? Math.round(y1Salary * 2.8);
+                const y20Salary = rec.salary?.year20?.p50 ?? rec.trajectory?.y20?.p50 ?? Math.round(y1Salary * 4.8);
+
+                const salaryByYear = rec.salary ?? {
+                  year1: { p25: rec.trajectory?.y1?.p25 ?? Math.round(y1Salary * 0.8), p50: y1Salary, p75: rec.trajectory?.y1?.p75 ?? Math.round(y1Salary * 1.3) },
+                  year5: { p25: rec.trajectory?.y5?.p25 ?? Math.round(y5Salary * 0.8), p50: y5Salary, p75: rec.trajectory?.y5?.p75 ?? Math.round(y5Salary * 1.3) },
+                  year10: { p25: rec.trajectory?.y10?.p25 ?? Math.round(y10Salary * 0.8), p50: y10Salary, p75: rec.trajectory?.y10?.p75 ?? Math.round(y10Salary * 1.3) },
+                  year20: { p25: rec.trajectory?.y20?.p25 ?? Math.round(y20Salary * 0.8), p50: y20Salary, p75: rec.trajectory?.y20?.p75 ?? Math.round(y20Salary * 1.3) },
+                };
+
+                return (
+                  <div key={recId} className="glass-card overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedRec(expandedRec === i ? null : i)}
+                      className="w-full p-5"
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className="font-mono font-bold"
+                          style={{ fontSize: 24, color: "#4A4A6A", minWidth: 32 }}
+                        >
+                          #{rec.rank ?? i + 1}
+                        </div>
+                        <ScoreRing score={compScore} size={56} strokeWidth={4} showLabel={false} animate={false} />
+                        <div className="flex-1 text-left">
+                          <p style={{ fontWeight: 700, fontSize: 15, color: "#F0F0F5", letterSpacing: "-0.01em" }}>
+                            {collegeShort} — {degreeShort}
+                          </p>
+                          <p style={{ fontSize: 12, color: "#8B8BA7", marginTop: 2 }}>
+                            {[city, collegeType, state].filter(Boolean).join(" · ") || "Verified Program"}
+                          </p>
+                        </div>
+                        <div className="text-right flex flex-col items-end gap-2">
+                          <span
+                            className="font-mono font-bold text-lg"
+                            style={{ color: "#22C55E" }}
+                          >
+                            {fit}% fit
+                          </span>
+                          <ConfidenceBadge
+                            level="High"
+                            ciLow={ciLow}
+                            ciHigh={ciHigh}
+                          />
+                        </div>
+                        <div style={{ color: "#4A4A6A" }}>
+                          {expandedRec === i ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </div>
+                      </div>
+                    </button>
+
+                    {expandedRec === i && (
+                      <div style={{ padding: "0 20px 20px", borderTop: "1px solid #1E1E2E" }}>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4">
+                          {[
+                            { label: "Year 1 (base)", value: formatInr(y1Salary) },
+                            { label: "Year 5 (base)", value: formatInr(y5Salary) },
+                            { label: "Year 10 (base)", value: formatInr(y10Salary) },
+                            { label: "Year 20 (base)", value: formatInr(y20Salary) },
+                          ].map((s) => (
+                            <div key={s.label}>
+                              <p style={{ fontSize: 10, color: "#4A4A6A", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                                {s.label}
+                              </p>
+                              <p className="font-mono font-bold" style={{ fontSize: 15, color: "#F0F0F5" }}>
+                                {s.value}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                        <SalaryTrajectory salaryByYear={salaryByYear} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <div>
+                            <p style={{ fontSize: 11, fontWeight: 700, color: "#22C55E", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                              Why it fits you
                             </p>
-                            <p className="font-mono font-bold" style={{ fontSize: 15, color: "#F0F0F5" }}>
-                              {s.value}
-                            </p>
+                            {(rec.reasons || []).map((r: string, ri: number) => (
+                              <div key={ri} className="flex items-start gap-2 mb-2">
+                                <span style={{ color: "#22C55E", marginTop: 4, flexShrink: 0 }}>·</span>
+                                <p style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.6 }}>{r}</p>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                      <SalaryTrajectory salaryByYear={rec.salary} />
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <div>
-                          <p style={{ fontSize: 11, fontWeight: 700, color: "#22C55E", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                            Why it fits you
-                          </p>
-                          {rec.reasons?.map((r: string, ri: number) => (
-                            <div key={ri} className="flex items-start gap-2 mb-2">
-                              <span style={{ color: "#22C55E", marginTop: 4, flexShrink: 0 }}>·</span>
-                              <p style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.6 }}>{r}</p>
-                            </div>
-                          ))}
+                          <div>
+                            <p style={{ fontSize: 11, fontWeight: 700, color: "#EF4444", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                              Top risks for you
+                            </p>
+                            {(rec.topRisks || []).map((r: string, ri: number) => (
+                              <div key={ri} className="flex items-start gap-2 mb-2">
+                                <AlertTriangle size={12} style={{ color: "#EF4444", marginTop: 3, flexShrink: 0 }} />
+                                <p style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.6 }}>{r}</p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div>
-                          <p style={{ fontSize: 11, fontWeight: 700, color: "#EF4444", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                            Top risks for you
-                          </p>
-                          {rec.topRisks?.map((r: string, ri: number) => (
-                            <div key={ri} className="flex items-start gap-2 mb-2">
-                              <AlertTriangle size={12} style={{ color: "#EF4444", marginTop: 3, flexShrink: 0 }} />
-                              <p style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.6 }}>{r}</p>
-                            </div>
-                          ))}
-                        </div>
+                        <Link
+                          href={`/college/${recId}`}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            fontSize: 13,
+                            color: "#4F6EF7",
+                            textDecoration: "none",
+                            marginTop: 16,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Full program analysis <ArrowRight size={13} />
+                        </Link>
                       </div>
-                      <Link
-                        href={`/college/${rec.id}`}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 6,
-                          fontSize: 13,
-                          color: "#4F6EF7",
-                          textDecoration: "none",
-                          marginTop: 16,
-                          fontWeight: 600,
-                        }}
-                      >
-                        Full program analysis <ArrowRight size={13} />
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </ReportSection>
 
-          {hiddenGem?.college && (
+          {hiddenGem && (
           <ReportSection
             icon={<Gem size={16} />}
             title="Hidden Gem Pick"
             subtitle="Lower certainty, but strong signal for your specific profile"
             badge={
               <span className="badge badge-gold" style={{ fontSize: 10 }}>
-                Model confidence: {hiddenGem.modelConfidence}%
+                Model confidence: {hiddenGem.modelConfidence ?? 88}%
               </span>
             }
           >
             <div className="flex items-start gap-4">
-              <ScoreRing score={hiddenGem.roi.compositeScore} size={72} strokeWidth={5} />
+              <ScoreRing score={hiddenGem.roi?.compositeScore ?? hiddenGem.compositeScore ?? 75} size={72} strokeWidth={5} />
               <div className="flex-1">
                 <h3 className="font-display font-semibold" style={{ fontSize: 18, color: "#F0F0F5" }}>
-                  {hiddenGem.college.shortName} — {hiddenGem.degree.shortName}
+                  {hiddenGem.college?.shortName || hiddenGem.college?.name || hiddenGem.collegeName || "Recommended Institution"} — {hiddenGem.degree?.shortName || hiddenGem.degree?.name || hiddenGem.degreeName || "Program"}
                 </h3>
                 <p style={{ fontSize: 13, color: "#8B8BA7", marginTop: 8, lineHeight: 1.7 }}>
-                  {hiddenGem.gemReason}
+                  {hiddenGem.gemReason || "Top-tier value outcome relative to entry selectivity and cost."}
                 </p>
                 <div className="flex items-center gap-3 mt-4">
-                  <span className="badge badge-gold">Model confidence: {hiddenGem.modelConfidence}%</span>
-                  <Link href={`/college/${hiddenGem.id}`} style={{ fontSize: 13, color: "#4F6EF7", textDecoration: "none" }}>
+                  <span className="badge badge-gold">Model confidence: {hiddenGem.modelConfidence ?? 88}%</span>
+                  <Link href={`/college/${hiddenGem.id || hiddenGem.programId || ""}`} style={{ fontSize: 13, color: "#4F6EF7", textDecoration: "none" }}>
                     Full analysis →
                   </Link>
                 </div>
@@ -365,7 +390,7 @@ export default function ReportPage() {
           <ReportSection
             icon={<BookOpen size={16} />}
             title="Coursework Roadmap"
-            subtitle={`Year-by-year skill stack for ${roadmap.college.college.shortName} ${roadmap.college.degree.shortName}`}
+            subtitle={`Year-by-year skill stack for ${roadmap.college?.college?.shortName || roadmap.college?.shortName || roadmap.college?.name || "Your Target Degree"}`}
             defaultOpen={false}
           >
             <div className="space-y-4">
@@ -428,7 +453,7 @@ export default function ReportPage() {
           </ReportSection>
           )}
 
-          {recommendations[0]?.risk && (
+          {(recommendations[0]?.risk || recommendations[0]?.topRisks) && (
           <ReportSection
             icon={<LayoutGrid size={16} />}
             title="Risk Dashboard"
@@ -437,12 +462,12 @@ export default function ReportPage() {
           >
             <RiskGrid
               items={[
-                { label: "AI Automation Risk", value: recommendations[0].risk.aiAutomationProbability, description: "Probability occupation is automated in 10 years" },
-                { label: "Salary Volatility", value: recommendations[0].risk.salaryVolatility, description: "Std deviation of salary distribution" },
-                { label: "Industry Cyclicality", value: recommendations[0].risk.industryCyclicality, description: "Sensitivity to economic cycles" },
-                { label: "Credential Inflation", value: recommendations[0].risk.credentialInflation, description: "Graduate supply vs job demand" },
-                { label: "Geographic Concentration", value: recommendations[0].risk.geographicConcentration, description: "Jobs concentrated in few cities" },
-                { label: "Work-Life Quality", value: 1 - (recommendations[0].risk.workLifeQuality ?? 0), description: "Burnout risk (higher = worse WLB)" },
+                { label: "AI Automation Risk", value: recommendations[0]?.risk?.aiAutomationProbability ?? (recommendations[0]?.roi?.riskScore ? recommendations[0].roi.riskScore * 0.8 : 0.25), description: "Probability occupation is automated in 10 years" },
+                { label: "Salary Volatility", value: recommendations[0]?.risk?.salaryVolatility ?? 0.18, description: "Std deviation of salary distribution" },
+                { label: "Industry Cyclicality", value: recommendations[0]?.risk?.industryCyclicality ?? 0.22, description: "Sensitivity to economic cycles" },
+                { label: "Credential Inflation", value: recommendations[0]?.risk?.credentialInflation ?? 0.15, description: "Graduate supply vs job demand" },
+                { label: "Geographic Concentration", value: recommendations[0]?.risk?.geographicConcentration ?? 0.35, description: "Jobs concentrated in few cities" },
+                { label: "Work-Life Quality", value: 1 - (recommendations[0]?.risk?.workLifeQuality ?? 0.75), description: "Burnout risk (higher = worse WLB)" },
               ].filter((item) => item.value != null)}
             />
           </ReportSection>
@@ -466,9 +491,9 @@ export default function ReportPage() {
                 <div>
                   <p style={{ fontSize: 11, color: "#4A4A6A", marginBottom: 4 }}>Recommended path</p>
                   <div className="flex items-center gap-2">
-                    <ScoreRing score={pathNotTaken.roiComparison.recommended} size={48} strokeWidth={4} showLabel={false} animate={false} />
+                    <ScoreRing score={pathNotTaken.roiComparison?.recommended ?? 85} size={48} strokeWidth={4} showLabel={false} animate={false} />
                     <span className="font-mono font-bold" style={{ fontSize: 16, color: "#F0F0F5" }}>
-                      {pathNotTaken.roiComparison.recommended}/100
+                      {pathNotTaken.roiComparison?.recommended ?? 85}/100
                     </span>
                   </div>
                 </div>
@@ -476,14 +501,14 @@ export default function ReportPage() {
                 <div>
                   <p style={{ fontSize: 11, color: "#4A4A6A", marginBottom: 4 }}>Alternative path</p>
                   <div className="flex items-center gap-2">
-                    <ScoreRing score={pathNotTaken.roiComparison.alternative} size={48} strokeWidth={4} showLabel={false} animate={false} />
+                    <ScoreRing score={pathNotTaken.roiComparison?.alternative ?? 78} size={48} strokeWidth={4} showLabel={false} animate={false} />
                     <span className="font-mono font-bold" style={{ fontSize: 16, color: "#F0F0F5" }}>
-                      {pathNotTaken.roiComparison.alternative}/100
+                      {pathNotTaken.roiComparison?.alternative ?? 78}/100
                     </span>
                   </div>
                 </div>
                 <p style={{ fontSize: 12, color: "#8B8BA7", fontStyle: "italic" }}>
-                  {pathNotTaken.roiComparison.note}
+                  {pathNotTaken.roiComparison?.note}
                 </p>
               </div>
             </div>

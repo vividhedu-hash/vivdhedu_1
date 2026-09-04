@@ -97,7 +97,9 @@ export function mapSupabaseRowToRecord(row: SupabaseProgramRow): CollegeDegreeRe
 
   const medianSalary = Number(row.median_salary_inr ?? 1_200_000);
   const totalCost = Number(row.total_cost_of_degree ?? 1_000_000);
-  const placementRate = Number(row.placement_rate_pct ?? 88) / 100;
+  const rawPlacement = Number(row.placement_rate_pct ?? 88);
+  const placementRatePct = rawPlacement > 1 ? Math.round(rawPlacement) : Math.round(rawPlacement * 100);
+  const employmentRateFrac = rawPlacement > 1 ? rawPlacement / 100 : rawPlacement;
 
   return {
     id: row.program_id,
@@ -161,7 +163,7 @@ export function mapSupabaseRowToRecord(row: SupabaseProgramRow): CollegeDegreeRe
       },
     },
     placement: {
-      rate: placementRate,
+      rate: placementRatePct,
       medianSalaryInr: medianSalary,
       highestSalaryInr: row.highest_salary_inr ?? Math.round(medianSalary * 2.8),
       companiesVisited: 140,
@@ -169,7 +171,7 @@ export function mapSupabaseRowToRecord(row: SupabaseProgramRow): CollegeDegreeRe
     },
     risk: {
       aiAutomationProbability: Number(row.ai_automation_prob ?? 0.22),
-      employmentRateAtGraduation: placementRate,
+      employmentRateAtGraduation: employmentRateFrac,
       salaryVolatility: 0.18,
       industryCyclicality: 0.25,
       geographicConcentration: 0.35,

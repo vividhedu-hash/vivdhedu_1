@@ -579,7 +579,7 @@ export function AdaptiveDiagnosticEngine() {
               item={currentItem}
               onSelect={handleSelectOption}
               itemIndex={itemIndex}
-              totalItems={5}
+              totalItems={8}
             />
           </div>
 
@@ -602,7 +602,7 @@ export function AdaptiveDiagnosticEngine() {
                 </span>
               </div>
               <p style={{ fontSize: 11, color: "#8B8BA7", lineHeight: 1.5 }}>
-                Each answer shifts what we ask next. Your career profile updates in real time on the left.
+                Each answer shifts what we ask next. Your career profile updates in real time.
               </p>
             </div>
           </div>

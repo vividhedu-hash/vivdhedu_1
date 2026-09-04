@@ -108,7 +108,11 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
             <StatBlock
               icon={<Users size={12} />}
               label="Placement"
-              value={`${placement?.rate ?? "—"}%`}
+              value={
+                placement?.rate != null
+                  ? `${placement.rate <= 1 ? Math.round(placement.rate * 100) : Math.round(placement.rate)}%`
+                  : "—"
+              }
             />
           </div>
         )}

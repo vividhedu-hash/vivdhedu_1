@@ -163,13 +163,15 @@ export default function CollegeDetailPage() {
                   {
                     icon: <Shield size={14} />,
                     label: "Risk Score",
-                    value: `${Math.round(roi.riskScore * 100)}/100`,
-                    color: roi.riskScore < 0.3 ? "#22C55E" : roi.riskScore < 0.5 ? "#F59E0B" : "#EF4444",
+                    value: `${roi.riskScore <= 1 ? Math.round(roi.riskScore * 100) : Math.round(roi.riskScore)}/100`,
+                    color: (roi.riskScore <= 1 ? roi.riskScore : roi.riskScore / 100) < 0.3 ? "#22C55E" : (roi.riskScore <= 1 ? roi.riskScore : roi.riskScore / 100) < 0.5 ? "#F59E0B" : "#EF4444",
                   },
                   {
                     icon: <Users size={14} />,
                     label: "Placement Rate",
-                    value: `${placement.rate}%`,
+                    value: placement?.rate != null
+                      ? `${placement.rate <= 1 ? Math.round(placement.rate * 100) : Math.round(placement.rate)}%`
+                      : "—",
                     color: "#22C55E",
                   },
                   {
