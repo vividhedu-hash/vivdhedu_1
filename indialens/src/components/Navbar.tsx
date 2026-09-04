@@ -81,17 +81,19 @@ export function Navbar() {
               Admin
             </Link>
 
-            {user ? (
+            {user && (user.full_name || user.email) ? (
               <div className="flex items-center gap-2 bg-slate-900/80 border border-slate-800 py-1 px-2.5 rounded-xl text-xs">
                 {user.avatar_url ? (
                   <img src={user.avatar_url} alt="User" className="w-5 h-5 rounded-full" />
                 ) : (
                   <div className="w-5 h-5 rounded-full bg-[#002F6C] text-[#0077C8] flex items-center justify-center font-bold text-[10px]">
-                    {user.full_name ? user.full_name.charAt(0) : user.email.charAt(0).toUpperCase()}
+                    {user.full_name
+                      ? user.full_name.charAt(0).toUpperCase()
+                      : (user.email ? user.email.charAt(0).toUpperCase() : "U")}
                   </div>
                 )}
                 <span className="text-slate-200 font-medium max-w-[100px] truncate">
-                  {user.full_name || user.email.split("@")[0]}
+                  {user.full_name || (user.email ? user.email.split("@")[0] : "User")}
                 </span>
                 {user.is_premium && (
                   <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">

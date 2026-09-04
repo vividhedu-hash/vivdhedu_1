@@ -53,7 +53,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         const data = await res.json();
-        setUser(data);
+        if (data && (data.email || data.id)) {
+          setUser(data);
+        } else {
+          setUser(null);
+        }
       } else {
         // Token expired or invalid
         localStorage.removeItem(TOKEN_KEY);
