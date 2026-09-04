@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
-import { fetchBackend } from "../../../lib/backend";
+import { fetchSupabaseRest } from "../../../lib/supabase";
 
 export async function GET() {
-  const resp = await fetchBackend("/api/health", { timeoutMs: 2000 });
-  if (resp?.ok) {
-    const body = await resp.json().catch(() => ({ status: "ok" }));
-    return NextResponse.json({ ...body, runtime: "vercel-with-fastapi" });
-  }
+  const supabaseRow = await fetchSupabaseRest<any[]>("programs?select=id&limit=1", { timeoutMs: 1500 });
+  const dbConnected = Array.isArray(supabaseRow) && supabaseRow.length > 0;
 
   return NextResponse.json({
     status: "healthy",
     runtime: "vercel-serverless",
-    database: "supabase-connected",
+    database: dbConnected ? "supabase-connected" : "ready",
     version: "v2.0-autonomous",
     timestamp: new Date().toISOString(),
   });

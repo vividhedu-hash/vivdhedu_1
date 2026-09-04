@@ -27,35 +27,7 @@ export async function fetchCollegeList(query: {
   sort_by?: string | null;
   sort_dir?: string | null;
 } = {}): Promise<{ data: CollegeDegreeRecord[]; total: number; source: "database" | "mock" }> {
-  const params = new URLSearchParams({
-    page: String(query.page ?? 1),
-    per_page: String(query.per_page ?? 20),
-    sort_by: mapCollegeSort(query.sort_by),
-    sort_dir: query.sort_dir ?? "desc",
-  });
-  if (query.field) params.set("field", query.field);
-  if (query.tier) params.set("tier", query.tier);
-  if (query.state) params.set("state", query.state);
-  if (query.search) params.set("q", query.search);
-
-  const resp = await fetchBackend(`/api/colleges?${params}`, {
-    timeoutMs: 4000,
-    next: { revalidate: 300 },
-  });
-
-  if (resp?.ok) {
-    const json = await resp.json();
-    const rows: CollegeDegreeRecord[] = Array.isArray(json.data) ? json.data : [];
-    if (rows.length > 0) {
-      return {
-        data: rows,
-        total: json.total ?? rows.length,
-        source: "database",
-      };
-    }
-  }
-
-  // Query Supabase directly if no FastAPI response
+  // 1. Direct Supabase Query (Primary - ultra fast on Vercel Serverless)
   try {
     const supabaseParams = new URLSearchParams();
     if (query.field) supabaseParams.set("degree_field", `eq.${query.field}`);
@@ -73,7 +45,7 @@ export async function fetchCollegeList(query: {
     supabaseParams.set("offset", String(((query.page ?? 1) - 1) * (query.per_page ?? 20)));
 
     const rows = await fetchSupabaseRest<SupabaseProgramRow[]>(`v_programs_full?${supabaseParams}`, {
-      timeoutMs: 4000,
+      timeoutMs: 3000,
     });
     if (rows && Array.isArray(rows) && rows.length > 0) {
       return {
@@ -83,7 +55,36 @@ export async function fetchCollegeList(query: {
       };
     }
   } catch {
-    // Supabase error: continue to mock fallback
+    // Supabase query failed; fall through
+  }
+
+  // 2. Secondary: Backend API if reachable
+  const params = new URLSearchParams({
+    page: String(query.page ?? 1),
+    per_page: String(query.per_page ?? 20),
+    sort_by: mapCollegeSort(query.sort_by),
+    sort_dir: query.sort_dir ?? "desc",
+  });
+  if (query.field) params.set("field", query.field);
+  if (query.tier) params.set("tier", query.tier);
+  if (query.state) params.set("state", query.state);
+  if (query.search) params.set("q", query.search);
+
+  const resp = await fetchBackend(`/api/colleges?${params}`, {
+    timeoutMs: 1500,
+    next: { revalidate: 300 },
+  });
+
+  if (resp?.ok) {
+    const json = await resp.json();
+    const rows: CollegeDegreeRecord[] = Array.isArray(json.data) ? json.data : [];
+    if (rows.length > 0) {
+      return {
+        data: rows,
+        total: json.total ?? rows.length,
+        source: "database",
+      };
+    }
   }
 
   return applyMockFilters(query);
@@ -92,26 +93,27 @@ export async function fetchCollegeList(query: {
 export async function fetchCollegeById(
   id: string,
 ): Promise<{ record: CollegeDegreeRecord; source: "database" | "mock" } | null> {
-  const resp = await fetchBackend(`/api/colleges/${encodeURIComponent(id)}`, {
-    timeoutMs: 4000,
-    next: { revalidate: 600 },
-  });
-
-  if (resp?.ok) {
-    return { record: await resp.json(), source: "database" };
-  }
-
-  // Try direct Supabase
+  // 1. Direct Supabase Query (Primary)
   try {
     const rows = await fetchSupabaseRest<SupabaseProgramRow[]>(
       `v_programs_full?program_id=eq.${encodeURIComponent(id)}&limit=1`,
-      { timeoutMs: 4000 },
+      { timeoutMs: 3000 },
     );
     if (rows && Array.isArray(rows) && rows.length > 0) {
       return { record: mapSupabaseRowToRecord(rows[0]), source: "database" };
     }
   } catch {
-    // continue to mock
+    // continue
+  }
+
+  // 2. Secondary Backend API
+  const resp = await fetchBackend(`/api/colleges/${encodeURIComponent(id)}`, {
+    timeoutMs: 1500,
+    next: { revalidate: 600 },
+  });
+
+  if (resp?.ok) {
+    return { record: await resp.json(), source: "database" };
   }
 
   const record = MOCK_DATA.find((r) => r.id === id);

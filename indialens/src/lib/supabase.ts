@@ -36,7 +36,7 @@ export async function fetchSupabaseRest<T>(
   const { timeoutMs = 6000, ...rest } = options;
 
   try {
-    const res = await fetch(url, {
+    const fetchOptions: RequestInit = {
       ...rest,
       headers: {
         apikey: anonKey,
@@ -46,11 +46,17 @@ export async function fetchSupabaseRest<T>(
         ...options.headers,
       },
       signal: options.signal ?? AbortSignal.timeout(timeoutMs),
-      next: { revalidate: 120 },
-    });
+    };
+
+    if (!options.method || options.method === "GET") {
+      (fetchOptions as any).next = (options as any).next ?? { revalidate: 120 };
+    }
+
+    const res = await fetch(url, fetchOptions);
 
     if (!res.ok) return null;
-    return (await res.json()) as T;
+    const text = await res.text();
+    return text ? (JSON.parse(text) as T) : ({} as T);
   } catch {
     return null;
   }

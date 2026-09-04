@@ -17,7 +17,7 @@ async function proxy(request: Request, path: string[], method: string) {
     method,
     headers,
     body: body || undefined,
-    timeoutMs: subpath.startsWith("ai/") ? 6000 : 3000,
+    timeoutMs: 1500,
   });
 
   if (resp) {
@@ -30,6 +30,14 @@ async function proxy(request: Request, path: string[], method: string) {
   }
 
   // Pure Vercel Serverless Fallback Handlers
+  if (subpath.startsWith("ai/adaptive-next-item")) {
+    return NextResponse.json({
+      status: "ok",
+      is_converged: false,
+      _source: "serverless",
+    });
+  }
+
   if (subpath.startsWith("ai/advisor")) {
     let parsedBody: any = {};
     try {

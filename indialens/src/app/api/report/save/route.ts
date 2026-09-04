@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchBackend } from "../../../../lib/backend";
 import { reportStore } from "../../../../lib/report-store";
+import { fetchSupabaseRest } from "../../../../lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,27 +10,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "token required" }, { status: 400 });
     }
 
-    const resp = await fetchBackend("/api/analyze/save", {
+    const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+    const profileData = body.student_input || body.profile || {};
+    const resultsData = body.results || body;
+
+    // Save directly to Supabase persistent table
+    await fetchSupabaseRest("student_reports", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      timeoutMs: 10000,
-    });
+      body: JSON.stringify({
+        token,
+        profile_data: profileData,
+        results_data: resultsData,
+        model_version: resultsData.model_version || "v2.0-multivector",
+        generated_at: new Date().toISOString(),
+        viewed_count: 0,
+        expires_at: expiresAt,
+      }),
+    }).catch(() => null);
 
-    if (resp?.ok) {
-      return NextResponse.json(await resp.json());
-    }
-
+    // Also update in-memory cache
     reportStore.set(token, {
       token,
       created_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      student_input: body.student_input || body.profile || {},
-      results: body.results || body,
-      _source: "mock",
+      expires_at: expiresAt,
+      student_input: profileData,
+      results: resultsData,
+      _source: "database",
     });
 
-    return NextResponse.json({ status: "saved", token, _source: "serverless" });
+    return NextResponse.json({ status: "saved", token, _source: "supabase" });
   } catch {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

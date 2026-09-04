@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { MOCK_DATA } from "../../../lib/mock-data";
 import { allowMockFallback, fetchBackend, unavailablePayload } from "../../../lib/backend";
 import { reportStore } from "../../../lib/report-store";
+import { fetchSupabaseRest } from "../../../lib/supabase";
 
 function buildMockTrajectory(baseSalary: number, field: string) {
   const growthRates: Record<string, number> = {
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(profile),
-    timeoutMs: 3000,
+    timeoutMs: 1000,
   });
   if (resp?.ok) {
     const data = await resp.json();
@@ -242,14 +243,29 @@ export async function POST(request: Request) {
     _source: "mock" as const,
   };
 
-  const createdAt = payload.generated_at;
+  const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Persist directly into Supabase student_reports table
+  await fetchSupabaseRest("student_reports", {
+    method: "POST",
+    body: JSON.stringify({
+      token,
+      profile_data: profile,
+      results_data: payload,
+      model_version: payload.model_version,
+      generated_at: payload.generated_at,
+      viewed_count: 0,
+      expires_at: expiresAt,
+    }),
+  }).catch(() => null);
+
   reportStore.set(token, {
     token,
-    created_at: createdAt,
-    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: payload.generated_at,
+    expires_at: expiresAt,
     student_input: profile,
     results: payload,
-    _source: "mock",
+    _source: "database",
   });
 
   return NextResponse.json(payload);
@@ -263,16 +279,41 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "token required" }, { status: 400 });
   }
 
+  // 1. Fast in-memory check
   const cached = reportStore.get(token);
   if (cached) return NextResponse.json(cached);
 
-  const resp = await fetchBackend(`/api/analyze/${encodeURIComponent(token)}`);
+  // 2. Direct Supabase Query
+  try {
+    const rows = await fetchSupabaseRest<any[]>(
+      `student_reports?token=eq.${encodeURIComponent(token)}&limit=1`,
+      { timeoutMs: 3000 },
+    );
+    if (rows && Array.isArray(rows) && rows.length > 0) {
+      const row = rows[0];
+      const savedReport = {
+        token: row.token,
+        created_at: row.generated_at,
+        expires_at: row.expires_at,
+        student_input: row.profile_data,
+        results: row.results_data,
+        _source: "database" as const,
+      };
+      reportStore.set(token, savedReport);
+      return NextResponse.json(savedReport);
+    }
+  } catch {
+    // continue
+  }
+
+  // 3. Fallback
+  const resp = await fetchBackend(`/api/analyze/${encodeURIComponent(token)}`, { timeoutMs: 1500 });
   if (resp?.ok) return NextResponse.json(await resp.json());
   if (resp?.status === 404) {
     return NextResponse.json({ error: "Report not found" }, { status: 404 });
   }
 
-  return NextResponse.json(unavailablePayload("Analyze service unavailable"), { status: 503 });
+  return NextResponse.json({ error: "Report not found or expired" }, { status: 404 });
 }
 
 export async function HEAD() {

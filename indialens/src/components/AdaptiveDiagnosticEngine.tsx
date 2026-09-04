@@ -285,43 +285,14 @@ export function AdaptiveDiagnosticEngine() {
       setArchetype("Balanced Strategic Professional");
     }
 
-    // Attempt backend CAT API call for dynamic next item (primary path)
-    let nextItemFromBackend: DilemmaItem | null = null;
-    try {
-      const res = await fetch("/api/v1/ai/adaptive-next-item", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          student_profile: { twelfth_stream: stream, total_budget: budget },
-          response_history: updatedHistory,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.traits) setCurrentTraits(data.traits);
-        if (data.next_item && !data.is_converged && itemIndex < 8) {
-          nextItemFromBackend = data.next_item;
-        }
-      }
-    } catch (e) {
-      // Backend unavailable — fall through to client adaptive routing
-    }
-
-    if (nextItemFromBackend) {
-      setCurrentItem(nextItemFromBackend);
-      setItemIndex((prev) => prev + 1);
-      return;
-    }
-
-    // Client-side adaptive fallback — uses SE-based 3PL routing (NOT static index)
+    // Client-side adaptive routing — instant, zero-latency 3PL Fisher Information engine
     const nextItem = selectClientNextItem(updatedAnsweredIds, updatedTraits);
 
     if (nextItem && itemIndex < 8) {
       setCurrentItem(nextItem);
       setItemIndex((prev) => prev + 1);
     } else {
-      // All 8 items answered or SE converged — transition to Phase 3
+      // All items answered or SE converged — transition to Phase 3
       setPhase(3);
     }
   };
@@ -386,7 +357,7 @@ export function AdaptiveDiagnosticEngine() {
           return;
         }
       }
-      setSubmitError("Could not generate a report from live data. Check that FASTAPI_URL is set and the backend is running.");
+      setSubmitError("Could not generate your report. Please try again.");
     } catch (err) {
       console.error("Failed to submit intake report to API:", err);
       setSubmitError("Could not reach the analyze service. No demo report was generated.");
