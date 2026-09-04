@@ -274,7 +274,7 @@ function QuestionCard({
 function ResultPanel({ report, onRestart }: { report: FinalReport; onRestart: () => void }) {
   const { primary_archetype: pa, secondary_archetype: sa, trait_percentiles, trait_confidence } = report;
 
-  const sortedArchetypes = Object.entries(report.archetype_posterior)
+  const sortedArchetypes = Object.entries(report.archetype_posterior ?? {})
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5);
 
@@ -422,12 +422,14 @@ export default function PsychometricPage() {
       });
       if (res.ok) {
         const data: SessionState = await res.json();
-        setBackendAvailable(true);
-        setSessionId(data.session_id);
-        setCurrentItem(data.item);
-        setTraits(data.traits);
-        setPosterior(data.archetype_posterior);
-        return;
+        if (data && data.item && data.session_id) {
+          setBackendAvailable(true);
+          setSessionId(data.session_id);
+          setCurrentItem(data.item);
+          setTraits(data.traits || { risk: 0, value: 0, autonomy: 0, ai_adapt: 0, openness: 0, diligence: 0, social: 0, security: 0 });
+          setPosterior(data.archetype_posterior || {});
+          return;
+        }
       }
     } catch {
       // fall through to offline mode
@@ -436,6 +438,7 @@ export default function PsychometricPage() {
     setBackendAvailable(false);
     setCurrentItem(OFFLINE_GATEWAY[0] as unknown as PsychItem);
     setOfflineIndex(1);
+    setPosterior({});
   }, []);
 
   // ── Handle Answer ──────────────────────────────────────────────────────────
@@ -458,25 +461,27 @@ export default function PsychometricPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setTraits(data.traits ?? traits);
-          setPosterior(data.archetype_posterior ?? posterior);
-          setPrimaryArchetype(data.primary_archetype ?? primaryArchetype);
-          setEstimatedRemaining(data.estimated_remaining ?? Math.max(0, estimatedRemaining - 1));
+          if (data && (data.traits || data.item || data.is_converged)) {
+            setTraits(data.traits ?? traits);
+            setPosterior(data.archetype_posterior ?? posterior ?? {});
+            setPrimaryArchetype(data.primary_archetype ?? primaryArchetype);
+            setEstimatedRemaining(data.estimated_remaining ?? Math.max(0, estimatedRemaining - 1));
 
-          if (data.is_converged || !data.item) {
-            // Fetch final report
-            const rRes = await fetch(`/api/v2/psychometric/result/${sessionId}`);
-            if (rRes.ok) {
-              const rData: FinalReport = await rRes.json();
-              setReport(rData);
-              setPhase("result");
+            if (data.is_converged || !data.item) {
+              // Fetch final report
+              const rRes = await fetch(`/api/v2/psychometric/result/${sessionId}`);
+              if (rRes.ok) {
+                const rData: FinalReport = await rRes.json();
+                setReport(rData);
+                setPhase("result");
+                setIsAnimating(false);
+                return;
+              }
+            } else {
+              setCurrentItem(data.item);
               setIsAnimating(false);
               return;
             }
-          } else {
-            setCurrentItem(data.item);
-            setIsAnimating(false);
-            return;
           }
         }
       } catch {
@@ -568,8 +573,8 @@ export default function PsychometricPage() {
   // Top archetype label from posterior
   const topArchetypeLabel = primaryArchetype
     ? primaryArchetype.replace(/_/g, " ")
-    : Object.entries(posterior).length > 0
-      ? Object.entries(posterior).sort(([, a], [, b]) => b - a)[0][0].replace(/_/g, " ")
+    : Object.entries(posterior ?? {}).length > 0
+      ? Object.entries(posterior ?? {}).sort(([, a], [, b]) => b - a)[0][0].replace(/_/g, " ")
       : null;
 
   const progressPct = Math.min(100, Math.round((itemsCompleted / (itemsCompleted + (estimatedRemaining || 1))) * 100));
@@ -709,10 +714,10 @@ export default function PsychometricPage() {
               )}
 
               {/* Archetype posterior top 4 */}
-              {Object.keys(posterior).length > 0 && (
+              {Object.keys(posterior ?? {}).length > 0 && (
                 <div className="p-4 rounded border border-slate-800 bg-slate-900/20">
                   <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-3">Posterior Distribution</div>
-                  {Object.entries(posterior).sort(([, a], [, b]) => b - a).slice(0, 4).map(([key, prob]) => {
+                  {Object.entries(posterior ?? {}).sort(([, a], [, b]) => b - a).slice(0, 4).map(([key, prob]) => {
                     const pct = Math.round(prob * 100);
                     return (
                       <div key={key} className="flex items-center gap-2 mb-2">
