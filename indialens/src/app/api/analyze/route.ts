@@ -44,9 +44,7 @@ export async function POST(request: Request) {
   });
   if (resp?.ok) {
     const data = await resp.json();
-    if (data._source !== "empty_db_use_mock") {
-      return NextResponse.json({ ...data, _source: data._source ?? "database" });
-    }
+    return NextResponse.json({ ...data, _source: data._source ?? "database" });
   }
 
   if (!allowMockFallback()) {

@@ -1,16 +1,14 @@
 """
 NIRF Scraper — National Institutional Ranking Framework
 Sources:
-  - Wikipedia NIRF tables
-  - Hardcoded Top 50 Engineering (fallback)
+  - Wikipedia NIRF tables (live HTML). Empty scrape fails the run.
 
 Data extracted per institution:
   - nirf_rank
   - nirf_category
 """
-import re
 import logging
-from typing import List, Optional
+from typing import List
 import argparse
 import asyncio
 
@@ -53,29 +51,6 @@ NIRF_NAME_MAP = {
     "The University of Delhi": "Delhi University",
     "University of Hyderabad": "University of Hyderabad",
 }
-
-FALLBACK_NIRF_2024 = [
-    {"rank": 1, "name": "IIT Madras", "category": "engineering"},
-    {"rank": 2, "name": "IIT Delhi", "category": "engineering"},
-    {"rank": 3, "name": "IIT Bombay", "category": "engineering"},
-    {"rank": 4, "name": "IIT Kanpur", "category": "engineering"},
-    {"rank": 5, "name": "IIT Kharagpur", "category": "engineering"},
-    {"rank": 6, "name": "IIT Roorkee", "category": "engineering"},
-    {"rank": 7, "name": "IIT Guwahati", "category": "engineering"},
-    {"rank": 8, "name": "IIT Hyderabad", "category": "engineering"},
-    {"rank": 9, "name": "NIT Trichy", "category": "engineering"},
-    {"rank": 10, "name": "Jadavpur University", "category": "engineering"},
-    {"rank": 11, "name": "Vellore Institute of Technology", "category": "engineering"},
-    {"rank": 12, "name": "NIT Surathkal", "category": "engineering"},
-    {"rank": 13, "name": "Anna University", "category": "engineering"},
-    {"rank": 14, "name": "IIT Indore", "category": "engineering"},
-    {"rank": 15, "name": "IIT BHU", "category": "engineering"},
-    {"rank": 16, "name": "NIT Rourkela", "category": "engineering"},
-    {"rank": 17, "name": "IIT ISM Dhanbad", "category": "engineering"},
-    {"rank": 18, "name": "IIT Gandhinagar", "category": "engineering"},
-    {"rank": 19, "name": "Amrita Vishwa Vidyapeetham", "category": "engineering"},
-    {"rank": 20, "name": "Thapar Institute of Engineering & Technology", "category": "engineering"},
-]
 
 class NIRFScraper(BaseScraper):
     SOURCE_NAME = "nirf"
@@ -142,11 +117,10 @@ class NIRFScraper(BaseScraper):
             rows = self._parse_wikipedia(response.text)
             
             if not rows:
-                logger.warning("[NIRF] Wikipedia scrape yielded no results, using fallback")
-                rows = FALLBACK_NIRF_2024
+                raise RuntimeError("Wikipedia NIRF scrape returned no ranking rows")
         except Exception as e:
             logger.error(f"[NIRF] Failed to fetch/parse wikipedia: {e}")
-            rows = FALLBACK_NIRF_2024
+            raise
 
         for row in rows:
             mapped_name = self._fuzzy_match(row["name"])

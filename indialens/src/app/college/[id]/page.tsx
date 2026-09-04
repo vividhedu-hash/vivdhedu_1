@@ -61,7 +61,7 @@ export default function CollegeDetailPage() {
     "@type": "EducationalOrganization",
     "name": `${record.college.name} — ${record.degree.name}`,
     "description": `ROI score ${record.roi.compositeScore}/100. Median salary ₹${((record.salary?.year1?.p50 ?? 0) / 100000).toFixed(1)}L at graduation.`,
-    "url": `https://indialens.in/college/${id}`,
+    "url": `${process.env.NEXT_PUBLIC_APP_URL || "https://theproject.edu.in"}/college/${id}`,
     "offers": {
       "@type": "Offer",
       "price": `${record.costs?.totalCostOfDegreeInr ?? 0}`,

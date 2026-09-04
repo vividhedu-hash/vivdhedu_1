@@ -1,15 +1,19 @@
-# IndiaLens — Deployment Guide
-## Total monthly cost: ₹0 (completely free)
+# The Project — Deployment Guide
+## Total monthly cost: ₹0 (completely free tier stack)
 
-## Stack
-| Service | Provider | Cost |
-|---------|----------|------|
-| Frontend | Vercel Hobby | FREE |
-| Backend API | Render Free | FREE |
-| Database | Supabase Free | FREE |
-| Scraping Cron | GitHub Actions | FREE |
-| Email | Resend | FREE |
-| Cache | Upstash Redis | FREE |
+## Production Stack
+| Service | Provider | Cost | Status in Project |
+|---------|----------|------|-------------------|
+| Frontend | Vercel Hobby | FREE | Configured & Built (30/30 routes) |
+| Backend API | Render Free / Railway | FREE | Configured (`render.yaml` ready) |
+| Database | Supabase Free (PostgreSQL 15+) | FREE | Schema & seeds ready |
+| Search Grounding | Tavily API | FREE | **Active in .env** |
+| Email Delivery | Resend | FREE | **Active in .env** |
+| Distributed Cache | Upstash Redis | FREE | **Active in .env** |
+| Error Tracking | Sentry | FREE | **Active in .env** |
+| Review NLP | HuggingFace | FREE | **Active in .env** |
+
+Local development uses the same stack. **No Docker.** Point `DATABASE_URL` at Supabase and run `python -m scripts.run_api` in `backend/`.
 
 ---
 

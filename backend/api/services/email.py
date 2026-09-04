@@ -9,7 +9,6 @@ Usage:
 import os
 import httpx
 import logging
-from typing import Optional
 from datetime import datetime
 
 logger = logging.getLogger(__name__)

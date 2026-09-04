@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Zap, ExternalLink } from "lucide-react";
-import { PLATFORM_STATS } from "../lib/mock-data";
+import { POSITIONING } from "../lib/positioning";
 
 export function Footer() {
   return (
@@ -36,19 +36,17 @@ export function Footer() {
                 className="font-display font-bold"
                 style={{ fontSize: 18, color: "#F0F0F5" }}
               >
-                India<span style={{ color: "#4F6EF7" }}>Lens</span>
+                The <span style={{ color: "#0077C8" }}>Project</span>
               </span>
             </div>
             <p style={{ color: "#8B8BA7", fontSize: 14, lineHeight: 1.7, maxWidth: 320 }}>
-              India&apos;s first quantitative education and career intelligence
-              platform. Every score has a source. Every prediction has an
-              uncertainty range.
+              {POSITIONING.tagline} {POSITIONING.oneSentence}
             </p>
             <p
               className="mt-4 text-xs font-mono"
               style={{ color: "#4A4A6A" }}
             >
-              {PLATFORM_STATS.collegesTracked} colleges · {PLATFORM_STATS.programsIndexed} programs indexed · Verified data
+              {POSITIONING.uspName} · public methodology · no brochure medians
             </p>
           </div>
 
@@ -64,6 +62,10 @@ export function Footer() {
               {[
                 { href: "/explore", label: "ROI Index" },
                 { href: "/analyze", label: "Student Engine" },
+                { href: "/global", label: "Global Valuation" },
+                { href: "/portfolio-builder", label: "Spike Studio" },
+                { href: "/marketplace", label: "Course Marketplace" },
+                { href: "/advisor", label: "AI Mode" },
                 { href: "/methodology", label: "Methodology" },
                 { href: "/admin", label: "Educator Portal" },
               ].map((link) => (
@@ -123,7 +125,7 @@ export function Footer() {
         >
           <div className="flex flex-wrap items-center gap-4">
             <span style={{ color: "#4A4A6A", fontSize: 12 }}>
-              © 2025 IndiaLens. Open methodology, public index.
+              © 2026 The Project. Quantitative Education & Career Intelligence OS.
             </span>
             <Link
               href="/methodology"

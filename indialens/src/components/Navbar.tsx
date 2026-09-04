@@ -2,21 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart2, Search, Zap, BookOpen, Shield, Menu, X, Sparkles, Scale, Compass } from "lucide-react";
+import { BarChart2, Search, Zap, BookOpen, Shield, Menu, X, Sparkles, Scale, Compass, Globe, ShoppingBag, Brain, UserRound, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 const NAV_LINKS = [
   { href: "/explore", label: "Colleges", icon: <Compass size={14} /> },
-  { href: "/analyze", label: "My ROI", icon: <Search size={14} /> },
-  { href: "/advisor", label: "Career Advisor", icon: <Sparkles size={14} className="text-emerald-400" /> },
+  { href: "/analyze", label: "Price it", icon: <Search size={14} /> },
+  { href: "/psychometric", label: "Psychometric", icon: <Brain size={14} className="text-violet-400" /> },
+  { href: "/global", label: "Global", icon: <Globe size={14} /> },
+  { href: "/portfolio-builder", label: "Spike Studio", icon: <Sparkles size={14} className="text-amber-400" /> },
+  { href: "/marketplace", label: "Marketplace", icon: <ShoppingBag size={14} /> },
+  { href: "/advisor", label: "AI Mode", icon: <Sparkles size={14} className="text-emerald-400" /> },
   { href: "/compare", label: "Compare", icon: <Scale size={14} /> },
-  { href: "/methodology", label: "How we score", icon: <BookOpen size={14} /> },
+  { href: "/methodology", label: "Methodology", icon: <BookOpen size={14} /> },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { user, setIsAuthModalOpen, logout } = useAuth();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -36,11 +42,11 @@ export function Navbar() {
         <div className="flex items-center justify-between h-11">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-all">
-              <Zap size={16} className="text-slate-950 fill-slate-950" />
+            <div className="w-8 h-8 rounded-lg bg-[#002F6C] border border-[#0077C8]/40 flex items-center justify-center shadow-lg shadow-blue-900/20 group-hover:border-[#0077C8] transition-all">
+              <Zap size={16} className="text-[#0077C8]" />
             </div>
             <span className="font-extrabold text-lg text-white tracking-tight">
-              India<span className="text-indigo-400">Lens</span>
+              The <span className="text-[#0077C8]">Project</span>
             </span>
           </Link>
 
@@ -65,20 +71,56 @@ export function Navbar() {
             })}
           </div>
 
-          {/* CTA + Admin */}
+          {/* CTA + User Auth + Admin */}
           <div className="hidden md:flex items-center gap-3">
             <Link
               href="/admin"
               className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors font-medium px-2 py-1"
             >
               <Shield size={13} className="text-slate-500" />
-              Admin Portal
+              Admin
             </Link>
+
+            {user ? (
+              <div className="flex items-center gap-2 bg-slate-900/80 border border-slate-800 py-1 px-2.5 rounded-xl text-xs">
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt="User" className="w-5 h-5 rounded-full" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-[#002F6C] text-[#0077C8] flex items-center justify-center font-bold text-[10px]">
+                    {user.full_name ? user.full_name.charAt(0) : user.email.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="text-slate-200 font-medium max-w-[100px] truncate">
+                  {user.full_name || user.email.split("@")[0]}
+                </span>
+                {user.is_premium && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    PRO
+                  </span>
+                )}
+                <button
+                  onClick={logout}
+                  title="Sign out"
+                  className="text-slate-500 hover:text-rose-400 p-0.5 transition"
+                >
+                  <LogOut size={12} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-slate-900/80 border border-slate-800 hover:border-slate-700 font-semibold px-3 py-1.5 rounded-xl transition"
+              >
+                <UserRound size={13} className="text-[#0077C8]" />
+                Sign in
+              </button>
+            )}
+
             <Link
               href="/analyze"
-              className="px-4 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-300 hover:opacity-90 rounded-xl shadow-lg shadow-emerald-500/10 transition-all"
+              className="px-4 py-2 text-xs font-bold text-white bg-[#0077C8] hover:bg-[#0077C8]/90 rounded-xl shadow-lg shadow-blue-900/20 transition-all"
             >
-              Get my report
+              Price my degree
             </Link>
           </div>
 

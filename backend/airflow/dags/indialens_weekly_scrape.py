@@ -52,7 +52,7 @@ def get_config() -> dict:
         "database_url": Variable.get("INDIALENS_DATABASE_URL", default_var="postgresql://indialens:indialens_dev@postgres:5432/indialens"),
         "api_base": Variable.get("INDIALENS_API_BASE", default_var="http://api:8000"),
         "anomaly_threshold": float(Variable.get("ANOMALY_THRESHOLD_PCT", default_var="25.0")),
-        "retrain_threshold": float(Variable.get("RETRAIN_ANOMALY_PCT", default_var="0.10")),
+        "retrain_threshold": float(Variable.get("RETRAIN_ANOMALY_PCT", default_var="0.08")),
         "reddit_client_id": Variable.get("REDDIT_CLIENT_ID", default_var=""),
         "reddit_client_secret": Variable.get("REDDIT_CLIENT_SECRET", default_var=""),
     }

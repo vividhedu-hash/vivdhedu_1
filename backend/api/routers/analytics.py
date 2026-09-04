@@ -9,9 +9,9 @@ Endpoints:
 - POST /analytics/skill-velocity — Lightcast-Style Skill Demand Elasticity
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from backend.services.global_standards_analytics import global_analytics_service
 
 router = APIRouter()

@@ -20,6 +20,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy import text
+from scripts.program_facts import upsert_program_facts
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
+    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env"))
+except ImportError:
+    pass
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
@@ -209,7 +217,10 @@ EXPANDED_SALARY = {
 
 
 async def seed_expanded():
-    engine = create_async_engine(DATABASE_URL, echo=False)
+    connect_args = {}
+    if "supabase" in DATABASE_URL or "pooler" in DATABASE_URL:
+        connect_args = {"statement_cache_size": 0, "prepared_statement_cache_size": 0}
+    engine = create_async_engine(DATABASE_URL, echo=False, connect_args=connect_args)
     async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:
@@ -288,9 +299,6 @@ async def seed_expanded():
                 continue
 
             pid = str(uuid.uuid4())
-            label = "preliminary" if roi.get("preliminary") else "verified"
-
-            # Fee estimates (INR per year, adjusted by college tier)
             college_tier = next(
                 (c["tier"] for c in EXPANDED_COLLEGES if c["short_name"] == college_name), "2"
             )
@@ -301,26 +309,28 @@ async def seed_expanded():
 
             await session.execute(text("""
                 INSERT INTO programs
-                    (id, college_id, degree_id, total_fee_inr, annual_fee_inr,
-                     composite_roi_score, financial_roi_pct,
-                     risk_score, opportunity_score, mobility_score,
-                     satisfaction_score, network_score,
-                     ci_low, ci_high, data_label, is_active,
-                     created_at, updated_at)
+                    (id, college_id, degree_id, annual_tuition_inr, is_active)
                 VALUES
-                    (:id, :college_id, :degree_id, :total_fee_inr, :annual_fee_inr,
-                     :composite, :financial_roi,
-                     :risk, :opt, :mob, :sat, :net,
-                     :ci_low, :ci_high, :label, true,
-                     NOW(), NOW())
+                    (:id, :college_id, :degree_id, :tuition, TRUE)
             """), {
                 "id": pid,
                 "college_id": cid,
                 "degree_id": did,
-                "total_fee_inr": int(fee_per_year * degree_dur),
-                "annual_fee_inr": fee_per_year,
-                "composite": roi["composite"],
-                "financial_roi": roi["financial_roi"],
+                "tuition": fee_per_year,
+            })
+
+            await session.execute(text("""
+                INSERT INTO roi_scores
+                    (program_id, model_version, composite_score, financial_roi_pct,
+                     risk_score, optionality_score, mobility_score, satisfaction_score,
+                     network_score, ci_low, ci_high, confidence_level, is_current)
+                VALUES
+                    (:pid, 'v1.0-seed', :comp, :fin, :risk, :opt, :mob, :sat, :net,
+                     :ci_low, :ci_high, 'Medium', TRUE)
+            """), {
+                "pid": pid,
+                "comp": roi["composite"],
+                "fin": roi["financial_roi"],
                 "risk": roi["risk"],
                 "opt": roi["opt"],
                 "mob": roi["mob"],
@@ -328,38 +338,23 @@ async def seed_expanded():
                 "net": roi["net"],
                 "ci_low": roi["ci_low"],
                 "ci_high": roi["ci_high"],
-                "label": label,
             })
 
-            # Seed salary trajectories (year 1, 5, 10, 20)
             salary_data = EXPANDED_SALARY.get((college_name, degree_name))
             if salary_data:
                 source_str = "nirf_2024_verified" if not roi.get("preliminary") else "model_estimated"
-                points = [
-                    (1, salary_data["at_grad"]),
-                    (5, salary_data["y5"]),
-                    (10, salary_data["y10"]),
-                    (20, salary_data["y20"]),
-                ]
-                for yr, p50_val in points:
-                    p25 = int(p50_val * 0.82)
-                    p75 = int(p50_val * 1.25)
-                    await session.execute(text("""
-                        INSERT INTO salary_trajectories
-                            (id, program_id, model_version, year_number, p25_inr, p50_inr, p75_inr, data_source, computed_at)
-                        VALUES
-                            (:id, :pid, 'v1.0-seed', :yr, :p25, :p50, :p75, :source, NOW())
-                        ON CONFLICT (program_id, year_number) WHERE is_current = TRUE DO UPDATE
-                            SET p25_inr=EXCLUDED.p25_inr, p50_inr=EXCLUDED.p50_inr, p75_inr=EXCLUDED.p75_inr, data_source=EXCLUDED.data_source
-                    """), {
-                        "id": str(uuid.uuid4()),
-                        "pid": pid,
-                        "yr": yr,
-                        "p25": p25,
-                        "p50": p50_val,
-                        "p75": p75,
-                        "source": source_str,
-                    })
+                await upsert_program_facts(
+                    session, pid,
+                    duration_years=degree_dur,
+                    annual_tuition=fee_per_year,
+                    placement_pct=salary_data["placement"],
+                    median_salary=salary_data["at_grad"],
+                    y1=salary_data["at_grad"],
+                    y5=salary_data["y5"],
+                    y10=salary_data["y10"],
+                    y20=salary_data["y20"],
+                    source=source_str,
+                )
 
             inserted_programs += 1
 

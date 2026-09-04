@@ -6,12 +6,11 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import text
 import logging
+import re
 
 from ..config import settings
 
 logger = logging.getLogger(__name__)
-
-import re
 
 def _normalize_db_url(url: str) -> str:
     """Convert Supabase/Railway URL formats to SQLAlchemy async format."""
@@ -29,7 +28,8 @@ def _get_connect_args(url: str) -> dict:
     if 'supabase.co' in url or 'pooler.supabase' in url:
         return {
             'ssl': 'require',
-            'prepared_statement_cache_size': 0,  # required for Supabase pgbouncer
+            'statement_cache_size': 0,  # required for asyncpg with pgbouncer
+            'prepared_statement_cache_size': 0,  # required for SQLAlchemy asyncpg dialect
         }
     return {}
 

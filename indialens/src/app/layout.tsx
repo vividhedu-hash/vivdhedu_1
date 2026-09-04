@@ -6,29 +6,33 @@ import { Footer } from "@/components/Footer";
 import { PostHogProvider } from "@/components/PostHogProvider";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://theproject.edu.in"),
   title: {
-    default: 'IndiaLens — Degree ROI Index',
-    template: '%s | IndiaLens',
+    default: "The Project — Rankings measure institutions. The Project measures the student.",
+    template: "%s | The Project",
   },
-  description: 'India\'s first quantitative education ROI platform. Compare degree × college combinations by salary trajectory, placement rates, and career risk.',
-  keywords: ['India education', 'degree ROI', 'college rankings', 'salary after college', 'IIT placement', 'MBA ROI India'],
+  description: "India's first quantitative Education & Career Intelligence Operating System. Treats degrees as multi-decade financial assets with 20-year NPV, Monte Carlo debt stress testing, and AI displacement surfaces.",
+  keywords: ["education ROI", "college NPV", "degree downside risk", "NIRF alternative", "actuarial career intelligence", "student-priced ROI"],
   openGraph: {
-    type: 'website',
-    locale: 'en_IN',
-    url: 'https://indialens.in',
-    siteName: 'IndiaLens',
-    images: [{ url: '/api/og', width: 1200, height: 630 }],
+    type: "website",
+    locale: "en_IN",
+    url: "https://theproject.edu.in",
+    siteName: "The Project",
+    images: [{ url: "/api/og", width: 1200, height: 630 }],
   },
   twitter: {
-    card: 'summary_large_image',
-    site: '@indialens_in',
+    card: "summary_large_image",
+    site: "@theproject_edu",
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
 };
+
+import { AuthProvider } from "@/lib/auth-context";
+import { AuthModal } from "@/components/AuthModal";
 
 export default function RootLayout({
   children,
@@ -51,10 +55,13 @@ export default function RootLayout({
       </head>
       <body>
         <PostHogProvider>
-          <Navbar />
-          <StatsBar />
-          <main style={{ paddingTop: 84 }}>{children}</main>
-          <Footer />
+          <AuthProvider>
+            <Navbar />
+            <StatsBar />
+            <main style={{ paddingTop: 84 }}>{children}</main>
+            <Footer />
+            <AuthModal />
+          </AuthProvider>
         </PostHogProvider>
       </body>
     </html>

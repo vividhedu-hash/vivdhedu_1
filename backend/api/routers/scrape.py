@@ -1,11 +1,12 @@
 """
-/api/scrape — Scrape status endpoints (internal use by Airflow DAGs)
+/api/scrape — scrape run status + real dispatcher.
 """
-import secrets
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+
 from ..db.database import get_db
+from ..scraper_jobs import VALID_SOURCES, run_scraper_job
 
 router = APIRouter()
 
@@ -32,7 +33,6 @@ async def update_scrape_run(
     error_message: str = None,
     db: AsyncSession = Depends(get_db),
 ):
-    """Called by Airflow DAG tasks to report progress."""
     await db.execute(text("""
         UPDATE scrape_runs SET
             status = :status,
@@ -55,23 +55,30 @@ async def update_scrape_run(
 async def trigger_scraper_run(
     scraper_name: str,
     background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Trigger manual or automated execution of backend scrapers.
-    Supported: 'worldbank', 'reddit', 'tavily', 'adzuna', 'nirf', 'plfs'
-    """
-    valid_scrapers = ["worldbank", "reddit", "tavily", "adzuna", "nirf", "plfs"]
-    if scraper_name.lower() not in valid_scrapers:
+    source = scraper_name.lower()
+    if source not in VALID_SOURCES:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid scraper '{scraper_name}'. Valid options: {valid_scrapers}"
+            detail=f"Invalid scraper '{scraper_name}'. Valid options: {VALID_SOURCES}",
         )
 
-    run_id = f"manual_{scraper_name}_{secrets.token_hex(4)}"
+    try:
+        result = await db.execute(text("""
+            INSERT INTO scrape_runs (source_name, status)
+            VALUES (:source, 'running')
+            RETURNING id
+        """), {"source": source})
+        run_id = str(result.scalar())
+        await db.commit()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
+
+    background_tasks.add_task(run_scraper_job, source, run_id)
     return {
         "status": "triggered",
         "run_id": run_id,
-        "scraper": scraper_name,
-        "message": f"Scraper '{scraper_name}' dispatched to background processing worker.",
+        "scraper": source,
+        "message": f"Scraper '{source}' queued. Poll GET /api/scrape/{run_id}",
     }
-

@@ -13,7 +13,7 @@ from datetime import datetime
 import secrets
 import json
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 from ..db.database import get_db
 from ..schemas import StudentProfile
@@ -157,7 +157,7 @@ def _score_program_multi_dimensional(
 
     # Base weights
     w_fin = 0.30 + (r_trait * 0.15)
-    w_stab = 0.25 - (r_trait * 0.10) + (1.0 - ai_prob) * 0.05
+    w_stab = 0.25 - (r_trait * 0.10) + (1.0 - ai_prob) * 0.05 + (ai_trait * 0.05)
     w_val = 0.25 + (v_trait * 0.10)
     w_auto = 0.20 + (a_trait * 0.15)
 
@@ -178,10 +178,13 @@ def _score_program_multi_dimensional(
     # Academic alignment adjustment
     field = program.get("degree_field", "")
     if field == "engineering-cs" and profile.jee_rank:
-        if profile.jee_rank < 2000: overall_fit += 6
-        elif profile.jee_rank > 60000: overall_fit -= 8
+        if profile.jee_rank < 2000:
+            overall_fit += 6
+        elif profile.jee_rank > 60000:
+            overall_fit -= 8
     elif field == "medicine" and profile.neet_score:
-        if profile.neet_score >= 640: overall_fit += 6
+        if profile.neet_score >= 640:
+            overall_fit += 6
 
     final_fit_score = max(0, min(100, round(overall_fit, 1)))
 
@@ -243,8 +246,22 @@ def _score_program_multi_dimensional(
         },
     )
 
+    # ── Master Actuarial ROI & 8-Vector Risk (PRD Sections 04 & 05) ──
+    from backend.ml.roi_computer import compute_roi
+    actuarial_roi = compute_roi(program, trajectory, student_traits=cat)
+
     return {
         "fit_score": final_fit_score,
+        "composite_roi_score": actuarial_roi.get("composite_score", final_fit_score),
+        "npv_net_inr": actuarial_roi.get("npv_net_inr"),
+        "financial_roi_pct": actuarial_roi.get("financial_roi_pct"),
+        "irr_pct": actuarial_roi.get("irr_pct"),
+        "job_security_score": actuarial_roi.get("job_security_score"),
+        "layoff_probability_5y_pct": actuarial_roi.get("layoff_probability_5y_pct"),
+        "layoff_probability_10y_pct": actuarial_roi.get("layoff_probability_10y_pct"),
+        "upskilling_reserve_inr": actuarial_roi.get("upskilling_reserve_inr"),
+        "risk_vectors": actuarial_roi.get("risk_vectors"),
+        "adaptive_weights": actuarial_roi.get("adaptive_weights"),
         "vectors": {
             "financial_upside": financial_upside,
             "stability_resilience": stability_resilience,
@@ -370,21 +387,21 @@ async def analyze(
             LIMIT 50
         """))
         db_programs = [dict(r._mapping) for r in result]
-    except Exception:
-        db_programs = []
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"error": "database_unavailable", "reason": str(e)},
+        )
 
     if not db_programs:
-        return {
-            "token": token,
-            "recommendations": [],
-            "pathways": {},
-            "profile_parsed": profile.model_dump(),
-            "flags": _generate_flags(profile, []),
-            "model_version": settings.current_model_version,
-            "using_ml": False,
-            "generated_at": now.isoformat(),
-            "_source": "empty_db_use_mock",
-        }
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "no_programs",
+                "reason": "No active programs in Postgres. Run: python -m scripts.bootstrap",
+                "_source": "database",
+            },
+        )
 
     # Multi-dimensional scoring for all programs
     scored = []
@@ -465,8 +482,11 @@ async def analyze(
             "model": settings.current_model_version,
         })
         await db.commit()
-    except Exception:
-        pass
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"error": "report_persist_failed", "reason": str(e), "token": token},
+        )
 
     # Background Tasks
     top_rec = recommendations[0] if recommendations else {}
@@ -488,6 +508,53 @@ async def analyze(
         "generated_at": now.isoformat(),
         "_source": "database",
     }
+
+
+@router.post("/analyze/save")
+async def save_report(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """Persist or refresh a student report by token."""
+    token = payload.get("token")
+    if not token or not isinstance(token, str):
+        raise HTTPException(status_code=400, detail="token required")
+
+    profile = payload.get("profile_parsed") or payload.get("student_input") or payload.get("profile") or {}
+    results = {
+        "recommendations": payload.get("recommendations", []),
+        "pathways": payload.get("pathways", {}),
+        "flags": payload.get("flags", []),
+    }
+    model = payload.get("model_version") or settings.current_model_version
+
+    try:
+        existing = await db.execute(
+            text("SELECT token FROM student_reports WHERE token = :token"),
+            {"token": token},
+        )
+        if existing.fetchone():
+            await db.execute(text("""
+                UPDATE student_reports
+                SET profile_data = :profile, results_data = :results, model_version = :model
+                WHERE token = :token
+            """), {
+                "token": token,
+                "profile": json.dumps(profile),
+                "results": json.dumps(results),
+                "model": model,
+            })
+        else:
+            await db.execute(text("""
+                INSERT INTO student_reports (token, profile_data, results_data, model_version)
+                VALUES (:token, :profile, :results, :model)
+            """), {
+                "token": token,
+                "profile": json.dumps(profile),
+                "results": json.dumps(results),
+                "model": model,
+            })
+        await db.commit()
+        return {"status": "ok", "token": token, "_source": "database"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"error": "report_persist_failed", "reason": str(e)})
 
 
 @router.get("/analyze/report/{token}")

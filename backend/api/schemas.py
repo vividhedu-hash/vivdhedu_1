@@ -2,7 +2,7 @@
 Pydantic schemas for API request/response validation.
 All monetary values in INR unless suffixed _usd or _ppp.
 """
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field
 from typing import Optional, List, Literal
 from uuid import UUID
 from datetime import datetime

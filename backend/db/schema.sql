@@ -309,7 +309,7 @@ CREATE INDEX idx_feedback_created ON educator_feedback(created_at DESC);
 
 CREATE TABLE student_reports (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  token           VARCHAR(32) UNIQUE NOT NULL,
+  token           VARCHAR(64) UNIQUE NOT NULL,
   profile_data    JSONB NOT NULL,
   results_data    JSONB,
   model_version   VARCHAR(32),
@@ -320,6 +320,43 @@ CREATE TABLE student_reports (
 
 CREATE INDEX idx_student_reports_token ON student_reports(token);
 CREATE INDEX idx_student_reports_generated ON student_reports(generated_at DESC);
+
+-- ============================================================
+-- PERSONAL INTELLIGENCE (Gemini-grounded student × path)
+-- ============================================================
+
+CREATE TABLE personal_intelligence (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  token           VARCHAR(64) UNIQUE NOT NULL,
+  profile_data    JSONB NOT NULL,
+  intelligence    JSONB NOT NULL,
+  path_graph      JSONB NOT NULL,
+  citations       JSONB NOT NULL DEFAULT '{}',
+  model_version   VARCHAR(64),
+  grounded        BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_personal_intelligence_token ON personal_intelligence(token);
+CREATE INDEX idx_personal_intelligence_created ON personal_intelligence(created_at DESC);
+
+-- ============================================================
+-- MACRO INDICATORS (World Bank / RBI — not tied to a program)
+-- ============================================================
+
+CREATE TABLE macro_indicators (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  scrape_run_id   UUID REFERENCES scrape_runs(id),
+  field_name      VARCHAR(64) NOT NULL,
+  parsed_value    DECIMAL(20, 4),
+  unit            VARCHAR(32),
+  source_url      VARCHAR(1024),
+  scraped_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  is_current      BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE UNIQUE INDEX idx_macro_current ON macro_indicators(field_name) WHERE is_current = TRUE;
 
 -- ============================================================
 -- MODEL VERSIONS
@@ -468,9 +505,142 @@ WHERE a.status = 'pending'
 ORDER BY a.created_at DESC;
 
 -- ============================================================
+-- COURSE MARKETPLACE & AFFILIATE REPOSITORY
+-- ============================================================
+
+CREATE TABLE course_marketplace (
+  id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  course_title          VARCHAR(255) NOT NULL,
+  provider              VARCHAR(64) NOT NULL,   -- 'Coursera', 'edX', 'DeepLearning.AI', 'Unacademy', 'AWS', 'Google'
+  category              VARCHAR(64) NOT NULL,   -- 'Technical Upskilling', 'Exam Prep', 'Enterprise Certifications', 'Global Language'
+  affiliate_url         TEXT NOT NULL,
+  price_inr             NUMERIC(10,2) NOT NULL,
+  duration_hours        INTEGER NOT NULL,
+  skill_tags            TEXT[] NOT NULL,
+  career_paths          TEXT[] NOT NULL,
+  ai_resilience_score   NUMERIC(4,3) NOT NULL CHECK (ai_resilience_score BETWEEN 0 AND 1),
+  commission_rate_pct   NUMERIC(5,2) NOT NULL,
+  is_active             BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_course_marketplace_cat ON course_marketplace(category);
+CREATE INDEX idx_course_marketplace_active ON course_marketplace(is_active);
+
+-- ============================================================
+-- COURSE IMPRESSIONS & AFFILIATE TELEMETRY
+-- ============================================================
+
+CREATE TABLE course_impressions (
+  id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_token         VARCHAR(64) NOT NULL,
+  course_id             UUID NOT NULL REFERENCES course_marketplace(id) ON DELETE CASCADE,
+  match_score           NUMERIC(4,3) NOT NULL,
+  shown_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  clicked               BOOLEAN NOT NULL DEFAULT FALSE,
+  clicked_at            TIMESTAMPTZ,
+  converted             BOOLEAN NOT NULL DEFAULT FALSE,
+  converted_at          TIMESTAMPTZ,
+  revenue_inr           NUMERIC(10,2) DEFAULT 0.00
+);
+
+CREATE INDEX idx_course_impressions_token ON course_impressions(student_token);
+CREATE INDEX idx_course_impressions_course ON course_impressions(course_id);
+
+-- ============================================================
+-- GLOBAL DEGREE PROGRAMS & CROSS-BORDER ARBITRAGE
+-- ============================================================
+
+CREATE TABLE global_programs (
+  id                        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  university_name           VARCHAR(255) NOT NULL,
+  country                   VARCHAR(64) NOT NULL,    -- 'United States', 'Germany', 'United Kingdom', 'Canada', 'Singapore'
+  city                      VARCHAR(64) NOT NULL,
+  degree_name               VARCHAR(128) NOT NULL,
+  major                     VARCHAR(128) NOT NULL,
+  global_tier               VARCHAR(32) NOT NULL,    -- 'Value Kings', 'Zero-Tuition Arbitrage', 'Convex Ceiling Elite', 'Danger Zone'
+  is_stem_designated        BOOLEAN NOT NULL DEFAULT FALSE,
+  annual_tuition_usd        NUMERIC(10,2) NOT NULL,
+  living_cost_annual_usd    NUMERIC(10,2) NOT NULL,
+  scholarship_probability   NUMERIC(4,3) DEFAULT 0.20,
+  assistantship_probability NUMERIC(4,3) DEFAULT 0.15,
+  median_salary_usd_y1      NUMERIC(10,2) NOT NULL,
+  median_salary_usd_y5      NUMERIC(10,2) NOT NULL,
+  visa_type                 VARCHAR(32) NOT NULL,    -- 'F-1 OPT (3-Year STEM)', 'EU Blue Card', 'UK Graduate Route', 'PGWP'
+  visa_survival_prob        NUMERIC(4,3) NOT NULL,   -- e.g. 0.578 for 3-attempt H-1B, 0.94 for Germany
+  effective_tax_rate        NUMERIC(4,3) NOT NULL,
+  monthly_rent_median_usd   NUMERIC(10,2) NOT NULL,
+  website_url               VARCHAR(512),
+  is_active                 BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at                TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_global_programs_country ON global_programs(country);
+CREATE INDEX idx_global_programs_stem ON global_programs(is_stem_designated);
+CREATE INDEX idx_global_programs_tier ON global_programs(global_tier);
+
+-- ============================================================
+-- PORTFOLIO PROFILES (Global Admissions & Spike Studio)
+-- ============================================================
+
+CREATE TABLE portfolio_profiles (
+  id                        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_token             VARCHAR(64) UNIQUE NOT NULL,
+  spike_domain              VARCHAR(128) NOT NULL,
+  target_major              VARCHAR(128) NOT NULL,
+  target_universities       JSONB NOT NULL DEFAULT '[]'::jsonb,
+  activities                JSONB NOT NULL DEFAULT '[]'::jsonb,
+  research_artifacts        JSONB NOT NULL DEFAULT '[]'::jsonb,
+  essay_drafts              JSONB NOT NULL DEFAULT '[]'::jsonb,
+  milestone_schedule        JSONB NOT NULL DEFAULT '[]'::jsonb,
+  spike_authenticity_score  NUMERIC(5,2) NOT NULL DEFAULT 0.00,
+  created_at                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at                TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_portfolio_profiles_token ON portfolio_profiles(student_token);
+
+-- ============================================================
 -- COMMENTS
 -- ============================================================
 
 COMMENT ON TABLE data_points IS 'Raw scraped values. Immutable — new scrape creates new row and flips is_current.';
 COMMENT ON TABLE anomalies IS 'Auto-flagged when delta > 25% from prior current value. Requires human review before applying.';
 COMMENT ON COLUMN roi_scores.ppp_factor IS 'World Bank ICP India-US PPP conversion factor at time of computation.';
+COMMENT ON TABLE course_marketplace IS 'Curated upskilling and certification catalog matched to student skill gaps.';
+COMMENT ON TABLE global_programs IS 'International university programs evaluated via cross-border Net Present Value.';
+COMMENT ON TABLE portfolio_profiles IS 'Holistic admissions portfolio tracking angular spikes, research preprints, and Common App drafts.';
+
+-- ============================================================
+-- USERS & AUTHENTICATION (OAuth2 & User Management)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS users (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email             VARCHAR(255) NOT NULL UNIQUE,
+  full_name         VARCHAR(255),
+  avatar_url        TEXT,
+  oauth_provider    VARCHAR(32) NOT NULL DEFAULT 'google',
+  oauth_id          VARCHAR(255),
+  is_premium        BOOLEAN NOT NULL DEFAULT FALSE,
+  premium_tier      VARCHAR(32) DEFAULT 'free',  -- 'free', 'pro_monthly', 'pro_lifetime'
+  premium_until     TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_oauth ON users(oauth_provider, oauth_id);
+
+CREATE TABLE IF NOT EXISTS user_saved_reports (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  report_token      VARCHAR(64) NOT NULL,
+  title             VARCHAR(255),
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, report_token)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_saved_reports ON user_saved_reports(user_id);
+
+

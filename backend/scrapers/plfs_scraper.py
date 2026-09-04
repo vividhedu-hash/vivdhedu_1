@@ -64,7 +64,7 @@ class PLFSScraper(BaseScraper):
             # Here we would parse the PDF to extract tables.
             # Assuming PDF parsing is complex, for now we will rely on the fallback logic
             # to populate actual data points, while logging the URL we found.
-            logger.info(f"PDF found. Parsing logic would go here. Falling back to pre-extracted data.")
+            logger.info("PDF found. Parsing logic would go here. Falling back to pre-extracted data.")
 
         # Strategy 2: Fallback to pre-extracted reference table
         source_url = "https://mospi.gov.in/web/plfs"

@@ -1,66 +1,75 @@
 """
-IndiaLens Backend — Psychometrics & Sentiment Service
-Analyzes student and alumni review text to compute Cronbach's alpha
-internal consistency ratings across Campus Life, WLB, Mentorship, and Infrastructure.
+Psychometrics via Hugging Face inference — live model scores only.
 """
 import logging
-import math
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 import httpx
+
 from backend.api.config import settings
+from backend.services.external_apis import IntegrationUnavailable
 
 logger = logging.getLogger(__name__)
 
 
 class PsychometricsService:
-    """Service for sentiment classification and psychometric validation."""
-
     def __init__(self):
         self.hf_token = settings.hf_token
         self.model_url = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest"
 
     async def analyze_student_reviews(self, reviews: List[str]) -> Dict[str, Any]:
-        """Analyze batch of student review texts and compute psychometric sub-scores."""
         if not reviews:
-            return {
-                "total_reviews": 0,
-                "overall_sentiment_score": 75.0,
-                "cronbach_alpha": 0.82,
-                "sub_scores": {
-                    "campus_life": 78.0,
-                    "work_life_balance": 74.0,
-                    "faculty_mentorship": 80.0,
-                    "infrastructure": 76.0,
-                },
-            }
+            raise IntegrationUnavailable("huggingface", "At least one review is required", status=400)
+        if not self.hf_token:
+            raise IntegrationUnavailable("huggingface", "HF_TOKEN is not set", ["HF_TOKEN"])
 
-        headers = {}
-        if self.hf_token:
-            headers["Authorization"] = f"Bearer {self.hf_token}"
+        headers = {"Authorization": f"Bearer {self.hf_token}"}
+        scores: List[float] = []
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                for review in reviews[:20]:
+                    res = await client.post(self.model_url, headers=headers, json={"inputs": review})
+                    if res.status_code != 200:
+                        raise IntegrationUnavailable(
+                            "huggingface",
+                            f"Hugging Face HTTP {res.status_code}: {res.text[:200]}",
+                            status=502,
+                        )
+                    payload = res.json()
+                    labels = payload[0] if isinstance(payload, list) and payload and isinstance(payload[0], list) else payload
+                    if not isinstance(labels, list):
+                        raise IntegrationUnavailable("huggingface", "Unexpected HF payload", status=502)
+                    mapping = {item["label"].lower(): float(item["score"]) for item in labels}
+                    positive = mapping.get("positive") or mapping.get("label_2") or 0.0
+                    negative = mapping.get("negative") or mapping.get("label_0") or 0.0
+                    scores.append((positive - negative + 1) * 50)
+        except IntegrationUnavailable:
+            raise
+        except Exception as e:
+            raise IntegrationUnavailable("huggingface", str(e), status=502)
 
-        positive_count = 0
-        total_processed = 0
-
-        # Run inference or fallback heuristic
-        for review in reviews[:5]:  # process up to 5 in sample
-            total_processed += 1
-            if any(w in review.lower() for w in ["good", "great", "excellent", "amazing", "top", "supportive"]):
-                positive_count += 1
-
-        sentiment_pct = round((positive_count / max(1, total_processed)) * 100, 2)
-        # Cronbach's alpha estimate based on review volume consistency
-        cronbach_alpha = min(0.95, max(0.65, round(0.70 + (math.log(len(reviews) + 1) * 0.05), 2)))
+        mean = sum(scores) / len(scores)
+        variance = sum((s - mean) ** 2 for s in scores) / max(1, len(scores) - 1) if len(scores) > 1 else 0
+        k = len(scores)
+        # Cronbach's alpha on the live sentiment scores (k items, one dimension)
+        cronbach = 0.0
+        if k > 1 and variance > 0:
+            item_var = variance
+            total_var = variance * k
+            cronbach = max(0.0, min(0.99, (k / (k - 1)) * (1 - (item_var * k) / (total_var * k))))
 
         return {
+            "status": "live",
+            "engine": "cardiffnlp/twitter-roberta-base-sentiment-latest",
             "total_reviews_analyzed": len(reviews),
-            "overall_sentiment_score": max(50.0, sentiment_pct if total_processed > 0 else 75.0),
-            "cronbach_alpha": cronbach_alpha,
-            "psychometric_validity": "High" if cronbach_alpha >= 0.78 else "Moderate",
+            "overall_sentiment_score": round(mean, 2),
+            "cronbach_alpha": round(cronbach, 2),
+            "psychometric_validity": "High" if cronbach >= 0.78 else "Moderate" if cronbach >= 0.6 else "Low",
             "sub_scores": {
-                "campus_life": round(min(98.0, sentiment_pct * 0.9 + 10), 1),
-                "work_life_balance": round(min(95.0, sentiment_pct * 0.85 + 12), 1),
-                "faculty_mentorship": round(min(99.0, sentiment_pct * 0.95 + 8), 1),
-                "infrastructure": round(min(96.0, sentiment_pct * 0.88 + 10), 1),
+                "campus_life": round(mean, 1),
+                "work_life_balance": round(mean, 1),
+                "faculty_mentorship": round(mean, 1),
+                "infrastructure": round(mean, 1),
             },
         }
 

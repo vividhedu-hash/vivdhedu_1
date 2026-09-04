@@ -1,169 +1,224 @@
 """
-IndiaLens Backend — Google Gemini AI Advisor Service
-Provides interactive student career guidance, personalized degree ROI advice,
-and structured JSON parsing of unstructured college placement reports.
+The Student Intelligence Layer — Gemini 3.7 Flash Hybrid ML-LLM Engine
+========================================================================
+Comprehensive implementation of Section 08 of The Project PRD.
+
+Features:
+1. Structured Context Injection Protocol (Section 8.2):
+   Bridges the quantitative ML pipeline with the generative reasoning layer via
+   dense JSON context packets (traits, financial constraints, academic matrix,
+   econometric evaluations, active path DAG, longitudinal memory).
+
+2. Anti-Yes-Man Fiduciary Enforcement Directives (Section 8.3):
+   - Fiduciary Prime Directive: Sole loyalty to student's 20-year net solvency
+   - Mandatory Downside-First Presentation: Lead with P10 scenario & default risk
+   - Contradiction Interception: Flags psychological contradictions (e.g. θ_risk < -1.0 with high-debt abroad)
+   - Zero Numerical Hallucination: Mandatory grounding or ML packet citation
 """
+import json
 import logging
-from typing import Dict, Any, List, Optional
-import httpx
+from typing import Any, Dict, List, Optional
+
 from backend.api.config import settings
+from backend.services.gemini_grounded import gemini_grounded
 
 logger = logging.getLogger(__name__)
 
+SYSTEM_PROMPT_CONSTRAINTS = """You are the Senior Actuarial Fiduciary & Strategic Calculator for 'The Project', India's sovereign quantitative career intelligence system.
+Your sole loyalty is to the student's 20-year net financial solvency and developmental resilience. You are strictly forbidden from flattering the student, validating unrealistic aspirations without data, or acting as an agreeable cheerleader.
+
+CORE BEHAVIORAL DIRECTIVES (MANDATORY):
+1. MANDATORY DOWNSIDE-FIRST PRESENTATION:
+   Whenever evaluating any academic program or career choice, you MUST present the P10 downside scenario, debt service burden, and loan default risk BEFORE discussing any upside potential.
+2. CONTRADICTION INTERCEPTION:
+   If the student's stated intent contradicts their quantitative psychometric traits (e.g. high risk aversion θ_risk < -0.8 paired with high debt, or low AI adaptability θ_ai < -0.5 in a high-disruption field), you MUST explicitly intervene, name the psychological contradiction, and quantify the risk in INR.
+3. ZERO NUMERICAL HALLUCINATION:
+   NEVER invent salary figures, placement percentages, or cutoff ranks. All numbers MUST be cited from the injected CONTEXT_PACKET or retrieved via live Google Search grounding.
+4. CHALLENGE PRESTIGE BIAS:
+   If the student gravitates toward a brand-name institution with poor financial ROI or high default risk over a high-NPV target or hidden gem, explicitly demonstrate the opportunity cost difference in INR.
+"""
+
 
 class GeminiAdvisorService:
-    """Service wrapping Google Gemini 1.5/2.5 Flash API via AI Studio."""
+    @staticmethod
+    def build_context_packet(
+        student_profile: Dict[str, Any],
+        top_programs: List[Dict[str, Any]],
+        traits: Optional[Dict[str, float]] = None,
+        path_dag: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Constructs the dense Context Injection Packet (PRD Section 8.2).
+        """
+        traits = traits or {
+            "theta_risk": float(student_profile.get("theta_risk", -0.4)),
+            "theta_value": float(student_profile.get("theta_value", 1.2)),
+            "theta_autonomy": float(student_profile.get("theta_autonomy", 0.5)),
+            "theta_ai": float(student_profile.get("theta_ai", 0.8)),
+        }
 
-    def __init__(self):
-        self.api_key = settings.gemini_api_key
-        self.api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+        budget_lakhs = float(student_profile.get("total_budget", 15.0))
+        budget_inr = budget_lakhs * 100000.0
+
+        return {
+            "student_token": student_profile.get("token", "anonymous-session"),
+            "psychometric_profile": traits,
+            "financial_constraints": {
+                "max_household_budget_inr": budget_inr,
+                "max_acceptable_loan_inr": float(student_profile.get("loan_amount", budget_inr * 0.7)),
+                "max_monthly_emi_tolerance_inr": float(student_profile.get("max_emi", 25000.0)),
+            },
+            "academic_reality_matrix": {
+                "exam": student_profile.get("exam", "JEE Main"),
+                "score_or_percentile": student_profile.get("percentile", 94.5),
+                "rank": student_profile.get("expected_rank", None),
+                "category": student_profile.get("category", "General"),
+                "home_state": student_profile.get("home_state", "Maharashtra"),
+                "target_degree_level": student_profile.get("degree_level", "Undergraduate B.Tech"),
+            },
+            "econometric_evaluations": GeminiAdvisorService._enrich_programs(student_profile, top_programs[:6], traits),
+            "active_path_dag": path_dag or {
+                "current_node": "EVALUATING_OPTIONS",
+                "unlocked_nodes": [p.get("college", "Target") for p in top_programs[:3]],
+            },
+            "longitudinal_memory": {
+                "user_stated_question": student_profile.get("question", "What is the optimal path for my budget and caliber?"),
+                "preferred_cities": student_profile.get("preferred_cities", ["Bengaluru", "Pune", "NCR"]),
+            },
+        }
+
+    @staticmethod
+    def _enrich_programs(
+        student_profile: Dict[str, Any],
+        programs: List[Dict[str, Any]],
+        traits: Dict[str, float],
+    ) -> List[Dict[str, Any]]:
+        from backend.ml.admissions_engine import AdmissionsPortfolioEngine
+        from backend.ml.nextgen_engine import AIJobSecurityEngine
+
+        student_rank = float(student_profile.get("expected_rank") or student_profile.get("jee_rank") or 14000.0)
+        exam_name = student_profile.get("exam", "JEE Main")
+        category = student_profile.get("category", "General")
+        home_state = student_profile.get("home_state", "Maharashtra")
+
+        enriched = []
+        for p in programs:
+            prog_copy = dict(p)
+            tier = str(prog_copy.get("tier", "2"))
+            field = prog_copy.get("field") or prog_copy.get("degree_field", "engineering-cs")
+            cost = float(prog_copy.get("total_cost_inr") or prog_copy.get("total_cost_of_degree") or 1200000.0)
+
+            # 1. Calibrate admissions probability if missing
+            if "admission_probability_pct" not in prog_copy:
+                bench = 3500.0 if tier == "1" else (18000.0 if tier == "2" else 50000.0)
+                z, prob = AdmissionsPortfolioEngine.calculate_admission_probability(
+                    expected_rank=student_rank,
+                    base_closing_rank=bench,
+                    category=category,
+                    is_home_state=(str(prog_copy.get("state", "")).lower() == home_state.lower()),
+                    exam_name=exam_name,
+                )
+                prog_copy["admission_z_score"] = z
+                prog_copy["admission_probability_pct"] = round(prob * 100.0, 1)
+
+            # 2. AI Job Security & Layoff Risk if missing
+            if "job_security_score" not in prog_copy:
+                jss = AIJobSecurityEngine.evaluate_job_security(
+                    degree_field=field,
+                    college_tier=tier,
+                    student_ai_adaptability=traits.get("theta_ai", 0.0),
+                )
+                prog_copy["job_security_score"] = jss["jss_score"]
+                prog_copy["layoff_probability_5y_pct"] = jss["layoff_probability_5y_pct"]
+
+            # 3. Monthly EMI and Default Risk
+            budget_lakhs = float(student_profile.get("total_budget", 15.0))
+            loan_p = float(student_profile.get("loan_amount") or (cost * 0.60))
+            if "monthly_emi_inr" not in prog_copy and loan_p > 0:
+                monthly_r = 0.105 / 12.0
+                n_m = 7 * 12
+                emi = (loan_p * monthly_r * ((1.0 + monthly_r) ** n_m)) / (((1.0 + monthly_r) ** n_m) - 1.0)
+                prog_copy["estimated_monthly_emi_inr"] = round(emi, 0)
+                y1_sal = float(prog_copy.get("median_salary_inr") or 750000.0)
+                take_home_m = (y1_sal / 12.0) * 0.78 * 0.88
+                dti = emi / max(1.0, take_home_m)
+                prog_copy["debt_to_income_ratio"] = round(dti, 3)
+                prog_copy["estimated_loan_default_risk_pct"] = round(min(65.0, max(2.0, (dti - 0.25) * 85.0)), 1) if dti > 0.25 else 2.0
+
+            enriched.append(prog_copy)
+        return enriched
 
     async def generate_career_advice(
         self,
         student_profile: Dict[str, Any],
         top_programs: List[Dict[str, Any]],
+        traits: Optional[Dict[str, float]] = None,
+        path_dag: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Generate personalized AI advisor advice for student profile x program options."""
-        if not self.api_key:
-            logger.info("GEMINI_API_KEY not set. Returning template AI advisor response.")
-            return {
-                "engine": "gemini-1.5-flash (fallback)",
-                "summary": f"Based on your budget of ₹{student_profile.get('total_budget', 10)} Lakhs and target in {student_profile.get('target_field', 'Engineering')}, tier-1/tier-2 programs deliver optimal 5-year IRR.",
-                "recommendations": [
-                    "Prioritize programs with high placement consistency (>85%) over brand prestige alone.",
-                    "Focus on developing specialized technical skills to mitigate 10-year AI automation exposure.",
-                    "Explore early internship opportunities in high-growth tech hubs (Bengaluru / NCR).",
-                ],
-                "risk_warning": "High tuition costs (>₹15 Lakhs) increase payback horizon beyond 4.5 years.",
-            }
-
-        prompt = f"""
-        You are IndiaLens AI, an expert quantitative career and education advisor for Indian students.
-        Analyze this student profile and top recommended college programs:
-        
-        Student Profile: {student_profile}
-        Top Recommended Programs: {top_programs}
-        
-        Provide a structured advice summary, top 3 actionable recommendations, and a key risk warning.
-        Keep advice grounded in Indian labor market realities, salary trajectories, and ROI.
         """
+        Executes grounded Socratic advisory session adhering to Section 08.
+        """
+        context_packet = self.build_context_packet(student_profile, top_programs, traits, path_dag)
+        user_question = student_profile.get("question") or "Provide an actuarial analysis of my choices and optimal strategy."
 
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}]
-        }
+        prompt = f"""{SYSTEM_PROMPT_CONSTRAINTS}
 
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                res = await client.post(
-                    f"{self.api_url}?key={self.api_key}",
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
-                )
-                if res.status_code == 200:
-                    data = res.json()
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                        return {
-                            "engine": "gemini-1.5-flash",
-                            "advice_markdown": text,
-                        }
-        except Exception as e:
-            logger.warning(f"Gemini API call failed: {e}")
+=== STRUCTURED INJECTED CONTEXT PACKET (GROUND TRUTH) ===
+{json.dumps(context_packet, indent=2)}
 
-        return {
-            "engine": "gemini-1.5-flash (fallback)",
-            "summary": "AI advisor consultation complete. Recommended prioritizing low-cost high-placement engineering programs.",
-            "recommendations": [
-                "Target tier-1/tier-2 government & autonomous institutes to maximize Net Present Value.",
-                "Upskill in cloud architecture & data engineering to protect against AI risk vectors.",
-            ],
-            "risk_warning": "Monitor economic cyclicality when choosing specialized domains.",
-        }
+=== STUDENT QUERY ===
+"{user_question}"
+
+Provide a structured fiduciary analysis:
+1. DOWNSIDE & SOLVENCY AUDIT: Analyze the P10 downside scenario, debt service load, and potential default risk across the options.
+2. PSYCHOMETRIC & CONTRADICTION CHECK: Cross-examine student's choices against their psychometric traits (θ_risk={context_packet['psychometric_profile'].get('theta_risk')}, θ_value={context_packet['psychometric_profile'].get('theta_value')}, θ_ai={context_packet['psychometric_profile'].get('theta_ai')}). Explicitly highlight any contradictions.
+3. ACTUARIAL RECOMMENDATION & ARBITRAGE: State the single highest risk-adjusted NPV pathway. If a Hidden Gem or high-ROI alternative exists, contrast it with high-cost options.
+4. TACTICAL NEXT ACTIONS: 3 concrete, mathematically grounded milestones for the next 90 days.
+
+Cite sources with URLs when referencing cutoffs or current market trends.
+"""
+        answer = await gemini_grounded.generate(prompt, timeout=45.0, require_grounding=False)
+        payload = answer.as_dict()
+        payload["summary"] = answer.text[:320]
+        payload["context_packet"] = context_packet
+        payload["model"] = settings.gemini_model
+        return payload
 
     async def generate_micro_dilemma_scenario(
         self,
         student_profile: Dict[str, Any],
         traits: Dict[str, float],
     ) -> Dict[str, Any]:
-        """Generate a personalized real-world micro-dilemma scenario based on student profile and trait estimates."""
+        """
+        Generates live generative micro-dilemma when calibrated bank items are exhausted.
+        """
         target_field = student_profile.get("twelfth_stream") or student_profile.get("target_field", "tech")
         budget = student_profile.get("total_budget", 15)
+        prompt = f"""Create ONE realistic Indian career micro-dilemma for an Item Response Theory (IRT) diagnostic.
 
-        if not self.api_key:
-            # High quality synthetic fallback dilemma tailored to stream
-            return {
-                "id": "gemini_gen_dilemma_1",
-                "trait": "risk",
-                "is_generative": True,
-                "prompt": f"You are entering the {target_field} sector with a total degree budget of ₹{budget}L. A Series-B startup in Indiranagar offers you ₹7L + ₹5L ESOPs with high autonomy, while an established MNC in Hinjewadi offers ₹10L fixed with mandatory 3-year bond. Which choice reflects your core driver?",
-                "options": [
-                    {"label": "A) Take the Indiranagar Startup — high autonomy & equity upside match my appetite", "score": 1.5, "autonomy_bias": 1.0},
-                    {"label": "B) Take the Hinjewadi MNC — fixed package and structured stability matter most", "score": -1.2, "value_bias": 0.8},
-                    {"label": "C) Negotiate with the startup for a higher cash component before deciding", "score": 0.3, "value_bias": 0.4},
-                    {"label": "D) Decline both — keep looking for remote international opportunities", "score": 0.8, "risk_bias": 0.9},
-                ],
-            }
+Field: {target_field}
+Budget (₹ Lakh): {budget}
+Current Trait estimates: {traits}
 
-        prompt = f"""
-        You are IndiaLens Dynamic CAT Diagnostic Engine.
-        Create 1 highly realistic, non-repetitive micro-dilemma scenario for an Indian student with:
-        Field/Stream: {target_field}
-        Total Budget: ₹{budget} Lakhs
-        Current Trait Estimates: {traits}
-
-        Return ONLY a JSON object with this exact structure:
-        {{
-            "id": "gemini_dilemma_dyn",
-            "trait": "risk",
-            "prompt": "Scenario text here (under 50 words, with specific INR values and realistic Indian locations/companies)",
-            "options": [
-                {{"label": "A) Option 1 text", "score": 1.2}},
-                {{"label": "B) Option 2 text", "score": -1.0}},
-                {{"label": "C) Option 3 text", "score": 0.4}},
-                {{"label": "D) Option 4 text", "score": -0.5}}
-            ]
-        }}
-        """
-
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}]
-        }
-
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                res = await client.post(
-                    f"{self.api_url}?key={self.api_key}",
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
-                )
-                if res.status_code == 200:
-                    data = res.json()
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                        # Parse JSON from response
-                        import json
-                        clean_text = text.strip().strip("```json").strip("```").strip()
-                        parsed = json.loads(clean_text)
-                        parsed["is_generative"] = True
-                        return parsed
-        except Exception as e:
-            logger.warning(f"Failed to generate Gemini scenario: {e}")
-
-        return {
-            "id": "gemini_gen_dilemma_fallback",
-            "trait": "risk",
-            "is_generative": True,
-            "prompt": f"You are evaluating opportunities in {target_field}. Would you prefer a fast-track leadership program in a Tier-2 city with ₹12L salary or a specialized AI engineer role in Bengaluru with ₹9L salary?",
-            "options": [
-                {"label": "A) Fast-track leadership in Tier-2 city — salary and career growth", "score": -0.8, "value_bias": 1.0},
-                {"label": "B) AI engineer in Bengaluru — ecosystem and technical skill development", "score": 1.2, "ai_bias": 1.5},
-                {"label": "C) Hybrid approach — start in Bengaluru, transition to leadership later", "score": 0.4, "autonomy_bias": 0.5},
-                {"label": "D) Neither — focus on higher studies (GATE/CAT/GRE)", "score": -1.0, "risk_bias": -0.5},
-            ],
-        }
+Return valid JSON:
+{{
+  "id": "gemini_dilemma_dyn",
+  "trait": "risk",
+  "type": "SJT",
+  "prompt": "under 50 words, specific INR amounts and Indian company/city scenarios",
+  "options": [
+    {{"label": "A) ...", "score": 1.2}},
+    {{"label": "B) ...", "score": -1.0}},
+    {{"label": "C) ...", "score": 0.4}},
+    {{"label": "D) ...", "score": -0.5}}
+  ]
+}}
+Do not invent ungrounded company packages."""
+        data = await gemini_grounded.generate_json(prompt, timeout=25.0, require_grounding=False)
+        data["is_generative"] = True
+        data["status"] = "live"
+        data["engine"] = settings.gemini_model
+        return data
 
 
 gemini_advisor_service = GeminiAdvisorService()
-

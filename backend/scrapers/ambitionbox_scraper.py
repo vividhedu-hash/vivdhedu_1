@@ -13,10 +13,8 @@ Data extracted:
 Rate limit: 1 request / 2s to avoid detection.
 Requires: httpx, BeautifulSoup, fake_useragent (optional)
 """
-import re
 import logging
 from typing import List, Optional, Dict
-import json
 
 from .base_scraper import BaseScraper, ScrapeResult
 
@@ -153,14 +151,13 @@ class AmbitionBoxScraper(BaseScraper):
                 continue
 
             degree_field = ROLE_TO_FIELD.get(role, "engineering-cs")
-            field_key = f"salary_{degree_field}_y{exp_min}_{exp_max}"
 
             # Store median salary as a field-level aggregate (not program-specific yet)
             # Program-specific association happens in the ML pipeline (Week 3)
             if data.get("median_salary_inr"):
                 results.append(ScrapeResult(
                     program_id=None,  # aggregate — matched to programs in ML step
-                    field_name=f"ambitionbox_median_salary",
+                    field_name="ambitionbox_median_salary",
                     raw_value=str(data["median_salary_inr"]),
                     parsed_value=float(data["median_salary_inr"]),
                     unit="INR",

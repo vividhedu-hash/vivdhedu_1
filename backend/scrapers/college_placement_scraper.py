@@ -5,7 +5,6 @@ import argparse
 import asyncio
 import logging
 import re
-import difflib
 import io
 from typing import List
 from bs4 import BeautifulSoup

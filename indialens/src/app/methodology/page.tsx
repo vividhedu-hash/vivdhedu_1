@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BookOpen, ExternalLink, Shield, AlertTriangle, CheckCircle } from "lucide-react";
+import { POSITIONING, USP_PILLARS } from "../../lib/positioning";
 
 export const metadata: Metadata = {
   title: "Methodology",
   description:
-    "Full technical documentation of how IndiaLens calculates composite ROI scores, salary trajectories, and risk indicators.",
+    "How Student-Priced ROI is calculated: 20-year NPV, P10–P90 paths, AI-occupation risk, and psychometric fit — with public weights.",
 };
 
 const SOURCES = [
@@ -148,13 +149,23 @@ export default function MethodologyPage() {
             className="font-display font-bold mb-4"
             style={{ fontSize: 36, color: "#F0F0F5", letterSpacing: "-0.025em" }}
           >
-            How IndiaLens Calculates ROI
+            How we price a student × program
           </h1>
           <p style={{ fontSize: 16, color: "#8B8BA7", lineHeight: 1.8, maxWidth: 640 }}>
-            Every composite score, salary trajectory, and risk indicator is derived
-            from this methodology. The formula is public, the weights are auditable,
-            and the uncertainty is always shown.
+            {POSITIONING.tagline} {POSITIONING.dek} Weights below are public so a family,
+            counsellor, or journalist can audit the claim — the opposite of a ranking brochure.
           </p>
+
+          <div className="grid grid-cols-1 gap-3 mt-8 mb-4">
+            {USP_PILLARS.map((pillar) => (
+              <div key={pillar.id} className="glass-card p-4">
+                <p style={{ fontSize: 14, fontWeight: 600, color: "#F0F0F5", marginBottom: 6 }}>
+                  {pillar.title}
+                </p>
+                <p style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.65 }}>{pillar.body}</p>
+              </div>
+            ))}
+          </div>
           <div
             style={{
               marginTop: 16,
@@ -165,9 +176,9 @@ export default function MethodologyPage() {
             }}
           >
             <p style={{ fontSize: 13, color: "#8B8BA7" }}>
-              <strong style={{ color: "#F0F0F5" }}>Cite this document:</strong> IndiaLens Research (2025).
-              &ldquo;IndiaLens Degree ROI Index Methodology v1.0-seed.&rdquo; Available at:
-              indialens.in/methodology
+              <strong style={{ color: "#F0F0F5" }}>Cite this document:</strong> The Project Quantitative Research (2026).
+              &ldquo;The Project Degree ROI & Actuarial Asset Pricing Methodology v2.0.&rdquo; Available at:
+              theproject.edu.in/methodology
             </p>
           </div>
         </div>

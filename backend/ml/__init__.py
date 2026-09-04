@@ -1,6 +1,13 @@
 # ml package
 from .roi_computer import compute_roi
-from .nextgen_engine import monte_carlo_engine, psychometric_match_engine, MonteCarloROIEngine, AdvancedPsychometricMatchEngine
+from .nextgen_engine import (
+    monte_carlo_engine,
+    psychometric_match_engine,
+    ai_job_security_engine,
+    MonteCarloROIEngine,
+    AdvancedPsychometricMatchEngine,
+    AIJobSecurityEngine,
+)
 
 try:
     from .feature_engine import FeatureEngine
@@ -15,7 +22,10 @@ __all__ = [
     "compute_roi",
     "monte_carlo_engine",
     "psychometric_match_engine",
+    "ai_job_security_engine",
     "MonteCarloROIEngine",
     "AdvancedPsychometricMatchEngine",
+    "AIJobSecurityEngine",
 ]
+
 

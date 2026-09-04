@@ -1,8 +1,13 @@
 """
 IndiaLens backend configuration — reads from environment variables / .env file
 """
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = BACKEND_DIR.parent
+ENV_FILES = (str(BACKEND_DIR / ".env"), str(ROOT_DIR / ".env"), ".env")
 
 
 class Settings(BaseSettings):
@@ -13,12 +18,26 @@ class Settings(BaseSettings):
     # Redis (Airflow broker + result backend)
     redis_url: str = "redis://localhost:6379/0"
 
-    # FastAPI
+    # FastAPI & Auth
     secret_key: str = "change-me-in-production-use-32-char-minimum"
+    jwt_secret: str = "the-project-jwt-secret-key-32-chars-min"
+    jwt_algorithm: str = "HS256"
+    jwt_expiration_hours: int = 168  # 7 days
     api_key_admin: str = "admin-dev-key-change-in-production"
     frontend_url: str = "http://localhost:3000"
     environment: str = "development"
     debug: bool = True
+
+    # Google OAuth
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:3000/api/auth/callback/google"
+
+    # Payment Gateways (Razorpay / Stripe)
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
 
     # Scraper settings
     user_agent: str = "IndiaLensBot/1.0 (research; contact@indialens.in)"
@@ -50,11 +69,22 @@ class Settings(BaseSettings):
 
     # AI Services
     gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.7-flash"
     hf_token: str = ""
 
+    # Email
+    resend_api_key: str = ""
+    from_email: str = ""
+
+    # Observability / cache (optional — extra env keys must not crash boot)
+    sentry_dsn: str = ""
+    upstash_redis_rest_url: str = ""
+    upstash_redis_rest_token: str = ""
+
     class Config:
-        env_file = ".env"
+        env_file = ENV_FILES
         env_file_encoding = "utf-8"
+        extra = "ignore"
 
 
 @lru_cache()

@@ -11,45 +11,19 @@ from .base_scraper import BaseScraper, ScrapeResult
 
 logger = logging.getLogger(__name__)
 
-FALLBACK_RBI_DATA = [
-    {"sector": "banking", "wage_growth_pct": 8.5},
-    {"sector": "manufacturing", "wage_growth_pct": 7.2},
-    {"sector": "it", "wage_growth_pct": 10.5},
-    {"sector": "healthcare", "wage_growth_pct": 9.1},
-]
 
 class RBIScraper(BaseScraper):
     SOURCE_NAME = "rbi"
     REQUEST_DELAY = 1.0
 
     async def scrape(self) -> List[ScrapeResult]:
-        results: List[ScrapeResult] = []
-        
-        # Try RBI API
-        try:
-            # We would normally make API calls here. For now, since endpoints are mostly unavailable, we fallback.
-            url = "https://api.rbi.org.in/api/"
-            response = await self.get(url)
-            # if successful parse it ...
-            # but usually it requires auth or specific dataset IDs
-            raise Exception("RBI API not implemented or not accessible")
-        except Exception as e:
-            logger.warning(f"[RBI] API failed: {e}. Using fallback data.")
-            rows = FALLBACK_RBI_DATA
-            
-        for row in rows:
-            results.append(ScrapeResult(
-                program_id=None,
-                field_name="rbi_wage_growth_pct",
-                raw_value=str(row["wage_growth_pct"]),
-                parsed_value=float(row["wage_growth_pct"]),
-                unit="PERCENT",
-                source_url="fallback",
-                metadata={"sector": row["sector"]}
-            ))
-
-        logger.info(f"[RBI] Total results extracted: {len(results)}")
-        return results
+        url = "https://dbie.rbi.org.in/DBIE/dbie.rbi?site=statistics"
+        response = await self.get(url)
+        # Live HTML is parsed by future MOSPI/DBIE extractors. Never invent wage series.
+        raise RuntimeError(
+            f"RBI DBIE has no public JSON API yet (HTTP {response.status_code}). "
+            "Use World Bank scraper for CPI / unemployment until a parser is wired."
+        )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

@@ -17,7 +17,7 @@ async function proxy(request: Request, path: string[], method: string) {
     method,
     headers,
     body: body || undefined,
-    timeoutMs: 20000,
+    timeoutMs: subpath.startsWith("ai/") ? 55000 : 20000,
   });
 
   if (!resp) {

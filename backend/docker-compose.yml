@@ -1,10 +1,8 @@
 version: "3.9"
 
-# ============================================================
-# IndiaLens Backend — Docker Compose
-# Services: postgres, redis, fastapi, airflow-webserver,
-#           airflow-scheduler, airflow-worker
-# ============================================================
+# OPTIONAL leftover. IndiaLens does not require Docker.
+# Database = Supabase. API = `python -m scripts.run_api`. Redis = Upstash.
+# Do not use this compose file for local development.
 
 x-airflow-common: &airflow-common
   build:

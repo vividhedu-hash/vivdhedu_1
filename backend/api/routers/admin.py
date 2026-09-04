@@ -9,11 +9,10 @@
 - GET  /admin/models               — model version history
 - POST /admin/stats                — dashboard summary stats
 """
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from typing import Optional
-from datetime import datetime
 
 from ..db.database import get_db
 from ..schemas import AnomalyReviewRequest, FeedbackCreateRequest
@@ -51,9 +50,8 @@ async def list_anomalies(
 
         rows = [dict(r._mapping) for r in result]
         return {"data": rows, "total": len(rows)}
-    except Exception:
-        # Return empty if DB unavailable
-        return {"data": [], "total": 0, "_source": "error"}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
 
 
 @router.post("/anomalies/{anomaly_id}/review")
@@ -144,8 +142,8 @@ async def list_feedback(
         """), {"status": status})
         rows = [dict(r._mapping) for r in result]
         return {"data": rows, "total": len(rows)}
-    except Exception:
-        return {"data": [], "total": 0}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
 
 
 @router.post("/feedback")
@@ -188,23 +186,21 @@ async def list_scrape_runs(
         """), {"limit": limit})
         rows = [dict(r._mapping) for r in result]
         return {"data": rows, "total": len(rows)}
-    except Exception:
-        return {"data": [], "total": 0}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
 
 
 @router.post("/scrapes/trigger")
 async def trigger_scrape(
     source: str,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     _: None = Depends(_require_admin),
 ):
-    """
-    Manually trigger a scrape run.
-    In production: sends message to Airflow DAG trigger API.
-    """
-    valid_sources = ["nirf", "ambitionbox", "naukri", "reddit", "plfs", "worldbank"]
-    if source not in valid_sources:
-        raise HTTPException(status_code=400, detail=f"Invalid source. Valid: {valid_sources}")
+    from ..scraper_jobs import VALID_SOURCES, run_scraper_job
+
+    if source not in VALID_SOURCES:
+        raise HTTPException(status_code=400, detail=f"Invalid source. Valid: {VALID_SOURCES}")
 
     try:
         result = await db.execute(text("""
@@ -212,16 +208,18 @@ async def trigger_scrape(
             VALUES (:source, 'running')
             RETURNING id
         """), {"source": source})
-        run_id = result.scalar()
+        run_id = str(result.scalar())
         await db.commit()
-        return {
-            "status": "triggered",
-            "run_id": str(run_id),
-            "source": source,
-            "message": f"Scrape run queued for {source}. Monitor at /api/admin/scrapes/{run_id}",
-        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    background_tasks.add_task(run_scraper_job, source, run_id)
+    return {
+        "status": "triggered",
+        "run_id": run_id,
+        "source": source,
+        "message": f"Scrape run queued for {source}. Poll GET /api/scrape/{run_id}",
+    }
 
 
 @router.get("/models")
@@ -235,8 +233,8 @@ async def list_models(
         """))
         rows = [dict(r._mapping) for r in result]
         return {"data": rows, "total": len(rows)}
-    except Exception:
-        return {"data": [], "total": 0}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
 
 
 @router.get("/stats")
@@ -272,11 +270,5 @@ async def dashboard_stats(
         stats["student_reports"] = r.scalar() or 0
 
         return stats
-    except Exception:
-        return {
-            "programs_indexed": 0,
-            "pending_anomalies": 0,
-            "pending_feedback": 0,
-            "last_scrape": None,
-            "student_reports": 0,
-        }
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})

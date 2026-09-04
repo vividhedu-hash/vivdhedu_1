@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { reportStore, type SavedReport } from "../../../../lib/report-store";
-import { allowMockFallback } from "../../../../lib/backend";
+import { fetchBackend, unavailablePayload } from "../../../../lib/backend";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,22 +9,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "token required" }, { status: 400 });
     }
 
-    const createdAt = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const resp = await fetchBackend("/api/analyze/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      timeoutMs: 10000,
+    });
 
-    if (allowMockFallback()) {
-      const savedRecord: SavedReport = {
-        token,
-        created_at: createdAt,
-        expires_at: expiresAt,
-        student_input: body.profile_parsed || body.student_input || {},
-        results: body,
-        _source: "mock",
-      };
-      reportStore.set(token, savedRecord);
+    if (resp?.ok) {
+      return NextResponse.json(await resp.json());
     }
 
-    return NextResponse.json({ status: "ok", token, expires_at: expiresAt });
+    const status = resp?.status && resp.status >= 400 ? resp.status : 503;
+    return NextResponse.json(unavailablePayload("Could not persist report to FastAPI"), { status });
   } catch {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

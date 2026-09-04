@@ -125,8 +125,8 @@ export default function ReportPage() {
             <p style={{ fontSize: 13, color: "#8B8BA7", marginTop: 4 }}>
               Token: <span className="font-mono" style={{ color: "#4A4A6A" }}>{token}</span> ·{" "}
               Shareable at{" "}
-              <span className="font-mono" style={{ color: "#4F6EF7" }}>
-                indialens.in/report/{token}
+              <span className="font-mono" style={{ color: "#0077C8" }}>
+                theproject.edu.in/report/{token}
               </span>
             </p>
           </div>
@@ -184,8 +184,17 @@ export default function ReportPage() {
           {/* GitHub Ecosystem & Wikidata Density */}
           <EcosystemBadge universityName="IIT Bombay" />
 
-          {/* AI Career Advisor Live Consultation Widget */}
-          <AIAdvisorWidget initialBudget={20} initialField="engineering-cs" />
+          <div className="flex items-center justify-between gap-3">
+            <AIAdvisorWidget initialBudget={20} initialField="engineering-cs" />
+          </div>
+          {token && (
+            <Link
+              href={`/advisor?token=${encodeURIComponent(token)}`}
+              className="text-sm text-indigo-300 hover:text-indigo-200"
+            >
+              Open AI Mode with this report token →
+            </Link>
+          )}
 
           {/* Multi-Directional Strategic Pathways & Macro Stress Testing */}
           <MultiDirectionalAnalysis

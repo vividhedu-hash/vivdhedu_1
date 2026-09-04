@@ -237,7 +237,6 @@ class RedditScraper(BaseScraper):
             logger.info(f"[Reddit] Scraping r/{target['sub']}")
 
             if self._reddit:
-                import asyncio
                 # PRAW is synchronous — run in executor
                 loop = __import__("asyncio").get_event_loop()
                 posts = await loop.run_in_executor(

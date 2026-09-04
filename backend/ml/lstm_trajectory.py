@@ -99,38 +99,51 @@ class LSTMTrajectoryModel:
 
     def _check_torch(self) -> bool:
         try:
-            import torch
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                import torch
             return True
-        except ImportError:
-            logger.warning("[LSTM] PyTorch not installed. Using compound growth fallback.")
+        except Exception:
+            logger.warning("[LSTM] PyTorch not available. Using compound growth fallback.")
             return False
 
-    def _build_torch_model(self, n_features: int = 15):
-        """Build PyTorch LSTM architecture."""
+    def _build_torch_model(self, n_features: int = 18):
+        """Build 2-layer BiLSTM architecture as specified in PRD Section 7.2."""
         import torch
         import torch.nn as nn
 
-        class SalaryLSTM(nn.Module):
-            def __init__(self, input_size: int, hidden_size: int = 128, n_layers: int = 2, dropout: float = 0.20):
+        class SalaryBiLSTM(nn.Module):
+            def __init__(self, input_size: int = 19):
                 super().__init__()
-                self.lstm = nn.LSTM(
+                self.bilstm1 = nn.LSTM(
                     input_size=input_size,
-                    hidden_size=hidden_size,
-                    num_layers=n_layers,
+                    hidden_size=128,
+                    num_layers=1,
                     batch_first=True,
-                    dropout=dropout if n_layers > 1 else 0.0,
+                    bidirectional=True,
                 )
-                self.dropout = nn.Dropout(dropout)
-                self.fc = nn.Linear(hidden_size, 1)
+                self.drop1 = nn.Dropout(0.25)
+                self.bilstm2 = nn.LSTM(
+                    input_size=256,  # 128 * 2 bidirectional
+                    hidden_size=64,
+                    num_layers=1,
+                    batch_first=True,
+                    bidirectional=True,
+                )
+                self.drop2 = nn.Dropout(0.20)
+                self.fc = nn.Linear(128, 1)  # 64 * 2 -> 1
 
             def forward(self, x):
                 # x: (batch, seq_len, features)
-                lstm_out, _ = self.lstm(x)
-                out = self.dropout(lstm_out)
-                return self.fc(out).squeeze(-1)   # (batch, seq_len)
+                out1, _ = self.bilstm1(x)
+                out1 = self.drop1(out1)
+                out2, _ = self.bilstm2(out1)
+                out2 = self.drop2(out2)
+                return self.fc(out2).squeeze(-1)  # (batch, seq_len)
 
         device = os.environ.get("TORCH_DEVICE", "cpu")
-        model = SalaryLSTM(input_size=n_features + 1)  # +1 for year embedding
+        model = SalaryBiLSTM(input_size=n_features + 1)  # 18 features + 1 year index
         return model.to(device)
 
     def train(self, training_data: Optional[List] = None) -> Dict:
@@ -147,12 +160,8 @@ class LSTMTrajectoryModel:
         from torch.optim import Adam
         from torch.optim.lr_scheduler import CosineAnnealingLR
 
-        from .feature_engine import FeatureEngine, SEED_TRAINING_DATA as _seed
-
-        try:
-            from .salary_predictor import SEED_TRAINING_DATA
-        except ImportError:
-            SEED_TRAINING_DATA = []
+        from .feature_engine import FeatureEngine
+        from .salary_predictor import SEED_TRAINING_PROGRAMS
 
         logger.info("[LSTM] Building synthetic training sequences...")
         device = os.environ.get("TORCH_DEVICE", "cpu")
@@ -161,42 +170,35 @@ class LSTMTrajectoryModel:
         sequences, targets = [], []
         n_years = 20
 
-        for row in SEED_TRAINING_DATA:
-            (college_name, field, tier, college_type, nirf_rank,
-             total_cost, placement_rate,
-             sal_y1, sal_y5, sal_y10, sal_y20) = row
+        for row in SEED_TRAINING_PROGRAMS:
+            college_name, field, tier, college_type, nirf_rank = row[0], row[1], row[2], row[3], row[4]
+            total_cost, placement_rate = row[5], row[6]
+            # y1, y2, y3, y5, y7, y10, y15, y20
+            anchors = {
+                1: float(row[7]), 2: float(row[8]), 3: float(row[9]), 5: float(row[10]),
+                7: float(row[11]), 10: float(row[12]), 15: float(row[13]), 20: float(row[14])
+            }
 
             program = {
+                "college_name": college_name,
                 "degree_field": field, "tier": tier, "college_type": college_type,
-                "nirf_rank": nirf_rank, "established_year": 1980, "duration_years": 4.0,
-                "naac_grade": "A" if tier == "1" else "B+",
+                "nirf_rank": nirf_rank, "established_year": 1985, "duration_years": 4.0,
                 "total_cost_of_degree_inr": total_cost, "placement_rate_pct": placement_rate,
             }
-            base_features = fe.encode_program(program)  # (15,)
+            base_features = fe.encode_program(program)  # (18,)
 
-            # Interpolate anchor points to get salary at each year
-            anchors = {1: sal_y1, 5: sal_y5, 10: sal_y10, 20: sal_y20}
+            known_yrs = sorted(anchors.keys())
+            known_vals = [anchors[y] for y in known_yrs]
+            all_years_sal = np.interp(np.arange(1, n_years + 1), known_yrs, known_vals)
 
             seq_X, seq_y = [], []
             for year in range(1, n_years + 1):
                 year_norm = year / n_years
                 feat = np.concatenate([base_features, [year_norm]]).astype(np.float32)
                 seq_X.append(feat)
+                seq_y.append(np.log1p(all_years_sal[year - 1]))
 
-                # Interpolate target salary
-                if year <= 5:
-                    t = (year - 1) / 4
-                    sal = sal_y1 + t * (sal_y5 - sal_y1)
-                elif year <= 10:
-                    t = (year - 5) / 5
-                    sal = sal_y5 + t * (sal_y10 - sal_y5)
-                else:
-                    t = (year - 10) / 10
-                    sal = sal_y10 + t * (sal_y20 - sal_y10)
-
-                seq_y.append(np.log1p(sal))
-
-            sequences.append(np.array(seq_X))   # (20, 16)
+            sequences.append(np.array(seq_X))   # (20, 19)
             targets.append(np.array(seq_y))     # (20,)
 
         X = torch.tensor(np.stack(sequences), dtype=torch.float32).to(device)
@@ -268,7 +270,7 @@ class LSTMTrajectoryModel:
         tier_boost = TIER_GROWTH_BOOST.get(tier, 1.0)
         rates = {k: v * tier_boost for k, v in rates_base.items()}
 
-        checkpoints = [1, 3, 5, 10, 15, 20]
+        checkpoints = [1, 2, 3, 5, 7, 10, 15, 20]
         result = {}
 
         for year in checkpoints:
@@ -319,7 +321,7 @@ class LSTMTrajectoryModel:
         if y1_median > 0:
             all_preds = all_preds * (base_y1 / y1_median)
 
-        checkpoints = [1, 3, 5, 10, 15, 20]
+        checkpoints = [1, 2, 3, 5, 7, 10, 15, 20]
         result = {}
         for year in checkpoints:
             if year > n_years:

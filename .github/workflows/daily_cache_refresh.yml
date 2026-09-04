@@ -11,8 +11,13 @@ jobs:
     steps:
       - name: Ping API to warm cache
         run: |
-          curl -s "$API_BASE/api/v1/colleges?limit=50" > /dev/null
-          curl -s "$API_BASE/api/v1/stats" > /dev/null
-          echo "Cache warmed successfully"
+          if [ -n "$API_BASE" ]; then
+            echo "Pinging $API_BASE to warm cache..."
+            curl -s --max-time 15 "$API_BASE/api/v1/colleges?limit=50" > /dev/null || true
+            curl -s --max-time 15 "$API_BASE/api/v1/stats" > /dev/null || true
+            echo "Cache warmed successfully"
+          else
+            echo "API_BASE_URL secret not configured; skipping warmup"
+          fi
         env:
           API_BASE: ${{ secrets.API_BASE_URL }}

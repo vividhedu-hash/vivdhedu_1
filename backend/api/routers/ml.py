@@ -13,7 +13,6 @@ from fastapi import APIRouter, Depends, HTTPException, Header, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from typing import Optional
-import asyncio
 
 from ..db.database import get_db
 from ..config import settings
@@ -75,7 +74,7 @@ async def feature_importance():
             "features": importances,
             "description": "Importance of each feature in predicting 5-year salary (y5 model). Higher = more influential.",
         }
-    except Exception as e:
+    except Exception:
         # Return static importances from seed training if model not loaded
         return {
             "model_version": settings.current_model_version,

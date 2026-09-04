@@ -5,7 +5,7 @@ export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get('title') || 'IndiaLens — Degree ROI Index';
+  const title = searchParams.get('title') || 'The Project — Education & Career Intelligence OS';
   const score = searchParams.get('score');
   const college = searchParams.get('college');
 
@@ -71,8 +71,8 @@ export async function GET(request: NextRequest) {
           width: '80%',
           justifyContent: 'center'
         }}>
-          <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#4F6EF7' }}>
-            IndiaLens.in
+          <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#0077C8' }}>
+            TheProject.edu.in
           </span>
         </div>
       </div>

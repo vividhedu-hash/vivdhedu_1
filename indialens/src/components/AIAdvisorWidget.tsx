@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { Sparkles, Send, Bot, User, AlertTriangle, ShieldCheck, Zap, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, Sparkles } from "lucide-react";
+import { GroundedAnswer } from "./GroundedAnswer";
+import { aiErrorMessage, postAi, type GroundedPayload } from "../lib/grounded";
 
 interface AIAdvisorWidgetProps {
   initialBudget?: number;
@@ -14,207 +16,88 @@ export default function AIAdvisorWidget({
   initialField = "engineering-cs",
   className = "",
 }: AIAdvisorWidgetProps) {
-  const [budget, setBudget] = useState<number>(initialBudget);
-  const [field, setField] = useState<string>(initialField);
-  const [riskTolerance, setRiskTolerance] = useState<string>("medium");
-  const [query, setQuery] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [response, setResponse] = useState<any>(null);
+  const [budget, setBudget] = useState(initialBudget);
+  const [field, setField] = useState(initialField);
+  const [risk, setRisk] = useState("medium");
+  const [loading, setLoading] = useState(false);
+  const [payload, setPayload] = useState<GroundedPayload | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const PRESET_PROMPTS = [
-    { label: "💡 Best Tech Degrees under ₹12L", budget: 12, field: "engineering-cs", risk: "medium" },
-    { label: "🛡️ Top Low-AI-Risk Fields", budget: 15, field: "medicine-mbbs", risk: "low" },
-    { label: "🚀 High Upside MBA Programs", budget: 20, field: "management-mba", risk: "high" },
-  ];
-
-  const handleConsult = async (overrideBudget?: number, overrideField?: string, overrideRisk?: string) => {
+  async function consult() {
     setLoading(true);
-    const targetBudget = overrideBudget ?? budget;
-    const targetField = overrideField ?? field;
-    const targetRisk = overrideRisk ?? riskTolerance;
-
-    try {
-      const res = await fetch("/api/v1/ai/advisor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          total_budget: targetBudget,
-          target_field: targetField,
-          risk_tolerance: targetRisk,
-          preferred_cities: ["Bengaluru", "NCR", "Hyderabad"],
-          top_programs: [
-            { degree_field: targetField, tier: "1", college_type: "public", total_cost_of_degree_inr: targetBudget * 100000 },
-          ],
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setResponse(data);
-      } else {
-        setResponse({
-          engine: "unavailable",
-          summary: "Advisor service is not available. No generated advice was substituted.",
-          recommendations: [],
-          risk_warning: "Live advisor requires the FastAPI backend.",
-        });
-      }
-    } catch (e) {
-      setResponse({
-        engine: "unavailable",
-        summary: "Advisor service is not available. No generated advice was substituted.",
-        recommendations: [],
-        risk_warning: "Live advisor requires the FastAPI backend.",
-      });
-    } finally {
-      setLoading(false);
+    setError(null);
+    const { ok, status, data } = await postAi<GroundedPayload | { detail?: { reason?: string } }>(
+      "/api/v1/ai/advisor",
+      {
+        total_budget: budget,
+        target_field: field,
+        risk_tolerance: risk,
+        preferred_cities: ["Bengaluru", "NCR", "Hyderabad"],
+        top_programs: [],
+      },
+    );
+    setLoading(false);
+    if (!ok) {
+      setPayload(null);
+      setError(aiErrorMessage(data, `Advisor unavailable (${status})`));
+      return;
     }
-  };
+    setPayload(data as GroundedPayload);
+  }
 
   return (
-    <div className={`bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur-md ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-        <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-tr from-indigo-500 to-emerald-400 text-slate-950 font-bold">
-            <Bot className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              IndiaLens AI Advisor
-              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
-                Gemini Flash 1.5
-              </span>
-            </h3>
-            <p className="text-xs text-slate-400">Quantitative Career Counseling & ROI Strategy</p>
-          </div>
+    <div className={`bg-slate-900/90 border border-slate-800 rounded-2xl p-6 ${className}`}>
+      <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+        <div>
+          <h3 className="text-lg font-bold text-white">Grounded advisor</h3>
+          <p className="text-xs text-slate-400">Gemini 3.7 Flash · Google Search citations required</p>
         </div>
       </div>
-
-      {/* Preset Quick Prompts */}
-      <div className="my-4">
-        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-          Quick Prompts
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {PRESET_PROMPTS.map((p, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                setBudget(p.budget);
-                setField(p.field);
-                setRiskTolerance(p.risk);
-                handleConsult(p.budget, p.field, p.risk);
-              }}
-              className="text-xs px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition-all flex items-center gap-1.5"
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Input Controls */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <div>
-          <label className="text-xs font-medium text-slate-300 block mb-1">Total Budget (INR Lakhs)</label>
-          <input
-            type="number"
-            min="1"
-            max="50"
-            value={budget}
-            onChange={(e) => setBudget(Number(e.target.value))}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-slate-300 block mb-1">Target Field</label>
-          <select
-            value={field}
-            onChange={(e) => setField(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-          >
-            <option value="engineering-cs">Engineering (CS / AI)</option>
-            <option value="engineering-ece">Engineering (ECE / EEE)</option>
-            <option value="management-mba">Management (MBA)</option>
-            <option value="medicine-mbbs">Medicine (MBBS)</option>
-            <option value="law">Law (BA LLB)</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-xs font-medium text-slate-300 block mb-1">Risk Appetite</label>
-          <select
-            value={riskTolerance}
-            onChange={(e) => setRiskTolerance(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-          >
-            <option value="low">Low Risk (Stable Payback)</option>
-            <option value="medium">Medium Risk (Balanced ROI)</option>
-            <option value="high">High Risk (High Optionality)</option>
-          </select>
-        </div>
+        <input
+          type="number"
+          min={1}
+          value={budget}
+          onChange={(e) => setBudget(Number(e.target.value))}
+          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
+        />
+        <select
+          value={field}
+          onChange={(e) => setField(e.target.value)}
+          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
+        >
+          <option value="engineering-cs">Engineering (CS / AI)</option>
+          <option value="management">Management</option>
+          <option value="medicine">Medicine</option>
+          <option value="law">Law</option>
+        </select>
+        <select
+          value={risk}
+          onChange={(e) => setRisk(e.target.value)}
+          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
+        >
+          <option value="low">Low risk</option>
+          <option value="medium">Medium risk</option>
+          <option value="high">High risk</option>
+        </select>
       </div>
-
       <button
-        onClick={() => handleConsult()}
+        onClick={() => void consult()}
         disabled={loading}
-        className="w-full bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-semibold py-2.5 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        {loading ? (
-          <span className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 animate-spin" />
-            Analyzing Labor Market Data...
-          </span>
-        ) : (
-          <span className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            Get AI Career & Strategy Assessment
-          </span>
-        )}
+        <Sparkles className="w-4 h-4" />
+        {loading ? "Grounding…" : "Advise with sources"}
       </button>
-
-      {/* Output Display */}
-      {response && (
-        <div className="mt-5 p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/80 pb-2">
-            <span className="flex items-center gap-1 text-indigo-400 font-semibold">
-              <Zap className="w-3.5 h-3.5" /> Engine: {response.engine}
-            </span>
-            <span>Live Analysis</span>
-          </div>
-
-          {response.advice_markdown ? (
-            <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-line font-normal">
-              {response.advice_markdown}
-            </div>
-          ) : (
-            <>
-              <p className="text-sm text-slate-200 font-medium leading-relaxed">{response.summary}</p>
-
-              {response.recommendations && (
-                <div className="space-y-1.5 pt-1">
-                  <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">
-                    Actionable Strategy Points
-                  </h4>
-                  <ul className="space-y-1 text-xs text-slate-300">
-                    {response.recommendations.map((rec: string, i: number) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="text-emerald-400 font-bold">•</span>
-                        <span>{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {response.risk_warning && (
-                <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <span>{response.risk_warning}</span>
-                </div>
-              )}
-            </>
-          )}
+      {error && (
+        <p className="mt-4 text-sm text-amber-300 flex gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          {error}
+        </p>
+      )}
+      {payload && (
+        <div className="mt-5">
+          <GroundedAnswer payload={payload} />
         </div>
       )}
     </div>

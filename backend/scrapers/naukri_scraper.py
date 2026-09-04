@@ -7,9 +7,7 @@ Uses Naukri's public job search (no auth required for basic listings).
 """
 import re
 import logging
-from typing import List, Optional, Dict, Any
-import json
-from urllib.parse import urlencode
+from typing import List, Optional, Dict
 
 from .base_scraper import BaseScraper, ScrapeResult
 

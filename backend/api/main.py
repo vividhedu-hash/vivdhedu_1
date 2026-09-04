@@ -8,6 +8,7 @@ from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -15,8 +16,9 @@ import uvicorn
 import sentry_sdk
 
 from .routers import colleges, analyze, admin, scrape, external as external_router, ai as ai_router, analytics as analytics_router
-from .db.database import init_db
+from .db.database import init_db, AsyncSessionLocal
 from .config import settings
+from .integrations import integration_status
 
 logger = logging.getLogger(__name__)
 
@@ -92,20 +94,36 @@ async def root_health():
 
 @app.get("/api/health")
 async def health():
-    """Health check — used by Docker and load balancer."""
+    """Live dependency check — used by Docker, Render, and the Next.js BFF."""
+    db_status = "disconnected"
+    program_count = None
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(text("SELECT 1"))
+            r = await db.execute(text("SELECT COUNT(*) FROM programs WHERE is_active = TRUE"))
+            program_count = int(r.scalar() or 0)
+            db_status = "connected"
+    except Exception:
+        db_status = "error"
+
     try:
         from ..ml.salary_predictor import get_predictor
         predictor = get_predictor(settings.current_model_version)
-        ml_status = "ready" if predictor.models else "seed_only"
+        ml_status = "ready" if predictor.models else "untrained"
     except Exception:
         ml_status = "unavailable"
 
+    integrations = integration_status()
+    status = "ok" if db_status == "connected" else "degraded"
     return {
-        "status": "ok",
-        "version": "2.0.0-week3",
+        "status": status,
+        "version": "2.0.0",
         "model_version": settings.current_model_version,
         "ml_status": ml_status,
-        "db": "connected",
+        "db": db_status,
+        "programs": program_count,
+        "integrations": integrations,
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 
@@ -118,6 +136,23 @@ app.include_router(external_router.router, prefix="/api/v1", tags=["external"])
 app.include_router(ai_router.router,       prefix="/api/v1", tags=["ai"])
 app.include_router(analytics_router.router, prefix="/api/v1/analytics", tags=["analytics"])
 
+# New Production Routers: Marketplace, Global Degrees, Portfolio Spike Studio, Psychometric, Admissions
+try:
+    from .routers import marketplace as marketplace_router
+    from .routers import global_programs as global_programs_router
+    from .routers import portfolio as portfolio_router
+    from .routers import psychometric as psychometric_router
+    from .routers import admissions as admissions_router
+
+    app.include_router(marketplace_router.router, prefix="/api/v2", tags=["marketplace"])
+    app.include_router(global_programs_router.router, prefix="/api/v2", tags=["global_programs"])
+    app.include_router(portfolio_router.router, prefix="/api/v2", tags=["portfolio"])
+    app.include_router(psychometric_router.router, tags=["psychometric"])
+    app.include_router(admissions_router.router, prefix="/api/v2", tags=["admissions"])
+    logger.info("[Main] Production routers (Marketplace, Global, Portfolio, Psychometric, Admissions) mounted at /api/v2")
+except Exception as e:
+    logger.warning(f"[Main] Production routers not mounted: {e}")
+
 # Week 3: ML management endpoints
 try:
     from .routers import ml as ml_router
@@ -125,6 +160,15 @@ try:
     logger.info("[Main] ML router mounted at /api/ml")
 except Exception as e:
     logger.warning(f"[Main] ML router not mounted: {e}")
+
+# Authentication & OAuth 2.0 Router
+try:
+    from .routers import auth as auth_router
+    app.include_router(auth_router.router, prefix="/api/v1", tags=["auth"])
+    logger.info("[Main] Auth & OAuth router mounted at /api/v1/auth")
+except Exception as e:
+    logger.warning(f"[Main] Auth router not mounted: {e}")
+
 
 
 if __name__ == "__main__":

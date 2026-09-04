@@ -6,7 +6,6 @@ import {
   Brain,
   Shield,
   TrendingUp,
-  Database,
   Cpu,
   ChevronRight,
   CheckCircle,
@@ -15,31 +14,31 @@ import {
 } from "lucide-react";
 import { CollegeCard } from "@/components/CollegeCard";
 import { fetchCollegeList } from "../lib/live-colleges";
+import { COMPETITIVE_CONTRAST, POSITIONING, USP_PILLARS } from "../lib/positioning";
 
 export const metadata: Metadata = {
-  title: "IndiaLens — Does your degree actually pay off?",
-  description:
-    "Salary data, placement rates, and 20-year career projections for every major Indian college and degree. No opinion. Just numbers.",
+  title: "The Project — Rankings measure institutions. The Project measures the student.",
+  description: POSITIONING.oneSentence,
 };
 
 const HOW_IT_WORKS = [
   {
     step: "01",
-    title: "We pull from 12 sources",
-    desc: "NIRF, AmbitionBox, Naukri, Glassdoor India, PLFS, World Bank — scraped fresh every week. Reddit salary threads included.",
-    icon: <Database size={20} />,
+    title: "Condition on you",
+    desc: "Academics, budget, loan, city, and an adaptive psychometric — not a one-rank-fits-all list. The same program is a different asset for different buyers.",
+    icon: <Brain size={20} />,
   },
   {
     step: "02",
-    title: "We run the numbers",
-    desc: "Six variables weighted against each other: salary, job security, career ceiling, flexibility, satisfaction, and alumni network.",
+    title: "Price the asset",
+    desc: "20-year NPV and IRR versus a no-degree PLFS baseline, with P10–P90 salary paths. Median package is one point on a distribution, not the answer.",
     icon: <Cpu size={20} />,
   },
   {
     step: "03",
-    title: "You see everything",
-    desc: "Every score shows its source. Every salary range shows where it came from. No hidden formula.",
-    icon: <Brain size={20} />,
+    title: "Stress the tails",
+    desc: "AI-occupation automation (Oxford O*NET × Indian roles) plus recession and AI-shock scenarios. If it only works in the brochure year, it is not priced.",
+    icon: <Shield size={20} />,
   },
 ];
 
@@ -82,9 +81,9 @@ export default async function LandingPage() {
                 marginBottom: 24,
               }}
             >
-              Does your degree
+              {POSITIONING.headlineLead}
               <br />
-              <span className="gradient-text-blue">actually pay off?</span>
+              <span className="gradient-text-blue">{POSITIONING.headlineAccent}</span>
             </h1>
 
             <p
@@ -99,9 +98,8 @@ export default async function LandingPage() {
                 marginBottom: 36,
               }}
             >
-              Salary data, placement rates, and 20-year career trajectories for every major
-              Indian college and degree combination.{" "}
-              <span style={{ color: "#F0F0F5" }}>No guesswork. No PR.</span>
+              {POSITIONING.dek}{" "}
+              <span style={{ color: "#F0F0F5" }}>{POSITIONING.tagline}</span>
             </p>
 
             {/* CTAs */}
@@ -110,7 +108,7 @@ export default async function LandingPage() {
               style={{ opacity: 0, animationFillMode: "forwards" }}
             >
               <Link href="/analyze" className="btn-primary" style={{ fontSize: 15, padding: "13px 28px" }}>
-                Check my degree&apos;s ROI
+                Price my degree
                 <ArrowRight size={16} />
               </Link>
               <Link href="/explore" className="btn-secondary" style={{ fontSize: 15, padding: "12px 24px" }}>
@@ -129,10 +127,10 @@ export default async function LandingPage() {
               }}
             >
               {[
-                { value: "55", label: "Colleges" },
-                { value: "73", label: "Programs" },
-                { value: "12", label: "Data sources" },
-                { value: "Free", label: "Forever" },
+                { value: String(featured.total || "—"), label: "Programs priced" },
+                { value: "P10–P90", label: "Not the median" },
+                { value: "You × program", label: "Unit of analysis" },
+                { value: "3", label: "Macro scenarios" },
               ].map((stat) => (
                 <div key={stat.label}>
                   <div
@@ -166,11 +164,84 @@ export default async function LandingPage() {
                 The placement brochure is not a salary guarantee.
               </span>{" "}
               Median first-year salary at a &quot;100% placement&quot; college can range from ₹2.4L to ₹18L
-              depending on the stream and batch year. We show you the real distribution.
+              depending on the stream and batch year. Aggregators still sell the median. We price the distribution.
             </span>
           </div>
         </div>
       </div>
+
+      {/* ── USP: STUDENT-PRICED ROI ───────────────────────────────────── */}
+      <section style={{ padding: "72px 0 24px" }}>
+        <div className="container-lg">
+          <p
+            className="text-xs font-semibold uppercase tracking-wider mb-2"
+            style={{ color: "#4F6EF7", letterSpacing: "0.1em" }}
+          >
+            {POSITIONING.uspName}
+          </p>
+          <h2
+            className="font-display mb-4"
+            style={{ fontSize: 32, fontWeight: 700, color: "#F0F0F5", letterSpacing: "-0.02em", maxWidth: 720 }}
+          >
+            {POSITIONING.tagline}
+          </h2>
+          <p style={{ fontSize: 16, color: "#8B8BA7", lineHeight: 1.75, maxWidth: 680, marginBottom: 40 }}>
+            {POSITIONING.analog}
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+            {USP_PILLARS.map((pillar) => (
+              <div key={pillar.id} className="glass-card p-6">
+                <h3 className="font-display font-semibold mb-2" style={{ fontSize: 18, color: "#F0F0F5" }}>
+                  {pillar.title}
+                </h3>
+                <p style={{ fontSize: 14, color: "#8B8BA7", lineHeight: 1.7 }}>{pillar.body}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="glass-card overflow-hidden" style={{ padding: 0, overflowX: "auto" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(120px, 0.9fr) 1.2fr 1.3fr",
+                gap: 0,
+                fontSize: 13,
+              }}
+            >
+              <div style={{ padding: "12px 20px", color: "#4A4A6A", borderBottom: "1px solid #1E1E2E" }}>
+                Lens
+              </div>
+              <div style={{ padding: "12px 20px", color: "#4A4A6A", borderBottom: "1px solid #1E1E2E" }}>
+                Rankings & aggregators
+              </div>
+              <div style={{ padding: "12px 20px", color: "#0077C8", borderBottom: "1px solid #1E1E2E", fontWeight: 600 }}>
+                The Project
+              </div>
+              {COMPETITIVE_CONTRAST.map((row) => (
+                <div key={row.dimension} style={{ display: "contents" }}>
+                  <div
+                    style={{
+                      padding: "14px 20px",
+                      color: "#F0F0F5",
+                      fontWeight: 600,
+                      borderBottom: "1px solid #1E1E2E",
+                    }}
+                  >
+                    {row.dimension}
+                  </div>
+                  <div style={{ padding: "14px 20px", color: "#8B8BA7", borderBottom: "1px solid #1E1E2E" }}>
+                    {row.others}
+                  </div>
+                  <div style={{ padding: "14px 20px", color: "#C5CBE8", borderBottom: "1px solid #1E1E2E" }}>
+                    {row.us}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── ROI TEASER ──────────────────────────────────────────────── */}
       <section style={{ padding: "64px 0" }}>
@@ -246,13 +317,13 @@ export default async function LandingPage() {
               className="text-xs font-semibold uppercase tracking-wider mb-2"
               style={{ color: "#F7C94F", letterSpacing: "0.1em" }}
             >
-              What IndiaLens does
+              {POSITIONING.uspName} in product
             </p>
             <h2
               className="font-display"
               style={{ fontSize: 32, fontWeight: 700, color: "#F0F0F5", letterSpacing: "-0.02em" }}
             >
-              Three tools. One decision.
+              One engine. Three questions.
             </h2>
           </div>
 
@@ -261,27 +332,26 @@ export default async function LandingPage() {
               {
                 icon: <BarChart2 size={22} />,
                 color: "#4F6EF7",
-                title: "College Index",
-                desc: "Every major Indian college ranked by actual post-placement salaries, not brochure numbers. Updated weekly. Filter by stream, city, and fee budget.",
+                title: "Program asset index",
+                desc: "Programs scored as cash-flow assets — NPV, placement, and risk — not as NIRF neighbours. Filter by stream, city, and fee. The rank is the residual after cost and downside.",
                 href: "/explore",
-                cta: "Browse the index",
+                cta: "Open the index",
               },
               {
                 icon: <Brain size={22} />,
                 color: "#22C55E",
-                title: "Your personal ROI",
-                desc: "Enter your marks, budget, and what you want from life. Get a ranked list of programs with 20-year salary curves and honest risk scores — in 3 minutes.",
+                title: "Student-priced report",
+                desc: "Adaptive diagnostic + budget + academics. Output is a ranked book of programs with 20-year curves, fit vectors, and what you forgo by picking the wrong one.",
                 href: "/analyze",
-                cta: "Calculate my ROI",
+                cta: "Price my degree",
               },
               {
                 icon: <TrendingUp size={22} />,
                 color: "#F7C94F",
-                title: "AI Job Risk Tracker",
-                desc: "Which careers are being automated fastest in India? District-level signals from 40,000+ weekly job postings and live Reddit salary threads.",
-                href: "#",
-                cta: "Coming soon",
-                disabled: true,
+                title: "Scenario & counterfactual",
+                desc: "Base / AI-shock / recession paths, plus side-by-side NPV deltas. If a private ₹24L CSE only wins in the brochure year, the stress test shows it.",
+                href: "/compare",
+                cta: "Run a comparison",
               },
             ].map((product) => (
               <div key={product.title} className="glass-card p-6">
@@ -310,7 +380,7 @@ export default async function LandingPage() {
                 <p style={{ fontSize: 14, color: "#8B8BA7", lineHeight: 1.7, marginBottom: 20 }}>
                   {product.desc}
                 </p>
-                {product.disabled ? (
+                {("disabled" in product && product.disabled) ? (
                   <span className="badge badge-gold">{product.cta}</span>
                 ) : (
                   <Link
@@ -343,13 +413,13 @@ export default async function LandingPage() {
               className="text-xs font-semibold uppercase tracking-wider mb-2"
               style={{ color: "#8B8BA7", letterSpacing: "0.1em" }}
             >
-              Where the data comes from
+              Method, not marketing
             </p>
             <h2
               className="font-display"
               style={{ fontSize: 32, fontWeight: 700, color: "#F0F0F5", letterSpacing: "-0.02em" }}
             >
-              How we build the picture
+              How a student gets priced
             </h2>
           </div>
 

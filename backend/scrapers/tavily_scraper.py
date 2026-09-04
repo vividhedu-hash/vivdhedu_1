@@ -4,7 +4,6 @@ Tavily Search API Scraper — 1,000 FREE searches/month, no credit card.
 import asyncio
 import os
 import logging
-import httpx
 from typing import List
 from .base_scraper import BaseScraper, ScrapeResult
 
@@ -171,7 +170,7 @@ class TavilyScraper(BaseScraper):
                 
                 if parsed.get("median_salary"):
                     field_name = (
-                        f"tavily_placement_salary" 
+                        "tavily_placement_salary" 
                         if query_config["data_type"] == "placement_salary"
                         else "tavily_market_salary"
                     )

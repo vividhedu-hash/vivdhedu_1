@@ -1,49 +1,75 @@
 """
-/api/v1/external — Router for external open data APIs
-- GET /external/data-gov    — AISHE higher education & MoSPI datasets
-- GET /external/job-market  — Adzuna & JSearch real-time city demand & salaries
-- GET /external/ecosystem   — GitHub developer activity & Wikidata alumni network
+/api/v1/external — live open-data APIs. Fail closed when keys or upstreams are missing.
 """
-from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
-from typing import Optional
-from backend.services.external_apis import external_api_service
+from fastapi import APIRouter, HTTPException, Query
+
+from backend.services.external_apis import IntegrationUnavailable, external_api_service
 from backend.services.tavily_auto_service import tavily_auto_service
 
 router = APIRouter(prefix="/external", tags=["External APIs"])
 
 
+def _raise(exc: IntegrationUnavailable):
+    raise HTTPException(status_code=exc.status, detail=exc.as_http_detail())
+
+
 @router.get("/data-gov")
 async def get_data_gov_trends(limit: int = Query(10, ge=1, le=100)):
-    """Fetch live or benchmarked higher education statistics from Data.gov.in (OGD platform)."""
-    return await external_api_service.fetch_data_gov_aishe(limit=limit)
+    try:
+        return await external_api_service.fetch_data_gov_aishe(limit=limit)
+    except IntegrationUnavailable as e:
+        _raise(e)
 
 
 @router.get("/job-market")
 async def get_job_market_demand(
-    background_tasks: BackgroundTasks,
-    field: str = Query("engineering-cs", description="Target academic degree field"),
-    city: str = Query("bengaluru", description="Target Indian city hub"),
+    field: str = Query("engineering-cs"),
+    city: str = Query("bengaluru"),
 ):
-    """Fetch active hiring postings and salary benchmarks from Adzuna / JSearch API."""
-    background_tasks.add_task(
-        tavily_auto_service.auto_trigger_for_college,
-        f"India {city}",
-        field,
-        f"India {field} salary {city} freshers 2024 placement average CTC",
-    )
-    return await external_api_service.fetch_job_market_metrics(field=field, city=city)
+    try:
+        result = await external_api_service.fetch_job_market_metrics(field=field, city=city)
+        if result.get("status") == "live":
+            try:
+                await tavily_auto_service.auto_trigger_for_college(
+                    f"India {city}",
+                    field,
+                    f"India {field} salary {city} freshers placement average CTC",
+                )
+            except Exception:
+                pass
+        return result
+    except IntegrationUnavailable as e:
+        _raise(e)
 
 
 @router.get("/ecosystem")
 async def get_university_ecosystem(
-    university_name: str = Query("IIT Bombay", description="Target university or college name"),
+    university_name: str = Query("IIT Bombay"),
 ):
-    """Fetch GitHub open-source activity and Wikidata university alumni metadata."""
-    github_data = await external_api_service.fetch_github_ecosystem(query=university_name)
-    wikidata_data = await external_api_service.fetch_wikidata_university(university_name=university_name)
+    github_error = None
+    wikidata_error = None
+    github_data = None
+    wikidata_data = None
+    try:
+        github_data = await external_api_service.fetch_github_ecosystem(query=university_name)
+    except IntegrationUnavailable as e:
+        github_error = e.as_http_detail()
+    try:
+        wikidata_data = await external_api_service.fetch_wikidata_university(university_name=university_name)
+    except IntegrationUnavailable as e:
+        wikidata_error = e.as_http_detail()
+
+    if github_data is None and wikidata_data is None:
+        raise HTTPException(status_code=502, detail={
+            "error": "integration_unavailable",
+            "integration": "ecosystem",
+            "github": github_error,
+            "wikidata": wikidata_error,
+        })
 
     return {
         "university": university_name,
-        "github": github_data,
-        "wikidata": wikidata_data,
+        "github": github_data or github_error,
+        "wikidata": wikidata_data or wikidata_error,
+        "_source": "live",
     }

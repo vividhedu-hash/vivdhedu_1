@@ -50,6 +50,28 @@ def test_external_ecosystem_no_invented_fallback():
         assert github.get("source") != "github_fallback"
 
 
+def test_ai_status_reports_engine():
+    response = client.get("/api/v1/ai/status")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["engine"]
+    assert "configured" in data
+    assert data["grounding"] == "google_search"
+
+
+def test_ai_mode_fail_closed():
+    response = client.post("/api/v1/ai/mode", json={"query": "NIRF 2025 CSE payback for NIT Trichy"})
+    assert response.status_code in (200, 502, 503)
+    if response.status_code != 200:
+        detail = response.json().get("detail", {})
+        assert detail.get("integration") == "gemini"
+        assert "GEMINI_API_KEY" in str(detail.get("missing_env", [])) or "gemini" in str(detail).lower()
+    else:
+        data = response.json()
+        assert data.get("grounded") is True
+        assert data.get("citations")
+
+
 def test_ai_advisor_fail_closed():
     payload = {
         "total_budget": 12.5,

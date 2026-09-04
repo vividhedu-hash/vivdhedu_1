@@ -32,6 +32,9 @@ wheels/
 .pytest_cache/
 .coverage
 htmlcov/
+backend/ml/artifacts/*.pkl
+patch_*.py
+prd_builder/
 
 # Node / Next.js
 node_modules/

@@ -4,7 +4,7 @@ import { fetchCollegeList } from "../../lib/live-colleges";
 import type { CollegeDegreeRecord } from "../../lib/mock-data";
 
 export const metadata = {
-  title: "Compare Colleges & Degrees | IndiaLens",
+  title: "Compare Colleges & Degrees | The Project",
   description: "Compare up to 4 Indian college programs side-by-side on 20-Year NPV, placement consistency, fees, and AI risk exposure.",
 };
 
@@ -48,7 +48,7 @@ export default async function ComparePage() {
             </h1>
             <p className="text-slate-400 text-sm mt-1">
               {listed.source === "database"
-                ? "Live programs from the IndiaLens index."
+                ? "Live programs from The Project quantitative index."
                 : "Local demo data — set FASTAPI_URL to load the live index."}
             </p>
           </div>
@@ -73,7 +73,7 @@ export default async function ComparePage() {
             href="/advisor"
             className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-emerald-400 text-slate-950 font-bold text-xs rounded-xl hover:opacity-90 transition-all shrink-0"
           >
-            Consult AI Advisor
+            Open AI Mode
           </a>
         </div>
       </div>

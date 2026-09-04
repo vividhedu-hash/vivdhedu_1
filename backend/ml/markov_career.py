@@ -202,6 +202,24 @@ class CareerMarkovModel:
         probs = state_counts / n_simulations
         return pd.DataFrame(probs, columns=STATES, index=range(n_years + 1))
 
+    def analytical_transition(self, n_years: int = 20, start_state: str = "Fresher") -> pd.DataFrame:
+        """
+        PRD Equation 7.2:
+        π(t) = π(0) · P^t
+        Exact closed-form state probabilities via matrix exponentiation.
+        """
+        start_idx = STATE_IDX[start_state]
+        pi_0 = np.zeros(N_STATES, dtype=np.float64)
+        pi_0[start_idx] = 1.0
+
+        records = [pi_0.copy()]
+        for t in range(1, n_years + 1):
+            P_t = np.linalg.matrix_power(self.T, t)
+            pi_t = pi_0 @ P_t
+            records.append(pi_t)
+
+        return pd.DataFrame(records, columns=STATES, index=range(n_years + 1))
+
     def expected_time_to_state(self, target_state: str, n_years: int = 20) -> float:
         """
         Expected years to first reach target_state.

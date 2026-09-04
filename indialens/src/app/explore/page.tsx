@@ -84,7 +84,7 @@ function downloadCSV(data: CollegeDegreeRecord[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `indialens-roi-index-${new Date().toISOString().split("T")[0]}.csv`;
+  a.download = `theproject-roi-index-${new Date().toISOString().split("T")[0]}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -576,7 +576,7 @@ export default function ROIIndexPage() {
           style={{ color: "#4A4A6A", textAlign: "center" }}
         >
           Showing {table.getRowModel().rows.length} of {allData.length} programs ·
-          Composite scores calculated per IndiaLens v1 methodology ·{" "}
+          Composite scores calculated per The Project quantitative methodology ·{" "}
           <Link href="/methodology" style={{ color: "#4F6EF7", textDecoration: "none" }}>
             See formula
           </Link>

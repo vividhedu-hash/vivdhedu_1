@@ -1,12 +1,19 @@
 """
-/api/v1/ai — Router for AI Advisor & Psychometrics endpoints
-- POST /ai/advisor       — Google Gemini 1.5 Flash interactive career counseling
-- POST /ai/psychometrics — Hugging Face sentiment & Cronbach's alpha scoring
+/api/v1/ai — Gemini 3.7 Flash (Search-grounded) + psychometrics + CAT.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.api.config import settings
+from ..db.database import get_db
 from backend.services.gemini_advisor import gemini_advisor_service
+from backend.services.gemini_grounded import gemini_grounded
+from backend.services.personal_intelligence import (
+    build_personal_intelligence,
+    get_personal_intelligence,
+)
 from backend.services.adaptive_cat import adaptive_cat_service
 from backend.services.psychometrics import psychometrics_service
 from backend.services.external_apis import IntegrationUnavailable
@@ -20,6 +27,18 @@ class AdvisorRequest(BaseModel):
     risk_tolerance: str = Field("medium", description="Risk tolerance: low, medium, high")
     preferred_cities: List[str] = Field(default_factory=lambda: ["Bengaluru", "NCR"])
     top_programs: List[Dict[str, Any]] = Field(default_factory=list)
+    question: Optional[str] = None
+
+
+class ModeRequest(BaseModel):
+    query: str = Field(..., min_length=3, max_length=2000)
+    context: Optional[Dict[str, Any]] = None
+
+
+class IntelligenceRequest(BaseModel):
+    token: Optional[str] = None
+    profile: Dict[str, Any] = Field(default_factory=dict)
+    question: Optional[str] = None
 
 
 class PsychometricsRequest(BaseModel):
@@ -32,15 +51,75 @@ class CATItemRequest(BaseModel):
     response_history: List[Dict[str, Any]] = Field(default_factory=list)
 
 
+@router.get("/status")
+async def ai_status():
+    return {
+        "engine": settings.gemini_model,
+        "grounding": "google_search",
+        "configured": bool(settings.gemini_api_key),
+    }
+
+
+@router.post("/mode")
+async def ai_mode(payload: ModeRequest):
+    """Google AI Mode equivalent: Gemini 3.7 Flash + live Search citations."""
+    extra = ""
+    if payload.context:
+        extra = f"\nStudent context (user-stated): {payload.context}\n"
+    prompt = f"""Answer this India higher-education / career question with live web evidence.
+
+Question: {payload.query}
+{extra}
+Structure:
+- Direct answer (2–6 sentences)
+- What is verified vs unverified
+- What the student should do next (max 3 bullets)
+Cite sources. Do not invent ranks, fees, or CTC."""
+    try:
+        answer = await gemini_grounded.generate(prompt, timeout=45.0, require_grounding=True)
+        return answer.as_dict()
+    except IntegrationUnavailable as e:
+        raise HTTPException(status_code=e.status, detail=e.as_http_detail())
+
+
+@router.post("/intelligence")
+async def create_personal_intelligence(
+    payload: IntelligenceRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Psychometric + catalog + Search-grounded academic path for one student."""
+    try:
+        return await build_personal_intelligence(
+            db=db,
+            profile=payload.profile,
+            token=payload.token,
+            question=payload.question,
+        )
+    except IntegrationUnavailable as e:
+        raise HTTPException(status_code=e.status, detail=e.as_http_detail())
+
+
+@router.get("/intelligence/{token}")
+async def read_personal_intelligence(token: str, db: AsyncSession = Depends(get_db)):
+    try:
+        row = await get_personal_intelligence(db, token)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
+    if not row:
+        raise HTTPException(status_code=404, detail="Intelligence record not found")
+    return row
+
+
 @router.post("/advisor")
 async def consult_ai_advisor(payload: AdvisorRequest):
-    """Consult Google Gemini AI Advisor for personalized degree ROI & career strategy."""
     student_profile = {
         "total_budget": payload.total_budget,
         "target_field": payload.target_field,
         "risk_tolerance": payload.risk_tolerance,
         "preferred_cities": payload.preferred_cities,
     }
+    if payload.question:
+        student_profile["question"] = payload.question
     try:
         return await gemini_advisor_service.generate_career_advice(
             student_profile=student_profile,

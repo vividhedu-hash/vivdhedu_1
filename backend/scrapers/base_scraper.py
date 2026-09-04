@@ -13,7 +13,6 @@ import random
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
-from datetime import datetime
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -119,7 +118,7 @@ class BaseScraper(ABC):
                 response = await self._client.post(url, **kwargs)
                 response.raise_for_status()
                 return response
-            except Exception as e:
+            except Exception:
                 if attempt == self.MAX_RETRIES - 1:
                     raise
                 await asyncio.sleep(2 ** attempt)
@@ -134,7 +133,50 @@ class BaseScraper(ABC):
 
         for result in results:
             try:
+                college_name = (result.metadata or {}).get("college_name")
+                if result.field_name == "nirf_rank" and college_name and result.parsed_value is not None:
+                    await self.db.execute(text("""
+                        UPDATE colleges
+                        SET nirf_rank = :rank, updated_at = NOW()
+                        WHERE short_name ILIKE :name OR full_name ILIKE :like
+                    """), {
+                        "rank": int(result.parsed_value),
+                        "name": college_name,
+                        "like": f"%{college_name}%",
+                    })
+                    self.stats.records_updated += 1
+                    self.stats.records_scraped += 1
+                    continue
+
                 if not result.program_id:
+                    continue
+
+                is_uuid = False
+                try:
+                    import uuid as _uuid
+                    _uuid.UUID(str(result.program_id))
+                    is_uuid = True
+                except (ValueError, TypeError):
+                    is_uuid = False
+
+                if not is_uuid:
+                    await self.db.execute(text("""
+                        UPDATE macro_indicators SET is_current = FALSE
+                        WHERE field_name = :field AND is_current = TRUE
+                    """), {"field": result.field_name})
+                    await self.db.execute(text("""
+                        INSERT INTO macro_indicators
+                            (scrape_run_id, field_name, parsed_value, unit, source_url, is_current)
+                        VALUES (:run_id, :field, :parsed, :unit, :url, TRUE)
+                    """), {
+                        "run_id": self.run_id,
+                        "field": result.field_name,
+                        "parsed": result.parsed_value,
+                        "unit": result.unit,
+                        "url": result.source_url,
+                    })
+                    self.stats.records_updated += 1
+                    self.stats.records_scraped += 1
                     continue
 
                 # Check for anomaly before storing
