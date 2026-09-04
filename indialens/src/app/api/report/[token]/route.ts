@@ -16,9 +16,9 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
   if (resp?.ok) {
     return NextResponse.json(await resp.json());
   }
-  if (resp?.status === 404) {
+  if (resp?.status === 404 || !resp) {
     return NextResponse.json({ error: "Report not found or expired" }, { status: 404 });
   }
 
-  return NextResponse.json(unavailablePayload("Report service unavailable"), { status: 503 });
+  return NextResponse.json({ error: "Report not found" }, { status: 404 });
 }

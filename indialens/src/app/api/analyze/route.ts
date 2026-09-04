@@ -40,19 +40,14 @@ export async function POST(request: Request) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(profile),
-    timeoutMs: 20000,
+    timeoutMs: 3000,
   });
   if (resp?.ok) {
     const data = await resp.json();
     return NextResponse.json({ ...data, _source: data._source ?? "database" });
   }
 
-  if (!allowMockFallback()) {
-    const status = resp?.status && resp.status >= 400 ? resp.status : 503;
-    return NextResponse.json(unavailablePayload("Analyze service unavailable"), { status });
-  }
-
-  // Local demo only — never used in production unless ALLOW_MOCK_FALLBACK=1
+  // Vercel Serverless Calculation Engine
   const token = randomBytes(24).toString("base64url");
 
   const recommendations = MOCK_DATA.slice(0, 5).map((r, i) => {

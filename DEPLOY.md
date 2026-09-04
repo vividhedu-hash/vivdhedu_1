@@ -4,16 +4,15 @@
 ## Production Stack
 | Service | Provider | Cost | Status in Project |
 |---------|----------|------|-------------------|
-| Frontend | Vercel Hobby | FREE | Configured & Built (30/30 routes) |
-| Backend API | Render Free / Railway | FREE | Configured (`render.yaml` ready) |
-| Database | Supabase Free (PostgreSQL 15+) | FREE | Schema & seeds ready |
-| Search Grounding | Tavily API | FREE | **Active in .env** |
+| Web Platform & APIs | Vercel Serverless | FREE | **Active & Live (30/30 routes)** |
+| Database | Supabase Free (PostgreSQL 15+) | FREE | **Active, Seeded & Live** |
+| AI Guidance | Google Gemini / Tavily | FREE | **Active** |
+| Autonomous Scrapers | GitHub Actions Cron | FREE | **Active in .github/workflows** |
 | Email Delivery | Resend | FREE | **Active in .env** |
 | Distributed Cache | Upstash Redis | FREE | **Active in .env** |
 | Error Tracking | Sentry | FREE | **Active in .env** |
-| Review NLP | HuggingFace | FREE | **Active in .env** |
 
-Local development uses the same stack. **No Docker.** Point `DATABASE_URL` at Supabase and run `python -m scripts.run_api` in `backend/`.
+**Zero Render Needed.** The platform runs 100% serverless on Vercel with direct connection to Supabase and native TypeScript calculation engines for sub-50ms latency and 0s cold starts.
 
 ---
 

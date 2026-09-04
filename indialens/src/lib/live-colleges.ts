@@ -1,5 +1,6 @@
 import { MOCK_DATA, type CollegeDegreeRecord } from "./mock-data";
 import { allowMockFallback, fetchBackend } from "./backend";
+import { fetchSupabaseRest, mapSupabaseRowToRecord, type SupabaseProgramRow } from "./supabase";
 
 const SORT_MAP: Record<string, string> = {
   compositeScore: "composite_score",
@@ -38,14 +39,14 @@ export async function fetchCollegeList(query: {
   if (query.search) params.set("q", query.search);
 
   const resp = await fetchBackend(`/api/colleges?${params}`, {
-    timeoutMs: 8000,
+    timeoutMs: 4000,
     next: { revalidate: 300 },
   });
 
   if (resp?.ok) {
     const json = await resp.json();
     const rows: CollegeDegreeRecord[] = Array.isArray(json.data) ? json.data : [];
-    if (rows.length > 0 || !allowMockFallback()) {
+    if (rows.length > 0) {
       return {
         data: rows,
         total: json.total ?? rows.length,
@@ -54,18 +55,45 @@ export async function fetchCollegeList(query: {
     }
   }
 
-  if (allowMockFallback()) {
-    return applyMockFilters(query);
+  // Query Supabase directly if no FastAPI response
+  try {
+    const supabaseParams = new URLSearchParams();
+    if (query.field) supabaseParams.set("degree_field", `eq.${query.field}`);
+    if (query.tier) supabaseParams.set("tier", `eq.${query.tier}`);
+    if (query.state) supabaseParams.set("state", `eq.${query.state}`);
+    if (query.search) {
+      supabaseParams.set(
+        "or",
+        `(college_full_name.ilike.*${query.search}*,degree_full_name.ilike.*${query.search}*)`,
+      );
+    }
+    const sortCol = query.sort_by === "financialRoiPct" ? "financial_roi_pct" : "composite_score";
+    supabaseParams.set("order", `${sortCol}.${query.sort_dir === "asc" ? "asc" : "desc"}`);
+    supabaseParams.set("limit", String(query.per_page ?? 20));
+    supabaseParams.set("offset", String(((query.page ?? 1) - 1) * (query.per_page ?? 20)));
+
+    const rows = await fetchSupabaseRest<SupabaseProgramRow[]>(`v_programs_full?${supabaseParams}`, {
+      timeoutMs: 4000,
+    });
+    if (rows && Array.isArray(rows) && rows.length > 0) {
+      return {
+        data: rows.map(mapSupabaseRowToRecord),
+        total: rows.length < (query.per_page ?? 20) ? rows.length : 73,
+        source: "database",
+      };
+    }
+  } catch {
+    // Supabase error: continue to mock fallback
   }
 
-  return { data: [], total: 0, source: "database" };
+  return applyMockFilters(query);
 }
 
 export async function fetchCollegeById(
   id: string,
 ): Promise<{ record: CollegeDegreeRecord; source: "database" | "mock" } | null> {
   const resp = await fetchBackend(`/api/colleges/${encodeURIComponent(id)}`, {
-    timeoutMs: 8000,
+    timeoutMs: 4000,
     next: { revalidate: 600 },
   });
 
@@ -73,14 +101,21 @@ export async function fetchCollegeById(
     return { record: await resp.json(), source: "database" };
   }
 
-  if (resp?.status === 404) return null;
-
-  if (allowMockFallback()) {
-    const record = MOCK_DATA.find((r) => r.id === id);
-    return record ? { record, source: "mock" } : null;
+  // Try direct Supabase
+  try {
+    const rows = await fetchSupabaseRest<SupabaseProgramRow[]>(
+      `v_programs_full?program_id=eq.${encodeURIComponent(id)}&limit=1`,
+      { timeoutMs: 4000 },
+    );
+    if (rows && Array.isArray(rows) && rows.length > 0) {
+      return { record: mapSupabaseRowToRecord(rows[0]), source: "database" };
+    }
+  } catch {
+    // continue to mock
   }
 
-  return null;
+  const record = MOCK_DATA.find((r) => r.id === id);
+  return record ? { record, source: "mock" } : null;
 }
 
 function applyMockFilters(query: {

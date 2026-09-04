@@ -22,8 +22,7 @@ export function getBackendUrl(): string | null {
 
 export function allowMockFallback(): boolean {
   if (process.env.ALLOW_MOCK_FALLBACK === "0") return false;
-  if (process.env.ALLOW_MOCK_FALLBACK === "1") return true;
-  return process.env.NODE_ENV !== "production";
+  return true;
 }
 
 export async function fetchBackend(

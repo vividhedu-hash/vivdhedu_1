@@ -3,10 +3,6 @@ import { allowMockFallback, getBackendUrl, unavailablePayload } from "../../../l
 import { fetchCollegeList } from "../../../lib/live-colleges";
 
 export async function GET(request: Request) {
-  if (!getBackendUrl() && !allowMockFallback()) {
-    return NextResponse.json(unavailablePayload("FASTAPI_URL is not configured"), { status: 503 });
-  }
-
   const { searchParams } = new URL(request.url);
 
   const result = await fetchCollegeList({

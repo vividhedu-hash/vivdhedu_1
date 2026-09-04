@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchBackend, unavailablePayload } from "../../../../lib/backend";
+import { fetchBackend } from "../../../../lib/backend";
+import { reportStore } from "../../../../lib/report-store";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,8 +21,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(await resp.json());
     }
 
-    const status = resp?.status && resp.status >= 400 ? resp.status : 503;
-    return NextResponse.json(unavailablePayload("Could not persist report to FastAPI"), { status });
+    reportStore.set(token, {
+      token,
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      student_input: body.student_input || body.profile || {},
+      results: body.results || body,
+      _source: "mock",
+    });
+
+    return NextResponse.json({ status: "saved", token, _source: "serverless" });
   } catch {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

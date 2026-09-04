@@ -24,11 +24,6 @@ export async function POST(request: Request) {
     return NextResponse.json(await resp.json());
   }
 
-  if (!allowMockFallback()) {
-    return NextResponse.json(unavailablePayload("Analytics service unavailable"), {
-      status: resp?.status && resp.status >= 400 ? resp.status : 503,
-    });
-  }
 
   if (type === "monte_carlo") {
     return NextResponse.json({
