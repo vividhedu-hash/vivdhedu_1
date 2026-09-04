@@ -64,13 +64,16 @@ export async function POST(request: Request) {
       autonomy_wlb: Math.round(75 + i * 3),
     };
 
+    const rawPl = r.placement?.rate ?? 88;
+    const normPl = rawPl > 1 ? rawPl / 100 : rawPl;
+
     const macroScenarios = {
       base_case: {
         name: "Base Case (Current Market)",
         y1_salary: trajectory.y1.p50,
         y5_salary: trajectory.y5.p50,
         y10_salary: trajectory.y10.p50,
-        placement_rate: Math.round((r.placement?.rate ?? 0.85) * 100),
+        placement_rate: Math.round(normPl * 100),
         note: "Standard economic growth trajectory",
       },
       ai_acceleration: {
@@ -78,7 +81,7 @@ export async function POST(request: Request) {
         y1_salary: Math.round(trajectory.y1.p50 * 0.88),
         y5_salary: Math.round(trajectory.y5.p50 * 0.94),
         y10_salary: Math.round(trajectory.y10.p50 * 1.15),
-        placement_rate: Math.round((r.placement?.rate ?? 0.85) * 88),
+        placement_rate: Math.round(normPl * 88),
         note: "Simulates entry automation shift toward senior system architects",
       },
       macro_recession: {
@@ -86,7 +89,7 @@ export async function POST(request: Request) {
         y1_salary: Math.round(trajectory.y1.p50 * 0.82),
         y5_salary: Math.round(trajectory.y5.p50 * 0.88),
         y10_salary: Math.round(trajectory.y10.p50 * 0.95),
-        placement_rate: Math.round((r.placement?.rate ?? 0.85) * 80),
+        placement_rate: Math.round(normPl * 80),
         note: "Hiring freeze safety buffer test",
       },
     };

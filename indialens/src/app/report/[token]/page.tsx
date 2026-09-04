@@ -147,15 +147,23 @@ export default function ReportPage() {
           <ReportSection icon={<User size={16} />} title="Your Profile Summary" subtitle="What the model understood about you">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
               {Object.entries(profileSummary.parsed)
-                .filter(([k]) => k !== "flags")
-                .map(([key, value]) => (
-                  <div key={key} className="glass-card p-3">
-                    <p style={{ fontSize: 10, color: "#4A4A6A", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
-                      {key.replace(/_/g, " ")}
-                    </p>
-                    <p style={{ fontSize: 13, color: "#F0F0F5", fontWeight: 600 }}>{String(value)}</p>
-                  </div>
-                ))}
+                .filter(([k, v]) => {
+                  if (["flags", "cat_traits", "p_q1", "p_q2", "p_q3"].includes(k)) return false;
+                  if (v === "" || v === null || v === undefined) return false;
+                  if (typeof v === "object" && !Array.isArray(v)) return false;
+                  return true;
+                })
+                .map(([key, value]) => {
+                  const displayVal = Array.isArray(value) ? value.join(", ") : String(value);
+                  return (
+                    <div key={key} className="glass-card p-3">
+                      <p style={{ fontSize: 10, color: "#4A4A6A", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+                        {key.replace(/_/g, " ")}
+                      </p>
+                      <p style={{ fontSize: 13, color: "#F0F0F5", fontWeight: 600 }}>{displayVal}</p>
+                    </div>
+                  );
+                })}
             </div>
             {profileSummary.parsed.flags?.map((flag: { msg: string }, i: number) => (
               <div

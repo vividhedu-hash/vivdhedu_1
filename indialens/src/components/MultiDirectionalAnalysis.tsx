@@ -303,7 +303,7 @@ export function MultiDirectionalAnalysis({ recommendations, pathways }: MultiDir
           <div className="p-4 bg-slate-900/80 rounded-xl border border-white/[0.06]">
             <span className="text-xs text-slate-400 block mb-1">Placement Rate</span>
             <span className="text-xl font-bold font-mono text-amber-400">
-              {currentScenarioData.placement_rate}%
+              {currentScenarioData.placement_rate > 100 ? Math.round(currentScenarioData.placement_rate / 100) : Math.round(currentScenarioData.placement_rate)}%
             </span>
           </div>
         </div>
