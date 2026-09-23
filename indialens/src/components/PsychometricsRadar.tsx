@@ -26,66 +26,66 @@ export default function PsychometricsRadar({
   });
 
   return (
-    <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 backdrop-blur-md">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+    <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div className="flex items-center space-x-2">
-          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+          <div className="p-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
             <Smile className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">Student Experience Psychometrics</h3>
-            <p className="text-[11px] text-slate-400">Validated internal consistency via Hugging Face RoBERTa</p>
+            <h3 className="text-sm font-bold text-slate-950">Student Experience Psychometrics</h3>
+            <p className="text-[11px] text-slate-500">Validated internal consistency via Hugging Face RoBERTa</p>
           </div>
         </div>
 
         <div className="text-right">
-          <span className="text-xs font-bold text-emerald-400 block">
+          <span className="text-xs font-bold text-emerald-700 block">
             Cronbach&apos;s α = {data.cronbach_alpha}
           </span>
-          <span className="text-[10px] text-slate-400 font-medium">
-            Validity: <span className="text-emerald-400">{data.psychometric_validity}</span>
+          <span className="text-[10px] text-slate-500 font-medium">
+            Validity: <span className="text-emerald-700 font-bold">{data.psychometric_validity}</span>
           </span>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-xs">
-        <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80">
-          <div className="flex justify-between text-slate-300 font-semibold mb-1">
+        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="flex justify-between text-slate-700 font-semibold mb-1">
             <span>Faculty & Mentorship</span>
-            <span className="text-emerald-400">{data.sub_scores.faculty_mentorship}%</span>
+            <span className="text-emerald-700 font-bold">{data.sub_scores.faculty_mentorship}%</span>
           </div>
-          <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-            <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${data.sub_scores.faculty_mentorship}%` }}></div>
+          <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+            <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${data.sub_scores.faculty_mentorship}%` }}></div>
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80">
-          <div className="flex justify-between text-slate-300 font-semibold mb-1">
+        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="flex justify-between text-slate-700 font-semibold mb-1">
             <span>Work-Life Balance</span>
-            <span className="text-indigo-400">{data.sub_scores.work_life_balance}%</span>
+            <span className="text-indigo-700 font-bold">{data.sub_scores.work_life_balance}%</span>
           </div>
-          <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-            <div className="bg-indigo-400 h-full rounded-full" style={{ width: `${data.sub_scores.work_life_balance}%` }}></div>
+          <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+            <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${data.sub_scores.work_life_balance}%` }}></div>
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80">
-          <div className="flex justify-between text-slate-300 font-semibold mb-1">
+        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="flex justify-between text-slate-700 font-semibold mb-1">
             <span>Campus Life & Peer Network</span>
-            <span className="text-amber-400">{data.sub_scores.campus_life}%</span>
+            <span className="text-amber-700 font-bold">{data.sub_scores.campus_life}%</span>
           </div>
-          <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-            <div className="bg-amber-400 h-full rounded-full" style={{ width: `${data.sub_scores.campus_life}%` }}></div>
+          <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+            <div className="bg-amber-500 h-full rounded-full" style={{ width: `${data.sub_scores.campus_life}%` }}></div>
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80">
-          <div className="flex justify-between text-slate-300 font-semibold mb-1">
+        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="flex justify-between text-slate-700 font-semibold mb-1">
             <span>Hostel & Infrastructure</span>
-            <span className="text-teal-400">{data.sub_scores.infrastructure}%</span>
+            <span className="text-teal-700 font-bold">{data.sub_scores.infrastructure}%</span>
           </div>
-          <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-            <div className="bg-teal-400 h-full rounded-full" style={{ width: `${data.sub_scores.infrastructure}%` }}></div>
+          <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+            <div className="bg-teal-600 h-full rounded-full" style={{ width: `${data.sub_scores.infrastructure}%` }}></div>
           </div>
         </div>
       </div>

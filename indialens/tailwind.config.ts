@@ -9,98 +9,117 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // IndiaLens Design System
-        bg: "#0A0A0F",
-        surface: "#13131A",
-        border: "#1E1E2E",
+        // ── IndiaLens Apple-Dark Design System ──────────────────
+        bg:       "#000000",
+        surface:  "#0A0A0A",
+        elevated: "#141414",
+        overlay:  "#1C1C1E",
+
+        // Apple System Accents
+        accent:   "#E11D48",   // rose / brand
+        "accent-hover": "#F43F5E",
+
+        // Apple system palette
+        "sys-blue":   "#0A84FF",
+        "sys-green":  "#30D158",
+        "sys-amber":  "#FF9F0A",
+        "sys-red":    "#FF453A",
+        "sys-purple": "#BF5AF2",
+        "sys-teal":   "#5AC8F5",
+
+        // Text hierarchy
+        "text-primary":   "#F5F5F7",
+        "text-secondary": "#86868B",
+        "text-tertiary":  "#48484A",
+
+        // Borders
+        "border-default": "rgba(255,255,255,0.08)",
+        "border-focus":   "rgba(255,255,255,0.18)",
+        "border-subtle":  "rgba(255,255,255,0.04)",
+
+        // Legacy aliases (keep components that use these working)
         primary: {
-          DEFAULT: "#4F6EF7",
-          hover: "#6B85F9",
-          muted: "#1a2460",
+          DEFAULT: "#E11D48",
+          hover:   "#F43F5E",
+          muted:   "rgba(225,29,72,0.12)",
         },
         secondary: {
-          DEFAULT: "#F7C94F",
-          muted: "#4a3a0f",
+          DEFAULT: "#FF9F0A",
+          muted:   "rgba(255,159,10,0.12)",
         },
-        success: "#22C55E",
-        warning: "#F59E0B",
-        danger: "#EF4444",
+        success: "#30D158",
+        warning: "#FF9F0A",
+        danger:  "#FF453A",
         text: {
-          primary: "#F0F0F5",
-          secondary: "#8B8BA7",
-          muted: "#4A4A6A",
+          primary:   "#F5F5F7",
+          secondary: "#86868B",
+          muted:     "#48484A",
         },
+
+        // Old dark system (kept for CollegeCard / ScoreRing inline styles)
+        border: "rgba(255,255,255,0.08)",
       },
+
       fontFamily: {
-        display: ["Clash Display", "Plus Jakarta Sans", "sans-serif"],
-        body: ["Inter", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
+        display: ["-apple-system", "SF Pro Display", "Inter", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        body:    ["-apple-system", "SF Pro Text",    "Inter", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        mono:    ["JetBrains Mono", "SF Mono", "Fira Code", "ui-monospace", "monospace"],
+        sans:    ["-apple-system", "SF Pro Text",    "Inter", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
       },
+
       fontSize: {
-        "display-xl": ["clamp(3rem, 6vw, 5rem)", { lineHeight: "1.05", letterSpacing: "-0.03em" }],
-        "display-lg": ["clamp(2rem, 4vw, 3.5rem)", { lineHeight: "1.1", letterSpacing: "-0.025em" }],
-        "display-md": ["clamp(1.5rem, 3vw, 2.5rem)", { lineHeight: "1.2", letterSpacing: "-0.02em" }],
+        "display-xl": ["clamp(2.8rem, 5.5vw, 4.5rem)", { lineHeight: "1.04", letterSpacing: "-0.04em" }],
+        "display-lg": ["clamp(2rem, 4vw, 3.2rem)",     { lineHeight: "1.08", letterSpacing: "-0.035em" }],
+        "display-md": ["clamp(1.5rem, 3vw, 2.4rem)",   { lineHeight: "1.12", letterSpacing: "-0.025em" }],
       },
-      spacing: {
-        "4": "4px",
-        "8": "8px",
-        "12": "12px",
-        "16": "16px",
-        "24": "24px",
-        "32": "32px",
-        "48": "48px",
-        "64": "64px",
-        "96": "96px",
-      },
+
       borderRadius: {
-        card: "8px",
-        input: "4px",
-        tag: "999px",
-        table: "0px",
+        sm:   "8px",
+        md:   "12px",
+        lg:   "16px",
+        xl:   "20px",
+        full: "9999px",
+        card: "16px",
+        tag:  "9999px",
       },
+
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-hero": "radial-gradient(ellipse 80% 50% at 50% -20%, #1a2460 0%, transparent 100%)",
-        "gradient-card": "linear-gradient(135deg, #13131A 0%, #0d0d14 100%)",
-        "noise": "url('/noise.svg')",
+        "hero-glow":       "radial-gradient(ellipse 60% 50% at 50% -5%, rgba(225,29,72,0.12) 0%, transparent 70%)",
+        "card-gradient":   "linear-gradient(135deg, #0A0A0A 0%, #141414 100%)",
+        "noise":           "url('/noise.svg')",
       },
-      animation: {
-        "fade-in": "fadeIn 0.4s ease forwards",
-        "slide-up": "slideUp 0.5s ease forwards",
-        "pulse-dot": "pulseDot 2s ease-in-out infinite",
-        "number-roll": "numberRoll 0.8s ease forwards",
-        "ring-fill": "ringFill 1.2s ease forwards",
-      },
-      keyframes: {
-        fadeIn: {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
-        slideUp: {
-          from: { opacity: "0", transform: "translateY(20px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
-        pulseDot: {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.4" },
-        },
-        numberRoll: {
-          from: { opacity: "0", transform: "translateY(8px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
-        ringFill: {
-          from: { "stroke-dashoffset": "339" },
-          to: { "stroke-dashoffset": "var(--ring-offset)" },
-        },
-      },
+
       boxShadow: {
-        card: "0 0 0 1px #1E1E2E, 0 4px 20px rgba(0,0,0,0.4)",
-        glow: "0 0 30px rgba(79, 110, 247, 0.2)",
-        "glow-gold": "0 0 30px rgba(247, 201, 79, 0.15)",
-        "inner-glow": "inset 0 1px 0 rgba(255,255,255,0.05)",
+        sm:         "0 1px 2px rgba(0,0,0,0.5)",
+        md:         "0 4px 16px rgba(0,0,0,0.4)",
+        lg:         "0 8px 32px rgba(0,0,0,0.5)",
+        card:       "0 0 0 1px rgba(255,255,255,0.08)",
+        "glow":     "0 0 24px rgba(225,29,72,0.18)",
+        "glow-blue":"0 0 24px rgba(10,132,255,0.15)",
+        "glow-green":"0 0 24px rgba(48,209,88,0.15)",
+      },
+
+      animation: {
+        "fade-in":    "fadeIn 0.35s ease forwards",
+        "slide-up":   "slideUp 0.4s ease forwards",
+        "slide-down": "slideDown 0.25s ease forwards",
+        "pulse-dot":  "pulseDot 2s ease-in-out infinite",
+        "number-roll":"numberRoll 0.8s ease forwards",
+        "ring-fill":  "ringFill 1.2s ease forwards",
+      },
+
+      keyframes: {
+        fadeIn:     { from: { opacity: "0" }, to: { opacity: "1" } },
+        slideUp:    { from: { opacity: "0", transform: "translateY(16px)" }, to: { opacity: "1", transform: "translateY(0)" } },
+        slideDown:  { from: { opacity: "0", transform: "translateY(-8px)" }, to: { opacity: "1", transform: "translateY(0)" } },
+        pulseDot:   { "0%, 100%": { opacity: "1" }, "50%": { opacity: "0.4" } },
+        numberRoll: { from: { opacity: "0", transform: "translateY(8px)" }, to: { opacity: "1", transform: "translateY(0)" } },
+        ringFill:   { from: { "stroke-dashoffset": "339" }, to: { "stroke-dashoffset": "var(--ring-offset)" } },
       },
     },
   },
   plugins: [],
 };
+
 export default config;

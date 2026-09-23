@@ -109,15 +109,15 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 sm:p-6 space-y-4">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wider text-indigo-300">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wider text-rose-600">
           <Sparkles size={14} />
           {engineName} · Google Search
           {engineReady === false && (
-            <span className="normal-case font-medium text-amber-300">Engine not configured on FastAPI</span>
+            <span className="normal-case font-medium text-amber-600">Engine not configured on FastAPI</span>
           )}
           {engineReady === true && (
-            <span className="normal-case font-medium text-emerald-400">Live</span>
+            <span className="normal-case font-medium text-emerald-600">Live</span>
           )}
         </div>
         <form
@@ -132,7 +132,7 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
             onChange={(e) => setQuery(e.target.value)}
             rows={3}
             placeholder="Ask a live, source-backed question — e.g. What did NIRF 2025 change for NIT Trichy CSE payback vs a private deemed university?"
-            className="w-full rounded-xl bg-slate-950 border border-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
+            className="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white"
           />
           <div className="flex flex-wrap gap-2">
             {[
@@ -147,7 +147,7 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
                   setQuery(preset);
                   void ask(preset);
                 }}
-                className="text-[11px] px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500"
+                className="text-[11px] px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 bg-slate-50 hover:text-slate-900 hover:bg-slate-100 transition"
               >
                 {preset}
               </button>
@@ -156,30 +156,30 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
           <button
             type="submit"
             disabled={asking}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-950 bg-gradient-to-r from-indigo-400 to-emerald-400 disabled:opacity-50"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-slate-950 hover:bg-slate-800 disabled:opacity-50 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {asking ? "Searching official and news sources…" : "Ask with citations"}
           </button>
         </form>
         {modeError && (
-          <p className="text-sm text-amber-300 flex gap-2">
-            <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-xl flex gap-2">
+            <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-600" />
             {modeError}
           </p>
         )}
         {mode && <GroundedAnswer payload={mode} />}
       </section>
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 sm:p-6 space-y-4">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-300">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-700">
           <UserRound size={14} />
           Personal intelligence
         </div>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-500">
           Built from your stated constraints plus Search-grounded gates. Catalog program IDs are only attached when they exist in Postgres.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <label className="text-xs text-slate-400 space-y-1">
+          <label className="text-xs text-slate-500 space-y-1">
             Budget (₹ Lakh)
             <input
               type="number"
@@ -187,15 +187,15 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
               max={80}
               value={budget}
               onChange={(e) => setBudget(Number(e.target.value))}
-              className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-900"
             />
           </label>
-          <label className="text-xs text-slate-400 space-y-1">
+          <label className="text-xs text-slate-500 space-y-1">
             Field
             <select
               value={field}
               onChange={(e) => setField(e.target.value)}
-              className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-900"
             >
               {FIELDS.map((f) => (
                 <option key={f.value} value={f.value}>
@@ -204,12 +204,12 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
               ))}
             </select>
           </label>
-          <label className="text-xs text-slate-400 space-y-1">
+          <label className="text-xs text-slate-500 space-y-1">
             Risk
             <select
               value={risk}
               onChange={(e) => setRisk(e.target.value)}
-              className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-sm text-white"
+              className="w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-900"
             >
               <option value="low">Low — payback first</option>
               <option value="medium">Medium — balanced</option>
@@ -217,51 +217,51 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
             </select>
           </label>
         </div>
-        <label className="text-xs text-slate-400 space-y-1 block">
+        <label className="text-xs text-slate-500 space-y-1 block">
           Analyze report token (optional)
           <input
             value={token}
             onChange={(e) => setToken(e.target.value)}
             placeholder="Paste a report token from /analyze"
-            className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-sm text-white font-mono"
+            className="w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 font-mono focus:outline-none focus:border-slate-900"
           />
         </label>
         <button
           type="button"
           disabled={building}
           onClick={() => void buildIntelligence()}
-          className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:opacity-50"
+          className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-slate-950 hover:bg-slate-800 disabled:opacity-50 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {building ? "Grounding your path…" : "Build intelligence + path"}
         </button>
         {intelError && (
-          <p className="text-sm text-amber-300 flex gap-2">
-            <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-xl flex gap-2">
+            <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-600" />
             {intelError}
           </p>
         )}
         {intel && (
           <div className="space-y-5 pt-2">
             <div>
-              <p className="text-xs uppercase tracking-wider text-slate-500">
+              <p className="text-xs uppercase tracking-wider text-slate-400 font-mono">
                 {intel.archetype || "Profile"}
                 {intel.persisted ? " · saved" : ""}
                 {intel.token ? ` · ${intel.token}` : ""}
               </p>
-              <h2 className="text-xl font-semibold text-white mt-1">{intel.headline}</h2>
+              <h2 className="text-xl font-bold text-slate-950 mt-1">{intel.headline}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-[11px] font-semibold uppercase text-emerald-400 mb-2">Strengths</p>
-                <ul className="space-y-1 text-slate-300">
+              <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                <p className="text-[11px] font-semibold uppercase text-emerald-800 mb-2">Strengths</p>
+                <ul className="space-y-1 text-slate-700">
                   {(intel.strengths ?? []).map((s) => (
                     <li key={s}>· {s}</li>
                   ))}
                 </ul>
               </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase text-amber-400 mb-2">Risks</p>
-                <ul className="space-y-1 text-slate-300">
+              <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-100">
+                <p className="text-[11px] font-semibold uppercase text-amber-800 mb-2">Risks</p>
+                <ul className="space-y-1 text-slate-700">
                   {(intel.risks ?? []).map((s) => (
                     <li key={s}>· {s}</li>
                   ))}
@@ -269,9 +269,9 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
               </div>
             </div>
             {(intel.decision_rules ?? []).length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold uppercase text-indigo-300 mb-2">Decision rules</p>
-                <ul className="space-y-1 text-sm text-slate-300">
+              <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100">
+                <p className="text-[11px] font-semibold uppercase text-blue-800 mb-2">Decision rules</p>
+                <ul className="space-y-1 text-sm text-slate-700">
                   {intel.decision_rules!.map((s) => (
                     <li key={s}>· {s}</li>
                   ))}
@@ -279,9 +279,9 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
               </div>
             )}
             {(intel.open_questions ?? []).length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold uppercase text-amber-200 mb-2">Still unverified</p>
-                <ul className="space-y-1 text-sm text-slate-300">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-[11px] font-semibold uppercase text-slate-600 mb-2">Still unverified</p>
+                <ul className="space-y-1 text-sm text-slate-700">
                   {intel.open_questions!.map((s) => (
                     <li key={s}>· {s}</li>
                   ))}
@@ -294,8 +294,8 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
       </section>
 
       {intel?.path?.nodes && (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 sm:p-6 space-y-4">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-200">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-900">
             <GitBranch size={14} />
             Academic path
           </div>

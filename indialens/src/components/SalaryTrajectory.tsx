@@ -48,16 +48,16 @@ const CustomTooltip = ({
   return (
     <div
       style={{
-        background: "#13131A",
-        border: "1px solid #1E1E2E",
-        borderRadius: 8,
+        background: "#FFFFFF",
+        border: "1px solid #E2E8F0",
+        borderRadius: 12,
         padding: "12px 16px",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
       }}
     >
       <p
         style={{
-          color: "#8B8BA7",
+          color: "#64748B",
           fontSize: 11,
           fontWeight: 600,
           letterSpacing: "0.06em",
@@ -86,14 +86,14 @@ const CustomTooltip = ({
               display: "inline-block",
             }}
           />
-          <span style={{ color: "#8B8BA7", fontSize: 12, minWidth: 90 }}>
+          <span style={{ color: "#64748B", fontSize: 12, minWidth: 90 }}>
             {entry.name}
           </span>
           <span
             style={{
-              color: "#F0F0F5",
+              color: "#09090B",
               fontSize: 13,
-              fontWeight: 600,
+              fontWeight: 700,
               fontFamily: "JetBrains Mono, monospace",
             }}
           >
@@ -148,31 +148,31 @@ export function SalaryTrajectory({ data, salaryByYear }: SalaryTrajectoryProps) 
         >
           <defs>
             <linearGradient id="optimisticGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#22C55E" />
-              <stop offset="100%" stopColor="#84CC16" />
+              <stop offset="0%" stopColor="#10B981" />
+              <stop offset="100%" stopColor="#059669" />
             </linearGradient>
           </defs>
           <CartesianGrid
             strokeDasharray="2 6"
-            stroke="#1E1E2E"
+            stroke="#E2E8F0"
             vertical={false}
           />
           <XAxis
             dataKey="year"
-            tick={{ fill: "#4A4A6A", fontSize: 11, fontFamily: "JetBrains Mono" }}
+            tick={{ fill: "#64748B", fontSize: 11, fontFamily: "JetBrains Mono" }}
             tickLine={false}
             axisLine={false}
             label={{
               value: "Year",
               position: "insideBottomRight",
-              fill: "#4A4A6A",
+              fill: "#64748B",
               fontSize: 11,
               offset: -4,
             }}
           />
           <YAxis
             tickFormatter={formatSalary}
-            tick={{ fill: "#4A4A6A", fontSize: 11, fontFamily: "JetBrains Mono" }}
+            tick={{ fill: "#64748B", fontSize: 11, fontFamily: "JetBrains Mono" }}
             tickLine={false}
             axisLine={false}
             width={64}
@@ -182,7 +182,7 @@ export function SalaryTrajectory({ data, salaryByYear }: SalaryTrajectoryProps) 
             wrapperStyle={{
               paddingTop: 12,
               fontSize: 12,
-              color: "#8B8BA7",
+              color: "#64748B",
             }}
           />
           {/* Area between conservative and optimistic */}

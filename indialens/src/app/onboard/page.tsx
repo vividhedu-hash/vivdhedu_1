@@ -37,11 +37,9 @@ export default function OnboardPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "var(--color-bg)",
+        background: "#000000",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center",
-        padding: "32px 16px",
       }}
     >
       {phase === "wizard" && (

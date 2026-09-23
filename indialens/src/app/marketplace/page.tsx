@@ -145,33 +145,32 @@ export default function MarketplacePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
-        <div className="border-b border-slate-800 pb-8 mb-10">
-          <div className="flex items-center gap-3 text-blue-400 text-xs uppercase tracking-widest font-mono font-semibold mb-2">
+        <div className="border-b border-slate-200 pb-8 mb-10">
+          <div className="flex items-center gap-2 text-rose-600 text-xs uppercase tracking-widest font-mono font-semibold mb-2">
             <ShoppingBag className="w-4 h-4" />
             <span>Actuarial Upskilling Hub · Section 03 Specification</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950">
             Curated Course Marketplace & Skill Gap Hedge
           </h1>
-          <p className="mt-3 text-base text-slate-400 max-w-3xl leading-relaxed">
+          <p className="mt-3 text-base text-slate-600 max-w-3xl leading-relaxed">
             Zero generic banner ads. Every course displayed here has passed a strict mathematical relevance threshold (Match Score ≥ 0.75), targeting your specific skill gaps and AI obsolescence vulnerabilities.
           </p>
         </div>
 
         {/* Category Filters */}
-        <div className="flex flex-wrap items-center gap-2 mb-8 bg-slate-900 border border-slate-800 p-2.5 rounded-lg">
+        <div className="flex flex-wrap items-center gap-2 mb-8 bg-white border border-slate-200 p-2.5 rounded-xl shadow-sm">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded text-xs font-medium transition ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition ${
                 selectedCategory === cat
-                  ? "bg-blue-600 text-white"
-                  : "bg-slate-800/80 text-slate-300 hover:bg-slate-700"
+                  ? "bg-slate-950 text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
               {cat}
@@ -184,11 +183,11 @@ export default function MarketplacePage() {
           {filteredCourses.map((course) => (
             <div
               key={course.id}
-              className="bg-slate-900 border border-slate-800 rounded-lg p-5 flex flex-col justify-between hover:border-slate-700 transition"
+              className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition"
             >
               <div>
                 <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-800">
+                  <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                     {course.provider}
                   </span>
                   <div className="flex items-center gap-1.5">
@@ -207,43 +206,43 @@ export default function MarketplacePage() {
                   </div>
                 </div>
 
-                <h3 className="text-base font-bold text-white leading-snug">{course.course_title}</h3>
-                <p className="text-xs text-slate-400 mt-1">{course.category} · {course.duration_hours} Hours</p>
+                <h3 className="text-base font-bold text-slate-950 leading-snug">{course.course_title}</h3>
+                <p className="text-xs text-slate-500 mt-1">{course.category} · {course.duration_hours} Hours</p>
 
                 {/* Skill Tags */}
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {course.skill_tags.map((st, i) => (
-                    <span key={i} className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
+                    <span key={i} className="text-[10px] bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md">
                       {st}
                     </span>
                   ))}
                 </div>
 
                 {/* Economic ROI Impact */}
-                <div className="mt-4 bg-slate-950/70 border border-slate-800/80 p-3 rounded text-xs space-y-1.5">
-                  <div className="flex justify-between items-center text-slate-400">
+                <div className="mt-4 bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-xs space-y-1.5">
+                  <div className="flex justify-between items-center text-slate-500">
                     <span>Course Fee:</span>
-                    <span className="text-white font-bold">₹{course.price_inr.toLocaleString()}</span>
+                    <span className="text-slate-900 font-bold font-mono">₹{course.price_inr.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center text-emerald-400">
+                  <div className="flex justify-between items-center text-emerald-700">
                     <span>Projected Y1 Uplift:</span>
-                    <span className="font-bold">+₹{(course.projected_salary_uplift_inr / 100000).toFixed(1)} L/yr</span>
+                    <span className="font-bold font-mono">+₹{(course.projected_salary_uplift_inr / 100000).toFixed(1)} L/yr</span>
                   </div>
                   <div className="flex justify-between items-center text-slate-500 text-[11px]">
                     <span>AI Resilience Hedge:</span>
-                    <span>{Math.round(course.ai_resilience_score * 100)}%</span>
+                    <span className="font-mono text-slate-700">{Math.round(course.ai_resilience_score * 100)}%</span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-slate-800">
+              <div className="mt-5 pt-3 border-t border-slate-100">
                 <button
                   onClick={() => handleTrackClick(course)}
                   disabled={course.match_score < 0.75}
-                  className={`w-full text-white rounded text-xs font-semibold py-2 flex items-center justify-center gap-1.5 transition ${
+                  className={`w-full rounded-xl text-xs font-semibold py-2.5 flex items-center justify-center gap-1.5 transition focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     course.match_score >= 0.75
-                      ? "bg-blue-600 hover:bg-blue-500"
-                      : "bg-slate-800 cursor-not-allowed opacity-50"
+                      ? "bg-slate-950 hover:bg-slate-800 text-white"
+                      : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-50"
                   }`}
                 >
                   {course.match_score >= 0.75 ? (

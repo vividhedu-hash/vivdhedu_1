@@ -42,7 +42,7 @@ export function RiskGrid({ items, dots = 5 }: RiskGridProps) {
             <div className="flex items-start justify-between mb-2">
               <span
                 className="text-xs font-semibold uppercase tracking-wider"
-                style={{ color: "#8B8BA7", letterSpacing: "0.06em" }}
+                style={{ color: "#64748B", letterSpacing: "0.06em" }}
               >
                 {item.label}
               </span>
@@ -62,13 +62,13 @@ export function RiskGrid({ items, dots = 5 }: RiskGridProps) {
                     width: 8,
                     height: 8,
                     borderRadius: "50%",
-                    background: i < filled ? color : "#1E1E2E",
+                    background: i < filled ? color : "#E2E8F0",
                     transition: `background 0.2s ease ${i * 0.05}s`,
                     boxShadow: i < filled ? `0 0 4px ${color}60` : "none",
                   }}
                 />
               ))}
-              <span className="ml-2 text-xs font-mono" style={{ color: "#4A4A6A" }}>
+              <span className="ml-2 text-xs font-mono" style={{ color: "#64748B" }}>
                 {Math.round(item.value * 100)}%
               </span>
             </div>

@@ -153,18 +153,18 @@ export default function PortfolioBuilderPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
-        <div className="border-b border-slate-800 pb-8 mb-10">
-          <div className="flex items-center gap-3 text-blue-400 text-xs uppercase tracking-widest font-mono font-semibold mb-2">
+        <div className="border-b border-slate-200 pb-8 mb-10">
+          <div className="flex items-center gap-2 text-rose-600 text-xs uppercase tracking-widest font-mono font-semibold mb-2">
             <Sparkles className="w-4 h-4" />
             <span>Admissions Spike Studio · Section 11 Specification</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950">
             Global Portfolio Builder & Angular Spike Studio
           </h1>
-          <p className="mt-3 text-base text-slate-400 max-w-3xl leading-relaxed">
+          <p className="mt-3 text-base text-slate-600 max-w-3xl leading-relaxed">
             Elite international universities reject 90%+ of generic "well-rounded" applicants. This studio engineers mathematically differentiated <strong>Angular Spikes</strong>, optimizes resume bullets into Google's X-Y-Z format, and filters predatory journals.
           </p>
         </div>
@@ -172,61 +172,61 @@ export default function PortfolioBuilderPage() {
         {/* Top Split: Live Spike Meter & Target Discipline */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
           {/* Live Spike Authenticity Score Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 flex flex-col justify-between">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-mono text-slate-400 uppercase">Spike Authenticity</span>
-                <span className="text-xs font-mono text-blue-400">Formula 11.1</span>
+                <span className="text-xs font-mono text-slate-500 uppercase">Spike Authenticity</span>
+                <span className="text-xs font-mono text-rose-600 font-semibold">Formula 11.1</span>
               </div>
               <div className="flex items-baseline gap-3">
-                <div className="text-5xl font-black text-white">{spikeScore}</div>
+                <div className="text-5xl font-black text-slate-950">{spikeScore}</div>
                 <div className="text-sm font-semibold text-slate-400">/ 100</div>
               </div>
               <div className="mt-3">
-                <span className={`text-xs font-bold px-2.5 py-1 rounded ${
-                  spikeScore >= 80 ? "bg-emerald-950 text-emerald-400 border border-emerald-800" :
-                  spikeScore >= 60 ? "bg-blue-950 text-blue-400 border border-blue-800" :
-                  "bg-amber-950 text-amber-400 border border-amber-800"
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                  spikeScore >= 80 ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+                  spikeScore >= 60 ? "bg-blue-50 text-blue-700 border border-blue-200" :
+                  "bg-amber-50 text-amber-700 border border-amber-200"
                 }`}>
                   {spikeScore >= 80 ? "Exceptional Angular Spike" : spikeScore >= 60 ? "Competitive Spike" : "Developing Portfolio"}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+              <p className="text-xs text-slate-500 mt-3 leading-relaxed">
                 Evaluates activity rarity (1/N index), external validation (award prestige), time depth, and major alignment.
               </p>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-800">
-              <label className="block text-xs font-mono text-slate-400 uppercase mb-1">Target Major:</label>
+            <div className="mt-6 pt-4 border-t border-slate-100">
+              <label className="block text-xs font-mono text-slate-500 uppercase mb-1">Target Major:</label>
               <input
                 type="text"
                 value={targetMajor}
                 onChange={(e) => setTargetMajor(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
               />
             </div>
           </div>
 
           {/* Activity Inventory Manager */}
-          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-lg p-6">
-            <h3 className="text-base font-bold text-white mb-4 flex items-center justify-between">
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-base font-bold text-slate-950 mb-4 flex items-center justify-between">
               <span>Activity Portfolio ({activities.length} Recorded)</span>
-              <span className="text-xs font-mono text-slate-400">Top 3 weighted for Spike Index</span>
+              <span className="text-xs font-mono text-slate-500">Top 3 weighted for Spike Index</span>
             </h3>
 
             {/* List of current activities */}
             <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
               {activities.map((act, idx) => (
-                <div key={idx} className="bg-slate-950/70 border border-slate-800 p-3 rounded flex items-center justify-between gap-3">
+                <div key={idx} className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-200 truncate">{act.title}</div>
-                    <div className="text-[11px] text-slate-400">{act.role} · {act.months} Months Invested</div>
+                    <div className="text-xs font-bold text-slate-900 truncate">{act.title}</div>
+                    <div className="text-[11px] text-slate-500">{act.role} · {act.months} Months Invested</div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[11px] font-mono text-blue-400">Rarity: {Math.round(act.rarity * 100)}%</span>
+                    <span className="text-[11px] font-mono text-rose-600 font-semibold">Rarity: {Math.round(act.rarity * 100)}%</span>
                     <button
                       onClick={() => handleRemoveActivity(idx)}
-                      className="text-slate-500 hover:text-rose-400 p-1 transition"
+                      className="text-slate-400 hover:text-rose-600 p-1 transition"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -236,13 +236,13 @@ export default function PortfolioBuilderPage() {
             </div>
 
             {/* Add activity form */}
-            <div className="mt-4 pt-4 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <input
                 type="text"
                 placeholder="Activity / Project Title"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 sm:col-span-2"
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900 sm:col-span-2"
               />
               <div className="flex gap-2">
                 <input
@@ -250,11 +250,11 @@ export default function PortfolioBuilderPage() {
                   placeholder="Months"
                   value={newMonths}
                   onChange={(e) => setNewMonths(Number(e.target.value))}
-                  className="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-xs text-white w-20 focus:outline-none"
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 w-20 focus:outline-none focus:border-slate-900"
                 />
                 <button
                   onClick={handleAddActivity}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold px-3 py-1.5 flex items-center justify-center gap-1 transition"
+                  className="flex-1 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold px-3 py-2 flex items-center justify-center gap-1 transition"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add</span>
@@ -265,53 +265,53 @@ export default function PortfolioBuilderPage() {
         </div>
 
         {/* Action-Impact X-Y-Z Transformer Section */}
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 mb-10">
-          <div className="flex items-center gap-2 text-blue-400 text-xs font-mono uppercase tracking-wider mb-2">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-10">
+          <div className="flex items-center gap-2 text-rose-600 text-xs font-mono uppercase tracking-wider mb-2">
             <FileText className="w-4 h-4" />
             <span>Google & Common App X-Y-Z Optimization Engine</span>
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Action-Impact X-Y-Z Transformer</h2>
-          <p className="text-xs text-slate-400 mb-4">
+          <h2 className="text-xl font-bold text-slate-950 mb-2">Action-Impact X-Y-Z Transformer</h2>
+          <p className="text-xs text-slate-500 mb-4">
             Convert weak passive resume drafts into quantitative power statements: <em>"Accomplished [X] as measured by [Y] by doing [Z]"</em>.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-mono text-slate-400 uppercase mb-1">Your Draft Bullet:</label>
+              <label className="block text-xs font-mono text-slate-500 uppercase mb-1">Your Draft Bullet:</label>
               <textarea
                 rows={4}
                 value={rawDraft}
                 onChange={(e) => setRawDraft(e.target.value)}
                 placeholder="e.g. Built a machine learning model on Raspberry Pi to test water quality in local village wells..."
-                className="w-full bg-slate-800 border border-slate-700 rounded p-3 text-xs text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
               />
               <button
                 onClick={handleTransformXYZ}
                 disabled={isTransforming || !rawDraft.trim()}
-                className="mt-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded px-4 py-2 text-xs font-semibold flex items-center gap-2 transition"
+                className="mt-3 bg-slate-950 hover:bg-slate-800 disabled:bg-slate-200 text-white rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-2 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {isTransforming ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                 <span>Transform to X-Y-Z Format</span>
               </button>
             </div>
 
-            <div className="bg-slate-950 border border-slate-800 p-4 rounded-lg flex flex-col justify-between">
+            <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col justify-between">
               <div>
-                <span className="text-[11px] font-mono text-slate-400 uppercase">Optimized Result:</span>
+                <span className="text-[11px] font-mono text-slate-500 uppercase font-semibold">Optimized Result:</span>
                 {transformedOutput ? (
                   <div className="mt-2 space-y-2">
-                    <p className="text-xs text-emerald-300 font-medium leading-relaxed bg-emerald-950/30 p-2.5 rounded border border-emerald-800/60">
+                    <p className="text-xs text-emerald-950 font-medium leading-relaxed bg-emerald-50 p-3 rounded-xl border border-emerald-200">
                       "{transformedOutput.transformed_xyz}"
                     </p>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-[11px] text-slate-600">
                       <strong>Metric Highlighted:</strong> {transformedOutput.metric_highlighted}
                     </div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-[11px] text-slate-600">
                       <strong>Admissions Critique:</strong> {transformedOutput.critique}
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-6 text-center text-xs text-slate-600">
+                  <div className="mt-6 text-center text-xs text-slate-400">
                     Input a draft bullet and click transform to generate Stanford/MIT-ready X-Y-Z prose.
                   </div>
                 )}
@@ -323,9 +323,9 @@ export default function PortfolioBuilderPage() {
         {/* Bottom Split: 4-Year Milestone Framework & Predatory Journal Scanner */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* 4-Year Milestone Framework */}
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-            <h3 className="text-base font-bold text-white mb-3 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-blue-400" />
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-base font-bold text-slate-950 mb-3 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-rose-600" />
               <span>4-Year High School Spike Timeline (Grades 9–12)</span>
             </h3>
 
@@ -334,8 +334,8 @@ export default function PortfolioBuilderPage() {
                 <button
                   key={g}
                   onClick={() => setSelectedGrade(g)}
-                  className={`px-3 py-1 rounded text-xs font-mono font-medium transition ${
-                    selectedGrade === g ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                  className={`px-3 py-1 rounded-lg text-xs font-mono font-medium transition ${
+                    selectedGrade === g ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
                   Grade {g}
@@ -343,49 +343,49 @@ export default function PortfolioBuilderPage() {
               ))}
             </div>
 
-            <div className="bg-slate-950 p-4 rounded border border-slate-800 text-xs space-y-2.5">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2.5">
               {selectedGrade === 9 && (
                 <>
-                  <div className="font-bold text-blue-400">Grade 9: Broad Intellectual Exploration</div>
-                  <div className="text-slate-300">• 3 Diverse exploratory projects (Robotics, Algorithms, Economics)</div>
-                  <div className="text-slate-300">• Foundational competitive coding & open-source contributions</div>
-                  <div className="text-slate-300">• Maintain top-5% class rank baseline</div>
+                  <div className="font-bold text-rose-600">Grade 9: Broad Intellectual Exploration</div>
+                  <div className="text-slate-700">• 3 Diverse exploratory projects (Robotics, Algorithms, Economics)</div>
+                  <div className="text-slate-700">• Foundational competitive coding & open-source contributions</div>
+                  <div className="text-slate-700">• Maintain top-5% class rank baseline</div>
                 </>
               )}
               {selectedGrade === 10 && (
                 <>
-                  <div className="font-bold text-blue-400">Grade 10: Spike Hypothesis & Regional Contests</div>
-                  <div className="text-slate-300">• Isolate singular spike focus area</div>
-                  <div className="text-slate-300">• National Olympiad entry (INMO / INPhO / INOI / IRIS)</div>
-                  <div className="text-slate-300">• Launch first community technical artifact</div>
+                  <div className="font-bold text-rose-600">Grade 10: Spike Hypothesis & Regional Contests</div>
+                  <div className="text-slate-700">• Isolate singular spike focus area</div>
+                  <div className="text-slate-700">• National Olympiad entry (INMO / INPhO / INOI / IRIS)</div>
+                  <div className="text-slate-700">• Launch first community technical artifact</div>
                 </>
               )}
               {selectedGrade === 11 && (
                 <>
-                  <div className="font-bold text-blue-400">Grade 11: Primary Research Artifact & External Validation</div>
-                  <div className="text-slate-300">• Author primary research preprint (arXiv / SSRN)</div>
-                  <div className="text-slate-300">• Secure national/international award validation</div>
-                  <div className="text-slate-300">• Standardized testing (Target: SAT 1540+ / ACT 35+)</div>
+                  <div className="font-bold text-rose-600">Grade 11: Primary Research Artifact & External Validation</div>
+                  <div className="text-slate-700">• Author primary research preprint (arXiv / SSRN)</div>
+                  <div className="text-slate-700">• Secure national/international award validation</div>
+                  <div className="text-slate-700">• Standardized testing (Target: SAT 1540+ / ACT 35+)</div>
                 </>
               )}
               {selectedGrade === 12 && (
                 <>
-                  <div className="font-bold text-blue-400">Grade 12: Common App Synthesis & Early Action</div>
-                  <div className="text-slate-300">• Socratic Personal Statement authoring</div>
-                  <div className="text-slate-300">• Structure 10 Common App activities in strict X-Y-Z prose</div>
-                  <div className="text-slate-300">• Early Decision (ED) portfolio optimization</div>
+                  <div className="font-bold text-rose-600">Grade 12: Common App Synthesis & Early Action</div>
+                  <div className="text-slate-700">• Socratic Personal Statement authoring</div>
+                  <div className="text-slate-700">• Structure 10 Common App activities in strict X-Y-Z prose</div>
+                  <div className="text-slate-700">• Early Decision (ED) portfolio optimization</div>
                 </>
               )}
             </div>
           </div>
 
           {/* Predatory Journal & Publisher Scanner */}
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-            <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-amber-400" />
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-base font-bold text-slate-950 mb-2 flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-500" />
               <span>Beall's List Predatory Journal Scanner</span>
             </h3>
-            <p className="text-xs text-slate-400 mb-4">
+            <p className="text-xs text-slate-500 mb-4">
               Pay-to-publish predatory journals ruin admissions credibility. Verify any prospective journal or publisher here before submitting.
             </p>
 
@@ -395,21 +395,21 @@ export default function PortfolioBuilderPage() {
                 placeholder="Enter Journal / Publisher Name..."
                 value={journalQuery}
                 onChange={(e) => setJournalQuery(e.target.value)}
-                className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
               />
               <button
                 onClick={handleCheckJournal}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded px-4 py-1.5 text-xs font-semibold transition"
+                className="bg-slate-950 hover:bg-slate-800 text-white rounded-xl px-4 py-2 text-xs font-semibold transition"
               >
                 Scan
               </button>
             </div>
 
             {journalResult && (
-              <div className={`mt-4 p-3 rounded border text-xs ${
+              <div className={`mt-4 p-3 rounded-xl border text-xs ${
                 journalResult.is_flagged_predatory
-                  ? "bg-rose-950/40 border-rose-800 text-rose-300"
-                  : "bg-emerald-950/40 border-emerald-800 text-emerald-300"
+                  ? "bg-rose-50 border-rose-200 text-rose-800"
+                  : "bg-emerald-50 border-emerald-200 text-emerald-800"
               }`}>
                 <div className="font-bold">{journalResult.journal_name}</div>
                 <div className="mt-1 text-[11px]">{journalResult.warning}</div>
@@ -419,85 +419,85 @@ export default function PortfolioBuilderPage() {
         </div>
 
         {/* Flagship Opportunity Architecture: 3 Pillars from Master PRD Section 11 & 12 */}
-        <div className="mt-12 pt-10 border-t border-slate-800">
-          <div className="flex items-center gap-2 text-blue-400 text-xs font-mono font-semibold uppercase tracking-wider mb-2">
+        <div className="mt-12 pt-10 border-t border-slate-200">
+          <div className="flex items-center gap-2 text-rose-600 text-xs font-mono font-semibold uppercase tracking-wider mb-2">
             <span>Opportunity Architecture · Flagship Program</span>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">
+          <h2 className="text-2xl font-bold text-slate-950 mb-2">
             Research Fellowships, Corporate Sprints & Verified Credentials
           </h2>
-          <p className="text-sm text-slate-400 max-w-3xl mb-8 leading-relaxed">
+          <p className="text-sm text-slate-600 max-w-3xl mb-8 leading-relaxed">
             Over 80% of Indian applicants submit unverified resume claims. Student OS integrates direct 1:1 PhD faculty mentorship, corporate micro-internships, and tamper-proof OpenBadges v3.0 cryptographic verification.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Pillar 1: Research */}
-            <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-blue-500 rounded-lg p-5 flex flex-col justify-between">
+            <div className="bg-white border border-slate-200 border-t-2 border-t-rose-500 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
               <div>
-                <div className="flex items-center gap-2 text-blue-400 mb-2">
+                <div className="flex items-center gap-2 text-rose-600 mb-2">
                   <GraduationCap className="w-4 h-4" />
                   <span className="text-xs font-mono font-bold uppercase">1. 1:1 PhD Research Fellowship</span>
                 </div>
-                <h3 className="text-sm font-bold text-white mb-2">SSRN / arXiv Working Paper + Registered DOI</h3>
-                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                <h3 className="text-sm font-bold text-slate-950 mb-2">SSRN / arXiv Working Paper + Registered DOI</h3>
+                <p className="text-xs text-slate-600 leading-relaxed mb-4">
                   Match with PhD mentors from Cambridge, Oxford, Ashoka, or IISc. Develop empirical econometric models or ML pipelines and publish on verified pre-print servers.
                 </p>
-                <div className="bg-slate-950 p-2.5 rounded border border-slate-800/80 text-[11px] text-slate-300 font-mono space-y-1">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-700 font-mono space-y-1">
                   <div>• Faculty Co-Authorship Protocol</div>
                   <div>• Registered Crossref DOI</div>
-                  <div>• +2.4x Tier-1 Admissions Odds</div>
+                  <div className="text-rose-600 font-semibold">• +2.4x Tier-1 Admissions Odds</div>
                 </div>
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-800">
-                <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
                   <CheckCircle className="w-3.5 h-3.5" /> 3 Cohorts Open for Application
                 </span>
               </div>
             </div>
 
             {/* Pillar 2: Micro-Internships */}
-            <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-purple-500 rounded-lg p-5 flex flex-col justify-between">
+            <div className="bg-white border border-slate-200 border-t-2 border-t-purple-500 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
               <div>
-                <div className="flex items-center gap-2 text-purple-400 mb-2">
+                <div className="flex items-center gap-2 text-purple-600 mb-2">
                   <Briefcase className="w-4 h-4" />
                   <span className="text-xs font-mono font-bold uppercase">2. Corporate Micro-Internships</span>
                 </div>
-                <h3 className="text-sm font-bold text-white mb-2">4–8 Week Vetted High-Growth Sprints</h3>
-                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                <h3 className="text-sm font-bold text-slate-950 mb-2">4–8 Week Vetted High-Growth Sprints</h3>
+                <p className="text-xs text-slate-600 leading-relaxed mb-4">
                   Curated technical and policy sprints at algorithmic trading desks, AI startups, and think tanks. Ship production code instead of hypothetical essays.
                 </p>
-                <div className="bg-slate-950 p-2.5 rounded border border-slate-800/80 text-[11px] text-slate-300 font-mono space-y-1">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-700 font-mono space-y-1">
                   <div>• Applied LLM Fine-Tuning</div>
                   <div>• Quantitative Factor Backtesting</div>
                   <div>• Bi-Weekly Senior Practitioner Hours</div>
                 </div>
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-800">
-                <span className="text-[11px] text-blue-400 font-semibold flex items-center gap-1">
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <span className="text-[11px] text-blue-700 font-semibold flex items-center gap-1">
                   <CheckCircle className="w-3.5 h-3.5" /> Google / Goldman Sachs Mentors
                 </span>
               </div>
             </div>
 
             {/* Pillar 3: OpenBadges */}
-            <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-emerald-500 rounded-lg p-5 flex flex-col justify-between">
+            <div className="bg-white border border-slate-200 border-t-2 border-t-emerald-500 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
               <div>
-                <div className="flex items-center gap-2 text-emerald-400 mb-2">
+                <div className="flex items-center gap-2 text-emerald-600 mb-2">
                   <GitCommit className="w-4 h-4" />
                   <span className="text-xs font-mono font-bold uppercase">3. OpenBadges v3.0 Verification</span>
                 </div>
-                <h3 className="text-sm font-bold text-white mb-2">Cryptographic Commit Ledger</h3>
-                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                <h3 className="text-sm font-bold text-slate-950 mb-2">Cryptographic Commit Ledger</h3>
+                <p className="text-xs text-slate-600 leading-relaxed mb-4">
                   Tamper-proof verifiable credentials signed with Ed25519 keys, embedding your GitHub SHA-256 commit hashes directly into the admissions metadata.
                 </p>
-                <div className="bg-slate-950 p-2.5 rounded border border-slate-800/80 text-[11px] text-slate-300 font-mono space-y-1">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-700 font-mono space-y-1">
                   <div>• Zero Resume Fraud Guarantee</div>
                   <div>• Ed25519 Cryptographic Proof</div>
                   <div>• ATS & LinkedIn JSON-LD Embeds</div>
                 </div>
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-800">
-                <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
                   <Lock className="w-3.5 h-3.5" /> Institutional Proof-of-Work
                 </span>
               </div>

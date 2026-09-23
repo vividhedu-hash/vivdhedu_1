@@ -43,45 +43,45 @@ export default async function ComparePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#F8FAFC] text-slate-950 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold mb-2">
               <Scale className="w-3.5 h-3.5" />
               Side-by-Side ROI Benchmark Matrix
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white">
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-950">
               Compare Colleges & Programs
             </h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-slate-500 text-sm mt-1">
               {isLive
                 ? "Live programs from IndiaLens sovereign quantitative index."
                 : "Actuarial benchmark comparison — 20-year NPV, debt recovery, and AI risk."}
             </p>
           </div>
 
-          <a href="/explore" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg transition-all">
+          <a href="/explore" className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
             <Plus className="w-4 h-4" /> Browse programs
           </a>
         </div>
 
         <CollegeCompareTable programs={programs} />
 
-        <div className="p-6 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="space-y-1 text-center md:text-left">
-            <h3 className="text-base font-bold text-white flex items-center justify-center md:justify-start gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-400" /> Need AI Guidance on these selections?
+            <h3 className="text-base font-bold text-slate-950 flex items-center justify-center md:justify-start gap-2">
+              <Sparkles className="w-4 h-4 text-rose-600" /> Need AI Guidance on these selections?
             </h3>
-            <p className="text-xs text-slate-300">
-              The advisor evaluates your budget against programs in the live index.
+            <p className="text-xs text-slate-500">
+              The advisor evaluates your budget against programs in the live index using Gemini search grounding.
             </p>
           </div>
           <a
             href="/advisor"
-            className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-emerald-400 text-slate-950 font-bold text-xs rounded-xl hover:opacity-90 transition-all shrink-0"
+            className="px-5 py-2.5 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-all shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            Open AI Mode
+            Open AI Mode →
           </a>
         </div>
       </div>

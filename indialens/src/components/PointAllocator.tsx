@@ -8,11 +8,11 @@ interface PointAllocatorProps {
 }
 
 const DRIVERS = [
-  { id: "salary", label: "Salary & Financial IRR", desc: "10-year Net Present Value & Max Median Package", color: "#4F6EF7" },
-  { id: "wlb", label: "Work-Life Balance & Health", desc: "Predictable hours, low burnout, location flexibility", color: "#10B981" },
-  { id: "brand", label: "Brand Prestige & Alumni", desc: "Tier-1 tag, peer group network, social status", color: "#F59E0B" },
-  { id: "autonomy", label: "Autonomy & Ownership", desc: "Startup equity, fast promotion, creative freedom", color: "#EC4899" },
-  { id: "ai_security", label: "AI Resilience & Longevity", desc: "Protection against 10-year AI automation vectors", color: "#8B5CF6" },
+  { id: "salary", label: "Salary & Financial IRR", desc: "10-year Net Present Value & Max Median Package", color: "#2563EB" },
+  { id: "wlb", label: "Work-Life Balance & Health", desc: "Predictable hours, low burnout, location flexibility", color: "#059669" },
+  { id: "brand", label: "Brand Prestige & Alumni", desc: "Tier-1 tag, peer group network, social status", color: "#D97706" },
+  { id: "autonomy", label: "Autonomy & Ownership", desc: "Startup equity, fast promotion, creative freedom", color: "#E11D48" },
+  { id: "ai_security", label: "AI Resilience & Longevity", desc: "Protection against 10-year AI automation vectors", color: "#7C3AED" },
 ];
 
 export function PointAllocator({ onComplete }: PointAllocatorProps) {
@@ -49,26 +49,17 @@ export function PointAllocator({ onComplete }: PointAllocatorProps) {
   };
 
   return (
-    <div
-      style={{
-        background: "rgba(18, 18, 30, 0.75)",
-        backdropFilter: "blur(16px)",
-        border: "1px solid rgba(79, 110, 247, 0.3)",
-        borderRadius: 20,
-        padding: 24,
-        boxShadow: "0 16px 40px rgba(0,0,0,0.4)",
-      }}
-    >
+    <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Sliders size={18} style={{ color: "#7B96FF" }} />
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F0F0F5" }}>
+            <Sliders className="w-5 h-5 text-slate-800" />
+            <h3 className="text-xl font-bold text-slate-950 font-serif">
               Allocate Your 100 Priority Points
             </h3>
           </div>
-          <p style={{ fontSize: 13, color: "#8B8BA7" }}>
+          <p className="text-xs sm:text-sm text-slate-500">
             Distribute 100 trade-off points across your non-negotiable career drivers.
           </p>
         </div>
@@ -78,34 +69,21 @@ export function PointAllocator({ onComplete }: PointAllocatorProps) {
           <button
             type="button"
             onClick={handleReset}
-            style={{
-              background: "rgba(255, 255, 255, 0.05)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              borderRadius: 8,
-              padding: "6px 10px",
-              color: "#8B8BA7",
-              fontSize: 12,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-600 transition-colors"
           >
-            <RotateCcw size={12} /> Reset
+            <RotateCcw className="w-3.5 h-3.5" /> Reset
           </button>
           <div
-            style={{
-              padding: "8px 16px",
-              borderRadius: 12,
-              background: remaining === 0 ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)",
-              border: `1px solid ${remaining === 0 ? "#10B981" : "#F59E0B"}`,
-              textAlign: "right",
-            }}
+            className={`px-4 py-2 rounded-xl text-right border ${
+              remaining === 0
+                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                : "bg-amber-50 border-amber-200 text-amber-800"
+            }`}
           >
-            <span style={{ fontSize: 10, color: remaining === 0 ? "#10B981" : "#F59E0B", display: "block" }}>
-              POINTS REMAINING
+            <span className="text-[10px] font-mono font-bold tracking-wider uppercase block">
+              Points Remaining
             </span>
-            <span className="font-mono" style={{ fontSize: 18, fontWeight: 800, color: "#F0F0F5" }}>
+            <span className="font-mono text-base font-black">
               {remaining} / 100
             </span>
           </div>
@@ -113,29 +91,24 @@ export function PointAllocator({ onComplete }: PointAllocatorProps) {
       </div>
 
       {/* Driver Sliders */}
-      <div className="space-y-5">
+      <div className="space-y-4">
         {DRIVERS.map((driver) => {
           const val = points[driver.id] || 0;
           return (
             <div
               key={driver.id}
-              style={{
-                background: "rgba(255, 255, 255, 0.02)",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
-                borderRadius: 12,
-                padding: "12px 16px",
-              }}
+              className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 transition-colors"
             >
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#F0F0F5" }}>
+                  <span className="text-sm font-bold text-slate-900">
                     {driver.label}
                   </span>
-                  <span style={{ fontSize: 11, color: "#8B8BA7", marginLeft: 8 }}>
+                  <span className="text-xs text-slate-500 ml-2 hidden sm:inline">
                     — {driver.desc}
                   </span>
                 </div>
-                <span className="font-mono font-bold" style={{ fontSize: 15, color: driver.color }}>
+                <span className="font-mono font-bold text-sm text-slate-900">
                   {val} pts
                 </span>
               </div>
@@ -146,11 +119,7 @@ export function PointAllocator({ onComplete }: PointAllocatorProps) {
                 max={60}
                 value={val}
                 onChange={(e) => handleSliderChange(driver.id, parseInt(e.target.value))}
-                style={{
-                  width: "100%",
-                  accentColor: driver.color,
-                  cursor: "pointer",
-                }}
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#09090B]"
               />
             </div>
           );
@@ -158,23 +127,16 @@ export function PointAllocator({ onComplete }: PointAllocatorProps) {
       </div>
 
       {/* Confirm Button */}
-      <div className="mt-6 flex justify-end">
+      <div className="mt-8 flex justify-end">
         <button
           type="button"
           disabled={remaining !== 0}
           onClick={() => onComplete(points)}
-          style={{
-            padding: "12px 28px",
-            borderRadius: 12,
-            background: remaining === 0 ? "linear-gradient(135deg, #4F6EF7 0%, #7B96FF 100%)" : "rgba(79, 110, 247, 0.5)",
-            color: "#FFFFFF",
-            fontWeight: 700,
-            fontSize: 14,
-            border: "none",
-            cursor: remaining === 0 ? "pointer" : "not-allowed",
-            boxShadow: remaining === 0 ? "0 8px 24px rgba(79, 110, 247, 0.35)" : "none",
-            transition: "all 0.2s ease",
-          }}
+          className={`px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-sm ${
+            remaining === 0
+              ? "bg-[#09090B] hover:bg-[#27272A] text-white cursor-pointer"
+              : "bg-slate-200 text-slate-400 cursor-not-allowed"
+          }`}
         >
           {remaining === 0 ? "Confirm Allocation →" : `Allocate remaining ${remaining} pts`}
         </button>

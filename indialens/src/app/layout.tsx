@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { AuthProvider } from "@/lib/auth-context";
 import { AuthModal } from "@/components/AuthModal";
@@ -44,6 +42,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { AppShell } from "@/components/AppShell";
+
 export default function RootLayout({
   children,
 }: {
@@ -56,21 +56,14 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,600&display=swap"
-          rel="stylesheet"
-        />
-        {/* Clash Display (display headings) */}
-        <link
-          href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body>
+      <body className="bg-black text-[#F5F5F7] antialiased selection:bg-rose-900/30 selection:text-rose-300">
         <PostHogProvider>
           <AuthProvider>
-            <Navbar />
-            <main style={{ paddingTop: 60 }}>{children}</main>
-            <Footer />
+            <AppShell>{children}</AppShell>
             <AuthModal />
           </AuthProvider>
         </PostHogProvider>

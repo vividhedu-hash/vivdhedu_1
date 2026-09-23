@@ -387,42 +387,46 @@ export default function PsychometricPage() {
 
   if (!sessionState && phase === "intro") {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col items-center justify-center p-6">
         <div className="max-w-2xl w-full text-center space-y-8">
           <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center border border-slate-800">
-              <span className="font-mono font-bold text-xl text-slate-200">IL</span>
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-slate-200 shadow-sm">
+              <span className="font-mono font-bold text-xl text-slate-950">IL</span>
             </div>
           </div>
-          <div className="kicker-web text-[#0077C8] uppercase tracking-widest text-xs font-mono">
+          <div className="text-rose-600 uppercase tracking-widest text-xs font-mono font-semibold">
             3PL Item Response Theory · Adaptive Diagnostic
           </div>
-          <h1 className="headline text-4xl md:text-5xl font-bold text-slate-100">
+          <h1 className="font-serif text-4xl md:text-5xl font-bold text-slate-950">
             Your psychometric baseline.
           </h1>
-          <p className="headline-sub text-slate-400 text-lg md:text-xl max-w-xl mx-auto">
-            An adaptive IRT engine — not a personality quiz. 12–15 items. SE &lt; 0.28 convergence criterion.
+          <p className="text-slate-600 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
+            An adaptive IRT engine — not a personality quiz. 12–15 calibrated items with SE &lt; 0.28 convergence criterion.
           </p>
 
           <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto text-left mt-8">
-            <div className="glass-card p-4 rounded-xl border border-slate-800 bg-slate-900/50">
-              <div className="text-sm font-semibold text-slate-200">3PL IRT Model</div>
+            <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="text-sm font-semibold text-slate-900">3PL IRT Model</div>
+              <div className="text-xs text-slate-500 mt-0.5">Parameters: a, b, c</div>
             </div>
-            <div className="glass-card p-4 rounded-xl border border-slate-800 bg-slate-900/50">
-              <div className="text-sm font-semibold text-slate-200">Adaptive Item Selection</div>
+            <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="text-sm font-semibold text-slate-900">Adaptive Item Selection</div>
+              <div className="text-xs text-slate-500 mt-0.5">Maximum Fisher Info</div>
             </div>
-            <div className="glass-card p-4 rounded-xl border border-slate-800 bg-slate-900/50">
-              <div className="text-sm font-semibold text-slate-200">Bayesian Convergence</div>
+            <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="text-sm font-semibold text-slate-900">Bayesian Convergence</div>
+              <div className="text-xs text-slate-500 mt-0.5">Standard Error &lt; 0.28</div>
             </div>
-            <div className="glass-card p-4 rounded-xl border border-slate-800 bg-slate-900/50">
-              <div className="text-sm font-semibold text-slate-200">8 Career Archetypes</div>
+            <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="text-sm font-semibold text-slate-900">8 Career Archetypes</div>
+              <div className="text-xs text-slate-500 mt-0.5">Sovereign trait vector</div>
             </div>
           </div>
 
           <div className="pt-8">
             <button
               onClick={startSession}
-              className="btn-primary inline-flex items-center gap-2 px-8 py-4 bg-[#0077C8] hover:bg-[#005a9c] text-white rounded-lg font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-slate-950 hover:bg-slate-800 text-white rounded-xl font-bold transition shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               Begin Diagnostic &mdash;&gt;
             </button>
@@ -436,41 +440,41 @@ export default function PsychometricPage() {
     const currentTrait = TRAITS.find(t => t.key === currentItem.trait)?.label || currentItem.trait;
 
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-2xl">
-          <div className="wizard-progress h-2 bg-slate-800 rounded-full mb-8 overflow-hidden">
+      <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col items-center justify-center p-6">
+        <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+          <div className="h-2 bg-slate-100 rounded-full mb-8 overflow-hidden">
             <div 
-              className="wizard-progress-fill h-full bg-[#0077C8] transition-all duration-300"
+              className="h-full bg-rose-600 transition-all duration-300 rounded-full"
               style={{ width: `${progressPct}%` }}
             />
           </div>
           
-          <div className="font-mono text-slate-500 text-sm mb-6 uppercase tracking-wider">
+          <div className="font-mono text-slate-400 text-xs mb-4 uppercase tracking-wider font-semibold">
             Item {itemsCompleted + 1} · Trait: {currentTrait}
           </div>
 
-          <h2 className="font-serif text-2xl md:text-3xl leading-relaxed mb-10 text-slate-200">
+          <h2 className="font-serif text-2xl md:text-3xl leading-relaxed mb-8 text-slate-950 font-bold">
             {currentItem.text}
           </h2>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {currentItem.options.map((opt, i) => (
               <div
                 key={i}
                 onClick={() => handleAnswer(i)}
-                className={`selection-card p-4 rounded-lg border cursor-pointer transition-all duration-200 
-                  ${isAnimating ? "opacity-50 pointer-events-none" : "hover:border-slate-500 hover:bg-slate-800/50 border-slate-700 bg-slate-900/40 text-slate-300"}
+                className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 
+                  ${isAnimating ? "opacity-50 pointer-events-none" : "hover:border-slate-400 hover:shadow-sm border-slate-200 bg-slate-50/50 hover:bg-white text-slate-800"}
                 `}
               >
                 <div className="flex items-start gap-3">
-                  <span className="font-mono text-slate-500 mt-0.5">{String.fromCharCode(65 + i)}.</span>
-                  <span className="text-base leading-relaxed">{opt.text}</span>
+                  <span className="font-mono text-slate-400 font-bold mt-0.5">{String.fromCharCode(65 + i)}.</span>
+                  <span className="text-sm font-medium leading-relaxed">{opt.text}</span>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-12 text-center font-mono text-xs text-slate-600">
+          <div className="mt-8 text-center font-mono text-xs text-slate-400">
             Convergence: SE({currentItem.trait}) &rarr; 0.28
           </div>
         </div>
@@ -489,36 +493,36 @@ export default function PsychometricPage() {
     const strokeDasharray = `${(score / 100) * circum} ${circum}`;
 
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-12">
-        <div className="max-w-4xl mx-auto space-y-12">
+      <div className="min-h-screen bg-[#F8FAFC] text-slate-900 p-6 md:p-12">
+        <div className="max-w-4xl mx-auto space-y-10">
           
-          <div className="flex flex-col md:flex-row items-center gap-8 glass-card p-8 rounded-2xl border border-slate-800 bg-slate-900/40">
+          <div className="flex flex-col md:flex-row items-center gap-8 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
             <div className="relative w-[100px] h-[100px] flex items-center justify-center shrink-0">
               <svg width="100" height="100" className="transform -rotate-90">
-                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#1e293b" strokeWidth="8" />
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#E2E8F0" strokeWidth="8" />
                 <circle 
                   cx="50" cy="50" r="40" 
                   fill="transparent" 
-                  stroke="#0077C8" 
+                  stroke="#E11D48" 
                   strokeWidth="8" 
                   strokeDasharray={strokeDasharray}
                   strokeLinecap="round"
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center flex-col">
-                <span className="text-2xl font-bold">{score}</span>
+                <span className="text-2xl font-black text-slate-950">{score}</span>
               </div>
             </div>
             
             <div>
-              <div className="badge-blue inline-block px-3 py-1 rounded-full bg-blue-900/30 text-blue-400 text-xs font-mono mb-3 border border-blue-800/50 uppercase tracking-widest">
+              <div className="inline-block px-3 py-1 rounded-full bg-rose-50 text-rose-600 text-xs font-mono mb-3 border border-rose-200 uppercase tracking-widest font-semibold">
                 Primary Archetype
               </div>
-              <h2 className="headline text-3xl font-bold text-slate-100 mb-2 flex items-center gap-3">
+              <h2 className="font-serif text-3xl font-bold text-slate-950 mb-2 flex items-center gap-3">
                 <span className="text-4xl">{report.primary_archetype.emoji}</span>
                 {report.primary_archetype.label}
               </h2>
-              <p className="text-slate-400 leading-relaxed text-lg max-w-2xl">
+              <p className="text-slate-600 leading-relaxed text-base max-w-2xl">
                 {report.primary_archetype.description}
               </p>
             </div>
@@ -526,33 +530,33 @@ export default function PsychometricPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-8">
-              <div className="glass-card p-6 rounded-xl border border-slate-800 bg-slate-900/30">
-                <div className="badge-purple inline-block px-3 py-1 rounded-full bg-purple-900/30 text-purple-400 text-xs font-mono mb-3 border border-purple-800/50 uppercase tracking-widest">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="inline-block px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-mono mb-3 border border-purple-200 uppercase tracking-widest font-semibold">
                   Secondary Archetype
                 </div>
                 <div className="flex items-center gap-4 mt-2">
                   <span className="text-3xl">{report.secondary_archetype.emoji}</span>
                   <div>
-                    <h3 className="font-semibold text-lg text-slate-200">{report.secondary_archetype.label}</h3>
+                    <h3 className="font-bold text-base text-slate-900">{report.secondary_archetype.label}</h3>
                     <p className="text-slate-500 font-mono text-sm">{report.secondary_archetype.probability_pct}% match</p>
                   </div>
                 </div>
               </div>
 
-              <div className="glass-card p-6 rounded-xl border border-slate-800 bg-slate-900/30">
-                <h3 className="font-mono text-slate-500 uppercase tracking-widest text-xs mb-6">Trait Dimensions</h3>
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 className="font-mono text-slate-500 uppercase tracking-widest text-xs mb-6 font-semibold">Trait Dimensions</h3>
                 <div className="space-y-5">
                   {TRAITS.map(t => {
                     const val = report.trait_percentiles?.[t.key] ?? 50;
                     return (
                       <div key={t.key}>
                         <div className="flex justify-between text-sm mb-2">
-                          <span className="text-slate-300">{t.label}</span>
-                          <span className="font-mono text-slate-500">{val}th</span>
+                          <span className="text-slate-700 font-medium">{t.label}</span>
+                          <span className="font-mono text-slate-500 font-bold">{val}th</span>
                         </div>
-                        <div className="telemetry-bar-track h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div 
-                            className="telemetry-bar-fill h-full rounded-full transition-all duration-1000"
+                            className="h-full rounded-full transition-all duration-1000"
                             style={{ width: `${val}%`, backgroundColor: t.color }}
                           />
                         </div>
@@ -564,20 +568,21 @@ export default function PsychometricPage() {
             </div>
 
             <div className="space-y-8">
-              {/* Note: TraitRadarChart is requested but doesn't exist in imports. Using standard representation instead as preserving existing logic was paramount */}
-              <div className="glass-card p-6 rounded-xl border border-slate-800 bg-slate-900/30 h-full flex flex-col">
-                <h3 className="font-mono text-slate-500 uppercase tracking-widest text-xs mb-6">Career Alignments</h3>
-                <div className="flex flex-wrap gap-2 mb-8">
-                  {report.primary_archetype.career_paths.map(cp => (
-                    <span key={cp} className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-md text-sm border border-slate-700">
-                      {cp}
-                    </span>
-                  ))}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-full flex flex-col justify-between">
+                <div>
+                  <h3 className="font-mono text-slate-500 uppercase tracking-widest text-xs mb-6 font-semibold">Career Alignments</h3>
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    {report.primary_archetype.career_paths.map(cp => (
+                      <span key={cp} className="px-3 py-1.5 bg-slate-50 text-slate-800 rounded-lg text-xs font-medium border border-slate-200">
+                        {cp}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="mt-auto p-4 bg-amber-900/10 border border-amber-900/50 rounded-lg flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-200/80 leading-relaxed">
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-900 leading-relaxed font-medium">
                     {report.primary_archetype.caution}
                   </p>
                 </div>
@@ -585,11 +590,11 @@ export default function PsychometricPage() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8 border-t border-slate-800">
-            <Link href="/workspace" className="btn-primary px-8 py-3 bg-[#0077C8] hover:bg-[#005a9c] text-white rounded-lg font-medium transition-colors w-full sm:w-auto text-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 border-t border-slate-200">
+            <Link href="/workspace" className="px-8 py-3 bg-slate-950 hover:bg-slate-800 text-white rounded-xl font-bold transition shadow-sm w-full sm:w-auto text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
               Take to Workspace &mdash;&gt;
             </Link>
-            <button onClick={handleRestart} className="btn-secondary px-8 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium transition-colors w-full sm:w-auto">
+            <button onClick={handleRestart} className="px-8 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-semibold transition w-full sm:w-auto">
               Retake Diagnostic
             </button>
           </div>
@@ -599,13 +604,10 @@ export default function PsychometricPage() {
     );
   }
 
-  // [AI-CoLab: Cursor] While the first adaptive item is loading, the state is
-  // phase === "testing" with currentItem === null; previously no branch matched
-  // and the page went fully blank. Show a proper loading state instead.
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6">
-      <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
-      <p className="font-mono text-sm text-slate-400">Calibrating the adaptive engine…</p>
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col items-center justify-center p-6">
+      <div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin mb-4" />
+      <p className="font-mono text-sm text-slate-500">Calibrating the adaptive engine…</p>
     </div>
   );
 }

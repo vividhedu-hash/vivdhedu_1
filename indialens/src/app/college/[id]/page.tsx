@@ -108,17 +108,17 @@ export default function CollegeDetailPage() {
               alignItems: "center",
               gap: 6,
               fontSize: 13,
-              color: "#8B8BA7",
+              color: "#64748B",
               textDecoration: "none",
             }}
           >
             <ArrowLeft size={14} />
             ROI Index
           </Link>
-          <ChevronRight size={12} style={{ color: "#4A4A6A" }} />
-          <span style={{ fontSize: 13, color: "#4A4A6A" }}>{college.shortName}</span>
-          <ChevronRight size={12} style={{ color: "#4A4A6A" }} />
-          <span style={{ fontSize: 13, color: "#F0F0F5" }}>{degree.shortName}</span>
+          <ChevronRight size={12} style={{ color: "#94A3B8" }} />
+          <span style={{ fontSize: 13, color: "#64748B" }}>{college.shortName}</span>
+          <ChevronRight size={12} style={{ color: "#94A3B8" }} />
+          <span style={{ fontSize: 13, color: "#09090B", fontWeight: 600 }}>{degree.shortName}</span>
         </div>
 
         {/* Header */}
@@ -142,12 +142,12 @@ export default function CollegeDetailPage() {
               </div>
               <h1
                 className="font-display font-bold mb-1"
-                style={{ fontSize: 28, color: "#F0F0F5", letterSpacing: "-0.025em" }}
+                style={{ fontSize: 28, color: "#09090B", letterSpacing: "-0.025em" }}
               >
                 {college.name}
               </h1>
               <h2
-                style={{ fontSize: 18, color: "#8B8BA7", fontWeight: 500, marginBottom: 20 }}
+                style={{ fontSize: 18, color: "#64748B", fontWeight: 500, marginBottom: 20 }}
               >
                 {degree.name}
               </h2>
@@ -158,13 +158,13 @@ export default function CollegeDetailPage() {
                     icon: <TrendingUp size={14} />,
                     label: "Financial ROI",
                     value: `${roi.financialRoiPct.toLocaleString()}%`,
-                    color: "#4F6EF7",
+                    color: "#09090B",
                   },
                   {
                     icon: <Shield size={14} />,
                     label: "Risk Score",
                     value: `${roi.riskScore <= 1 ? Math.round(roi.riskScore * 100) : Math.round(roi.riskScore)}/100`,
-                    color: (roi.riskScore <= 1 ? roi.riskScore : roi.riskScore / 100) < 0.3 ? "#22C55E" : (roi.riskScore <= 1 ? roi.riskScore : roi.riskScore / 100) < 0.5 ? "#F59E0B" : "#EF4444",
+                    color: (roi.riskScore <= 1 ? roi.riskScore : roi.riskScore / 100) < 0.3 ? "#10B981" : (roi.riskScore <= 1 ? roi.riskScore : roi.riskScore / 100) < 0.5 ? "#F59E0B" : "#E11D48",
                   },
                   {
                     icon: <Users size={14} />,
@@ -172,19 +172,19 @@ export default function CollegeDetailPage() {
                     value: placement?.rate != null
                       ? `${placement.rate <= 1 ? Math.round(placement.rate * 100) : Math.round(placement.rate)}%`
                       : "—",
-                    color: "#22C55E",
+                    color: "#10B981",
                   },
                   {
                     icon: <Star size={14} />,
                     label: "Median Salary Y1",
                     value: formatInr(salary.year1.p50),
-                    color: "#F7C94F",
+                    color: "#D97706",
                   },
                 ].map((stat) => (
                   <div key={stat.label}>
                     <div
                       className="flex items-center gap-1.5 mb-1"
-                      style={{ color: "#4A4A6A" }}
+                      style={{ color: "#64748B" }}
                     >
                       {stat.icon}
                       <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>
@@ -211,17 +211,17 @@ export default function CollegeDetailPage() {
             <div className="glass-card p-6">
               <h3
                 className="font-display font-semibold mb-1"
-                style={{ fontSize: 18, color: "#F0F0F5" }}
+                style={{ fontSize: 18, color: "#09090B" }}
               >
                 Salary Trajectory
               </h3>
-              <p style={{ fontSize: 12, color: "#8B8BA7", marginBottom: 20 }}>
+              <p style={{ fontSize: 12, color: "#64748B", marginBottom: 20 }}>
                 Conservative (p25) / Base Case (p50) / Optimistic (p75) · Confidence Interval: {roi.confidenceIntervalLow}–{roi.confidenceIntervalHigh}
               </p>
               <SalaryTrajectory salaryByYear={salary} />
               <div
                 className="grid grid-cols-4 gap-4 mt-4 pt-4"
-                style={{ borderTop: "1px solid #1E1E2E" }}
+                style={{ borderTop: "1px solid #E2E8F0" }}
               >
                 {[
                   { year: "Year 1", data: salary.year1 },
@@ -230,13 +230,13 @@ export default function CollegeDetailPage() {
                   { year: "Year 20", data: salary.year20 },
                 ].map((s) => (
                   <div key={s.year}>
-                    <p style={{ fontSize: 10, color: "#4A4A6A", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    <p style={{ fontSize: 10, color: "#64748B", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                       {s.year}
                     </p>
-                    <p className="font-mono font-bold" style={{ fontSize: 13, color: "#F0F0F5" }}>
+                    <p className="font-mono font-bold" style={{ fontSize: 13, color: "#09090B" }}>
                       {formatInr(s.data.p50)}
                     </p>
-                    <p style={{ fontSize: 10, color: "#4A4A6A" }}>
+                    <p style={{ fontSize: 10, color: "#94A3B8" }}>
                       {formatInr(s.data.p25)}–{formatInr(s.data.p75)}
                     </p>
                   </div>
@@ -249,13 +249,13 @@ export default function CollegeDetailPage() {
               <div className="flex items-center justify-between mb-4">
                 <h3
                   className="font-display font-semibold"
-                  style={{ fontSize: 18, color: "#F0F0F5" }}
+                  style={{ fontSize: 18, color: "#09090B" }}
                 >
                   ROI Formula Breakdown
                 </h3>
                 <Link
                   href="/methodology"
-                  style={{ fontSize: 12, color: "#4F6EF7", textDecoration: "none" }}
+                  style={{ fontSize: 12, color: "#09090B", textDecoration: "none", fontWeight: 600 }}
                 >
                   Methodology →
                 </Link>
@@ -274,7 +274,7 @@ export default function CollegeDetailPage() {
             <div className="glass-card p-6">
               <h3
                 className="font-display font-semibold mb-4"
-                style={{ fontSize: 18, color: "#F0F0F5" }}
+                style={{ fontSize: 18, color: "#09090B" }}
               >
                 Total Cost of Degree
               </h3>
@@ -286,25 +286,25 @@ export default function CollegeDetailPage() {
                   { label: "Opportunity Cost", value: costs.opportunityCostInr },
                 ].map((item) => (
                   <div key={item.label}>
-                    <p style={{ fontSize: 11, color: "#4A4A6A", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    <p style={{ fontSize: 11, color: "#64748B", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                       {item.label}
                     </p>
-                    <p className="font-mono font-bold" style={{ fontSize: 15, color: "#F0F0F5" }}>
+                    <p className="font-mono font-bold" style={{ fontSize: 15, color: "#09090B" }}>
                       {formatInr(item.value)}
                     </p>
                   </div>
                 ))}
               </div>
               <div
-                style={{ borderTop: "1px solid #1E1E2E", paddingTop: 12, marginTop: 12 }}
+                style={{ borderTop: "1px solid #E2E8F0", paddingTop: 12, marginTop: 12 }}
               >
                 <div className="flex justify-between items-center">
-                  <span style={{ fontSize: 13, color: "#8B8BA7" }}>Total Cost of Degree</span>
-                  <span className="font-mono font-bold" style={{ fontSize: 18, color: "#EF4444" }}>
+                  <span style={{ fontSize: 13, color: "#64748B" }}>Total Cost of Degree</span>
+                  <span className="font-mono font-bold" style={{ fontSize: 18, color: "#E11D48" }}>
                     {formatInr(costs.totalCostOfDegreeInr)}
                   </span>
                 </div>
-                <p style={{ fontSize: 11, color: "#4A4A6A", marginTop: 4 }}>
+                <p style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>
                   Includes opportunity cost — what you'd earn if you'd taken a job after 12th (avg PLFS data)
                 </p>
               </div>
@@ -332,7 +332,7 @@ export default function CollegeDetailPage() {
             <div className="glass-card p-6">
               <h3
                 className="font-display font-semibold mb-4"
-                style={{ fontSize: 18, color: "#F0F0F5" }}
+                style={{ fontSize: 18, color: "#09090B" }}
               >
                 Risk Dashboard
               </h3>
@@ -342,10 +342,10 @@ export default function CollegeDetailPage() {
             {/* Data provenance */}
             <div className="glass-card p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Database size={14} style={{ color: "#4A4A6A" }} />
+                <Database size={14} style={{ color: "#64748B" }} />
                 <h3
                   className="font-display font-semibold"
-                  style={{ fontSize: 16, color: "#F0F0F5" }}
+                  style={{ fontSize: 16, color: "#09090B" }}
                 >
                   Data Sources
                 </h3>
@@ -361,21 +361,21 @@ export default function CollegeDetailPage() {
                   style={{
                     paddingBottom: 10,
                     marginBottom: 10,
-                    borderBottom: "1px solid #1E1E2E",
+                    borderBottom: "1px solid #E2E8F0",
                   }}
                 >
                   <div className="flex justify-between items-start">
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "#F0F0F5" }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: "#09090B" }}>
                       {src.source}
                     </p>
-                    <span style={{ fontSize: 10, color: "#4A4A6A" }}>{src.updated}</span>
+                    <span style={{ fontSize: 10, color: "#94A3B8" }}>{src.updated}</span>
                   </div>
-                  <p style={{ fontSize: 11, color: "#4A4A6A", marginTop: 2 }}>
+                  <p style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
                     {src.fields}
                   </p>
                 </div>
               ))}
-              <p style={{ fontSize: 10, color: "#4A4A6A" }}>
+              <p style={{ fontSize: 10, color: "#94A3B8" }}>
                 Model version: {meta.scrapeSource.split("+")[0].trim()}
               </p>
             </div>
@@ -387,7 +387,7 @@ export default function CollegeDetailPage() {
           <div className="mt-8">
             <h2
               className="font-display font-semibold mb-4"
-              style={{ fontSize: 22, color: "#F0F0F5" }}
+              style={{ fontSize: 22, color: "#09090B" }}
             >
               Similar Programs
             </h2>

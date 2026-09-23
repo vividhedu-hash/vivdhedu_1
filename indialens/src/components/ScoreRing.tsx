@@ -12,11 +12,11 @@ interface ScoreRingProps {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 85) return "#22C55E";
-  if (score >= 70) return "#84CC16";
-  if (score >= 55) return "#F59E0B";
-  if (score >= 40) return "#F97316";
-  return "#EF4444";
+  if (score >= 85) return "#30D158"; // Apple green
+  if (score >= 70) return "#5AC8F5"; // Apple teal
+  if (score >= 55) return "#FF9F0A"; // Apple amber
+  if (score >= 40) return "#FF6B35"; // orange
+  return "#FF453A"; // Apple red
 }
 
 function getScoreLabel(score: number): string {
@@ -80,7 +80,7 @@ export function ScoreRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#1E1E2E"
+          stroke="rgba(255,255,255,0.08)"
           strokeWidth={strokeWidth}
         />
         {/* Progress */}
@@ -96,7 +96,7 @@ export function ScoreRing({
           strokeDashoffset={animate ? offset : targetOffset}
           style={{
             transition: animate ? "stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)" : "none",
-            filter: `drop-shadow(0 0 6px ${color}60)`,
+            filter: `drop-shadow(0 0 5px ${color}50)`,
           }}
         />
       </svg>
@@ -112,7 +112,7 @@ export function ScoreRing({
             className="mt-0.5 font-body text-center leading-tight"
             style={{
               fontSize: size * 0.1,
-              color: "#8B8BA7",
+              color: "#48484A",
               letterSpacing: "0.04em",
             }}
           >

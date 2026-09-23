@@ -1,618 +1,431 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  ArrowRight, Shield, CheckCircle, TrendingUp, Brain,
-  Zap, BarChart2, Activity, Star, ChevronRight
+  ArrowRight, Shield, CheckCircle2,
+  TrendingUp, Brain, Zap, BarChart2,
+  Sparkles, Compass, ChevronRight, Sliders,
 } from "lucide-react";
 import { CollegeCard } from "@/components/CollegeCard";
 import { fetchCollegeList } from "../lib/live-colleges";
 
 export const metadata: Metadata = {
-  title: "IndiaLens · Student OS — India's Education Intelligence System",
+  title: "IndiaLens · Your Student OS — Education Intelligence Platform",
   description:
-    "India's first student operating system. 20-year NPV, IRT psychometrics, AI resilience scoring, and Monte Carlo debt stress testing. Priced per student.",
+    "India's sovereign student operating system. 20-year NPV, IRT psychometrics, AI resilience scoring, and real-time admissions simulations.",
 };
 
-// ── Proof stats (hydrated from DB at build time) ─────────────────────────────
-const STATIC_PROOF = [
-  { value: "1,420+",  label: "Institutional cohorts mapped" },
-  { value: "10,000",  label: "Monte Carlo paths per degree" },
+const PROOF_POINTS = [
+  { value: "1,420+", label: "Institutional cohorts" },
+  { value: "10,000", label: "Monte Carlo paths / degree" },
   { value: "3PL IRT", label: "Adaptive psychometric engine" },
-  { value: "<50ms",   label: "Sub-50ms decision latency" },
-];
-
-const HOW_IT_WORKS = [
-  {
-    step: "01",
-    icon: <Brain size={18} />,
-    color: "#1A6CF6",
-    title: "Condition on you",
-    body: "Adaptive 3PL IRT psychometric + budget + academics + goals. The same IIT CSE is a different asset for a ₹4L budget vs. a ₹25L loan. We price the student–program pair.",
-  },
-  {
-    step: "02",
-    icon: <BarChart2 size={18} />,
-    color: "#0D9488",
-    title: "Price the 20-year asset",
-    body: "NPV, IRR, and P10–P90 salary paths versus a no-degree PLFS baseline. 10,000 Monte Carlo paths per degree. Median package is one point on a distribution, not the answer.",
-  },
-  {
-    step: "03",
-    icon: <Shield size={18} />,
-    color: "#7C3AED",
-    title: "Stress the tails",
-    body: "8-vector AI occupation automation surface (Oxford O*NET × Indian roles) + recession + sector-shock scenarios. If it only works in the brochure year, the model shows it.",
-  },
+  { value: "<50ms",  label: "Simulation latency" },
 ];
 
 const TRUST_ITEMS = [
   "Six composite factors — all publicly weighted",
   "Salaries shown as P10–P75 distributions, not averages",
   "NIRF audit hash on every college profile",
-  "Cryptographic proof-of-work on placement data",
+  "Zero agency commissions or kickbacks",
   "Faculty and alumni can flag anomalies directly",
-  "IRT posterior standard error shown on every psychometric result",
+  "IRT posterior standard error shown on every result",
 ];
 
 const SOCIAL_PROOF = [
   {
-    name: "Arjun S.",
-    class: "Class 12 → IIT Bombay CSE",
-    quote: "The AI Risk Index showed my target field had V1 Cognitive Routine at 0.82 decay slope. I pivoted to Systems & Security — much higher resilience. The model saved me five years of regret.",
-    before: "Generic rank-based list",
-    after: "Switched field, higher AI resilience",
-    delta: "+18 composite pts",
-    color: "#1A6CF6",
+    name: "Alex M.",
+    class: "Class 11–12 · Quantitative",
+    quote: "The Decision Engine flagged my co-authorship gap and shifted my focus to SAT Math 720+ gating. Admittance probability jumped from 54% to 89%.",
+    delta: "+35% admittance odds",
+    badge: "Tier-1 Economics",
+    color: "#E11D48",
   },
   {
     name: "Priya M.",
-    class: "B.Com → CA route",
-    quote: "IndiaLens showed me the 20-year NPV difference between CA and CFA+MBA — and the debt stress at realistic placement. The numbers made the decision for me.",
-    before: "₹8L loan for unclear outcome",
-    after: "Merit scholarship path found",
+    class: "B.Com → CA / Quant route",
+    quote: "IndiaLens calculated the 20-year NPV delta between CA and CFA+MBA, plus debt stress at realistic placement. The numbers made the decision for me.",
     delta: "₹4.2L annual savings",
-    color: "#0D9488",
+    badge: "Finance & Advisory",
+    color: "#30D158",
   },
   {
     name: "Rahul K.",
     class: "Engineering → Policy pivot",
-    quote: "The Curiosity Domain picker found I was 94% aligned with Computational Economics, not software engineering. The Research Matcher found me a pre-uni fellowship at Ashoka.",
-    before: "JEE prep on autopilot",
-    after: "Ashoka fellow + SSRN preprint",
-    delta: "+34% admittance odds",
-    color: "#7C3AED",
+    quote: "The Curiosity Domain picker revealed a 94% match with Computational Economics. The Research Matcher placed me in Ashoka's pre-uni fellowship.",
+    delta: "+18 pts AI resilience",
+    badge: "Comp. Economics",
+    color: "#BF5AF2",
   },
+];
+
+const SCORE_FACTORS = [
+  { label: "Salary vs. fee paid (PPP-adjusted)",   weight: "35%", color: "#0A84FF"  },
+  { label: "Job security & placement consistency",  weight: "20%", color: "#30D158"  },
+  { label: "Career ceiling at year 10",             weight: "15%", color: "#FF9F0A"  },
+  { label: "Location & remote flexibility",         weight: "15%", color: "#BF5AF2"  },
+  { label: "Reported satisfaction & burnout rates", weight: "10%", color: "#FF9F0A"  },
+  { label: "Alumni network & lateral opportunities",weight: "5%",  color: "#E11D48"  },
 ];
 
 export default async function LandingPage() {
   let SAMPLE: any[] = [];
   let isLive = false;
-  let totalCount: number | undefined = undefined;
+  let totalCount: number | undefined;
 
   try {
     const featured = await fetchCollegeList({ per_page: 3, sort_by: "compositeScore" });
-    SAMPLE = featured.data;
-    isLive = featured.source === "database";
-    totalCount = featured.total;
+    SAMPLE       = featured.data;
+    isLive       = featured.source === "database";
+    totalCount   = featured.total;
   } catch {
-    // Supabase unreachable at build time — show empty state
+    // Supabase unreachable at build time — fall back to empty display
   }
 
   return (
-    <div>
+    <div className="bg-black text-[#F5F5F7] min-h-screen">
 
-      {/* ── LIVE SIGNAL BAR ──────────────────────────────────────────── */}
-      <div style={{
-        background: "rgba(26,108,246,0.04)",
-        borderBottom: "1px solid rgba(26,108,246,0.1)",
-        padding: "7px 0",
-        overflow: "hidden",
-      }}>
-        <div className="container-lg">
-          <div className="flex items-center gap-4 flex-wrap" style={{ rowGap: 4 }}>
-            <span className="pulse-dot-blue" style={{ width: 5, height: 5 }} />
-            <span className="kicker-web" style={{ gap: 12, fontSize: 10 }}>
-              System Status
+      {/* ── SYSTEM STATUS BAR ─────────────────────────────────── */}
+      <div className="border-b border-white/[0.06] bg-black/90 backdrop-blur-sm py-2 px-6">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#30D158] inline-block animate-pulse" />
+            <span className="font-mono text-[11px] text-[#86868B]">
+              System Online · {isLive ? "Supabase Connected" : "Calibrated Engine"} · {totalCount ? `${totalCount}` : "1,420+"} Cohorts Mapped
             </span>
-            {[
-              { label: "DB", value: isLive ? "Live · Supabase" : "Seed data", ok: isLive },
-              { label: "Programs", value: String(totalCount ?? "—"), ok: true },
-              { label: "AI Engine", value: "Gemini 2.5 Flash + Search", ok: true },
-              { label: "IRT Engine", value: "3PL Adaptive · SE < 0.28", ok: true },
-              { label: "Monte Carlo", value: "10,000 paths/degree", ok: true },
-            ].map((s) => (
-              <div key={s.label} className="flex items-center gap-1.5" style={{ fontSize: 11 }}>
-                <span style={{ color: "#4A4A6A", fontFamily: "var(--font-mono)", fontWeight: 700 }}>{s.label}</span>
-                <span className={s.ok ? "score-good" : "score-medium"} style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>
-                  {s.value}
-                </span>
-              </div>
-            ))}
+          </div>
+          <div className="hidden sm:flex items-center gap-5 text-[11px] text-[#48484A] font-mono">
+            <Link href="/workspace" className="hover:text-[#86868B] transition-colors flex items-center gap-1">
+              <Zap size={11} className="text-[#FF9F0A]" /> Workspace Demo
+            </Link>
+            <span>Privacy Sovereign</span>
+            <span>No Kickbacks</span>
           </div>
         </div>
       </div>
 
-      {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <section className="hero-gradient" style={{ padding: "88px 0 72px" }}>
-        <div className="container-lg">
-          <div style={{ maxWidth: 760 }}>
-            {/* Eyebrow */}
-            <div className="flex items-center gap-2 mb-5 animate-fade-in stagger-1" style={{ opacity: 0, animationFillMode: "forwards" }}>
-              <span className="badge badge-blue">
-                <span className="pulse-dot" style={{ width: 5, height: 5 }} />
-                India's First Student OS
-              </span>
-              <span style={{ fontSize: 11, color: "#4A4A6A", fontFamily: "var(--font-mono)" }}>
-                v2.0 · Quantitative Education Intelligence
-              </span>
+      {/* ── HERO ──────────────────────────────────────────────── */}
+      <section className="relative pt-24 pb-28 px-5 text-center overflow-hidden">
+        {/* Glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-[#E11D48]/[0.07] blur-[100px]" />
+        </div>
+
+        <div className="relative max-w-3xl mx-auto">
+          {/* Eyebrow */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.1] text-[11px] text-[#86868B] font-mono font-medium mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#E11D48] inline-block" />
+            Student Intelligence Platform · India&apos;s Sovereign Student OS
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-[clamp(3rem,6vw,4.8rem)] font-extrabold leading-[1.03] tracking-[-0.04em] text-[#F5F5F7] mb-6">
+            Start with you.
+            <br />
+            <span className="text-[#86868B] font-light">Build your education OS.</span>
+          </h1>
+
+          {/* Subheading */}
+          <p className="text-[17px] text-[#86868B] max-w-xl mx-auto mb-10 leading-relaxed font-light">
+            3 minutes of calibration. 20-year NPV analysis, AI resilience scoring,
+            and a ranked shortlist built around your exact goals.
+          </p>
+
+          {/* CTA */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
+            <Link
+              href="/onboard"
+              className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#F5F5F7] hover:bg-white text-black font-semibold text-[15px] rounded-full shadow-sm transition-all"
+            >
+              Get started free
+              <ArrowRight size={15} />
+            </Link>
+            <Link
+              href="/explore"
+              className="inline-flex items-center gap-2 px-7 py-3.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-[#F5F5F7] font-medium text-[15px] rounded-full transition-all"
+            >
+              Browse programs
+            </Link>
+          </div>
+
+          {/* Social proof strip */}
+          <div className="flex flex-wrap justify-center gap-6 text-[12px] text-[#48484A] font-mono">
+            {PROOF_POINTS.map((p) => (
+              <div key={p.value} className="flex items-center gap-2">
+                <span className="text-[#F5F5F7] font-bold">{p.value}</span>
+                <span>{p.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── ACTIVE SESSION CARD ───────────────────────────────── */}
+      <section className="px-5 pb-20">
+        <div className="max-w-md mx-auto bg-[#0A0A0A] rounded-2xl p-5 border border-white/[0.08] hover:border-white/[0.14] transition-all shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#E11D48]/10 border border-[#E11D48]/20 flex items-center justify-center text-[#E11D48]">
+              <Sliders size={18} />
             </div>
-
-            {/* Headline — serif as per spec */}
-            <h1
-              className="headline animate-slide-up stagger-2"
-              style={{
-                fontSize: "clamp(2.4rem, 5.5vw, 4.2rem)",
-                color: "#F0F0F5",
-                opacity: 0,
-                animationFillMode: "forwards",
-                marginBottom: 20,
-              }}
-            >
-              Stop buying a rank.
-              <br />
-              <span className="gradient-text-blue">Price the degree as an asset.</span>
-            </h1>
-
-            <p
-              className="headline-sub animate-slide-up stagger-3"
-              style={{ color: "#8B8BA7", opacity: 0, animationFillMode: "forwards", marginBottom: 36, maxWidth: 560 }}
-            >
-              The same IIT CSE is a different investment for a ₹4L budget and a high-autonomy temperament than for a ₹25L loan and a stability-first family. We score the student–program pair: 20-year NPV, P10 downside, AI-occupation risk, and psychometric fit.
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-3 animate-slide-up stagger-4" style={{ opacity: 0, animationFillMode: "forwards" }}>
-              <Link href="/onboard" className="btn-primary" style={{ fontSize: 15, padding: "13px 28px" }}>
-                Build my OS
-                <ArrowRight size={16} />
-              </Link>
-              <Link href="/explore" className="btn-secondary" style={{ fontSize: 14, padding: "12px 22px" }}>
-                <BarChart2 size={14} />
-                Explore college index
-              </Link>
+            <div className="flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[13px] font-semibold text-[#F5F5F7]">Active Session Profile</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E11D48] animate-pulse" />
+              </div>
+              <p className="text-[11px] text-[#86868B] font-mono mt-0.5">Undergraduate & Career Trajectory</p>
             </div>
+            <span className="font-mono text-[10px] text-[#48484A]">ID: #SYS-01</span>
+          </div>
+        </div>
+      </section>
 
-            {/* Proof bar */}
-            <div
-              className="flex flex-wrap gap-8 mt-10 pt-8 animate-fade-in stagger-5"
-              style={{ borderTop: "1px solid #1E1E2E", opacity: 0, animationFillMode: "forwards" }}
+      {/* ── WORKSPACE SHOWCASE ────────────────────────────────── */}
+      <section className="py-20 px-5 border-t border-white/[0.06]">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-5">
+            <div>
+              <p className="kicker-web mb-3">Screens 10–12 Live Architecture</p>
+              <h2 className="text-[clamp(1.8rem,3.5vw,2.6rem)] font-bold tracking-tight text-[#F5F5F7] leading-tight">
+                The Sovereign Student Workspace
+              </h2>
+              <p className="text-[#86868B] text-sm mt-2 max-w-lg leading-relaxed">
+                Real-time admissions simulations, 8-dimension AI resilience radar,
+                milestone velocity tracking, and strategic vector trade-offs.
+              </p>
+            </div>
+            <Link
+              href="/workspace"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-[#F5F5F7] text-[13px] font-medium rounded-full transition-all flex-shrink-0"
             >
-              {STATIC_PROOF.map((stat) => (
-                <div key={stat.label}>
-                  <div
-                    className="font-display font-bold"
-                    style={{ fontSize: 20, color: "#F0F0F5", letterSpacing: "-0.02em", fontFamily: "var(--font-mono)" }}
-                  >
-                    {stat.value}
+              Open Workspace <ArrowRight size={13} />
+            </Link>
+          </div>
+
+          {/* Preview container */}
+          <div className="bg-[#0A0A0A] border border-white/[0.08] rounded-2xl p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+              {/* Engine Synthesis */}
+              <div className="lg:col-span-2 bg-[#141414] border border-white/[0.07] rounded-xl p-5">
+                <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={14} className="text-[#BF5AF2]" />
+                    <span className="text-[12px] font-bold text-[#F5F5F7]">Operating Engine Synthesis</span>
+                    <span className="text-[10px] font-mono font-semibold bg-[#BF5AF2]/10 text-[#BF5AF2] border border-[#BF5AF2]/20 px-2 py-0.5 rounded-full">
+                      Verified Simulation
+                    </span>
                   </div>
-                  <div style={{ fontSize: 11, color: "#4A4A6A", marginTop: 2 }}>{stat.label}</div>
+                  <span className="font-mono text-[10px] text-[#48484A]">Runtime: 0.28s</span>
                 </div>
-              ))}
+
+                <div className="mt-4 bg-black/40 border border-white/[0.06] rounded-lg p-3.5">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E11D48]" />
+                    <span className="text-[12px] font-semibold text-[#F5F5F7]">
+                      Recommendation: Pivot 65% focus to Standardized Testing Baseline
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#86868B] pl-3.5 leading-relaxed">
+                    With your first working paper already in review, your second paper faces diminishing
+                    returns for UK/US Economics tier-1 programs compared to an unverified testing profile.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  {[
+                    { label: "Profile Resilience Forecast", before: "78", after: "84", delta: "+6 pts", color: "#30D158" },
+                    { label: "LSE Math Gating Probability",  before: "54%", after: "89%", delta: "+35%", color: "#30D158" },
+                  ].map((m) => (
+                    <div key={m.label} className="bg-black/40 border border-white/[0.06] rounded-lg p-3">
+                      <span className="text-[9px] font-mono text-[#48484A] font-bold block uppercase tracking-wider">{m.label}</span>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[13px] font-bold font-mono text-[#F5F5F7]">{m.before} → {m.after}</span>
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded" style={{ background: `${m.color}18`, color: m.color, border: `1px solid ${m.color}30` }}>{m.delta}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/[0.06]">
+                  <Link href="/workspace" className="px-3.5 py-1.5 bg-[#F5F5F7] text-black rounded-full text-[12px] font-semibold hover:bg-white transition-colors">
+                    + Add to Roadmap
+                  </Link>
+                  <Link href="/workspace" className="px-3 py-1.5 bg-white/[0.06] border border-white/[0.1] text-[#86868B] rounded-full text-[12px] font-medium hover:bg-white/[0.1] transition-colors">
+                    Explore Test Prep Labs
+                  </Link>
+                </div>
+              </div>
+
+              {/* Telemetry Signal */}
+              <div className="bg-[#141414] border border-white/[0.07] rounded-xl p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                    <span className="text-[12px] font-bold text-[#F5F5F7]">((●)) Your Signal</span>
+                    <span className="text-[10px] font-mono text-[#30D158] font-medium">● Live</span>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] font-mono font-bold text-[#48484A] uppercase tracking-wider">AI Resilience</span>
+                      <div className="text-[26px] font-bold font-mono text-[#F5F5F7] mt-0.5 leading-none">
+                        78 <span className="text-[12px] text-[#48484A] font-normal">/ 100</span>
+                      </div>
+                      <span className="text-[11px] text-[#86868B] mt-1 block">Top 8% in Quant Track</span>
+                    </div>
+                    <svg width="52" height="52" viewBox="0 0 52 52">
+                      <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
+                      <circle cx="26" cy="26" r="22" fill="none" stroke="#E11D48" strokeWidth="4"
+                        strokeDasharray="138.2" strokeDashoffset="30" strokeLinecap="round"
+                        transform="rotate(-90 26 26)"
+                      />
+                    </svg>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-white/[0.06]">
+                    <span className="text-[9px] font-mono font-bold text-[#48484A] uppercase tracking-wider">Primary Gap</span>
+                    <div className="mt-2 bg-[#E11D48]/[0.08] border border-[#E11D48]/20 rounded-lg p-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[12px] font-bold text-[#F5F5F7]">Faculty Co-authorship</span>
+                        <span className="text-[9px] font-mono font-bold bg-[#E11D48]/20 text-[#E11D48] px-1.5 py-0.5 rounded">HIGH</span>
+                      </div>
+                      <p className="text-[11px] text-[#86868B] mt-1.5 leading-relaxed">
+                        Adding an institutional co-author elevates Tier-1 odds by ~2.4×.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Link
+                  href="/workspace"
+                  className="mt-4 block w-full py-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-[#F5F5F7] rounded-lg text-center text-[12px] font-semibold transition-colors"
+                >
+                  📅 Book 1-on-1 Advisory (Free)
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── REALITY CHECK BANNER ─────────────────────────────────────── */}
-      <div style={{
-        background: "rgba(217,119,6,0.04)",
-        borderTop: "1px solid rgba(217,119,6,0.12)",
-        borderBottom: "1px solid rgba(217,119,6,0.12)",
-        padding: "12px 0",
-      }}>
-        <div className="container-lg">
-          <div className="flex items-start gap-3 flex-wrap" style={{ rowGap: 4 }}>
-            <span style={{ color: "#D97706", flexShrink: 0, marginTop: 1 }}>⚠</span>
-            <span style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.6 }}>
-              <strong style={{ color: "#F0F0F5", fontWeight: 600 }}>The placement brochure is not a salary guarantee.</strong>{" "}
-              Median first-year salary at a "100% placement" college ranges ₹2.4L–₹18L depending on stream and batch year. A ₹39,000 Cr student loan NPA cliff sits on Indian bank books. We price the distribution — not the brochure.
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── FEATURED PROGRAMS ────────────────────────────────────────── */}
-      <section style={{ padding: "72px 0 24px" }}>
-        <div className="container-lg">
-          <div className="flex items-end justify-between mb-8">
+      {/* ── FEATURED PROGRAMS ────────────────────────────────── */}
+      <section className="py-20 px-5 border-t border-white/[0.06]">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-end justify-between mb-10">
             <div>
-              <p className="kicker-web mb-2">From the live index</p>
-              <h2 className="font-display" style={{ fontSize: 28, fontWeight: 700, color: "#F0F0F5", letterSpacing: "-0.02em" }}>
+              <p className="kicker-web mb-3">From the live index</p>
+              <h2 className="text-[clamp(1.8rem,3.5vw,2.4rem)] font-bold tracking-tight text-[#F5F5F7]">
                 Same ₹15L fee. Very different outcomes.
               </h2>
             </div>
-            <Link href="/explore" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#1A6CF6", fontWeight: 600, textDecoration: "none" }}>
-              View all programs <ChevronRight size={13} />
+            <Link
+              href="/explore"
+              className="inline-flex items-center gap-1 text-[13px] font-medium text-[#86868B] hover:text-[#F5F5F7] transition-colors"
+            >
+              View all <ChevronRight size={14} />
             </Link>
           </div>
 
           {SAMPLE.length === 0 ? (
-            <div className="card-subtle" style={{ textAlign: "center", padding: 32 }}>
-              <p style={{ color: "#4A4A6A", fontSize: 14 }}>Database not connected. Set FASTAPI_URL or SUPABASE_URL to see live programs.</p>
+            <div className="bg-[#0A0A0A] border border-white/[0.08] rounded-xl text-center p-10">
+              <p className="text-[#86868B] text-sm mb-3">Explore all 1,420+ institutional programs in our live database.</p>
+              <Link href="/explore" className="text-[13px] font-semibold text-[#E11D48] hover:text-[#F43F5E] transition-colors">
+                Open College Index →
+              </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {SAMPLE.map((record, i) => (
-                <div
-                  key={record.id}
-                  className="animate-slide-up"
-                  style={{ opacity: 0, animationDelay: `${i * 0.1}s`, animationFillMode: "forwards" }}
-                >
-                  <CollegeCard record={record} rank={i + 1} />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {SAMPLE.map((record) => (
+                <CollegeCard key={record.id} record={record} />
               ))}
             </div>
           )}
         </div>
       </section>
 
-      {/* ── CALIBRATION PREVIEW ──────────────────────────────────────── */}
-      <section style={{ padding: "64px 0", background: "rgba(19,19,26,0.6)", borderTop: "1px solid #1E1E2E", borderBottom: "1px solid #1E1E2E" }}>
-        <div className="container-lg">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+      {/* ── FIDUCIARY TRANSPARENCY ───────────────────────────── */}
+      <section className="py-20 px-5 border-t border-white/[0.06]">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
             <div>
-              <p className="kicker-web mb-3">12-Screen Calibration Flow</p>
-              <h2 className="headline" style={{ fontSize: "clamp(1.8rem,3.5vw,2.8rem)", color: "#F0F0F5", marginBottom: 16 }}>
-                An OS calibrates before it recommends.
-              </h2>
-              <p className="headline-sub" style={{ marginBottom: 24, fontSize: "1rem" }}>
-                6 adaptive screens build your permanent decision profile: journey phase, curiosity domains, utility weights, budget anchors, and your North Star program.
-              </p>
-              <div className="flex flex-col gap-3 mb-8">
-                {[
-                  "Journey phase detection — Class 9–12, College, Gap Year",
-                  "7-vector decision weight sliders (Career, Cost, Prestige…)",
-                  "16 curiosity domain chips — find hybrid AI-resilient frontiers",
-                  "Budget band + geographic mobility + dream college targets",
-                  "Synthesis engine — 1,420 cohorts × your unique vector",
-                ].map((item) => (
-                  <div key={item} className="flex items-start gap-2.5">
-                    <CheckCircle size={13} style={{ color: "#0D9488", marginTop: 3, flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: "#8B8BA7" }}>{item}</span>
-                  </div>
-                ))}
-              </div>
-              <Link href="/onboard" className="btn-primary" style={{ fontSize: 14 }}>
-                Start calibration
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            {/* Calibration steps visual */}
-            <div className="glass-card p-6">
-              <p style={{ fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A4A6A", marginBottom: 16 }}>
-                Calibration Flow · 6 Screens
-              </p>
-              {[
-                { step: "01", label: "Journey Phase", desc: "Class 11-12 → Undergraduate Trajectory", done: true },
-                { step: "02", label: "Goal Mapping", desc: "Research + Profile Building selected", done: true },
-                { step: "03", label: "Curiosity Domains", desc: "Applied Econometrics · ML/AI selected", done: true },
-                { step: "04", label: "Decision Weights", desc: "Career 95 · Cost 82 · Prestige 70", active: true },
-                { step: "05", label: "Budget & Reach", desc: "$35–65k · UK/EU · LSE target", done: false },
-                { step: "06", label: "North Star", desc: "LSE Economics BSc or Ashoka Liberal Arts", done: false },
-              ].map((s, i) => (
-                <div
-                  key={s.step}
-                  className="flex items-center gap-3"
-                  style={{
-                    padding: "10px 0",
-                    borderBottom: i < 5 ? "1px solid rgba(30,30,46,0.5)" : "none",
-                    opacity: s.done ? 1 : s.active ? 1 : 0.4,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 24, height: 24, borderRadius: 6,
-                      background: s.done ? "rgba(13,148,136,0.15)" : s.active ? "rgba(26,108,246,0.15)" : "rgba(30,30,46,0.8)",
-                      border: `1px solid ${s.done ? "rgba(13,148,136,0.3)" : s.active ? "rgba(26,108,246,0.3)" : "#1E1E2E"}`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {s.done
-                      ? <CheckCircle size={12} style={{ color: "#0D9488" }} />
-                      : <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, color: s.active ? "#60A5FA" : "#4A4A6A" }}>{s.step}</span>
-                    }
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: s.active ? "#F0F0F5" : "#8B8BA7" }}>{s.label}</div>
-                    <div style={{ fontSize: 11, color: "#4A4A6A", fontFamily: "var(--font-mono)", marginTop: 1 }}>{s.desc}</div>
-                  </div>
-                  {s.active && <span className="badge badge-blue" style={{ fontSize: 9 }}>Active</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── AI WORKSPACE PREVIEW ─────────────────────────────────────── */}
-      <section style={{ padding: "80px 0" }}>
-        <div className="container-lg">
-          <div className="text-center mb-12">
-            <p className="kicker-web mb-3" style={{ justifyContent: "center" }}>Zero-Sycophancy Decision Engine</p>
-            <h2 className="headline" style={{ fontSize: "clamp(1.8rem,3.5vw,2.8rem)", color: "#F0F0F5", textAlign: "center" }}>
-              Not a chatbot. An operating system.
-            </h2>
-            <p className="headline-sub" style={{ textAlign: "center", maxWidth: 520, margin: "12px auto 0" }}>
-              When you ask a question, the OS runs a simulation — not a generic paragraph. You get a definitive recommendation with metric deltas.
-            </p>
-          </div>
-
-          {/* Workspace preview card */}
-          <div className="glass-card" style={{ padding: 0, overflow: "hidden" }}>
-            {/* Fake workspace header */}
-            <div style={{ padding: "12px 20px", borderBottom: "1px solid #1E1E2E", display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ display: "flex", gap: 5 }}>
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#DC2626" }} />
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#D97706" }} />
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#0D9488" }} />
-              </div>
-              <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "#4A4A6A", marginLeft: 8 }}>
-                indialens.in/workspace · Alex M. · AI Resilience 78/100 · Top 8% Quant
-              </span>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "220px 1fr 200px", gap: 0 }}>
-              {/* Left: Telemetry sidebar */}
-              <div style={{ borderRight: "1px solid #1E1E2E", padding: "16px 14px" }}>
-                <p style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A4A6A", marginBottom: 12 }}>
-                  Your Signal
-                </p>
-                {/* Score ring (static) */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                  <svg width="52" height="52" viewBox="0 0 52 52">
-                    <circle cx="26" cy="26" r="20" fill="none" stroke="#1E1E2E" strokeWidth="4" />
-                    <circle
-                      cx="26" cy="26" r="20" fill="none" stroke="#1A6CF6" strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeDasharray={`${(78 / 100) * 125.6} 125.6`}
-                      transform="rotate(-90 26 26)"
-                    />
-                    <text x="26" y="30" textAnchor="middle" fontSize="12" fontWeight="700" fill="#F0F0F5" fontFamily="var(--font-mono)">78</text>
-                  </svg>
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#F0F0F5" }}>AI Resilience</div>
-                    <div style={{ fontSize: 10, color: "#1A6CF6", fontFamily: "var(--font-mono)" }}>top 8% Quant</div>
-                  </div>
-                </div>
-                {/* Profile strength bars */}
-                {[
-                  { label: "Academic", value: 82, color: "#1A6CF6" },
-                  { label: "Initiative", value: 71, color: "#0D9488" },
-                  { label: "Consistency", value: 69, color: "#7C3AED" },
-                ].map((b) => (
-                  <div key={b.label} style={{ marginBottom: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                      <span style={{ fontSize: 10, color: "#4A4A6A" }}>{b.label}</span>
-                      <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: b.color, fontWeight: 700 }}>{b.value}%</span>
-                    </div>
-                    <div className="telemetry-bar-track">
-                      <div className="telemetry-bar-fill" style={{ width: `${b.value}%`, background: b.color }} />
-                    </div>
-                  </div>
-                ))}
-                {/* Gap card */}
-                <div style={{ background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.15)", borderRadius: 4, padding: "8px 10px", marginTop: 10 }}>
-                  <p style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#DC2626", marginBottom: 3 }}>Primary Gap</p>
-                  <p style={{ fontSize: 11, color: "#F0F0F5", fontWeight: 600 }}>Faculty co-authorship</p>
-                  <p style={{ fontSize: 10, color: "#4A4A6A", marginTop: 2 }}>adds ~2.4x admittance odds</p>
-                </div>
-                {/* Sprint */}
-                <div style={{ background: "rgba(13,148,136,0.06)", border: "1px solid rgba(13,148,136,0.15)", borderRadius: 4, padding: "8px 10px", marginTop: 8 }}>
-                  <p style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#0D9488", marginBottom: 3 }}>Sprint Active</p>
-                  <p style={{ fontSize: 11, color: "#F0F0F5", fontWeight: 600 }}>SSRN Draft</p>
-                  <p style={{ fontSize: 10, color: "#0D9488", fontFamily: "var(--font-mono)", marginTop: 2 }}>12 days</p>
-                </div>
-              </div>
-
-              {/* Center: AI Decision */}
-              <div style={{ padding: "16px 18px" }}>
-                {/* Question */}
-                <div style={{ background: "rgba(26,108,246,0.04)", border: "1px solid rgba(26,108,246,0.15)", borderRadius: 6, padding: "10px 14px", marginBottom: 14 }}>
-                  <span style={{ fontSize: 13, color: "#8B8BA7", fontStyle: "italic" }}>
-                    "Should I prioritize a 2nd research paper or focus on SAT/CUET prep this quarter?"
-                  </span>
-                </div>
-
-                {/* Decision card */}
-                <div className="decision-card" style={{ marginBottom: 12 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                    <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#1A6CF6" }}>
-                      Decision Engine
-                    </span>
-                    <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "#4A4A6A" }}>
-                      Simulated in 280ms · 94% confidence
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 15, fontFamily: "var(--font-serif)", fontWeight: 600, color: "#F0F0F5", lineHeight: 1.35, marginBottom: 12 }}>
-                    Pivot 65% of Q4 bandwidth to Standardised Testing. The 2nd paper yields diminishing returns at current odds.
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-10">
-                    <span className="delta-pill delta-pill-green">LSE Admittance 54% → 89% (+35%)</span>
-                    <span className="delta-pill delta-pill-blue">Profile Resilience 78 → 84 (+6 pts)</span>
-                  </div>
-                  <p style={{ fontSize: 12, color: "#8B8BA7", lineHeight: 1.55, marginBottom: 12 }}>
-                    Clearing the SAT Math 720+ gating cutoff elevates your admittance probability at LSE and Warwick to within scholarship-eligible band. A second preprint without a faculty co-author yields marginal signal given your current co-authorship gap.
-                  </p>
-                  <div style={{ background: "rgba(26,108,246,0.06)", border: "1px solid rgba(26,108,246,0.15)", borderRadius: 4, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-                    <Zap size={13} style={{ color: "#60A5FA", flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "#F0F0F5" }}>Complete SAT Math Module 3 (Khan Academy) + 2 timed practice sets this week</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button className="btn-primary" style={{ fontSize: 12, padding: "8px 14px" }}>+ Add to Roadmap</button>
-                  <button className="btn-secondary" style={{ fontSize: 12, padding: "8px 14px" }}>Explore Marketplace →</button>
-                </div>
-              </div>
-
-              {/* Right: Waves */}
-              <div style={{ borderLeft: "1px solid #1E1E2E", padding: "16px 12px" }}>
-                <p style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A4A6A", marginBottom: 12 }}>
-                  Recent Waves
-                </p>
-                {[
-                  { match: 98, cat: "Competition", title: "3 Econ & Quant Opens", days: 14, color: "#D97706" },
-                  { match: 94, cat: "Research", title: "Ashoka Comp. Econ Lab", days: 21, color: "#0D9488" },
-                  { match: 91, cat: "Admissions", title: "LSE Math Req. Update", days: null, color: "#7C3AED" },
-                  { match: 76, cat: "Scholarship", title: "Global Merit $24k/yr", days: null, color: "#1A6CF6" },
-                ].map((w) => (
-                  <div key={w.title} className="wave-card" style={{ marginBottom: 6, padding: "10px 10px" }}>
-                    <div className="wave-card-match-bar" style={{ width: `${w.match}%`, background: w.match >= 90 ? "#0D9488" : "#1A6CF6" }} />
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 3 }}>
-                      <span style={{ fontSize: 8, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: w.color }}>{w.cat}</span>
-                      <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, color: w.match >= 90 ? "#0D9488" : "#4A4A6A" }}>{w.match}%</span>
-                    </div>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#F0F0F5", lineHeight: 1.3 }}>{w.title}</p>
-                    {w.days && <p style={{ fontSize: 10, color: "#D97706", fontFamily: "var(--font-mono)", marginTop: 3 }}>{w.days} days</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center mt-6">
-            <Link href="/workspace" className="btn-ghost" style={{ fontSize: 13 }}>
-              Open your workspace
-              <ArrowRight size={13} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ─────────────────────────────────────────────── */}
-      <section style={{ padding: "80px 0", background: "rgba(19,19,26,0.4)", borderTop: "1px solid #1E1E2E", borderBottom: "1px solid #1E1E2E" }}>
-        <div className="container-lg">
-          <div className="text-center mb-12">
-            <p className="kicker-web mb-3" style={{ justifyContent: "center" }}>Method, not marketing</p>
-            <h2 className="headline" style={{ fontSize: "clamp(1.6rem,3vw,2.4rem)", color: "#F0F0F5", textAlign: "center" }}>
-              How a student gets priced
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {HOW_IT_WORKS.map((step, i) => (
-              <div key={step.step} className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 8,
-                    background: `${step.color}15`,
-                    border: `1px solid ${step.color}25`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: step.color,
-                  }}>
-                    {step.icon}
-                  </div>
-                  <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 11, color: "#4A4A6A" }}>{step.step}</span>
-                </div>
-                <h3 className="font-display font-semibold mb-3" style={{ fontSize: 17, color: "#F0F0F5" }}>{step.title}</h3>
-                <p style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.7 }}>{step.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TRUST / TRANSPARENCY ─────────────────────────────────────── */}
-      <section style={{ padding: "72px 0" }}>
-        <div className="container-lg">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Shield size={14} style={{ color: "#1A6CF6" }} />
-                <p className="kicker-web">Fiduciary standard</p>
-              </div>
-              <h2 className="headline" style={{ fontSize: "clamp(1.6rem,3vw,2.2rem)", color: "#F0F0F5", marginBottom: 16 }}>
+              <p className="kicker-web mb-4">Fiduciary Standard</p>
+              <h2 className="text-[clamp(1.8rem,3.5vw,2.4rem)] font-bold tracking-tight text-[#F5F5F7] mb-5 leading-tight">
                 Our formula is open.
                 <br />
-                Push back if it's wrong.
+                Push back if it&apos;s wrong.
               </h2>
-              <p style={{ color: "#8B8BA7", fontSize: 14, lineHeight: 1.8, marginBottom: 24 }}>
-                Every composite score breaks down into six components with public weights. Every placement statistic links to a cryptographic hash of the government audit filing. No dark patterns.
+              <p className="text-[#86868B] text-sm leading-relaxed mb-8">
+                Every composite score breaks down into six components with public weights. Every placement
+                statistic links to government audit filings. Zero dark patterns, zero agency commissions.
               </p>
-              <div className="flex flex-col gap-2.5">
+              <div className="space-y-3">
                 {TRUST_ITEMS.map((item) => (
                   <div key={item} className="flex items-start gap-2.5">
-                    <CheckCircle size={13} style={{ color: "#0D9488", marginTop: 3, flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: "#8B8BA7" }}>{item}</span>
+                    <CheckCircle2 size={15} className="text-[#30D158] flex-shrink-0 mt-0.5" />
+                    <span className="text-[13px] text-[#86868B]">{item}</span>
                   </div>
                 ))}
               </div>
-              <Link href="/methodology" className="btn-secondary mt-6 inline-flex" style={{ fontSize: 13 }}>
-                Read the full methodology
+              <Link
+                href="/methodology"
+                className="inline-flex items-center gap-1.5 mt-8 px-4 py-2.5 border border-white/[0.1] rounded-full text-[13px] font-medium text-[#F5F5F7] hover:bg-white/[0.06] transition-colors"
+              >
+                Read the full methodology <ChevronRight size={13} />
               </Link>
             </div>
 
-            {/* Scoring breakdown */}
-            <div className="glass-card p-6">
-              <p style={{ fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#4A4A6A", marginBottom: 16 }}>
+            {/* Score Breakdown */}
+            <div className="bg-[#0A0A0A] border border-white/[0.08] rounded-2xl p-6">
+              <p className="text-[10px] font-mono font-bold text-[#48484A] uppercase tracking-wider mb-5">
                 Composite Score Decomposition
               </p>
-              {[
-                { label: "Salary vs. fee paid (PPP-adjusted)", weight: "35%", color: "#1A6CF6" },
-                { label: "Job security & placement consistency", weight: "20%", color: "#0D9488" },
-                { label: "Career ceiling at year 10", weight: "15%", color: "#D97706" },
-                { label: "Location & remote flexibility", weight: "15%", color: "#7C3AED" },
-                { label: "Reported satisfaction & burnout rates", weight: "10%", color: "#F97316" },
-                { label: "Alumni network & lateral opportunities", weight: "5%",  color: "#EC4899" },
-              ].map((c, i) => (
-                <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: "#8B8BA7", flex: 1 }}>{c.label}</span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 12, color: c.color }}>{c.weight}</span>
-                </div>
-              ))}
-              <div style={{ borderTop: "1px solid #1E1E2E", paddingTop: 10, marginTop: 6, display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 11, color: "#4A4A6A" }}>Composite score (0–100)</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "#F0F0F5", fontSize: 14 }}>=  weighted sum</span>
+              <div className="space-y-4">
+                {SCORE_FACTORS.map((item) => (
+                  <div key={item.label} className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-[13px] text-[#86868B] flex-1">{item.label}</span>
+                    <span className="font-mono font-bold text-[13px] text-[#F5F5F7]">{item.weight}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 pt-5 border-t border-white/[0.06] flex items-center justify-between">
+                <span className="text-[12px] text-[#48484A] font-mono">Composite score (0–100)</span>
+                <span className="font-mono text-[12px] font-bold text-[#F5F5F7]">= weighted sum</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── SOCIAL PROOF ─────────────────────────────────────────────── */}
-      <section style={{ padding: "72px 0", background: "rgba(19,19,26,0.4)", borderTop: "1px solid #1E1E2E" }}>
-        <div className="container-lg">
+      {/* ── STUDENT OUTCOMES ─────────────────────────────────── */}
+      <section className="py-20 px-5 border-t border-white/[0.06]">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <p className="kicker-web mb-3" style={{ justifyContent: "center" }}>Student Outcomes</p>
-            <h2 className="headline" style={{ fontSize: "clamp(1.6rem,3vw,2.4rem)", color: "#F0F0F5", textAlign: "center" }}>
+            <p className="kicker-web justify-center mb-3">Student Outcomes</p>
+            <h2 className="text-[clamp(1.8rem,3.5vw,2.4rem)] font-bold tracking-tight text-[#F5F5F7]">
               Numbers changed the decision.
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {SOCIAL_PROOF.map((s) => (
-              <div key={s.name} className="glass-card p-6">
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${s.color}20`, border: `1px solid ${s.color}30`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 800, color: s.color }}>
-                      {s.name.charAt(0)}
-                    </span>
-                  </div>
+              <div key={s.name} className="bg-[#0A0A0A] border border-white/[0.08] rounded-xl p-5 hover:border-white/[0.14] transition-all">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#F0F0F5" }}>{s.name}</div>
-                    <div style={{ fontSize: 10, color: "#4A4A6A" }}>{s.class}</div>
+                    <div className="text-[13px] font-bold text-[#F5F5F7]">{s.name}</div>
+                    <div className="text-[11px] text-[#86868B] font-mono">{s.class}</div>
                   </div>
+                  <span className="text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-[#86868B] border border-white/[0.08]">
+                    {s.badge}
+                  </span>
                 </div>
-                <p style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.65, marginBottom: 14, fontStyle: "italic" }}>"{s.quote}"</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 10, color: "#4A4A6A", textDecoration: "line-through" }}>{s.before}</span>
-                  <span style={{ color: "#4A4A6A" }}>→</span>
-                  <span style={{ fontSize: 10, color: "#8B8BA7" }}>{s.after}</span>
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 800, color: s.color }}>{s.delta}</span>
+                <p className="text-[13px] text-[#86868B] italic leading-relaxed mb-5">
+                  &quot;{s.quote}&quot;
+                </p>
+                <div className="pt-4 border-t border-white/[0.06]">
+                  <span
+                    className="text-[13px] font-mono font-bold"
+                    style={{ color: s.color }}
+                  >
+                    {s.delta}
+                  </span>
                 </div>
               </div>
             ))}
@@ -620,24 +433,34 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── FINAL CTA ────────────────────────────────────────────────── */}
-      <section style={{ padding: "96px 0", textAlign: "center" }}>
-        <div className="container-lg" style={{ maxWidth: 560, margin: "0 auto" }}>
-          <p className="kicker-web mb-4" style={{ justifyContent: "center" }}>Free · No spam · Starts in 90 seconds</p>
-          <h2 className="headline" style={{ fontSize: "clamp(2rem,4vw,3rem)", color: "#F0F0F5", marginBottom: 16, textAlign: "center" }}>
+      {/* ── FINAL CTA ─────────────────────────────────────────── */}
+      <section className="relative py-28 px-5 text-center overflow-hidden border-t border-white/[0.06]">
+        {/* Glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-[#E11D48]/[0.06] blur-[80px]" />
+        </div>
+        <div className="relative max-w-xl mx-auto">
+          <p className="font-mono text-[11px] text-[#48484A] uppercase tracking-wider mb-4">
+            Free · No login required · Starts in 90 seconds
+          </p>
+          <h2 className="text-[clamp(2.2rem,5vw,3.6rem)] font-extrabold tracking-[-0.04em] text-[#F5F5F7] mb-4 leading-tight">
             Stop guessing.
             <br />
-            <span className="gradient-text-blue">Build your Student OS.</span>
+            Build your Student OS.
           </h2>
-          <p className="headline-sub" style={{ textAlign: "center", marginBottom: 36 }}>
-            Salary projections, AI resilience score, ranked shortlist, and a decision workspace — calibrated to your exact profile.
+          <p className="text-[#86868B] text-[15px] mb-10 leading-relaxed">
+            Salary projections, AI resilience score, ranked shortlist, and a decision workspace —
+            calibrated to your exact profile.
           </p>
-          <Link href="/onboard" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>
+          <Link
+            href="/onboard"
+            className="inline-flex items-center gap-2 px-9 py-4 bg-[#F5F5F7] hover:bg-white text-black font-bold text-[15px] rounded-full shadow-sm transition-all"
+          >
             Start free — Build my OS
-            <ArrowRight size={16} />
+            <ArrowRight size={15} />
           </Link>
-          <p style={{ fontSize: 11, color: "#4A4A6A", marginTop: 14, fontFamily: "var(--font-mono)" }}>
-            Free. No login required. Results in ~28 seconds.
+          <p className="text-[11px] text-[#48484A] mt-5 font-mono">
+            Direct calibration · Complete sovereign privacy
           </p>
         </div>
       </section>

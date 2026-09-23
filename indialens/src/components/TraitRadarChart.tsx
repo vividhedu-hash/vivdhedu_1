@@ -39,53 +39,28 @@ export function TraitRadarChart({ traits, archetype }: TraitRadarProps) {
     .join(" ");
 
   // Grid concentric circles
-  const gridLevels = [0.3, 0.6, 1.0];
+  const gridLevels = [0.33, 0.66, 1.0];
 
   return (
-    <div
-      style={{
-        background: "rgba(18, 18, 30, 0.65)",
-        backdropFilter: "blur(12px)",
-        border: "1px solid rgba(79, 110, 247, 0.25)",
-        borderRadius: 16,
-        padding: "16px 20px",
-        boxShadow: "0 12px 32px rgba(0, 0, 0, 0.35)",
-        transition: "all 0.3s ease",
-      }}
-    >
+    <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm transition-all duration-300">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "#4F6EF7",
-              boxShadow: "0 0 10px #4F6EF7",
-            }}
-          />
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#F0F0F5", letterSpacing: "0.02em" }}>
-            Your career profile
+          <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-900 font-mono">
+            Career Profile Radar
           </span>
         </div>
-        <span
-          className="font-mono"
-          style={{ fontSize: 10, color: "#8B8BA7", background: "rgba(79, 110, 247, 0.12)", padding: "2px 8px", borderRadius: 999 }}
-        >
-          Live
+        <span className="font-mono text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+          Real-time
         </span>
       </div>
 
-      <div className="flex items-center justify-center relative py-1">
+      <div className="flex items-center justify-center relative py-2">
         <svg width="180" height="180" viewBox="0 0 180 180" style={{ overflow: "visible" }}>
           <defs>
-            <radialGradient id="radarGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#4F6EF7" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#7B96FF" stopOpacity="0.05" />
-            </radialGradient>
             <linearGradient id="polyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#4F6EF7" stopOpacity="0.55" />
-              <stop offset="100%" stopColor="#9333EA" stopOpacity="0.45" />
+              <stop offset="0%" stopColor="#E11D48" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#2563EB" stopOpacity="0.25" />
             </linearGradient>
           </defs>
 
@@ -97,7 +72,7 @@ export function TraitRadarChart({ traits, archetype }: TraitRadarProps) {
               cy={cy}
               r={r * lvl}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.08)"
+              stroke="#E2E8F0"
               strokeDasharray={idx < 2 ? "3,3" : undefined}
             />
           ))}
@@ -113,7 +88,7 @@ export function TraitRadarChart({ traits, archetype }: TraitRadarProps) {
                 y1={cy}
                 x2={x2}
                 y2={y2}
-                stroke="rgba(255, 255, 255, 0.12)"
+                stroke="#E2E8F0"
                 strokeWidth="1"
               />
             );
@@ -123,7 +98,7 @@ export function TraitRadarChart({ traits, archetype }: TraitRadarProps) {
           <polygon
             points={points}
             fill="url(#polyGradient)"
-            stroke="#7B96FF"
+            stroke="#E11D48"
             strokeWidth="2"
             style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }}
           />
@@ -139,8 +114,8 @@ export function TraitRadarChart({ traits, archetype }: TraitRadarProps) {
                 cx={vx}
                 cy={vy}
                 r="3.5"
-                fill="#F0F0F5"
-                stroke="#4F6EF7"
+                fill="#FFFFFF"
+                stroke="#09090B"
                 strokeWidth="2"
                 style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }}
               />
@@ -148,28 +123,25 @@ export function TraitRadarChart({ traits, archetype }: TraitRadarProps) {
           })}
 
           {/* Axis Labels */}
-          <text x={cx} y={cy - r - 8} textAnchor="middle" fill="#8B8BA7" fontSize="9" fontWeight="600">
+          <text x={cx} y={cy - r - 8} textAnchor="middle" fill="#64748B" fontSize="9" fontWeight="600">
             Risk
           </text>
-          <text x={cx + r + 14} y={cy + 3} textAnchor="start" fill="#8B8BA7" fontSize="9" fontWeight="600">
+          <text x={cx + r + 14} y={cy + 3} textAnchor="start" fill="#64748B" fontSize="9" fontWeight="600">
             Value
           </text>
-          <text x={cx} y={cy + r + 14} textAnchor="middle" fill="#8B8BA7" fontSize="9" fontWeight="600">
+          <text x={cx} y={cy + r + 14} textAnchor="middle" fill="#64748B" fontSize="9" fontWeight="600">
             Autonomy
           </text>
-          <text x={cx - r - 14} y={cy + 3} textAnchor="end" fill="#8B8BA7" fontSize="9" fontWeight="600">
+          <text x={cx - r - 14} y={cy + 3} textAnchor="end" fill="#64748B" fontSize="9" fontWeight="600">
             AI-Native
           </text>
         </svg>
       </div>
 
       {archetype && (
-        <div
-          className="mt-3 pt-2 text-center"
-          style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}
-        >
-          <span style={{ fontSize: 10, color: "#8B8BA7" }}>Predicted Archetype: </span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#7B96FF" }}>{archetype}</span>
+        <div className="mt-3 pt-3 text-center border-t border-slate-100">
+          <span className="text-[11px] text-slate-500 block mb-0.5">Predicted Archetype</span>
+          <span className="text-xs font-bold text-slate-900 font-mono">{archetype}</span>
         </div>
       )}
     </div>

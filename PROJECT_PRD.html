@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Project — Comprehensive Product Requirements Document (PRD)</title>
+<title>IndiaLens — Comprehensive Product Requirements Document (PRD)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -400,6 +400,7 @@
   .callout-info    { border-left-color: #0077C8;  background: #F4F8FD; }
   .callout-warning { border-left-color: #B87333;  background: #FDF9F2; }
   .callout-risk    { border-left-color: #A61C1C;   background: #FDF5F5; }
+  .callout-plain   { border-left-color: #008080; background: #F2FBF9; }
   .callout-title   {
     font-size: 7.5pt;
     font-weight: 800;
@@ -412,6 +413,7 @@
   .callout-info    .callout-title { color: #0077C8; }
   .callout-warning .callout-title { color: #B87333; }
   .callout-risk    .callout-title { color: #A61C1C; }
+  .callout-plain   .callout-title { color: #006666; }
 
   /* Code / Pre Blocks */
   pre.spec-box {
@@ -427,6 +429,96 @@
     border-left: 3px solid #1F8ECD;
     white-space: pre-wrap;
     word-break: break-all;
+  }
+
+  /* Blueprint Assembly Components */
+  .blueprint-card {
+    background: #FFFFFF;
+    border: 1.5px solid #0077C8;
+    border-radius: 4px;
+    margin: 18px 0;
+    overflow: hidden;
+  }
+  .blueprint-header {
+    background: #002F6C;
+    color: #FFFFFF;
+    padding: 10px 16px;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .blueprint-body {
+    padding: 14px 16px;
+  }
+  .assembly-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0;
+  }
+  .assembly-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #F8F9FA;
+    border-left: 3px solid #0077C8;
+    border-radius: 0 4px 4px 0;
+  }
+  .assembly-step-num {
+    background: #0077C8;
+    color: #FFFFFF;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .assembly-step-content {
+    font-size: 8.5pt;
+    flex-grow: 1;
+  }
+  .stream-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 7pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+  .stream-a {
+    background: #E8F4EC;
+    color: #1B6B38;
+    border: 1px solid #C2E3CD;
+  }
+  .stream-b {
+    background: #F4EBF7;
+    color: #6B1B85;
+    border: 1px solid #DEC5E7;
+  }
+  .mental-model {
+    background: #FFFDF5;
+    border: 1px solid #E6D8A7;
+    border-left: 4px solid #C8740A;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 8.5pt;
+  }
+  .mental-model-title {
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #C8740A;
+    margin-bottom: 4px;
   }
 
   /* Footer */
@@ -451,6 +543,7 @@
     .math-block { page-break-inside: avoid; }
     .tbl-wrapper { page-break-inside: avoid; }
     .spec-card { page-break-inside: avoid; }
+    .blueprint-card { page-break-inside: avoid; }
     table { font-size: 7pt; }
     thead th { padding: 5px 4px; font-size: 6.8pt; }
     tbody td { padding: 4px 4px; font-size: 6.8pt; }
@@ -463,8 +556,8 @@
 
 <div class="cover">
   <div class="cover-eyebrow">Enterprise Architectural Specification · Production Blueprint</div>
-  <h1>The Project</h1>
-  <div class="cover-subtitle">Quantitative Education & Career Intelligence Operating System<br>Comprehensive System Architecture & Engineering Requirements Specification</div>
+  <h1>IndiaLens</h1>
+  <div class="cover-subtitle">Quantitative Education & Career Intelligence Operating System<br>Product Architecture & System Assembly Blueprint</div>
   <div class="cover-rule"></div>
   <div class="cover-meta">
     <div class="cover-meta-item">
@@ -477,7 +570,7 @@
     </div>
     <div class="cover-meta-item">
       <span class="cover-meta-label">Intelligence Stack</span>
-      <span class="cover-meta-value">Gemini 3.7 Flash + Quant ML</span>
+      <span class="cover-meta-value">DeepSeek V4 Flash + Sonar + Quant ML</span>
     </div>
     <div class="cover-meta-item">
       <span class="cover-meta-label">Document Status</span>
@@ -497,7 +590,7 @@
     <div class="toc-item"><span class="toc-num">05</span><a class="toc-text" href="#s5">The Flagship AI Risk & Future Labor Demand Index</a></div>
     <div class="toc-item"><span class="toc-num">06</span><a class="toc-text" href="#s6">The 3PL IRT Adaptive Psychometric Engine (CAT)</a></div>
     <div class="toc-item"><span class="toc-num">07</span><a class="toc-text" href="#s7">Machine Learning Model Specifications & Pipelines</a></div>
-    <div class="toc-item"><span class="toc-num">08</span><a class="toc-text" href="#s8">The Student Intelligence Layer: Hybrid ML-LLM Architecture</a></div>
+    <div class="toc-item"><span class="toc-num">08</span><a class="toc-text" href="#s8">The Student Intelligence Layer: Dual-Engine Architecture (DeepSeek + Sonar)</a></div>
     <div class="toc-item"><span class="toc-num">09</span><a class="toc-text" href="#s9">Caliber-Calibrated Admissions Portfolio Engine</a></div>
     <div class="toc-item"><span class="toc-num">10</span><a class="toc-text" href="#s10">Global Degree ROI & Cross-Border Actuarial Models</a></div>
     <div class="toc-item"><span class="toc-num">11</span><a class="toc-text" href="#s11">Global Portfolio Builder & Admissions Spike System</a></div>
@@ -512,25 +605,30 @@
   <span class="sec-tag">Section 01 · Strategic Foundation</span>
   <h2 class="sec-heading">Executive Product Brief & Foundational Thesis</h2>
   
-  <p><strong>The Project</strong> is architected as India’s first sovereign, quantitative Education & Career Intelligence Operating System. For decades, tertiary educational decisions in India and emerging markets have been governed by heuristic prestige, non-standardized brand signals, familial anxiety, and opaque marketing hierarchies. Students and parents commit substantial portions of multi-generational wealth—frequently funded via high-interest, non-dischargeable educational debt—into degree programs without an actuarial understanding of multi-decade career net present value (NPV), tail-risk default probabilities, or impending technological obsolescence.</p>
+  <p><strong>IndiaLens</strong> is built as India’s first sovereign, quantitative Education &amp; Career Intelligence Operating System. For decades, college and career decisions in India and emerging markets have been governed by name-brand hype, unverified rumors, intense family anxiety, and opaque marketing billboards. Students and parents routinely commit substantial portions of their family savings—often taking high-interest, non-forgivable education loans—to pay for college degrees without knowing their true expected financial return, the real risk of struggling to repay their loan, or whether AI tools will automate that job before they even graduate.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · Why IndiaLens Exists</div>
+    <p>Choosing a college is the single largest financial and emotional bet an Indian family makes. Today, parents spend ₹10 Lakhs to ₹1.2 Crores based on glossy brochures, coaching institute advertisements, and relatives' advice. <strong>Traditional rankings rank the college; IndiaLens evaluates the student inside the college.</strong> A degree is not a decorative luxury or an automatic guarantee of wealth—it is an investment whose true financial payoff depends on your individual abilities, your family budget, and whether the job market will still need those skills ten years from now. IndiaLens replaces panic and marketing hype with honest, mathematical reality.</p>
+  </div>
 
   <div class="callout callout-key">
     <div class="callout-title">The Foundational Axiom</div>
-    <p>Rankings measure institutions; <strong>The Project measures the student within the institution.</strong> An educational degree is not a luxury consumer good or an immutable social stamp; it is a long-duration, highly leveraged, stochastic capital asset whose financial and developmental return is strictly conditioned on the individual student's latent traits, financial constraints, and macroeconomic tailwinds.</p>
+    <p>Rankings measure institutions; <strong>IndiaLens measures the student within the institution.</strong> An educational degree is not a luxury consumer good or an immutable social stamp; it is a long-duration, highly leveraged, stochastic capital asset whose financial and developmental return is strictly conditioned on the individual student's latent traits, financial constraints, and macroeconomic tailwinds.</p>
   </div>
 
   <h3 class="sub-heading">1.1 Target Audience Personas & Critical User Needs</h3>
-  <p>The platform addresses four distinct user segments, each possessing asymmetric information constraints and high-stakes decision vulnerabilities:</p>
+  <p>The platform serves four distinct user groups, giving each of them the exact clarity and protection they need:</p>
   
   <ul>
-    <li><strong>The Aspirational Student (Ages 16–22):</strong> Navigating hyper-competitive entrance examinations (JEE, NEET, CUET, CAT, GRE, GMAT, SAT) under severe cognitive strain. They require objective, personalized, non-flattering career navigation that moves beyond binary "IIT-or-bust" narratives to map realistic 4-tier college portfolios calibrated precisely to their academic and cognitive caliber.</li>
-    <li><strong>The Anxious Parent / Financial Sponsor:</strong> The primary capital allocator facing substantial financial commitments (ranging from ₹10 Lakhs for domestic engineering to ₹1.2 Crores for international Master's programs). They require rigorous balance-sheet stress tests, loan default probabilities under recessionary shocks, and net take-home salary cash flow schedules to safeguard family solvency.</li>
-    <li><strong>The School Counselor & Coaching Institute Educator:</strong> Institutional stakeholders seeking an empirical, data-dense copilot to replace generic advisory spreadsheets. They require longitudinal student tracking, standardized psychometric profiling, and verified placement registries.</li>
-    <li><strong>The EdTech Enterprise & Financial Underwriter (B2B):</strong> Non-Banking Financial Companies (NBFCs), education loan underwriters, and institutional recruiters seeking an actuarial API layer to evaluate credit default risks and programmatic employability scores with sub-degree precision.</li>
+    <li><strong>The Aspirational Student (Ages 16–22):</strong> Preparing for high-stakes competitive entrance exams (JEE, NEET, CUET, CAT, GRE, GMAT, SAT) under heavy mental pressure. They need honest, personalized guidance that cuts through the toxic "IIT-or-failure" mentality. IndiaLens builds them a smart 4-tier college portfolio (Dream, Reach, Target, Safety) tuned specifically to their actual strengths and testing stamina.</li>
+    <li><strong>The Anxious Parent / Family Sponsor:</strong> The primary financial investor facing massive out-of-pocket costs (from ₹10 Lakhs for domestic engineering up to ₹1.2 Crores for international degrees). They need clear, easy-to-understand balance sheet stress tests, plain loan EMI projections under bad economies, and realistic take-home monthly salary estimates so their family's financial security is never put in jeopardy.</li>
+    <li><strong>The High School Counselor & Coaching Educator:</strong> Mentors looking for a professional, data-backed copilot to replace generic advice spreadsheets. They get multi-year student tracking, objective strength-testing tools, and verified salary databases.</li>
+    <li><strong>The Education Lender & Enterprise Recruiter (B2B):</strong> Non-Banking Financial Companies (NBFCs), banks, loan underwriters, and hiring managers who need reliable, algorithmic risk scores to verify student employability and loan repayment safety with precision.</li>
   </ul>
 
   <h3 class="sub-heading">1.2 Systemic Market Failures in the Status Quo</h3>
-  <p>The contemporary education guidance landscape is characterized by four compounding structural market failures that exploit consumer vulnerability:</p>
+  <p>Today's educational counseling market suffers from four severe, hidden conflicts of interest that trap innocent families:</p>
 
   <div class="tbl-wrapper">
     <div class="tbl-caption">Table 1.1 — Analysis of Incumbent Systemic Failures</div>
@@ -542,52 +640,86 @@
       </colgroup>
       <thead>
         <tr>
-          <th>Incumbent Mechanism</th>
-          <th>Structural Flaw & Incentive Misalignment</th>
-          <th>Downstream Impact on Student</th>
+          <th>Current Method</th>
+          <th>What Is Broken Behind the Scenes</th>
+          <th>How It Harms Students & Families</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><strong>Institutional Rankings (NIRF, QS, Times)</strong></td>
-          <td>Rankings prioritize input metrics: physical campus acreage, capital expenditure, patent filings (regardless of commercialization), and faculty PhD ratios over actual student placement distributions and wage growth.</td>
-          <td>Students overpay for bloated infrastructure while experiencing median placement outcomes that trail nominal inflation rates.</td>
+          <td><strong>Official Rankings (NIRF, QS, Times)</strong></td>
+          <td>Rankings prioritize vanity metrics: campus land area, spending on buildings, patents filed (even if useless), and faculty PhD ratios—completely ignoring real median graduate salaries and job placement consistency.</td>
+          <td>Students pay massive fees for fancy campuses while average graduate salaries fail to even beat inflation.</td>
         </tr>
         <tr>
-          <td><strong>Aggregator Portals (Shiksha, CollegeDunia)</strong></td>
-          <td>Lead-generation brokerage model: universities pay "Cost-Per-Lead" (CPL) bounties ranging from ₹300 to ₹2,500. Algorithmically promotes low-tier private institutions paying the highest ad premiums.</td>
-          <td>Students are systematically funneled into predatory private colleges that disguise structural placement deficits behind paid search visibility.</td>
+          <td><strong>College Portals (Shiksha, CollegeDunia)</strong></td>
+          <td>The "Lead-Generation" Broker Model: Private colleges pay these portals ₹300 to ₹2,500 every time they sell a student's phone number and email. The search results secretly push whichever low-quality private college pays the highest advertising bounty.</td>
+          <td>Students are relentlessly pushed toward expensive, sub-par private colleges that hide poor placement records behind sponsored search banners.</td>
         </tr>
         <tr>
-          <td><strong>Study-Abroad Study Consultants</strong></td>
-          <td>Commission-based broker model: agencies receive 15% to 30% of first-year international student tuition directly from partner foreign universities.</td>
-          <td>Mass redirection of qualified students into non-STEM, low-employment regional diploma mills in Canada, the UK, and Australia with near-zero visa retention probability.</td>
+          <td><strong>Study-Abroad Agents & Consultants</strong></td>
+          <td>The Commission Broker Model: Overseas agents get a secret 15% to 30% cash kickback from foreign colleges on the student's first-year tuition fee.</td>
+          <td>Students are steered into low-tier diploma mills in regional Canada, the UK, or Australia with almost zero chance of landing a work visa or staying after graduation.</td>
         </tr>
         <tr>
-          <td><strong>Unchecked AI Disruption Blindness</strong></td>
-          <td>Advisory ecosystems treat historical placement records as immutable future guarantees, completely ignoring task-level AI automation and white-collar wage compression.</td>
-          <td>Graduates enter 4-year programs whose core entry-level competencies (e.g., junior manual QA, basic full-stack coding, standard tax preparation) are automated prior to graduation.</td>
+          <td><strong>Blindness to AI Job Automation</strong></td>
+          <td>Counselors quote 5-year-old salary records as if they are guaranteed forever, ignoring how modern AI tools are already wiping out junior coding, routine accounting, and basic data entry roles.</td>
+          <td>Graduates spend 4 years earning a degree only to discover that the entry-level tasks they trained for have already been automated by AI.</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <h3 class="sub-heading">1.3 The Five Foundational Principles of The Project</h3>
-  <p>To systematically eliminate these failures, The Project operates under five non-negotiable architectural mandates:</p>
-  <ol>
-    <li><strong>Radical Fiduciary Independence:</strong> Zero sponsored institutional listings, zero lead-generation sales, and zero university placement commissions. The student and family are the sole clients.</li>
-    <li><strong>Multi-Dimensional Actuarial Valuation:</strong> Evaluating programs via 20-year stochastic discounted cash flows, P10–P90 wage dispersion fans, and Monte Carlo debt default modeling rather than single misleading average salary figures.</li>
-    <li><strong>Continuous Real-Time Data Fluidity:</strong> Absolute ban on hardcoded tables or static annual spreadsheets. The platform continuously ingests macroeconomic indicators, job postings, salary registries, and regulatory shifts via automated orchestration pipelines.</li>
-    <li><strong>Student-Conditioned Hybrid Intelligence:</strong> Synthesizing mathematical econometrics (XGBoost quantile regression, BiLSTM time-series, Markov transition graphs) with an anti-yes-man LLM reasoning layer grounded in verified empirical registries.</li>
-    <li><strong>Global Arbitrage & Borderless Valuation:</strong> Seamless cross-border actuarial parity comparing domestic Tier-1 institutions against US STEM programs, German zero-tuition universities, and Singaporean technology hubs on an equal purchasing-power and visa-survival basis.</li>
-  </ol>
+  <h3 class="sub-heading">1.4 The Operating System Blueprint: 5-Stage System Assembly Flow</h3>
+  <p>To keep the platform modular, transparent, and easy to understand, IndiaLens operates like a clean 5-stage precision assembly line where data moves smoothly from verified facts to actionable student advice:</p>
+
+  <div class="blueprint-card">
+    <div class="blueprint-header">
+      <span>Master Architecture Blueprint · 5-Stage Assembly Flow</span>
+      <span class="stream-badge stream-a">End-to-End System Pipeline</span>
+    </div>
+    <div class="blueprint-body">
+      <div class="assembly-flow">
+        <div class="assembly-step">
+          <span class="assembly-step-num">STAGE 01</span>
+          <div class="assembly-step-content">
+            <strong>Stage 1: Gathering Verified Facts (Data Ingestion Mesh):</strong> 18 automated data connectors continually collect verified numbers directly from government bodies (NIRF, MoSPI, RBI, World Bank), real compensation networks (Levels.fyi, AmbitionBox), and live admission portals (JoSAA, JAC). Any fake or suspicious placement numbers are automatically quarantined and rejected.
+          </div>
+        </div>
+        <div class="assembly-step">
+          <span class="assembly-step-num">STAGE 02</span>
+          <div class="assembly-step-content">
+            <strong>Stage 2: Calculating Real Financial Returns (Actuarial Engine):</strong> Our lightning-fast math calculator takes your college costs and calculates your 20-year net cash return, tests your education loan against 10,000 simulated life scenarios (including recessions and layoffs), and evaluates the risk of AI replacing that job—delivering results in under 50 milliseconds.
+          </div>
+        </div>
+        <div class="assembly-step">
+          <span class="assembly-step-num">STAGE 03</span>
+          <div class="assembly-step-content">
+            <strong>Stage 3: Honest Personal AI Advisory (DeepSeek + Sonar):</strong> Two specialized AI engines collaborate without bias: DeepSeek V4 Flash acts as your personal mentor who knows your budget and quiz results; Perplexity Sonar acts as an online detective finding live cutoffs and fees. Sonar gives clean numbers to our math calculator and sends campus tips to DeepSeek to write an honest, unvarnished guidance report.
+          </div>
+        </div>
+        <div class="assembly-step">
+          <span class="assembly-step-num">STAGE 04</span>
+          <div class="assembly-step-content">
+            <strong>Stage 4: Crystal-Clear Student Dashboard (12 Interactive Screens):</strong> A clean, modern interface designed like a professional financial terminal. Anyone can easily understand their salary growth trajectory, drag loan sliders to see EMI stress, and view color-coded college safety cards at a glance.
+          </div>
+        </div>
+        <div class="assembly-step">
+          <span class="assembly-step-num">STAGE 05</span>
+          <div class="assembly-step-content">
+            <strong>Stage 5: Conflict-Free Monetization & Practical Upskilling:</strong> IndiaLens never accepts money from colleges to recommend them. We earn revenue purely from premium student subscriptions and by licensing our risk analytics to student loan lenders—meaning our only loyalty is to the student's success.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="section-block" id="s2">
   <span class="sec-tag">Section 02 · Market & Competitive Positioning</span>
   <h2 class="sec-heading">Global & Domestic Competitive Landscape</h2>
   
-  <p>The educational discovery and counseling sector spans both legacy lead-generation brokers in India and public/private data utilities internationally. To establish definitive market dominance, The Project introduces an asymmetric quantitative architecture that outclasses all existing platforms across every critical dimension.</p>
+  <p>The education guidance market is divided between commission-driven college brokers in India and static government tables abroad. To give students an uncompromised advantage, IndiaLens combines mathematical depth with 100% student-aligned honesty, outperforming every existing tool across all major categories.</p>
 
   <div class="tbl-wrapper">
     <div class="tbl-caption">Table 2.1 — Comprehensive Competitive Benchmark (Top Global & Domestic Players)</div>
@@ -604,7 +736,7 @@
       <thead>
         <tr>
           <th>Evaluation Dimension</th>
-          <th>The Project</th>
+          <th>IndiaLens</th>
           <th>Shiksha.com (India)</th>
           <th>CollegeDunia (India)</th>
           <th>Careers360 (India)</th>
@@ -614,107 +746,112 @@
       </thead>
       <tbody>
         <tr>
-          <td><strong>Core Business Model</strong></td>
-          <td>Sovereign Intelligence OS & Curated Upskilling</td>
-          <td>B2B Lead Gen & Banner Advertising</td>
-          <td>B2B Cost-Per-Lead (CPL) Brokerage</td>
+          <td><strong>Business Model</strong></td>
+          <td><strong>Independent Student OS & Curated Upskilling</strong></td>
+          <td>College Lead Gen & Paid Banners</td>
+          <td>Cost-Per-Lead (CPL) Brokerage</td>
           <td>Media Ads & Basic Cutoff Predictors</td>
           <td>Digital Ads & Lead Generation</td>
-          <td>Public Government Utility</td>
+          <td>Public Government Table</td>
         </tr>
         <tr>
-          <td><strong>Primary Unit of Analysis</strong></td>
-          <td><strong>The Individual Student</strong> (Traits, caliber, budget)</td>
-          <td>The University Brand</td>
-          <td>The Institutional Profile & Reviews</td>
-          <td>The Standardized Exam Cutoff</td>
-          <td>The Campus / Review Entity</td>
-          <td>The Reporting Institution</td>
+          <td><strong>What They Actually Evaluate</strong></td>
+          <td><strong>The Individual Student</strong> (Traits, budget, talent)</td>
+          <td>The College Brand</td>
+          <td>College Profile & Reviews</td>
+          <td>Single Exam Rank Cutoffs</td>
+          <td>Campus Review Ratings</td>
+          <td>College Aggregate Averages</td>
         </tr>
         <tr>
-          <td><strong>Outcome & Success Metric</strong></td>
-          <td><strong>20-Year NPV, Breakeven & Default Prob</strong></td>
+          <td><strong>How Success is Measured</strong></td>
+          <td><strong>20-Year Net Cash Return, Breakeven & Loan Default Risk</strong></td>
           <td>Self-Reported Unverified Placement</td>
-          <td>User Review Star Ratings</td>
+          <td>User Star Ratings</td>
           <td>Exam Rank Match Probability</td>
           <td>Campus Vibe Grades (A+ to F)</td>
           <td>10-Year Median Debt & Earnings</td>
         </tr>
         <tr>
-          <td><strong>Personalization Depth</strong></td>
-          <td><strong>3PL IRT Adaptive Testing + Path DAG</strong></td>
-          <td>None (Stream & City filters)</td>
-          <td>Minimal (Fee sliders)</td>
-          <td>Heuristic Cutoff Matching</td>
-          <td>Profile-based search filters</td>
-          <td>None (Aggregate population)</td>
+          <td><strong>Personalization</strong></td>
+          <td><strong>Smart Adaptive Quizzing (3PL IRT) + Career Roadmap Graph</strong></td>
+          <td>None (Only Stream & City filters)</td>
+          <td>Basic Fee Sliders</td>
+          <td>Basic Cutoff Match</td>
+          <td>Profile Search Filters</td>
+          <td>None (One size fits all)</td>
         </tr>
         <tr>
-          <td><strong>AI Automation Disruption</strong></td>
-          <td><strong>Live 8-Vector AI Risk Index + Task S-Curves</strong></td>
-          <td>None (Linear assumptions)</td>
+          <td><strong>AI Threat Analysis</strong></td>
+          <td><strong>Live 8-Vector AI Risk Index & Task Automation Curves</strong></td>
+          <td>None (Assumes jobs never change)</td>
           <td>None (Zero risk modeling)</td>
           <td>None (No automation data)</td>
-          <td>None (No labour crosswalk)</td>
-          <td>None (Lagging tax data)</td>
+          <td>None (No job task links)</td>
+          <td>None (Outdated tax records)</td>
         </tr>
         <tr>
-          <td><strong>Debt Stress Simulation</strong></td>
-          <td><strong>10,000-Path Monte Carlo with MCLR Drift</strong></td>
-          <td>None (Tuition display only)</td>
-          <td>Static fixed-rate calculator</td>
-          <td>Static fee table only</td>
-          <td>Basic Net Price Calculator</td>
+          <td><strong>Loan Stress Testing</strong></td>
+          <td><strong>10,000-Future Monte Carlo Simulation with Rate Changes</strong></td>
+          <td>None (Only shows tuition)</td>
+          <td>Simple Fixed-Rate Calculator</td>
+          <td>Basic Fee Table</td>
+          <td>Simple Net Price Calculator</td>
           <td>Static Median Debt at Exit</td>
         </tr>
         <tr>
-          <td><strong>Global Arbitrage & Visas</strong></td>
-          <td><strong>Cross-Border NPV with H-1B/BlueCard Math</strong></td>
-          <td>Lead capture for study abroad</td>
-          <td>Overseas test prep ads</td>
-          <td>Static overseas articles</td>
+          <td><strong>Global Degrees & Visas</strong></td>
+          <td><strong>Cross-Border Net Return with Visa Lottery Odds & FX Math</strong></td>
+          <td>Lead capture for study abroad agents</td>
+          <td>Overseas coaching ads</td>
+          <td>Static articles</td>
           <td>US Domestic Only</td>
           <td>US Domestic Only</td>
         </tr>
         <tr>
-          <td><strong>Data Refresh Cadence</strong></td>
-          <td><strong>Real-Time & Weekly Airflow DAGs</strong></td>
+          <td><strong>Data Freshness</strong></td>
+          <td><strong>Real-Time & Weekly Automated Sync (Airflow)</strong></td>
           <td>Annual brochure uploads</td>
           <td>Irregular user reviews</td>
-          <td>Annual post-exam cycle</td>
-          <td>Annual IPEDS cycle</td>
-          <td>Multi-Year Lag (2–3 yrs)</td>
+          <td>Once a year post-exam</td>
+          <td>Annual survey cycle</td>
+          <td>2 to 3-year lag</td>
         </tr>
         <tr>
-          <td><strong>Advisory Persona</strong></td>
-          <td><strong>Actuarial Fiduciary (Anti-Yes-Man)</strong></td>
-          <td>Passive marketing directory</td>
-          <td>Crowd commentary</td>
-          <td>Editorial journalism</td>
-          <td>Crowdsourced social reviews</td>
-          <td>Neutral tabular data</td>
+          <td><strong>Advice Loyalty</strong></td>
+          <td><strong>100% Student Fiduciary (No College Ads Allowed)</strong></td>
+          <td>College marketing catalog</td>
+          <td>Crowdsourced comments</td>
+          <td>Editorial magazine style</td>
+          <td>Sponsored social reviews</td>
+          <td>Neutral government data</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <h3 class="sub-heading">2.1 The Project’s Structural Moat</h3>
-  <p>The Project’s competitive advantage rests upon three interlocking architectural barriers that incumbent lead-brokers cannot replicate without destroying their core revenue streams:</p>
+  <h3 class="sub-heading">2.1 IndiaLens’s Structural Moat (Why Competitors Cannot Copy Us)</h3>
+  <p>IndiaLens’s competitive edge rests on three powerful structural advantages that traditional college directories cannot replicate without destroying their own business:</p>
   <ul>
-    <li><strong>Incentive Incompatibility Moat:</strong> Incumbents generate >85% of their revenue from university marketing budgets. They cannot deploy a harsh, objective AI Risk Index or negative NPV alert without immediate contractual retaliation from their paying advertisers. The Project’s user-aligned subscription and curated upskilling model turns objectivity into a monetization driver.</li>
-    <li><strong>The Quantitative Modeling Engine:</strong> Competitors lack the machine learning and actuarial pipelines required to compute dynamic multi-horizon quantile regressions, 3PL IRT latent trait estimations, and stochastic debt-default risk distributions.</li>
-    <li><strong>The Longitudinal Student Ledger:</strong> Unlike search-and-exit portals, The Project maintains a living, stateful intelligence memory for every student via dedicated large-context reasoning sessions that persist and adapt across high school, undergraduate studies, and career transitions.</li>
+    <li><strong>The Conflict-of-Interest Moat:</strong> Incumbent portals get over 85% of their money directly from college marketing departments. They cannot afford to show a college's real negative ROI or a high AI job risk without getting sued or losing their biggest advertisers. IndiaLens is funded by students and lenders, making radical honesty our greatest sales advantage.</li>
+    <li><strong>The Mathematical & Actuarial Engine:</strong> Competitors only show static numbers. IndiaLens runs dynamic future salary predictions, adaptive psychometric talent tests, and 10,000-scenario loan stress simulations that require deep quantitative engineering.</li>
+    <li><strong>The Lifelong Student Ledger:</strong> Unlike search portals where users visit once and leave, IndiaLens acts as a persistent personal career advisor—remembering your strengths, budget, and coursework from 11th grade through your first job promotion.</li>
   </ul>
 </div>
 
 <div class="section-block" id="s3">
-  <span class="sec-tag">Section 03 · Monetization & Upskilling Infrastructure</span>
+  <span class="sec-tag">Section 03 · Practical Upskilling & Career Bridge</span>
   <h2 class="sec-heading">Curated Course Marketplace & Dynamic Affiliate Engine</h2>
 
-  <p>Rather than displaying uncoordinated, predatory display advertising, The Project integrates an actuarial upskilling router. When the system identifies programmatic curriculum deficiencies, high AI task-displacement vulnerabilities, or specific skill gaps standing between a student and their high-NPV career target, it dynamically surfaces high-yield, credential-granting courses from verified global providers.</p>
+  <p>Instead of displaying random, annoying pop-up ads, IndiaLens features a curated upskilling recommender. When our algorithms notice that a student's chosen college degree has a weak syllabus, an emerging AI automation threat, or a missing skill needed for high-paying roles, it recommends top-tier, verified courses and certifications to bridge that specific gap.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · How We Recommend Upskilling Courses</div>
+    <p>We never push courses just because an advertiser pays us. A course is only suggested to you if it passes four strict checks: (1) <strong>Does it teach skills you actually need and don't already have?</strong> (2) <strong>Does it directly help you reach your 10-year target career?</strong> (3) <strong>Does it teach high-level problem solving that AI cannot easily automate?</strong> and (4) <strong>Can your family comfortably afford it?</strong> If a course fails this test or scores below 75%, it is completely blocked from your screen.</p>
+  </div>
 
   <h3 class="sub-heading">3.1 Mathematical Course Match & Relevance Formulation</h3>
-  <p>To eliminate spam and ensure fiduciary alignment, courses are never displayed on the basis of ad spend alone. Every candidate course \(c\) evaluated for student \(s\) must surpass a rigorous Match Threshold score of \(\mathcal{M}(s, c) \ge 0.75\) before entering the rendering auction.</p>
+  <p>Every candidate course \(c\) evaluated for student \(s\) must surpass a rigorous Match Threshold score of \(\mathcal{M}(s, c) \ge 0.75\) before entering the recommendation pool:</p>
 
   <div class="math-block">
     <div class="math-title">Equation 3.1 — Dynamic Course Match Scoring Tensor</div>
@@ -722,13 +859,13 @@
     \mathcal{M}(s, c) = w_1\cdot\Delta_{\text{skill}}(s,c) + w_2\cdot\text{Align}_{\text{career}}(s,c) + w_3\cdot\rho_{\text{AI}}(c) + w_4\cdot\mathcal{B}_{\text{fit}}(s,c)
     $$
     <div class="math-context">
-      Where the component vectors are formally defined as:
+      <strong>Breaking Down the Four Core Factors in Plain Terms:</strong>
       <ul>
-        <li>\(\Delta_{\text{skill}}(s,c) = 1 - \frac{|\mathbf{k}_s \cap \mathbf{k}_c|}{|\mathbf{k}_c|}\): Normalized skill-gap acquisition factor. Computes the proportion of essential competencies \(\mathbf{k}_c\) taught by the course that the student \(s\) currently lacks. Courses teaching skills the student already possesses receive severe mathematical penalties.</li>
-        <li>\(\text{Align}_{\text{career}}(s,c) = \cos\left(\mathbf{v}_{\text{target}}(s),\, \mathbf{u}_{\text{syllabus}}(c)\right)\): Cosine similarity between the student's 10-year target role embedding \(\mathbf{v}_{\text{target}}\) and the course semantic vector \(\mathbf{u}_{\text{syllabus}}\).</li>
-        <li>\(\rho_{\text{AI}}(c) = \sum_{j \in \mathbf{k}_c} \text{ResilienceScore}(j)\cdot \text{Weight}(j)\): The AI resilience hedge factor. Prioritizes courses that impart high-order cognitive novelty, complex system design, or domain-specific physical/social execution over routine syntax or rote frameworks.</li>
-        <li>\(\mathcal{B}_{\text{fit}}(s,c) = \max\!\left(0,\, 1 - \frac{\text{Price}_{\text{INR}}(c)}{\text{DiscretionaryMonthlyBudget}(s)}\right)\): Budget elasticity penalty ensuring low-income students are routed to financial aid, open-source, or high-ROI micro-credentials.</li>
-        <li>Weights are initialized to: \(w_1 = 0.35,\, w_2 = 0.25,\, w_3 = 0.25,\, w_4 = 0.15\) (constrained to \(\sum w_i = 1.0\)).</li>
+        <li>\(\Delta_{\text{skill}}(s,c) = 1 - \frac{|\mathbf{k}_s \cap \mathbf{k}_c|}{|\mathbf{k}_c|}\): <strong>The Missing Skill Factor.</strong> Checks what percentage of the course curriculum teaches skills you currently lack. If a course spends 80% of its time on things you already know, its score is heavily penalized.</li>
+        <li>\(\text{Align}_{\text{career}}(s,c) = \cos\left(\mathbf{v}_{\text{target}}(s),\, \mathbf{u}_{\text{syllabus}}(c)\right)\): <strong>Career Goal Alignment.</strong> Measures how closely the skills taught in the course match the real-world requirements of your dream 10-year job.</li>
+        <li>\(\rho_{\text{AI}}(c) = \sum_{j \in \mathbf{k}_c} \text{ResilienceScore}(j)\cdot \text{Weight}(j)\): <strong>The AI Defense Factor.</strong> Rewards courses that teach deep systems thinking, complex problem-solving, and hands-on execution, while downranking courses that only teach routine syntax or rote formulas that AI can easily do.</li>
+        <li>\(\mathcal{B}_{\text{fit}}(s,c) = \max\!\left(0,\, 1 - \frac{\text{Price}_{\text{INR}}(c)}{\text{DiscretionaryMonthlyBudget}(s)}\right)\): <strong>Budget Accessibility.</strong> Prevents the system from recommending overpriced courses to students with modest family budgets, steering them instead toward high-yield certifications, financial aid, or free open-source equivalents.</li>
+        <li><strong>Factor Weights:</strong> Initialized to: \(w_1 = 0.35\) (Skills needed), \(w_2 = 0.25\) (Career fit), \(w_3 = 0.25\) (AI safety), \(w_4 = 0.15\) (Budget fit), summing to 1.0.</li>
       </ul>
     </div>
   </div>
@@ -736,12 +873,12 @@
   <div class="callout callout-info">
     <div class="callout-title">Engineering Integration Guide · Course Match Execution Flow</div>
     <p><strong>Input Pipeline:</strong> Triggered during client dashboard load (<code>GET /api/v2/marketplace/recommended</code>). Ingests the student's latent profile from <code>student_reports.profile_data</code> and active target node from <code>personal_intelligence.path_graph</code>. Fetches candidate items from <code>course_marketplace</code> table.</p>
-    <p><strong>Runtime & Execution Budget:</strong> Vectorized matrix multiplication in Python backend executing in < 25ms. Drops all candidates where \(\mathcal{M}(s,c) < 0.75\). Top 6 ranked courses returned with signed affiliate redirect links.</p>
+    <p><strong>Runtime & Execution Budget:</strong> Vectorized matrix multiplication in Python backend executing in &lt; 25ms. Drops all candidates where \(\mathcal{M}(s,c) &lt; 0.75\). Top 6 ranked courses returned with signed affiliate redirect links.</p>
     <p><strong>Telemetry & Destination:</strong> Impressions and conversions logged asynchronously to <code>course_impressions</code> table for commercial attribution and conversion tracking.</p>
   </div>
 
   <h3 class="sub-heading">3.2 Categorical Sourcing & Affiliate API Integration</h3>
-  <p>The marketplace interfaces with premier global and domestic course providers across four specialized verticals via automated server-to-server affiliate APIs:</p>
+  <p>The marketplace connects directly to global education providers across five verified categories:</p>
 
   <div class="tbl-wrapper">
     <div class="tbl-caption">Table 3.1 — Course Marketplace Sourcing & Affiliate Integration Matrix</div>
@@ -773,7 +910,7 @@
         <tr>
           <td><strong>Vocational Coding & Applied Engineering</strong></td>
           <td>Udemy, DataCamp, Pluralsight, Educative</td>
-          <td>Impact.com & Rakuten LinkShare Gateway</td>
+          <td>Impact.com &amp; Rakuten LinkShare Gateway</td>
           <td>30-Day Cookie Window</td>
           <td>20% – 50% Commission on standalone transactional purchases</td>
         </tr>
@@ -803,11 +940,11 @@
   </div>
 
   <h3 class="sub-heading">3.3 Seller Auction & Contextual Placement Policy</h3>
-  <p>Course creators and institutional providers may participate in a contextual placement bidding system subject to strict algorithmic guardrails:</p>
+  <p>Course creators and online educators may participate in our recommendation auction under three strict rules that protect students:</p>
   <ul>
-    <li><strong>Relevance Gating:</strong> Bids from advertisers are completely discarded if \(\mathcal{M}(s, c) < 0.75\). A non-relevant course cannot buy its way onto a student's dashboard regardless of bid size.</li>
-    <li><strong>Placement Scoring:</strong> When multiple qualified courses compete for a dashboard recommendation slot, the winning placement is determined by \(\text{RankScore} = \mathcal{M}(s, c) \times \text{Bid}_{\text{CPC}}\).</li>
-    <li><strong>Projected Wage Uplift Disclosure:</strong> Every rendered course card must explicitly display its estimated salary impact: \(\Delta \hat{S}_{Y1} = \text{ModelUplift}(\mathbf{k}_c)\), derived from live econometric regressions on alumni who acquired that specific credential.</li>
+    <li><strong>Quality Gatekeeper:</strong> If a course does not achieve an organic relevance match score of \(\mathcal{M}(s, c) \ge 0.75\) for that specific student, it cannot be shown at all. Money cannot buy visibility for a bad or irrelevant course.</li>
+    <li><strong>Transparent Placement Score:</strong> For courses that pass the 75% quality bar, recommendations are ranked by: \(\text{RankScore} = \mathcal{M}(s, c) \times \text{Bid}_{\text{CPC}}\). High-relevance courses beat high-spending low-relevance courses every time.</li>
+    <li><strong>Honest Salary Uplift Display:</strong> Every course card must explicitly state its estimated real salary impact: \(\Delta \hat{S}_{Y1} = \text{ModelUplift}(\mathbf{k}_c)\), calculated by comparing the real career earnings of graduates who took that certificate versus those who did not.</li>
   </ul>
 </div>
 
@@ -815,10 +952,16 @@
   <span class="sec-tag">Section 04 · Econometric Modeling</span>
   <h2 class="sec-heading">The Student Asset Pricing Engine: Complete Mathematical Framework</h2>
   
-  <p>The core philosophy of The Project requires that every academic program, degree pathway, or global institutional option be evaluated as a multi-decade financial asset yielding uncertain cash flows. Rather than relying on static brochure numbers or point medians, The Project formulates student outcomes through a rigorous system of stochastic discounted cash flows, probability-adjusted tax regimes, longitudinal macro-shocks, and multi-path solvency simulations.</p>
+  <p>The core philosophy of <strong>IndiaLens</strong> is that every college degree or career pathway is a multi-decade financial investment. Instead of relying on misleading college brochures that quote cherry-picked starting salaries, IndiaLens models your real future earnings using probability-adjusted income taxes, loan repayment schedules, economic recessions, and multi-year simulations.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · The Big Question We Answer</div>
+    <p><strong>"If my family invests ₹20 Lakhs in this college today, how much real money will I actually take home over the next 20 years?"</strong><br>
+    Most college counselors only look at the highest salary on a brochure. IndiaLens calculates your real take-home cash. We subtract taxes, deduct monthly loan EMIs, adjust for inflation (rising living costs), simulate the chance of recessions or layoffs, calculate whether AI will replace that job, and if studying abroad, calculate visa lottery odds and currency exchange rates. This gives you one clear rupee amount: <em>is this college an investment that makes you financially secure, or an overpriced trap?</em></p>
+  </div>
 
   <h3 class="sub-heading">4.1 The Master Net Present Value (NPV) Formulation</h3>
-  <p>The 20-Year Net Present Value represents the comprehensive wealth generated by an educational investment relative to the immediate non-degree counterfactual baseline:</p>
+  <p>The 20-Year Net Present Value represents the total real-world wealth generated by your college education compared to working right away after 12th grade:</p>
 
   <div class="math-block">
     <div class="math-title">Equation 4.1 — Multi-Dimensional Global Net Present Value</div>
@@ -826,17 +969,17 @@
     \text{NPV}(s,p) = \sum_{t=1}^{T} \frac{\hat{S}(s,p,t)\cdot\left(1 - \tau(y_t,\kappa)\right)\cdot P_{\text{visa}}(t,d)\cdot\text{FX}(t,\text{curr})\cdot\left(1 - P_{\text{rec}}(t)\cdot \chi_{\text{loss}}\right)\cdot\left(1 - \delta_{\text{AI}}(p,t)\right)}{\prod_{k=1}^{t}\left(1 + r(k)\right)} - \mathcal{C}_{\text{invest}}(p,s) - \text{OC}_{\text{PLFS}}(e,\sigma)\cdot d_{\text{years}}
     $$
     <div class="math-context">
-      <strong>Mathematical Variable Definitions & Actuarial Context:</strong>
+      <strong>Understanding Every Part of This Equation in Plain Terms:</strong>
       <ul>
-        <li>\(\hat{S}(s,p,t)\): The expected gross salary earned at post-graduation year \(t \in [1, 20]\), generated by an ensemble of XGBoost Quantile Regressors and a 2-layer Bi-Directional LSTM calibrated to student \(s\)'s latent profile and program \(p\)'s historical placement distribution. It captures the entire wage distribution: \(P_{10}, P_{25}, P_{50}, P_{75}, P_{90}\).</li>
-        <li>\(\tau(y_t,\kappa)\): The progressive marginal income tax function evaluated at taxable income \(y_t\) within jurisdiction \(\kappa\). For India, this accounts for the New Tax Regime slabs (0% up to ₹3L, escalating to 30% above ₹15L plus standard cess); for the US, progressive federal brackets (10% to 37%) plus state tax (0% in TX/WA to 13.3% in CA) and FICA (7.65%); for Germany, the progressive <i>Einkommensteuer</i> (14% to 42% plus solidarity surcharge).</li>
-        <li>\(P_{\text{visa}}(t,d) = \prod_{k=1}^{t}\left(1 - q_k(d)\right)\): The cumulative time-varying legal work authorization retention probability. For Indian domestic degrees, \(P_{\text{visa}} \equiv 1.0\). For international degrees on visa type \(d\) (e.g., US F-1 OPT to H-1B, UK Graduate Route, EU Blue Card), \(q_k(d)\) represents the hazard rate of non-selection in lottery pools or policy curtailments at year \(k\).</li>
-        <li>\(\text{FX}(t,\text{curr}) = \text{FX}_0 \cdot \exp\!\left(\left(\mu_{\text{FX}} - \frac{1}{2}\sigma_{\text{FX}}^2\right)t + \sigma_{\text{FX}} W_t\right)\): The stochastic foreign exchange conversion rate modeled as Geometric Brownian Motion (GBM), where \(\mu_{\text{FX}}\) is the drift calibrated to the historical RBI-Fed interest rate differential and \(\sigma_{\text{FX}}\) is historical rupee volatility, ensuring future repatriated earnings are realistically valued in INR terms.</li>
-        <li>\(P_{\text{rec}}(t)\): Macroeconomic recession arrival probability at year \(t\), modeled as a homogeneous Poisson process with arrival rate \(\lambda_{\text{rec}} = 0.08\) (implying an 8% annual recession probability). \(\chi_{\text{loss}} = 0.15\) represents the standard severe wage cut / hiring freeze loss coefficient experienced during downturns.</li>
-        <li>\(\delta_{\text{AI}}(p,t) = D_0(p)\cdot\left(1 - H(p)\right)\cdot\left(1 - e^{-\lambda_{\text{AI}} t}\right)\cdot M(p,t)\): The cumulative compounding task displacement fraction attributable to technological automation.</li>
-        <li>\(r(k) = r_{\text{RBI}}(k) + \beta_{\text{risk}}\cdot\sigma_{\text{mkt}}(k)\): The time-varying real discount rate. \(r_{\text{RBI}}\) is derived from the RBI Sovereign Repo forward yield curve, augmented by a degree-specific risk beta \(\beta_{\text{risk}}\) reflecting wage volatility in program \(p\)'s target industry.</li>
-        <li>\(\mathcal{C}_{\text{invest}}(p,s) = \sum_{j=1}^{d_{\text{years}}} \left[\text{Tuition}_j(1+\pi)^j + \text{Living}_j(1+\pi)^j + \text{ExamPrep}_j + \text{CapEx}_j\right]\): Total capitalized cost of attendance inflated by tuition escalation rate \(\pi\) (6.2% private, 3.1% government).</li>
-        <li>\(\text{OC}_{\text{PLFS}}(e,\sigma)\): Empirical opportunity cost drawn directly from MoSPI Periodic Labour Force Survey (PLFS) quarterly microdata, capturing the median earnings of an individual possessing education level \(e\) (e.g., Higher Secondary Class 12) within home state \(\sigma\) over the duration of study \(d_{\text{years}}\).</li>
+        <li>\(\hat{S}(s,p,t)\): <strong>Expected Gross Salary.</strong> Your realistic predicted salary in year \(t\) (from year 1 to 20), calculated by looking at thousands of past graduates across the entire salary spectrum—from 10th percentile to 90th percentile—rather than just the top 1% placed on the brochure.</li>
+        <li>\(\tau(y_t,\kappa)\): <strong>Income Taxes.</strong> What the government takes away. In India, it uses the official New Tax Regime slabs (escalating to 30% plus cess); in the US, federal, state (e.g. 0% in Texas vs 13.3% in California), and FICA taxes; in Germany, the progressive income tax.</li>
+        <li>\(P_{\text{visa}}(t,d)\): <strong>Visa &amp; Work Authorization Odds.</strong> For domestic Indian colleges, this is 100% (1.0). For foreign degrees, it calculates the realistic probability of winning the US H-1B visa lottery, securing a UK Graduate Route extension, or getting an EU Blue Card.</li>
+        <li>\(\text{FX}(t,\text{curr})\): <strong>Currency Swings (Exchange Rate).</strong> If you study abroad and earn dollars, pounds, or euros, this models how changing currency rates affect what your savings are worth when sending money home to India.</li>
+        <li>\(P_{\text{rec}}(t)\cdot \chi_{\text{loss}}\): <strong>Recession &amp; Layoff Factor.</strong> Accounts for the historical reality that an economic downturn or hiring freeze occurs roughly once every 10–12 years, causing temporary pay cuts or job search delays.</li>
+        <li>\(\delta_{\text{AI}}(p,t)\): <strong>AI Automation Drag.</strong> The gradual loss of salary bargaining power as automated AI tools take over routine job tasks.</li>
+        <li>\(r(k)\): <strong>Time Value of Money (Discount Rate).</strong> A rupee earned 15 years from now buys less than a rupee today because of inflation and interest rates.</li>
+        <li>\(\mathcal{C}_{\text{invest}}(p,s)\): <strong>Total True Cost of College.</strong> Everything you pay out of pocket: tuition fees, hostel, food, coaching, textbooks, laptop, and travel across all study years.</li>
+        <li>\(\text{OC}_{\text{PLFS}}(e,\sigma)\): <strong>Opportunity Cost.</strong> The baseline income you could have earned if you started working right away after Class 12 instead of spending 4 years in college.</li>
       </ul>
     </div>
   </div>
@@ -844,12 +987,17 @@
   <div class="callout callout-info">
     <div class="callout-title">Engineering Integration Guide · Net Present Value Engine</div>
     <p><strong>Input Pipeline:</strong> Orchestrated within the core econometric service (<code>services/roi_engine.py</code>). Fetches wage percentiles \(\hat{S}\) from <code>salary_trajectories</code>, macroeconomic rates \(r(t)\) from <code>macro_indicators</code>, and tuition parameters from <code>cost_data</code>.</p>
-    <p><strong>Execution Runtime:</strong> Vectorized NumPy operations evaluating 20-year cash flow arrays in < 5ms per program. Executed synchronously during report generation and cached in Redis with a 7-day TTL.</p>
+    <p><strong>Execution Runtime:</strong> Vectorized NumPy operations evaluating 20-year cash flow arrays in &lt; 5ms per program. Executed synchronously during report generation and cached in Redis with a 7-day TTL.</p>
     <p><strong>Output Destination:</strong> Persisted to <code>roi_scores.financial_roi_pct</code> and injected into <code>student_reports.results_data</code> for client-side rendering.</p>
   </div>
 
   <h3 class="sub-heading">4.2 Internal Rate of Return (IRR) Formulation</h3>
-  <p>The Internal Rate of Return represents the endogenous discount rate \(r^*\) at which the investment's Net Present Value precisely equals zero:</p>
+  <p>The Internal Rate of Return represents the annual compounding growth rate of the money you invest in your education:</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · What IRR Means for Parents</div>
+    <p>Think of college like a bank fixed deposit or mutual fund. If an education loan charges 11% annual interest, but your degree only delivers an IRR of 7%, <strong>you are losing money every single month</strong>. IndiaLens warns you whenever a degree's return is lower than your education loan interest rate.</p>
+  </div>
 
   <div class="math-block">
     <div class="math-title">Equation 4.2 — Internal Rate of Return via Newton-Raphson Iteration</div>
@@ -860,19 +1008,24 @@
     r^*_{n+1} = r^*_n - \frac{\text{NPV}(r^*_n)}{\left.\frac{\partial \text{NPV}}{\partial r}\right|_{r^*_n}} = r^*_n + \frac{\sum_{t=1}^{T} \frac{\mathcal{F}(t)}{(1+r^*_n)^t} - \mathcal{C}_{\text{total}}}{\sum_{t=1}^{T} \frac{t\cdot\mathcal{F}(t)}{(1+r^*_n)^{t+1}}}
     $$
     <div class="math-context">
-      Where \(\mathcal{F}(t)\) denotes the net net-of-tax cash flow at year \(t\), and \(\mathcal{C}_{\text{total}} = \mathcal{C}_{\text{invest}} + \text{OC}_{\text{PLFS}}\). Convergence is established when \(|r^*_{n+1} - r^*_n| < 10^{-6}\). If \(r^* < r_{\text{loan}}\) (the interest rate on educational debt), the program constitutes a guaranteed destroyer of economic surplus.
+      Where \(\mathcal{F}(t)\) denotes your net take-home cash flow in year \(t\), and \(\mathcal{C}_{\text{total}}\) is your total college cost plus forgone earnings. If \(r^* &lt; r_{\text{loan}}\) (your education loan interest rate), the degree destroys family wealth.
     </div>
   </div>
 
   <div class="callout callout-info">
     <div class="callout-title">Engineering Integration Guide · Internal Rate of Return</div>
     <p><strong>Input Pipeline:</strong> Receives the net annual cash flow array \(\mathcal{F}(t)\) generated by the NPV engine. Initialized with initial guess \(r_0 = 0.10\).</p>
-    <p><strong>Execution Runtime:</strong> Solved numerically via <code>scipy.optimize.newton</code> or a custom C-accelerated loop in < 2ms, guaranteed convergence within 20 iterations.</p>
+    <p><strong>Execution Runtime:</strong> Solved numerically via <code>scipy.optimize.newton</code> or a custom C-accelerated loop in &lt; 2ms, guaranteed convergence within 20 iterations.</p>
     <p><strong>Output Destination:</strong> Rendered as the "Yield on Education" benchmark badge on programmatic deep-dive pages.</p>
   </div>
 
   <h3 class="sub-heading">4.3 Student-Conditioned Composite ROI Index</h3>
-  <p>To produce a single, intuitive 0–100 executive score without sacrificing multi-dimensional rigor, The Project maps individual trait vectors into dynamic weight tensors:</p>
+  <p>To provide a single 0–100 overall score while accounting for what matters personally to each student, IndiaLens adapts the weighting to your specific personality and goals:</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · Personalized 0 to 100 Score</div>
+    <p>Different students care about different things. An ambitious student looking to maximize cash needs a high financial weighting; a student who values work-life balance or government job stability cares more about job safety and happiness. IndiaLens customizes the 0–100 score to match <strong>your values</strong>, not a generic national average.</p>
+  </div>
 
   <div class="math-block">
     <div class="math-title">Equation 4.3 — Student-Adaptive Composite ROI Index</div>
@@ -880,23 +1033,23 @@
     \Omega(s,p) = \left[\frac{\sum_{k=1}^{6} w_k(s)\cdot f_k(s,p)\cdot \text{CF}_k}{\sum_{k=1}^{6} w_k(s)}\right] \times 100
     $$
     <div class="math-context">
-      Where the weights \(w_k(s)\) dynamically adapt to the student's 3PL IRT latent psychometric profile:
+      Where the weights \(w_k(s)\) dynamically adapt to your answers in our adaptive quiz:
       <ul>
-        <li>\(w_{\text{financial}}(s) = 0.25 + 0.08\cdot\theta_{\text{value}}(s)\): Scales up financial weight for economic maximizers.</li>
-        <li>\(w_{\text{optionality}}(s) = 0.18 + 0.05\cdot\theta_{\text{autonomy}}(s)\): Scales up career branch agility for entrepreneurial profiles.</li>
-        <li>\(w_{\text{mobility}}(s) = 0.12 + 0.04\cdot\mathbf{1}_{\{\theta_{\text{ai}} > 0\}}\): Rewards global portability for tech-resilient profiles.</li>
-        <li>\(w_{\text{safety}}(s) = 0.20 - 0.06\cdot\theta_{\text{risk}}(s)\): Increases stability weighting for risk-averse students.</li>
-        <li>\(w_{\text{satisfaction}}(s) = 0.12\), \(w_{\text{network}}(s) = 0.13\): Baseline social and institutional capital weights.</li>
+        <li>\(w_{\text{financial}}(s)\): Scales up for students focused heavily on maximizing lifetime earnings.</li>
+        <li>\(w_{\text{optionality}}(s)\): Scales up for students who want flexible careers and startup agility.</li>
+        <li>\(w_{\text{mobility}}(s)\): Rewards degrees with easy international work mobility.</li>
+        <li>\(w_{\text{safety}}(s)\): Increases stability weighting for students seeking stress-free job security.</li>
+        <li>\(w_{\text{satisfaction}}(s),\, w_{\text{network}}(s)\): Baseline campus happiness and alumni network quality.</li>
       </ul>
-      And the six standardized component functions \(f_k(s,p) \in [0,1]\) are defined as:
+      And the six pillar scores \(f_k(s,p) \in [0,1]\) measure:
       <ul>
-        <li>\(f_1(s,p) = \frac{1}{1 + \exp\!\left(-\gamma_1 \left[\frac{\text{NPV}(s,p) - \mathcal{C}_{\text{invest}}}{\mathcal{C}_{\text{invest}}}\right]\right)}\): Normalized financial return efficiency.</li>
-        <li>\(f_2(s,p) = \frac{P_{90}^{Y10}(p)}{P_{50}^{Y10}(p)} \cdot \frac{\ln(1 + N_{\text{career\_paths}}(p))}{\ln(1 + N_{\max})}\): Career convexity and optionality ceiling.</li>
-        <li>\(f_3(s,p) = \alpha_{\text{visa}}\cdot V(p) + \alpha_{\text{remote}}\cdot R(p) + \alpha_{\text{geo}}\cdot\left(1 - G_{\text{city}}(p)\right)\): Geographic and remote labour mobility.</li>
-        <li>\(f_4(s,p) = 1 - \sum_{i=1}^{8} w_i^{\text{risk}}\cdot V_i(p)\): Total stability score from the 8-Vector AI Risk Index.</li>
-        <li>\(f_5(s,p) = \text{CronbachMean}\!\left(\text{WLB}_p,\, \text{Culture}_p,\, \text{Satisfaction}_p\right)\): Psychometrically validated student quality of life.</li>
-        <li>\(f_6(s,p) = \rho_{\text{alumni}}(p)\cdot T_{\text{tier}}(p)\cdot \exp\!\left(-0.1\cdot\Delta t_{\text{peak}}\right)\): Active alumni density in tier-1 leadership roles.</li>
-        <li>\(\text{CF}_k \in [0.60, 1.0]\): Confidence Factor scaling down dimensions with sparse sample sizes or stale scraper data.</li>
+        <li>\(f_1\): Financial Return Efficiency (Net cash return relative to money invested).</li>
+        <li>\(f_2\): Career Optionality Ceiling (How many high-paying career branches this degree opens).</li>
+        <li>\(f_3\): Geographic &amp; Remote Mobility (Ease of working in major metros, abroad, or remotely).</li>
+        <li>\(f_4\): AI Job Resilience (Score derived from our 8-vector AI threat evaluation).</li>
+        <li>\(f_5\): Student Quality of Life (Campus culture, mental health, and workload balance).</li>
+        <li>\(f_6\): Alumni Leadership Density (Presence of college alumni in top executive and engineering roles).</li>
+        <li>\(\text{CF}_k\): Confidence Factor (Automatically discounts scores if sample sizes are small).</li>
       </ul>
     </div>
   </div>
@@ -904,12 +1057,17 @@
   <div class="callout callout-info">
     <div class="callout-title">Engineering Integration Guide · Composite ROI Engine</div>
     <p><strong>Input Pipeline:</strong> Dynamic weight tensor constructed from the student's 4-dimensional IRT trait vector in <code>personal_intelligence.intelligence</code>. Component metrics \(f_1 \dots f_6\) are normalized to standard normal CDF scales.</p>
-    <p><strong>Execution Runtime:</strong> Computed in < 2ms per program. Scalable to bulk screening of 5,000+ candidate programs in < 120ms for screener views.</p>
+    <p><strong>Execution Runtime:</strong> Computed in &lt; 2ms per program. Scalable to bulk screening of 5,000+ candidate programs in &lt; 120ms for screener views.</p>
     <p><strong>Output Destination:</strong> Persisted to <code>roi_scores.composite_score</code> and rendered as the primary animated radial circular gauge on dashboards.</p>
   </div>
 
   <h3 class="sub-heading">4.4 10,000-Path Monte Carlo Debt Solvency & Default Simulation</h3>
-  <p>To eliminate the catastrophic danger of loan default, The Project runs 10,000 parallel stochastic life paths for every evaluated educational financing structure:</p>
+  <p>To eliminate the nightmare of unpayable education loans, IndiaLens runs 10,000 simulated life scenarios for every student:</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · Testing Your Loan Against 10,000 Simulated Futures</div>
+    <p>Instead of assuming everything in life goes perfectly, our computer simulates <strong>10,000 different possible life paths</strong> for you. What if there is an economic recession the year you graduate? What if bank loan interest rates go up by 2%? What if you take 4 extra months to find a job? By testing your loan against 10,000 randomized futures, IndiaLens calculates the exact percentage chance your family will experience loan repayment distress—and warns you before you sign any bank loan papers.</p>
+  </div>
 
   <div class="math-block">
     <div class="math-title">Equation 4.4 — Stochastic Loan Stress & Default Probability Engine</div>
@@ -917,7 +1075,7 @@
     \text{EMI}_i(t) = \frac{P_{\text{principal}}\cdot r_m(i,t)\cdot\left(1 + r_m(i,t)\right)^n}{\left(1 + r_m(i,t)\right)^n - 1} \cdot \left(1 + \xi_{\text{MCLR}}(i,t)\right)
     $$
     $$
-    d\xi_{\text{MCLR}} = \kappa\left(\bar{\xi} - \xi_{\text{MCLR}}\right)dt + \sigma_{\text{MCLR}} dW_t \quad \text{(Ornstein-Uhlenbeck Floating Rate Drift)}
+    d\xi_{\text{MCLR}} = \kappa\left(\bar{\xi} - \xi_{\text{MCLR}}\right)dt + \sigma_{\text{MCLR}} dW_t \quad \text{(Floating Bank Rate Drift)}
     $$
     $$
     \hat{S}_i(t) = \hat{S}(t)\cdot\left(1 + \varepsilon_{\text{vol},i}\right)\cdot\left(1 - \delta_{\text{AI}}(t)\right)\cdot\mathbf{1}_{\{\text{NoRecession}_i(t)\}} + \hat{S}(t)\cdot(1-\chi_{\text{loss}})\cdot\mathbf{1}_{\{\text{Recession}_i(t)\}}
@@ -932,14 +1090,19 @@
     T_{\text{BEP}}^{50} = \text{median}\left\{\min\left\{t \ge 1 : \sum_{k=1}^{t}\left(\frac{\hat{S}_i(k)}{12}\cdot s_{\text{rate}} - \text{EMI}_i(k)\right) \ge \mathcal{C}_{\text{invest}}(p,s)\right\}\right\}
     $$
     <div class="math-context">
-      Where \(\varepsilon_{\text{vol},i} \sim \mathcal{N}(0, \sigma_{\text{field}}^2)\) captures personal performance dispersion, \(r_{\text{PF}} = 0.12\) accounts for mandatory Provident Fund deductions, \(\omega_{\text{distress}} = 0.38\) represents the institutional debt-to-income insolvency barrier, and \(\xi_{\text{MCLR}}\) models mean-reverting floating loan rate fluctuations across the 7–15 year repayment tenure.
+      <strong>Key Elements of the Simulation:</strong>
+      <ul>
+        <li>\(\text{DefaultEvent}_i\): Triggered whenever your monthly loan EMI exceeds 38% of your net monthly take-home salary (after taxes and mandatory Provident Fund deductions).</li>
+        <li>\(\Pr[\text{Default}]\): The proportion of the 10,000 simulated life paths where the student faces loan distress. Below 5% is Safe; 5%–15% is Moderate Risk; above 20% triggers a High Risk warning.</li>
+        <li>\(T_{\text{BEP}}^{50}\): Median Breakeven Period—the exact number of months it will take for your accumulated net savings to fully repay your college education costs.</li>
+      </ul>
     </div>
   </div>
 
   <div class="callout callout-info">
     <div class="callout-title">Engineering Integration Guide · Monte Carlo Debt Simulator</div>
     <p><strong>Input Pipeline:</strong> Ingests principal loan amount, loan tenure, and nominal interest rate from the Wizard Step 2 payload. Pulls sector volatility \(\sigma_{\text{field}}\) from <code>risk_indicators</code>.</p>
-    <p><strong>Execution Runtime:</strong> Vectorized NumPy computation matrix (\(10{,}000 \times 240\) months) executed via async FastAPI endpoint in < 65ms.</p>
+    <p><strong>Execution Runtime:</strong> Vectorized NumPy computation matrix (\(10{,}000 \times 240\) months) executed via async FastAPI endpoint in &lt; 65ms.</p>
     <p><strong>Output Destination:</strong> Yields Default Probability percentage and \(P_{10}/P_{50}/P_{90}\) breakeven months rendered as an interactive solvency barometer on the student report.</p>
   </div>
 </div>
@@ -948,10 +1111,15 @@
   <span class="sec-tag">Section 05 · AI Disruption & Labor Macroeconomics</span>
   <h2 class="sec-heading">The Flagship AI Risk & Future Labor Demand Index</h2>
 
-  <p>The defining structural transformation of the 2026–2035 economic cycle is the unbundling of cognitive labor by Large Language Models, Multi-Modal Systems, and Autonomous Agent Architectures. Conventional education platforms operate under the assumption that STEM degrees—specifically computer science and administrative white-collar vocations—enjoy perpetual stability. The Project implements an empirical, multi-vector AI Disruption Matrix that dynamically tracks automation velocity at the atomic task level.</p>
+  <p>The major economic challenge of the coming decade is how AI models, autonomous coding agents, and robotics are reshaping jobs. Traditional college counseling falsely assumes that any STEM degree will remain safe forever. IndiaLens continuously monitors real-world automation speeds at the daily job-task level to protect students from entering careers that will be automated before they graduate.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · How AI Will Affect Your Career</div>
+    <p>AI does not usually destroy an entire profession overnight—it replaces <strong>routine daily tasks</strong>. For example, AI can already write basic code, translate documents, and fill out tax forms in seconds. If a job consists of 80% repetitive tasks, salaries for entry-level workers in that field will decline sharply. But if a job requires complex human judgment, physical dexterity, negotiation, or creative system design, AI will make the human worker <em>more productive and higher-paid</em>. IndiaLens shows you which side of that line your chosen degree sits on.</p>
+  </div>
 
   <h3 class="sub-heading">5.1 Task-Level S-Curve Automation Decay Engine</h3>
-  <p>Technological disruption does not replace entire occupational categories overnight; it progressively degrades routine cognitive and programmatic tasks. The Project models task vulnerability along an empirical S-curve diffusion trajectory:</p>
+  <p>IndiaLens models automation using an empirical S-curve diffusion formula that tracks how quickly companies adopt AI tools for specific tasks:</p>
 
   <div class="math-block">
     <div class="math-title">Equation 5.1 — Task Automation S-Curve Decay Function</div>
@@ -959,21 +1127,21 @@
     \delta_{\text{AI}}(p,t) = D_0(p)\cdot\left(1 - H(p)\right)\cdot\left(1 - \exp\!\left(-\lambda_{\text{AI}}\cdot t\right)\right)\cdot\mathcal{M}_{\text{adopt}}(p,t)
     $$
     $$
-    \mathcal{M}_{\text{adopt}}(p,t) = \frac{1}{1 + \exp\!\left(-k_p\left(t - t_{0,p}\right)\right)} \quad \text{(Sector-Specific Logistic Adoption Envelope)}
+    \mathcal{M}_{\text{adopt}}(p,t) = \frac{1}{1 + \exp\!\left(-k_p\left(t - t_{0,p}\right)\right)} \quad \text{(Sector-Specific Adoption Envelope)}
     $$
     <div class="math-context">
-      Where:
+      <strong>Understanding the Terms in Plain English:</strong>
       <ul>
-        <li>\(D_0(p) \in [0, 1]\): Baseline Task Exposure derived from the Oxford O*NET to Indian National Classification of Occupations (NCO-2015) crosswalk matrix.</li>
-        <li>\(H(p) \in [0, 1]\): Human Moat Tensor representing non-fungible physical, emotional, or regulatory safeguards.</li>
-        <li>\(\lambda_{\text{AI}} = 0.03\): Autonomous agent capability expansion velocity parameter, calibrated against longitudinal benchmark performance gains (e.g., SWE-bench, AlphaFold, GAIA).</li>
-        <li>\(\mathcal{M}_{\text{adopt}}(p,t)\): Empirical enterprise adoption envelope where \(k_p\) is the velocity of capital substitution in sector \(p\) and \(t_{0,p}\) is the inflection point year (e.g., 2026 for Junior Software Testing; 2031 for Clinical Surgery).</li>
+        <li>\(D_0(p)\): <strong>Task Exposure Baseline.</strong> What percentage of this job involves routine cognitive work that modern AI can do (e.g., 75% for routine software testing vs. 15% for pediatric surgery).</li>
+        <li>\(H(p)\): <strong>The Human Moat.</strong> The share of tasks requiring deep human empathy, physical presence, ethics, or legal accountability that robots and software cannot replace.</li>
+        <li>\(\lambda_{\text{AI}}\): <strong>AI Improvement Speed.</strong> The measured annual rate at which AI models become faster, cheaper, and smarter.</li>
+        <li>\(\mathcal{M}_{\text{adopt}}(p,t)\): <strong>Real-World Corporate Adoption.</strong> How fast actual companies in that industry are buying and implementing AI tools (e.g., fast in customer service; much slower in licensed civil engineering).</li>
       </ul>
     </div>
   </div>
 
   <h3 class="sub-heading">5.2 The Eight-Vector Labor Risk Surface</h3>
-  <p>To capture the full spectrum of programmatic risk, The Project computes eight orthogonal risk vectors for every degree and career path via automated weekly data feeds:</p>
+  <p>To give students a complete picture of job stability, IndiaLens tracks eight separate risk factors for every profession through automated weekly data feeds:</p>
 
   <div class="tbl-wrapper">
     <div class="tbl-caption">Table 5.1 — The Eight Orthogonal Risk Vectors of The AI Risk Surface</div>
@@ -987,58 +1155,58 @@
       <thead>
         <tr>
           <th>Risk Vector (\(V_i\))</th>
-          <th>Mathematical Definition & Sourcing Pipeline</th>
-          <th>Primary Ingestion Source</th>
-          <th>Weight Method</th>
+          <th>What It Measures in Everyday Terms</th>
+          <th>Where Data Comes From</th>
+          <th>Calculation Method</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td><strong>1. AI Automation (\(V_1\))</strong></td>
-          <td>Task-level routine cognitive and manual share crosswalked to NCO codes</td>
-          <td>Oxford O*NET, ILO Working Papers & ArXiv</td>
+          <td>Fraction of daily tasks that can be performed by current AI models</td>
+          <td>Oxford O*NET, ILO Research &amp; ArXiv</td>
           <td>\(w_1^{\mathcal{R}}\) (Ridge Regression)</td>
         </tr>
         <tr>
           <td><strong>2. Salary Volatility (\(V_2\))</strong></td>
-          <td>Normalized coefficient of wage variation: \(\sigma(\text{Wage}_{5Y}) / \mu(\text{Wage}_{5Y})\)</td>
-          <td>AmbitionBox 5-Year Salary Time-Series</td>
+          <td>How wildly salaries swing from good years to bad years</td>
+          <td>AmbitionBox 5-Year Salary Data</td>
           <td>\(w_2^{\mathcal{R}}\) (Ridge Regression)</td>
         </tr>
         <tr>
           <td><strong>3. Industry Cyclicality (\(V_3\))</strong></td>
-          <td>10-Year Gross Value Added (GVA) output variance across macroeconomic cycles</td>
-          <td>Reserve Bank of India (RBI) KLEMS DB</td>
+          <td>Vulnerability to broader economic recessions and market downturns</td>
+          <td>Reserve Bank of India (RBI) Database</td>
           <td>\(w_3^{\mathcal{R}}\) (Ridge Regression)</td>
         </tr>
         <tr>
-          <td><strong>4. Credential Inflation (\(V_4\))</strong></td>
-          <td>Graduate supply growth relative to net formal job openings: \(\frac{\Delta \text{GradSupply}}{\Delta \text{JobOpenings}}\)</td>
-          <td>AISHE Ministry of Education vs. Naukri</td>
+          <td><strong>4. Degree Oversupply (\(V_4\))</strong></td>
+          <td>Whether too many colleges are pumping out graduates compared to actual jobs</td>
+          <td>Ministry of Education AISHE vs. Naukri</td>
           <td>\(w_4^{\mathcal{R}}\) (Ridge Regression)</td>
         </tr>
         <tr>
-          <td><strong>5. Geographic Concentration (\(V_5\))</strong></td>
-          <td>Spatial Gini Coefficient of open hiring requisitions across top-12 Indian metros</td>
-          <td>Naukri, Indeed & LinkedIn Talent Insights</td>
+          <td><strong>5. Location Concentration (\(V_5\))</strong></td>
+          <td>Whether all high-paying jobs are stuck in just 2 cities or spread across India</td>
+          <td>Naukri, Indeed &amp; LinkedIn Insights</td>
           <td>\(w_5^{\mathcal{R}}\) (Ridge Regression)</td>
         </tr>
         <tr>
-          <td><strong>6. Regulatory & Policy Risk (\(V_6\))</strong></td>
-          <td>Exposure to government quota revisions, visa curtailments, and licensing shifts</td>
+          <td><strong>6. Government &amp; Visa Policy (\(V_6\))</strong></td>
+          <td>Risk of sudden government rule changes, quota shifts, or foreign visa caps</td>
           <td>Gazette of India, NMC Regulations, US FR</td>
           <td>\(w_6^{\mathcal{R}}\) (Ridge Regression)</td>
         </tr>
         <tr>
-          <td><strong>7. Occupational Hazard (\(V_7\))</strong></td>
-          <td>Actuarial morbidity, physical stress, and ergonomic burnout scores</td>
-          <td>Ministry of Labour Factory Advice Service</td>
+          <td><strong>7. Physical Burnout (\(V_7\))</strong></td>
+          <td>Physical fatigue, hazardous working conditions, and health strain</td>
+          <td>Ministry of Labour Safety Records</td>
           <td>\(w_7^{\mathcal{R}}\) (Ridge Regression)</td>
         </tr>
         <tr>
-          <td><strong>8. WLB Degradation (\(V_8\))</strong></td>
-          <td>Inverted composite of verified employee sentiment ratings (\(\alpha \ge 0.74\))</td>
-          <td>AmbitionBox, Glassdoor & Reddit r/devsIndia</td>
+          <td><strong>8. Work-Life Balance (\(V_8\))</strong></td>
+          <td>Average working hours, toxic work cultures, and employee burnout rates</td>
+          <td>AmbitionBox, Glassdoor &amp; Reddit</td>
           <td>\(w_8^{\mathcal{R}}\) (Ridge Regression)</td>
         </tr>
       </tbody>
@@ -1051,12 +1219,20 @@
     \mathcal{R}(p) = \sum_{i=1}^{8} w_i^{\mathcal{R}}\cdot V_i(p) \quad \text{where} \quad \mathbf{w}^{\mathcal{R}} = \arg\min_{\mathbf{w}} \left\|\mathbf{V}\mathbf{w} - \mathbf{y}_{\text{instability}}\right\|_2^2 + \lambda_{\text{ridge}}\left\|\mathbf{w}\right\|_2^2
     $$
     <div class="math-context">
-      The weights \(\mathbf{w}^{\mathcal{R}}\) are not subjective opinions; they are re-estimated weekly via L2-regularized Ridge Regression against longitudinal 5-year salary instability outcomes across our historical alumni cohort database.
+      Weights are re-calibrated weekly against real salary histories of alumni cohorts to ensure the risk score reflects actual job market stability rather than subjective guesswork.
     </div>
   </div>
 
   <h3 class="sub-heading">5.3 The Job Security Score (JSS) & Tail Layoff Probabilities</h3>
-  <p>To translate complex multidimensional risks into actionable metrics, The Project computes the 0–100 Job Security Score and explicit tail-event layoff probabilities:</p>
+  <p>To convert these complex risk factors into an actionable 0–100 score that anyone can understand instantly, IndiaLens produces the <strong>Job Security Score (JSS)</strong>:</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · Reading Your Job Security Score</div>
+    <p>The Job Security Score ranges from <strong>35 (High Risk)</strong> to <strong>99 (Maximum Security)</strong>:<br>
+    • <strong>Score 85–99 (Green):</strong> Extremely secure career with strong human moats (e.g., specialized medical surgery, high-level system architecture, civil infrastructure). AI acts as an assistant that boosts your income.<br>
+    • <strong>Score 65–84 (Yellow):</strong> Moderate automation. You will need occasional upskilling, but the field offers steady employment.<br>
+    • <strong>Score Below 65 (Red Alert):</strong> High automation vulnerability. Over half of entry-level tasks can already be done by software. IndiaLens warns you and shows the exact emergency savings you must keep for mid-career retraining.</p>
+  </div>
 
   <div class="math-block">
     <div class="math-title">Equation 5.3 — The Job Security Score & Actuarial Layoff Horizon</div>
@@ -1076,22 +1252,22 @@
     \text{UpskillingReserve}_{\text{INR}}(p,s) = ₹1{,}20{,}000 \times \left(1 + \frac{100 - \text{JSS}}{100}\right) \times (1 + \pi_{\text{ed}})^5
     $$
     <div class="math-context">
-      Where the Resilience Tensor \(\Theta_{\text{res}}\) isolates four orthogonal human moats: Physical Task Complexity (\(\Phi_{\text{phys}}\)), Non-Routine Cognitive Synthesis (\(\Gamma_{\text{cog}}\)), Social/Negotiation Empathy (\(\text{H}_{\text{soc}}\)), and Statutory Regulatory Protection (\(\text{P}_{\text{reg}}\)). The platform calculates the exact mandatory financial liquid reserve (\(\text{UpskillingReserve}\)) the student must set aside to fund mid-career credentialing if entering a high-decay discipline.
+      Where the Resilience Tensor \(\Theta_{\text{res}}\) isolates four essential human advantages: Physical Task Dexterity (\(\Phi_{\text{phys}}\)), Complex Non-Routine Problem Solving (\(\Gamma_{\text{cog}}\)), Social &amp; Negotiation Empathy (\(\text{H}_{\text{soc}}\)), and Legal Regulatory Licensing (\(\text{P}_{\text{reg}}\)).
     </div>
   </div>
 
   <div class="callout callout-info">
     <div class="callout-title">Engineering Integration Guide · AI Risk & JSS Engine</div>
-    <p><strong>Input Pipeline:</strong> Pulls 8 orthogonal vectors from <code>risk_indicators</code> table. For novel unindexed job titles, executes zero-shot semantic projection via <code>POST /api/v2/ai/evaluate-career-string</code> in < 800ms.</p>
+    <p><strong>Input Pipeline:</strong> Pulls 8 orthogonal vectors from <code>risk_indicators</code> table. For novel unindexed job titles, executes zero-shot semantic projection via <code>POST /api/v2/ai/evaluate-career-string</code> in &lt; 800ms.</p>
     <p><strong>Execution Runtime:</strong> Computed in batch every Sunday via Airflow DAG and on-demand for customized student pathways.</p>
     <p><strong>Output Destination:</strong> Persisted to <code>risk_indicators.jss_score</code> and rendered as an interactive 8-Axis Radar Chart on report screens.</p>
   </div>
 
   <h3 class="sub-heading">5.4 Zero-Hardcoding Mandate & Fluid Real-Time Recalibration</h3>
-  <p>A non-negotiable rule of The Project’s architecture is the complete absence of static lookup dictionaries or hardcoded safety scores. The entire risk surface operates through continuous dynamic computation:</p>
+  <p>A fundamental rule of IndiaLens’s architecture is that nothing is hardcoded or based on static tables. Everything updates dynamically:</p>
   <ul>
-    <li><strong>Zero-Shot NLP Evaluation for Unknown Careers:</strong> If a student inputs a novel or interdisciplinary career string (e.g., <i>"Neuromorphic Quantum Hardware Engineer"</i>), the system dynamically executes zero-shot semantic extraction across arXiv, O*NET, and live patent filings, projecting the new role onto the 8-vector risk space in real-time (< 800ms).</li>
-    <li><strong>Automated Weekly Airflow Recalibration:</strong> Macroeconomic indicators (RBI repo rates, MoSPI inflation metrics) and hiring volumes from Naukri/LinkedIn trigger automated model retraining DAGs every Sunday at 02:00 IST.</li>
+    <li><strong>Instant Analysis for New Job Titles:</strong> If a student enters a brand-new or unusual career (like <i>"Quantum Machine Learning Specialist"</i> or <i>"AI Bio-Robotics Engineer"</i>), IndiaLens automatically scans recent research papers, job listings, and patent filings to calculate its 8-vector risk score in under 800 milliseconds.</li>
+    <li><strong>Weekly Automated Updates:</strong> Macroeconomic data (bank interest rates, inflation figures) and job openings from LinkedIn and Naukri are refreshed automatically every Sunday night, ensuring students always see the current job market reality.</li>
   </ul>
 </div>
 
@@ -1099,10 +1275,15 @@
   <span class="sec-tag">Section 06 · Psychometric Engine</span>
   <h2 class="sec-heading">The 3PL IRT Computerized Adaptive Testing (CAT) Engine</h2>
   
-  <p>Standard educational diagnostics rely on static, linear 50-question surveys that suffer from high respondent fatigue, social desirability bias, and poor measurement precision. The Project replaces static testing with an advanced Computerized Adaptive Testing (CAT) engine rooted in 3-Parameter Logistic (3PL) Item Response Theory (IRT), dynamically measuring four latent psychological and operational traits in just 6 to 8 micro-dilemma interactions.</p>
+  <p>Traditional aptitude tests make students sit through boring 100-question multiple choice quizzes that cause mental exhaustion and encourage lucky guesses. <strong>IndiaLens</strong> replaces this with an intelligent Computerized Adaptive Testing (CAT) engine powered by 3-Parameter Logistic (3PL) Item Response Theory (IRT). It measures four essential student strengths in just 6 to 8 interactive micro-dilemma scenarios.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · Why Our Quiz Discovers Real Talent in 8 Questions</div>
+    <p>Think of this quiz like playing chess against a grandmaster computer. When you answer a question correctly, the computer doesn't waste your time with more easy questions—it immediately gives you a slightly more challenging dilemma to test the limits of your abilities. If you get stuck or pick a cautious answer, it gives you an easier scenario to find your baseline. Instead of asking 50 generic questions, <strong>in just 8 smart questions</strong> IndiaLens pinpoints your true problem-solving stamina, risk tolerance, economic motivation, and tech agility—while filtering out lucky random clicks.</p>
+  </div>
 
   <h3 class="sub-heading">6.1 The 3-Parameter Logistic (3PL) Mathematical Model</h3>
-  <p>The probability that a student \(j\) possessing multidimensional latent trait vector \(\boldsymbol{\theta}_j\) endorses or selects the risk/value-maximizing option on item \(i\) is modeled as:</p>
+  <p>The probability that a student \(j\) with underlying strength level \(\boldsymbol{\theta}_j\) selects the optimal answer on question \(i\) is modeled mathematically as:</p>
 
   <div class="math-block">
     <div class="math-title">Equation 6.1 — 3PL Item Response Probability Function</div>
@@ -1110,17 +1291,17 @@
     P(x_{ij} = 1 \mid \boldsymbol{\theta}_j, a_i, b_i, c_i) = c_i + \frac{1 - c_i}{1 + \exp\!\left(-a_i\left(\boldsymbol{\theta}_j - b_i\right)\right)}
     $$
     <div class="math-context">
-      Where the item parameters are psychometrically calibrated:
+      <strong>Understanding the Three Parameters in Simple Terms:</strong>
       <ul>
-        <li>\(a_i > 0\): Item Discrimination parameter. Quantifies how sharply the specific micro-dilemma distinguishes between varying levels of the latent trait. High-\(a\) items maximize information efficiency.</li>
-        <li>\(b_i \in [-3.0, +3.0]\): Item Difficulty / Severity threshold. Represents the latent trait level at which an un-guessing respondent has a 50% probability of choosing the keyed response.</li>
-        <li>\(c_i \in [0, 0.25]\): Pseudo-guessing / Noise parameter. Accounts for random selection or heuristic clicking, preventing high-trait students from receiving heavy estimation penalties due to isolated careless mistakes.</li>
+        <li>\(a_i > 0\): <strong>Discrimination Power.</strong> How sharply this specific question separates students with high aptitude from students who are struggling. High-\(a\) questions give maximum diagnostic insight.</li>
+        <li>\(b_i \in [-3.0, +3.0]\): <strong>Question Difficulty.</strong> How tough the question is. An average student has a 50% chance of solving a question with difficulty \(b_i\).</li>
+        <li>\(c_i \in [0, 0.25]\): <strong>Lucky Guessing Protection.</strong> Accounts for students who randomly pick an answer or make a careless slip, ensuring a single mistake does not unfairly hurt their overall score.</li>
       </ul>
     </div>
   </div>
 
   <h3 class="sub-heading">6.2 Fisher Information Maximization & Dynamic Item Selection</h3>
-  <p>Rather than presenting a fixed sequence of questions, the engine dynamically selects the unadministered item from the calibrated item bank that maximizes the multidimensional Fisher Information at the student's current provisional trait estimate \(\hat{\boldsymbol{\theta}}_t\):</p>
+  <p>Rather than giving every student the exact same fixed set of questions, the test dynamically selects whichever next question provides the highest diagnostic certainty:</p>
 
   <div class="math-block">
     <div class="math-title">Equation 6.2 — Fisher Information & Optimal Item Selection</div>
@@ -1131,12 +1312,12 @@
     \text{Item}_{t+1} = \arg\max_{i \in \text{Unadministered}} \det\!\left(\sum_{k \in \text{Administered}} \mathbf{I}_k(\hat{\boldsymbol{\theta}}_t) + \mathbf{I}_i(\hat{\boldsymbol{\theta}}_t)\right)
     $$
     <div class="math-context">
-      This D-optimality criterion guarantees that every single question presented extracts the maximum possible mathematical certainty regarding the student's cardinal preferences.
+      This mathematical selection rule guarantees that every single question presented extracts the maximum possible insight about your natural instincts and career preferences.
     </div>
   </div>
 
   <h3 class="sub-heading">6.3 Expected A-Posteriori (EAP) Trait Updates</h3>
-  <p>Following each response \(x_t\), the student's trait vector is updated using numerical Bayesian integration via 41-node Gauss-Hermite quadrature across a standard multivariate normal prior \(\pi(\boldsymbol{\theta}) \sim \mathcal{N}(\mathbf{0}, \mathbf{I})\):</p>
+  <p>After each answer you give, IndiaLens instantly updates your profile using Bayesian mathematics:</p>
 
   <div class="math-block">
     <div class="math-title">Equation 6.3 — Gauss-Hermite Quadrature Trait Estimation & Stopping Rule</div>
@@ -1150,12 +1331,12 @@
     \text{Diagnostic Termination Criterion: } \max_{d \in \{1,2,3,4\}} \text{SE}(\hat{\theta}_d) < 0.35 \quad \text{OR} \quad n_{\text{items}} \ge 8
     $$
     <div class="math-context">
-      The four latent dimensions measured are:
+      <strong>The Four Core Student Traits Measured (on a -3.0 to +3.0 scale):</strong>
       <ol>
-        <li>\(\theta_{\text{risk}} \in [-3.0, +3.0]\): Volatility tolerance & willingness to absorb downside variance for high convexity.</li>
-        <li>\(\theta_{\text{value}} \in [-3.0, +3.0]\): Economic maximization priority (NPV/IRR weight vs. lifestyle/passion).</li>
-        <li>\(\theta_{\text{autonomy}} \in [-3.0, +3.0]\): Preference for entrepreneurial/independent agility vs. corporate structure.</li>
-        <li>\(\theta_{\text{ai}} \in [-3.0, +3.0]\): Technological adaptability, prompt literacy, and continuous upskilling propensity.</li>
+        <li>\(\theta_{\text{risk}}\): <strong>Risk Tolerance.</strong> Are you comfortable with startups and performance bonuses, or do you prefer the steady security of government/corporate roles?</li>
+        <li>\(\theta_{\text{value}}\): <strong>Financial Motivation.</strong> How strongly do you prioritize high salaries and fast loan repayment versus lifestyle, work-life balance, and personal passion?</li>
+        <li>\(\theta_{\text{autonomy}}\): <strong>Independence vs. Structure.</strong> Do you thrive in self-directed entrepreneurial environments or structured corporate hierarchies?</li>
+        <li>\(\theta_{\text{ai}}\): <strong>AI &amp; Tech Adaptability.</strong> How quickly and comfortably do you adopt new AI tools and technical workflows?</li>
       </ol>
     </div>
   </div>
@@ -1163,7 +1344,7 @@
   <div class="callout callout-info">
     <div class="callout-title">Engineering Integration Guide · 3PL IRT Adaptive Testing Module</div>
     <p><strong>Input Pipeline:</strong> Step 3 of the Wizard calls <code>POST /api/v2/psychometrics/next-item</code> with the current session token and response binary \(x_t \in \{0, 1\}\).</p>
-    <p><strong>Execution Runtime:</strong> Gauss-Hermite integration executes in < 15ms. Evaluates stopping criteria \(\text{SE} < 0.35\) or \(n \ge 8\); if complete, marks <code>is_complete: true</code> and persists final 4-trait vector.</p>
+    <p><strong>Execution Runtime:</strong> Gauss-Hermite integration executes in &lt; 15ms. Evaluates stopping criteria \(\text{SE} &lt; 0.35\) or \(n \ge 8\); if complete, marks <code>is_complete: true</code> and persists final 4-trait vector.</p>
     <p><strong>Output Destination:</strong> Persisted to <code>personal_intelligence.intelligence</code> JSONB; dynamically modulates all downstream Composite ROI weights \(w_k(s)\).</p>
   </div>
 </div>
@@ -1172,10 +1353,15 @@
   <span class="sec-tag">Section 07 · Machine Learning Architecture</span>
   <h2 class="sec-heading">Machine Learning Model Specifications & Pipelines</h2>
 
-  <p>The Project relies on a decoupled, production-grade machine learning architecture that transforms high-volume unstructured scrapes into clean, calibrated econometric surfaces. The pipeline encompasses quantile regression, deep sequence learning, and stochastic state-transition chains.</p>
+  <p><strong>IndiaLens</strong> uses production-grade machine learning models to turn millions of verified career data points into accurate, personalized predictions. Rather than guessing a single salary number, our models calculate your full 20-year career earnings curve across different scenarios.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · How We Predict Real Career Salaries</div>
+    <p>When a college brochure says <em>"Average Package ₹12 LPA"</em>, they often conceal that 50% of the batch got ₹4 LPA while two students who got overseas jobs artificially inflated the average. IndiaLens trains machine learning algorithms on thousands of verified alumni histories. We look at your specific branch, college tier, city, and economic conditions to predict what you will realistically make at Year 1, Year 3, Year 5, Year 10, and Year 20—showing the full spread from cautious cases (10th percentile) to outstanding outcomes (90th percentile).</p>
+  </div>
 
   <h3 class="sub-heading">7.1 Multi-Horizon XGBoost Quantile Salary Regressor</h3>
-  <p>To capture the wide dispersion of career earnings across academic tiers, The Project deploys an ensemble of gradient-boosted decision trees trained using the Pinball (Quantile) Loss function across five percentile targets \(\alpha \in \{0.10, 0.25, 0.50, 0.75, 0.90\}\) over discrete horizons \(h \in \{\text{Y1}, \text{Y2}, \text{Y3}, \text{Y5}, \text{Y7}, \text{Y10}, \text{Y15}, \text{Y20}\}\):</p>
+  <p>IndiaLens deploys gradient-boosted decision trees trained with the Pinball (Quantile) Loss function across five percentile levels (\(P_{10}, P_{25}, P_{50}, P_{75}, P_{90}\)) over 8 key career milestones (Year 1 to Year 20):</p>
 
   <div class="math-block">
     <div class="math-title">Equation 7.1 — Quantile (Pinball) Loss Formulation</div>
@@ -1187,94 +1373,141 @@
       <ul>
         <li><code>max_depth: 6</code>, <code>learning_rate: 0.05</code>, <code>n_estimators: 450</code>, <code>min_child_weight: 5</code></li>
         <li><code>subsample: 0.85</code>, <code>colsample_bytree: 0.80</code>, <code>reg_lambda (L2): 1.8</code>, <code>reg_alpha (L1): 0.4</code></li>
-        <li><strong>Input Feature Matrix (18 Features):</strong> <code>degree_field_id</code>, <code>institutional_tier</code> (1/2/3), <code>college_type</code> (IIT/NIT/BITS/State/Private), <code>nirf_score</code>, <code>naac_grade_num</code>, <code>established_year</code>, <code>placement_rate_pct</code>, <code>total_cost_inr</code>, <code>ai_automation_prob</code>, <code>salary_volatility</code>, <code>industry_gva_growth</code>, <code>city_tier</code>, <code>alumni_leadership_density</code>, <code>internship_rate</code>, <code>faculty_student_ratio</code>, <code>h_index_citations</code>, <code>state_gdp_per_capita</code>, <code>macro_cpi_rate</code>.</li>
-        <li><strong>Validation Target:</strong> 80/20 train-test split; Mean Absolute Percentage Error (MAPE) \(\le 11.2\%\) on Y1; \(\le 16.5\%\) on Y5.</li>
+        <li><strong>Input Feature Matrix (18 Verified Indicators):</strong> <code>degree_field_id</code>, <code>institutional_tier</code> (1/2/3), <code>college_type</code> (IIT/NIT/BITS/State/Private), <code>nirf_score</code>, <code>naac_grade_num</code>, <code>established_year</code>, <code>placement_rate_pct</code>, <code>total_cost_inr</code>, <code>ai_automation_prob</code>, <code>salary_volatility</code>, <code>industry_gva_growth</code>, <code>city_tier</code>, <code>alumni_leadership_density</code>, <code>internship_rate</code>, <code>faculty_student_ratio</code>, <code>h_index_citations</code>, <code>state_gdp_per_capita</code>, <code>macro_cpi_rate</code>.</li>
       </ul>
     </div>
   </div>
-
-  <h3 class="sub-heading">7.2 2-Layer Bi-Directional LSTM Long-Term Wage Trajectory</h3>
-  <p>To capture non-linear, path-dependent career wage growth across changing macroeconomic regimes, the platform employs a 2-layer BiLSTM deep neural network:</p>
-  <ul>
-    <li><strong>Architecture:</strong> Input Dimension: 24 \(\rightarrow\) BiLSTM Layer 1 (Hidden: 128, Dropout: 0.25) \(\rightarrow\) BiLSTM Layer 2 (Hidden: 64, Dropout: 0.20) \(\rightarrow\) Fully Connected Linear Layer (Output: 240 continuous monthly percentile wage vectors).</li>
-    <li><strong>Input Sequence:</strong> 5-Year sliding window of historical industry wage growth, inflation shocks, and sector-specific hiring volumes.</li>
-    <li><strong>Deterministic Fallback:</strong> If GPU execution is unavailable, the pipeline falls back to an econometric compound growth formulation: \(S_t = S_{\text{Y1}} \cdot \prod_{k=1}^{t-1} \left(1 + \text{CAGR}(k, \text{field}, \text{tier})\right)\), with parameters calibrated from PLFS cohort regressions.</li>
-  </ul>
-
-  <h3 class="sub-heading">7.3 Markov Chain Career State Transition Engine</h3>
-  <p>Career progression is modeled as a stochastic finite-state Markov process across six discrete professional states \(\mathcal{S} = \{\text{Entry}, \text{Mid-Senior}, \text{Senior Lead}, \text{Executive/Founder}, \text{Lateral Transition}, \text{Career Attrition}\}\):</p>
-
-  <div class="math-block">
-    <div class="math-title">Equation 7.2 — Markov Career State Transition Matrix</div>
-    $$
-    \boldsymbol{\pi}(t) = \boldsymbol{\pi}(0) \cdot \mathbf{P}^t \quad \text{where} \quad \mathbf{P} = \begin{bmatrix}
-    p_{11} & p_{12} & 0 & 0 & p_{15} & p_{16} \\
-    0 & p_{22} & p_{23} & 0 & p_{25} & p_{26} \\
-    0 & 0 & p_{33} & p_{34} & p_{35} & p_{36} \\
-    0 & 0 & 0 & p_{44} & p_{45} & p_{46} \\
-    p_{51} & p_{52} & 0 & 0 & p_{55} & p_{56} \\
-    0 & 0 & 0 & 0 & 0 & 1
-    \end{bmatrix}
-    $$
-    <div class="math-context">
-      Transition probabilities \(p_{ij}\) are learned from longitudinal resume career histories and AmbitionBox seniority graphs, directly feeding the Optionality Factor \(f_2\) and Network Factor \(f_6\) in the Composite ROI Index.
-    </div>
-  </div>
-
-  <h3 class="sub-heading">7.4 Automated Champion / Challenger Retraining Pipeline</h3>
-  <p>To eliminate manual model maintenance, an automated retraining pipeline runs via Apache Airflow:</p>
-  <ol>
-    <li><strong>Data Extraction Gate:</strong> Pulls newly verified scrape runs from PostgreSQL. If newly flagged anomalies exceed 8% of the batch, execution pauses for administrative audit.</li>
-    <li><strong>Feature Matrix Construction:</strong> Executes rolling normalization, log transforms on skewed compensation, and cyclical encoding on macroeconomic time-series.</li>
-    <li><strong>Challenger Training & Evaluation:</strong> Trains candidate models against a held-out 20% validation split.</li>
-    <li><strong>Promotion Criteria:</strong> Challenger is promoted to <code>is_live = TRUE</code> if and only if: \(\text{MAPE}_{\text{challenger}} < \text{MAPE}_{\text{champion}} - 0.005\) AND \(R^2_{\text{challenger}} > R^2_{\text{champion}}\).</li>
-    <li><strong>Downstream Recomputation:</strong> Automatically recomputes all <code>roi_scores</code>, updates Redis caches, and sends a telemetry summary to the administrative monitoring dashboard.</li>
-  </ol>
 </div>
 
 <div class="section-block" id="s8">
-  <span class="sec-tag">Section 08 · Generative Reasoning Layer</span>
-  <h2 class="sec-heading">The Student Intelligence Layer: A Hybrid ML-LLM Architecture</h2>
+  <span class="sec-tag">Section 08 · Dual-Engine AI Core</span>
+  <h2 class="sec-heading">The Student Intelligence Layer: Dual-Engine Architecture (DeepSeek + Sonar)</h2>
 
-  <p>The Student Intelligence Layer represents The Project’s most sophisticated architectural component. Generic AI chatbots fail in high-stakes educational decision-making because they operate as sycophantic generalists—hallucinating admissions cutoffs, flattering user biases, and producing superficial advice without mathematical grounding. The Project solves this by deploying a hybrid ML-LLM architecture that couples the quantitative precision of our econometric pipelines with the deep generative reasoning of <strong>Google Gemini 3.7 Flash</strong>.</p>
+  <p>The Student Intelligence Layer represents IndiaLens’s conversational and reasoning pinnacle. Generic AI chatbots fail in high-stakes educational advisory because they act as sycophants—hallucinating fake admissions cutoffs, flattering user biases, and producing agreeable cheerleading without mathematical grounding. Monolithic frontier models (such as Gemini 3.7 Flash with Google Search Grounding) introduce severe cost bloat ($35 per 1,000 search queries on top of token fees) and combine memory recall, web search, and numerical reasoning into a single fragile bottleneck. IndiaLens solves this by deploying a <strong>decoupled, dual-engine ML-LLM architecture</strong> pairing <strong>DeepSeek V4 Flash</strong> (Personal Mentor &amp; Memory Core) with <strong>Perplexity Sonar</strong> (Live Web Detective), orchestrated through a high-performance <strong>Fork-and-Join pipeline</strong>.</p>
 
-  <h3 class="sub-heading">8.1 The Two-Layer Intelligence Hierarchy (Mini-LLM Paradigm)</h3>
-  <p>The system operates as a personal cognitive model—a student-conditioned "Mini-LLM" whose core reasoning is physically anchored in verified econometric data:</p>
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · How Our Two AI Engines Work Together</div>
+    <p>Think of this architecture like a team of two trusted advisors:<br>
+    • <strong>DeepSeek V4 Flash is your personal mentor:</strong> It remembers your family's budget, your test scores, your strengths, and your past questions by heart.<br>
+    • <strong>Perplexity Sonar is the online detective:</strong> It searches the live internet in real time, pulling verified circulars from college websites, checking actual cutoff ranks, and uncovering campus realities.<br>
+    • <strong>The Smart Handshake:</strong> Sonar sends all hard numbers (tuition fees, closing ranks) directly to our Python mathematical calculator, while sending qualitative campus tips (like strict attendance rules or hostel shortages) directly to DeepSeek. DeepSeek then synthesizes everything into a clear, honest, and personal report—telling you the truth without sugarcoating.</p>
+  </div>
+
+  <h3 class="sub-heading">8.1 The Dual-Engine Intelligence Hierarchy</h3>
+  <p>Instead of overloading one AI model with every task, IndiaLens cleanly divides work across three specialized layers:</p>
 
   <div class="tbl-wrapper">
-    <div class="tbl-caption">Table 8.1 — Two-Layer Hybrid Intelligence Specification</div>
+    <div class="tbl-caption">Table 8.1 — Decoupled Dual-Engine Intelligence Specification</div>
     <table>
       <colgroup>
-        <col style="width: 24%;">
-        <col style="width: 28%;">
-        <col style="width: 48%;">
+        <col style="width: 22%;">
+        <col style="width: 26%;">
+        <col style="width: 52%;">
       </colgroup>
       <thead>
         <tr>
           <th>Intelligence Layer</th>
-          <th>Underlying Technology Stack</th>
-          <th>Functional Role & Responsibility</th>
+          <th>Underlying Technology</th>
+          <th>Role &amp; Core Responsibility in Plain English</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><strong>Layer 1: Quantitative Foundation (Structured Stochastic Memory)</strong></td>
-          <td>XGBoost Quantile Regressors, BiLSTM Time-Series, Markov Chains, 3PL IRT Engine, Monte Carlo Simulators</td>
-          <td>Generates mathematically rigorous salary distributions, default probabilities, trait vectors, and graph edges. These outputs are vectorized into semantic descriptors and injected as immutable ground-truth context. <strong>The LLM is strictly prohibited from generating raw financial numbers independently.</strong></td>
+          <td><strong>Layer 1: Deterministic Math Calculator</strong></td>
+          <td>NumPy, SciPy, XGBoost, Monte Carlo Engine</td>
+          <td>Calculates exact salary curves, loan default risks, and cutoff scores in &lt; 35ms. <strong>AI language models are strictly forbidden from doing math calculations to prevent hallucinations.</strong></td>
         </tr>
         <tr>
-          <td><strong>Layer 2: Generative Reasoning Engine (Cognitive Fiduciary Copilot)</strong></td>
-          <td>Google Gemini 3.7 Flash with 1M+ Token Context Window & Google Search Grounding API</td>
-          <td>Synthesizes the quantitative context stack, executes Socratic multi-turn strategic interviews, challenges irrational student biases with hard numbers, dynamically mutates the student's Path DAG, and authors tailored essays/portfolios.</td>
+          <td><strong>Layer 2A: The Web Detective</strong></td>
+          <td>Perplexity Sonar Search API (Live Citations &amp; Web Index)</td>
+          <td>Carries out live, zero-hallucination web research across official college portals (JoSAA, JAC, university circulars, visa guidelines). Retrieves up-to-date fee hikes and real closing ranks with verified website links.</td>
+        </tr>
+        <tr>
+          <td><strong>Layer 2B: The Personal Mentor</strong></td>
+          <td>DeepSeek V4 Flash (128k+ Context, Fast Memory Retrieval)</td>
+          <td>Remembers your background and family budget, directs Sonar on what to search for (Pass 1), and combines the math calculator's output with campus tips to write you a clear, honest advisory report (Pass 2).</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <h3 class="sub-heading">8.2 The Context Injection Protocol (The Bridge Between ML & LLM)</h3>
-  <p>At every conversation turn, the backend constructs and injects a dense, structured context payload into the dedicated Gemini 3.7 Flash session:</p>
+  <h3 class="sub-heading">8.2 The 5-Step Fork-and-Join Pipeline</h3>
+  <p>To eliminate delays and ensure maximum accuracy, data moves in 5 clear, unidirectional steps:</p>
+
+  <div class="blueprint-card">
+    <div class="blueprint-header">
+      <span>Assembly Blueprint · The 5-Step Fork-and-Join Pipeline</span>
+      <span class="stream-badge stream-a">Guaranteed Response Time &lt; 1.2s</span>
+    </div>
+    <div class="blueprint-body">
+      <div class="assembly-flow">
+        <div class="assembly-step">
+          <span class="assembly-step-num">STEP 1</span>
+          <div class="assembly-step-content">
+            <strong>Understanding Your Question (DeepSeek Pass 1):</strong> You ask a question. DeepSeek looks up your personal profile, test scores, and budget limits, converting your question into specific factual search terms for Sonar.
+          </div>
+        </div>
+        <div class="assembly-step">
+          <span class="assembly-step-num">STEP 2</span>
+          <div class="assembly-step-content">
+            <strong>Searching Live Verified Sources (Perplexity Sonar):</strong> Sonar searches verified official websites and extracts accurate, up-to-date numbers along with direct source links.
+          </div>
+        </div>
+        <div class="assembly-step">
+          <span class="assembly-step-num">STEP 3</span>
+          <div class="assembly-step-content">
+            <strong>The Smart Fork (Splitting Numbers and Tips):</strong>
+            <br>• <span class="stream-badge stream-a">Stream A (Hard Numbers Only)</span>: Clean numbers (tuition fees, hostel costs, recent cutoff ranks) are sent straight to our Python math calculator.
+            <br>• <span class="stream-badge stream-b">Stream B (Campus Tips &amp; Context)</span>: Real-world ground facts (e.g. strict 75% attendance rules, placement drive changes, early scholarship deadlines) bypass the calculator and go directly to DeepSeek.
+          </div>
+        </div>
+        <div class="assembly-step">
+          <span class="assembly-step-num">STEP 4</span>
+          <div class="assembly-step-content">
+            <strong>Running the Math (Python Actuarial Engine):</strong> In under 35 milliseconds, the math calculator computes your 20-year net return, solves the loan breakeven time, and tests your loan against 10,000 simulated life paths.
+          </div>
+        </div>
+        <div class="assembly-step">
+          <span class="assembly-step-num">STEP 5</span>
+          <div class="assembly-step-content">
+            <strong>The Honest Synthesis (DeepSeek Pass 2):</strong> DeepSeek takes the math results, adds the campus tips, and writes a clear, personalized report highlighting financial risks first, followed by growth opportunities.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="sub-heading">8.3 Multi-Stream Data Contracts (The System Handshake)</h3>
+  <p>The system prevents AI hallucinations by strictly separating numbers from narrative text:</p>
 
   <pre class="spec-box">
+// Stream A: Clean Numbers (Sonar -> Python Math Calculator)
+STREAM_A_PARAMETRIC = {
+  "program_id": "THAPAR-COE-CS",
+  "tuition_annual_inr": 540000.0,
+  "hostel_annual_inr": 120000.0,
+  "duration_years": 4.0,
+  "closing_rank_recent": 16500,
+  "verified_median_salary_inr": 1150000.0
+}
+
+// Stream B: Real-World Campus Facts (Sonar -> DeepSeek Direct Bypass)
+STREAM_B_QUALITATIVE = {
+  "hiring_alerts": [
+    "IT mass recruiters reduced on-campus intake by 40% in recent cycle.",
+    "Strict 75% attendance policy enforced; low flexibility for off-campus internships."
+  ],
+  "tactical_tips": [
+    "Apply in Round 1 counseling before May 15 to lock the 20% board merit waiver.",
+    "Verify campus location: Patiala main campus vs Derabassi satellite center."
+  ],
+  "source_citations": [
+    "https://thapar.edu/admissions/circular-2025.pdf",
+    "https://reddit.com/r/ThaparUniversity"
+  ]
+}
+
+// Immutable Context Packet Injected into DeepSeek Pass 2
 CONTEXT_PACKET = {
   "student_token": "uuid-v4-9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "psychometric_profile": {
@@ -1289,68 +1522,100 @@ CONTEXT_PACKET = {
     "max_monthly_emi_tolerance_inr": 28000,
     "liquidity_buffer_months": 6
   },
-  "academic_reality_matrix": {
-    "board_pct": 92.4,
-    "jee_main_percentile": 96.8,
-    "category": "General",
-    "home_state": "Maharashtra",
-    "target_degree_level": "Undergraduate B.Tech"
+  "actuarial_ml_outputs": {
+    "composite_roi_score": 88.4,
+    "npv_20y_inr": 18450000,
+    "irr_pct": 21.4,
+    "monte_carlo_default_prob_pct": 1.2,
+    "job_security_score": 82.0,
+    "admission_tier": "Target (68% admission probability)"
   },
-  "econometric_evaluations": [
-    {
-      "program_id": "COEP-BTECH-CS",
-      "composite_roi_score": 88.4,
-      "npv_20y_inr": 18450000,
-      "p10_salary_y1_inr": 650000,
-      "p50_salary_y5_inr": 1850000,
-      "p90_salary_y10_inr": 4200000,
-      "monte_carlo_default_prob": 1.2,
-      "job_security_score": 82.0,
-      "ai_risk_label": "Low Vulnerability / High Augmentation"
-    }
-  ],
-  "active_path_dag": {
-    "current_node": "PREP-JEE-ADVANCED",
-    "unlocked_nodes": ["IIT-ROORKEE-MECH", "COEP-CS", "BITS-GOA-EEE"],
-    "blocked_nodes": ["IIT-BOMBAY-CS"], // Blocked by percentile threshold
-    "critical_gates": ["JEE_ADVANCED_RANK_LE_4500"]
-  },
-  "longitudinal_memory": {
-    "rejected_options": ["TIER3-PRIVATE-COLLEGE-CS", "OVERSEAS-NON-STEM-DIPLOMA"],
-    "historical_tradeoff_preferences": "Chose lower fees over brand prestige on 2026-08-14"
-  }
+  "stream_b_qualitative": STREAM_B_QUALITATIVE
 }
   </pre>
 
-  <h3 class="sub-heading">8.3 Anti-Yes-Man Fiduciary Enforcement Directives</h3>
-  <p>To eliminate sycophancy, the Gemini 3.7 Flash system prompt is locked with strict behavioral and epistemic guardrails:</p>
+  <h3 class="sub-heading">8.4 Anti-Yes-Man Fiduciary Directives (No Sugarcoating Allowed)</h3>
+  <p>To ensure students receive honest, uncompromised advice, DeepSeek’s prompt is locked with strict rules:</p>
 
   <div class="callout callout-warning">
-    <div class="callout-title">Core System Prompt Guardrails (Verbatim Execution Directives)</div>
+    <div class="callout-title">Core System Prompt Guardrails (Strict Advisory Rules)</div>
     <ul>
-      <li><strong>Fiduciary Prime Directive:</strong> You are an actuarial fiduciary and strategic career calculator. Your sole loyalty is to the student’s 20-year net financial solvency and developmental resilience. You are strictly forbidden from flattering the student, validating unrealistic aspirations without data, or acting as an agreeable cheerleader.</li>
-      <li><strong>Mandatory Downside-First Presentation:</strong> Whenever evaluating an academic pathway, you must present the \(P_{10}\) downside scenario, debt service burden, and loan default risk BEFORE discussing upside potential.</li>
-      <li><strong>Contradiction Interception:</strong> If a student expressing high risk aversion (\(\theta_{\text{risk}} < -1.0\)) proposes taking an un-subsidized ₹60 Lakh loan for an overseas program with a 42% H-1B rejection risk, you must explicitly intervene, flag the psychological contradiction, and quantify the exact monetary probability of insolvency.</li>
-      <li><strong>Zero Numerical Hallucination:</strong> You may never invent salary, placement, or cutoff figures. All financial data must be explicitly cited from the <code>CONTEXT_PACKET</code> or retrieved via live, grounded search queries with verified URL citations.</li>
+      <li><strong>The Student First:</strong> Your sole duty is to protect the student's 20-year financial health and career resilience. You are strictly forbidden from flattering the student, agreeing with unrealistic plans, or cheerleading bad decisions.</li>
+      <li><strong>Risks First, Rewards Second:</strong> Whenever evaluating a degree, you must explain the worst-case scenario, the loan EMI burden, and the risk of job market struggles BEFORE discussing the upside.</li>
+      <li><strong>Calling Out Dangerous Decisions:</strong> If a cautious student with limited family savings plans to borrow ₹60 Lakhs for an overseas degree with high visa rejection rates, you must intervene and explicitly calculate their danger of bankruptcy.</li>
+      <li><strong>Zero Fabricated Numbers:</strong> You may never make up salary, placement, or cutoff figures. All financial data must come strictly from the math calculator or verified source links.</li>
     </ul>
   </div>
 
-  <h3 class="sub-heading">8.4 The Dynamic Path Graph (DAG as Longitudinal Student Memory)</h3>
-  <p>The student’s academic and career journey is maintained as a Directed Acyclic Graph (DAG) stored directly within PostgreSQL as a native JSONB document (<code>personal_intelligence.path_graph</code>):</p>
+  <h3 class="sub-heading">8.5 The Dynamic Path Graph (Longitudinal Career Memory)</h3>
+  <p>IndiaLens tracks your entire academic and career journey as a dynamic roadmap in our database:</p>
   <ul>
-    <li><strong>Node Taxonomy:</strong> Standardized nodes categorize <code>Exam Milestones</code> (JEE, SAT, IELTS), <code>Program Enrollments</code> (B.Tech, MS, Dual Degree), <code>Skill Acquisitions</code> (PyTorch, Distributed Systems, Legal Drafting), and <code>Target Career Roles</code> (Quant Researcher, ASIC Architect).</li>
-    <li><strong>Dynamic Edge Mutation:</strong> Whenever a student updates their mock score, modifies their family budget, or when weekly scraping signals a major industry shift, the backend executes an automatic graph mutation, pruning unviable pathways and surfacing newly optimal arbitrage nodes.</li>
+    <li><strong>Roadmap Milestones:</strong> Records exam target milestones (JEE, SAT, IELTS), enrolled degrees, acquired technical skills (PyTorch, cloud architecture), and your 10-year target job role.</li>
+    <li><strong>Automatic Recalibration:</strong> When you update your mock exam score or family budget, or when industry hiring trends shift, IndiaLens automatically adjusts your roadmap, pruning risky options and highlighting better alternatives.</li>
   </ul>
+
+  <h3 class="sub-heading">8.6 Stack Comparison: DeepSeek + Sonar vs. Legacy Models</h3>
+  <p>Comparing our dual-engine setup against traditional single models demonstrates massive cost savings and superior reliability:</p>
+
+  <div class="tbl-wrapper">
+    <div class="tbl-caption">Table 8.2 — Operational &amp; Financial Stack Comparison</div>
+    <table>
+      <colgroup>
+        <col style="width: 25%;">
+        <col style="width: 37%;">
+        <col style="width: 38%;">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Performance Metric</th>
+          <th>Legacy Single Model (e.g. Gemini 3.7 Flash)</th>
+          <th>IndiaLens Production Stack (DeepSeek + Sonar)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Cost per 1,000 Advisory Chats</strong></td>
+          <td class="num" style="color: #A61C1C;">$38.00 – $55.00 (Expensive search surcharge)</td>
+          <td class="num" style="color: #1B6B38;"><strong>$2.80 – $4.20 (92% Cost Savings)</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Information Freshness</strong></td>
+          <td>Generic web search wrapper</td>
+          <td><strong>Dedicated Perplexity Sonar search index with verified URLs</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Memory &amp; Conversation Cost</strong></td>
+          <td>Gets progressively expensive as chat grows</td>
+          <td><strong>Ultra-low caching costs (&lt; $0.02 per 1M cached tokens)</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Response Speed</strong></td>
+          <td>1,400ms – 2,200ms (Slow combined reasoning)</td>
+          <td><strong>&lt; 950ms Cold / &lt; 420ms Warm (Instant response)</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Math Accuracy</strong></td>
+          <td>Risk of language model hallucinating numbers</td>
+          <td><strong>100% Accurate (Python calculator handles all math)</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <div class="section-block" id="s9">
   <span class="sec-tag">Section 09 · Admissions Portfolio Engineering</span>
   <h2 class="sec-heading">The Caliber-Calibrated Admissions Portfolio Engine</h2>
 
-  <p>A fatal flaw in standard counseling portals is the presentation of generic, unrealistic options (e.g., advising an 82nd-percentile student to "crack IIT Bombay Computer Science"). The Project deploys an empirical <strong>Caliber-Calibrated Admissions Portfolio Engine</strong> that maps a student's verified academic baseline into a statistically sound, 4-tier risk-hedged application matrix.</p>
+  <p>A fatal mistake in traditional counseling is giving students unrealistic, generic advice (like telling a student scoring in the 80th percentile to "just work harder and crack IIT Bombay Computer Science"). <strong>IndiaLens</strong> deploys an empirical <strong>Caliber-Calibrated Admissions Portfolio Engine</strong> that maps your actual test scores and grades into a balanced, 4-tier college application strategy that protects you from heartbreak.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · Why You Need a 4-Tier College Portfolio</div>
+    <p>Think of college applications like building a smart investment portfolio. If you only apply to top-10 "dream" colleges, a single bad exam day could leave you with zero college seats. If you only apply to easy colleges, you sell yourself short. IndiaLens divides your college choices into 4 clear categories: (1) <strong>Reach Colleges</strong> (your dream schools), (2) <strong>Target Colleges</strong> (schools where your current scores give you a strong 60%–75% chance), (3) <strong>Safety Colleges</strong> (guaranteed admission even if exam day goes poorly), and (4) <strong>Hidden Gems</strong> (lesser-known colleges with great placements and low tuition that beat expensive private universities).</p>
+  </div>
 
   <h3 class="sub-heading">9.1 The Cutoff Delta Function & Z-Score Formulation</h3>
-  <p>Admission probabilities are computed by standardizing the delta between the institution’s historical closing rank and the student’s expected exam performance:</p>
+  <p>Admission probabilities are computed by comparing historical cutoff ranks with your expected exam performance:</p>
 
   <div class="math-block">
     <div class="math-title">Equation 9.1 — Cutoff Delta Z-Score & Admission Probability</div>
@@ -1361,10 +1626,12 @@ CONTEXT_PACKET = {
     \Pr[\text{Admission}(s,p)] = \Phi(Z(s,p)) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^{Z(s,p)} e^{-u^2/2} du
     $$
     <div class="math-context">
-      Where:
+      <strong>Understanding the Terms in Plain English:</strong>
       <ul>
-        <li>\(\text{HistoricalClosingRank}\): The 3-year rolling median closing rank for program \(p\) under the student's category reservation (\(\text{General}, \text{OBC-NCL}, \text{SC}, \text{ST}, \text{EWS}\)) and domicile quota (\(\text{Home State}, \text{All India}\)).</li>
-        <li>\(\sigma_{\text{exam\_variability}}\): The empirical standard deviation of rank shifts observed across recent testing cycles for the specified exam (e.g., \(\sigma \approx 1{,}800\) ranks around the 95th percentile in JEE Main).</li>
+        <li>\(\text{HistoricalClosingRank}\): The 3-year rolling average closing rank for that college branch under your category reservation (General, OBC, SC, ST, EWS) and home-state quota.</li>
+        <li>\(\mathbb{E}[\text{StudentRank}(s)]\): Your predicted rank based on your latest mock tests and preparation trajectory.</li>
+        <li>\(\sigma_{\text{exam\_variability}}\): Normal exam-day fluctuation (typically 1,500 to 2,000 ranks around the 95th percentile in JEE Main).</li>
+        <li>\(\Pr[\text{Admission}]\): Your exact mathematical probability of securing a seat.</li>
       </ul>
     </div>
   </div>
@@ -1372,12 +1639,12 @@ CONTEXT_PACKET = {
   <div class="callout callout-info">
     <div class="callout-title">Engineering Integration Guide · Admissions Z-Score Calibration</div>
     <p><strong>Input Pipeline:</strong> Receives expected rank \(\mathbb{E}[\text{Rank}]\) from Wizard Step 1 and queries historical 3-year closing cutoffs from <code>programs.cutoff_rank_high</code> filtered by category and home state quota.</p>
-    <p><strong>Execution Runtime:</strong> Standard normal CDF \(\Phi(Z)\) calculated in < 1ms via <code>scipy.stats.norm.cdf</code>.</p>
+    <p><strong>Execution Runtime:</strong> Standard normal CDF \(\Phi(Z)\) calculated in &lt; 1ms via <code>scipy.stats.norm.cdf</code>.</p>
     <p><strong>Output Destination:</strong> Segregates programs into Reach, Target, Safety, and Hidden Gem tabs rendered on the student's personal portfolio view.</p>
   </div>
 
   <h3 class="sub-heading">9.2 The Four Portfolio Tiers</h3>
-  <p>Based on the computed \(Z\)-Score and admission probability, candidate programs are automatically categorized into a diversified four-tier portfolio:</p>
+  <p>Based on your calculated admission probability, colleges are organized into a diversified list:</p>
 
   <div class="tbl-wrapper">
     <div class="tbl-caption">Table 9.1 — The Four Caliber-Calibrated Admissions Tiers</div>
@@ -1393,43 +1660,43 @@ CONTEXT_PACKET = {
           <th>Portfolio Tier</th>
           <th>Admission Probability</th>
           <th>Statistical Bounds</th>
-          <th>Strategic Purpose & Allocation</th>
+          <th>Role in Your College Strategy</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td><strong>1. Reach Tier</strong></td>
           <td><strong>15% – 25%</strong></td>
-          <td>\(-1.5 \le Z < -0.67\)</td>
-          <td>Aspirational upside. Represents premier institutions requiring peak exam performance. Capped at 20% of application budget.</td>
+          <td>\(-1.5 \le Z &lt; -0.67\)</td>
+          <td>Ambitious dream schools. Worth trying if you have an exceptional test day. Capped at 20% of your total applications.</td>
         </tr>
         <tr>
           <td><strong>2. Target Tier</strong></td>
           <td><strong>60% – 75%</strong></td>
           <td>\(-0.25 \le Z \le +0.67\)</td>
-          <td>Core alignment. Matches the student's consistent mock exam band. Forms the 50% backbone of the application portfolio.</td>
+          <td>Core alignment. Matches your consistent mock exam scores. Should form 50% of your application list.</td>
         </tr>
         <tr>
           <td><strong>3. Safety Tier</strong></td>
           <td><strong>90% – 98%</strong></td>
-          <td>\(Z > +1.28\)</td>
-          <td>Absolute downside insurance. Guaranteed admission even under severe test-day performance degradation. Forms 20% of portfolio.</td>
+          <td>\(Z &gt; +1.28\)</td>
+          <td>Downside insurance. Guaranteed admission even under severe test-day stress or illness. Forms 20% of your list.</td>
         </tr>
         <tr>
           <td><strong>4. Hidden Gem Arbitrage</strong></td>
           <td><strong>75% – 95%</strong></td>
-          <td>\(Z > +0.67\) AND \(\Omega \ge 85\)</td>
-          <td>High-arbitrage public or autonomous colleges offering exceptional ROI (\(\Omega \ge 85\)) and low tuition despite lower brand hype.</td>
+          <td>\(Z &gt; +0.67\) AND \(\Omega \ge 85\)</td>
+          <td>High-value public or autonomous colleges offering exceptional placement returns and low fees, free from private college marketing hype.</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <h3 class="sub-heading">9.3 Quota Arbitrage & Automated Financial Pruning</h3>
+  <h3 class="sub-heading">9.3 Quota Strategy & Smart Budget Pruning</h3>
   <ul>
-    <li><strong>Domicile Quota Maximization:</strong> Systematically evaluates state quota advantages (e.g., Delhi candidates at IPU/DTU/NSUT enjoying 85% regional seat reservations).</li>
-    <li><strong>Branch vs. College Optimization:</strong> Evaluates whether a non-CS branch at a Tier-1 institution (e.g., Mechanical at IIT Kharagpur) yields a superior 20-year NPV compared to CS at a Tier-3 private college, conditioned on the student's technological adaptability \(\theta_{\text{ai}}\).</li>
-    <li><strong>Algorithmic Financial Pruning:</strong> Any program whose total capitalized cost exceeds \(1.30 \times \text{HouseholdBudget}\) without qualifying for low-interest collateral-free loans is automatically purged from the recommendation surface.</li>
+    <li><strong>State Quota Advantage:</strong> Automatically checks home-state reservation benefits (e.g., Delhi students at DTU, NSUT, and IPU enjoying 85% regional seat quotas).</li>
+    <li><strong>Branch vs. College Brand Trade-Off:</strong> Evaluates whether taking a core engineering branch at a premier Tier-1 college (like Mechanical at IIT Kharagpur or Chemical at BITS Pilani) yields a better 20-year career return than Computer Science at an expensive Tier-3 private college.</li>
+    <li><strong>Automatic Budget Protection:</strong> Any college whose total 4-year cost exceeds 130% of your family's stated budget without qualifying for low-interest education loans is automatically flagged with a clear affordability warning.</li>
   </ul>
 </div>
 
@@ -1437,24 +1704,29 @@ CONTEXT_PACKET = {
   <span class="sec-tag">Section 10 · Global Education Valuation</span>
   <h2 class="sec-heading">Global Degree ROI & Cross-Border Actuarial Models</h2>
 
-  <p>International education represents one of the largest capital outlays an Indian family can make, frequently requiring ₹40 Lakhs to ₹1.2 Crores in total investment. Incumbent study-abroad agents push programs solely based on commission kickbacks. The Project evaluates foreign degrees through rigorous cross-border actuarial math, incorporating visa lottery mechanics, city-level cost of living, and tax drag.</p>
+  <p>Studying abroad is one of the largest financial investments an Indian family can make, often requiring ₹40 Lakhs to ₹1.2 Crores in savings or bank loans. Traditional study-abroad agents push colleges solely based on secret commission kickbacks. <strong>IndiaLens</strong> evaluates foreign degrees with strict financial math, factoring in visa lottery odds, actual city rents, income taxes, and currency exchange rates.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · Exposing Study-Abroad Agent Scams</div>
+    <p>Study abroad agents frequently push students into expensive 1-year degrees in the US or UK without explaining that: (1) <strong>A Non-STEM US degree only gives you 1 year to work and a 25% chance of winning an H-1B visa</strong>—meaning a 75% chance you are forced to return to India with an ₹80 Lakh dollar-debt that is impossible to repay on Indian salaries; (2) <strong>Earning $120k in San Francisco leaves you with LESS savings than earning $95k in Texas or €55k in Germany</strong> because California taxes and Silicon Valley rents consume almost your entire paycheck; (3) <strong>Public German universities charge ZERO tuition</strong> and offer a 94% fast-track to permanent residency, giving lower-risk returns than many mid-tier American schools.</p>
+  </div>
 
   <h3 class="sub-heading">10.1 Cumulative STEM OPT & H-1B Visa Survival Probability</h3>
-  <p>For US programs, long-term financial solvency is strictly bounded by the probability of securing an H-1B work visa before the student's Optional Practical Training (OPT) period expires:</p>
+  <p>In the United States, your ability to pay back a loan depends on securing an H-1B work visa before your student work permit (OPT) expires:</p>
 
   <div class="math-block">
     <div class="math-title">Equation 10.1 — Cumulative H-1B Lottery Survival Probability</div>
     $$
-    P_{\text{H-1B}}^{(\text{cumulative})} = 1 - \left(1 - p_{\text{lottery}}\right)^n \quad \text{where} \quad p_{\text{lottery}} \approx 0.25 \text{ (Historical Annual Selection Rate)}
+    P_{\text{H-1B}}^{(\text{cumulative})} = 1 - \left(1 - p_{\text{lottery}}\right)^n \quad \text{where} \quad p_{\text{lottery}} \approx 0.25 \text{ (Annual Selection Rate)}
     $$
     $$
-    \text{STEM Degree (3-Year OPT, } n=3\text{ Attempts): } P_{\text{H-1B}}^{(3)} = 1 - (1 - 0.25)^3 = 1 - 0.4219 = \mathbf{57.8\%}
+    \text{STEM Degree (3-Year OPT, } n=3\text{ Lottery Attempts): } P_{\text{H-1B}}^{(3)} = 1 - (1 - 0.25)^3 = \mathbf{57.8\%}
     $$
     $$
-    \text{Non-STEM Degree (1-Year OPT, } n=1\text{ Attempt): } P_{\text{H-1B}}^{(1)} = 1 - (1 - 0.25)^1 = \mathbf{25.0\%}
+    \text{Non-STEM Degree (1-Year OPT, } n=1\text{ Lottery Attempt): } P_{\text{H-1B}}^{(1)} = 1 - (1 - 0.25)^1 = \mathbf{25.0\%}
     $$
     <div class="math-context">
-      A Non-STEM US degree carries a staggering <strong>75% structural probability of forced repatriation</strong> within 12 months of graduation, transforming an un-amortized $80,000 educational loan into an immediate financial catastrophe when serviced against Indian rupee salaries.
+      A Non-STEM degree gives you only one lottery attempt (a <strong>75% chance of being forced to leave</strong> within 12 months), creating massive financial danger for families who took education loans.
     </div>
   </div>
 
@@ -1465,8 +1737,8 @@ CONTEXT_PACKET = {
     <p><strong>Output Destination:</strong> Expressed as a prominent visual "Visa Survival Probability" risk metric on all overseas degree cards on <code>/global</code>.</p>
   </div>
 
-  <h3 class="sub-heading">10.2 City-Level Cost of Living Index (COLI) & Net Savings Drag</h3>
-  <p>A $120,000 gross salary in San Francisco yields dramatically lower net savings than a $95,000 salary in Austin, Texas, due to spatial tax and housing differentials:</p>
+  <h3 class="sub-heading">10.2 City-Level Cost of Living & Real Annual Savings</h3>
+  <p>A $120,000 salary in an expensive metro yields far less real savings than a $95,000 salary in a low-tax state:</p>
 
   <div class="math-block">
     <div class="math-title">Equation 10.2 — Spatial Net Annual Cash Flow & Savings Formulation</div>
@@ -1477,11 +1749,11 @@ CONTEXT_PACKET = {
     \tau_{\text{total}}(c) = \tau_{\text{federal}}(y) + \tau_{\text{state}}(c,y) + \tau_{\text{FICA}} + \tau_{\text{local}}(c)
     $$
     <div class="math-context">
-      <strong>Empirical Metros Benchmark Comparison:</strong>
+      <strong>Comparing Real Metros in Plain Numbers:</strong>
       <ul>
-        <li><strong>San Francisco, CA:</strong> \(\tau_{\text{total}} \approx 40.5\%\), \(\text{Rent} \approx \$3{,}200/\text{mo}\), \(\text{COLI} \approx \$1{,}400/\text{mo}\). On \$120k gross: \(\text{Net Savings} \approx \$16{,}200/\text{year}\).</li>
-        <li><strong>Austin, TX:</strong> \(\tau_{\text{total}} \approx 23.2\%\) (Zero state tax), \(\text{Rent} \approx \$1{,}450/\text{mo}\), \(\text{COLI} \approx \$950/\text{mo}\). On \$100k gross: \(\text{Net Savings} \approx \$48{,}000/\text{year}\) (<strong>300% higher net savings</strong>).</li>
-        <li><strong>Munich, Germany:</strong> \(\tau_{\text{total}} \approx 34.0\%\), \(\text{Rent} \approx €1{,}300/\text{mo}\), \(\text{COLI} \approx €850/\text{mo}\). Zero tuition + EU Blue Card fast-track to permanent residency in 21 months (\(P_{\text{visa}} \ge 94\%\)).</li>
+        <li><strong>San Francisco, CA:</strong> Total taxes \(\approx 40.5\%\), Rent \(\approx \$3{,}200/\text{month}\), living expenses \(\approx \$1{,}400/\text{month}\). On a \$120k salary, your <strong>net savings are only \(\approx \$16{,}200/\text{year}\)</strong>.</li>
+        <li><strong>Austin, TX:</strong> Total taxes \(\approx 23.2\%\) (Zero state income tax), Rent \(\approx \$1{,}450/\text{month}\), living expenses \(\approx \$950/\text{month}\). On a \$100k salary, your <strong>net savings are \(\approx \$48{,}000/\text{year}\) (3x higher net savings)</strong>.</li>
+        <li><strong>Munich, Germany:</strong> Total taxes \(\approx 34.0\%\), Rent \(\approx €1{,}300/\text{month}\), living expenses \(\approx €850/\text{month}\). Zero tuition fees + EU Blue Card fast-track to permanent residency in 21 months (94% visa security).</li>
       </ul>
     </div>
   </div>
@@ -1499,35 +1771,35 @@ CONTEXT_PACKET = {
       <thead>
         <tr>
           <th>Global Tier</th>
-          <th>Representative Institutions</th>
-          <th>Financial Profile & Tuition</th>
-          <th>Actuarial Recommendation</th>
+          <th>Representative Universities</th>
+          <th>Tuition &amp; Living Costs</th>
+          <th>IndiaLens Recommendation</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><strong>Tier 1: Value Kings</strong></td>
-          <td>Purdue, Georgia Tech, UIUC, Texas A&M, TU Delft</td>
-          <td>Moderate tuition (\$28k–\$38k/yr), high STEM OPT placement, massive alumni network</td>
-          <td><strong>Strong Buy:</strong> Exceptional risk-adjusted NPV with 3.5-year median breakeven.</td>
+          <td><strong>Tier 1: Value Champions</strong></td>
+          <td>Purdue, Georgia Tech, UIUC, Texas A&amp;M, TU Delft</td>
+          <td>Moderate tuition (\$28k–\$38k/yr), high STEM placement rates, huge alumni network</td>
+          <td><strong>Strong Buy:</strong> Outstanding return on investment with a median 3.5-year loan breakeven.</td>
         </tr>
         <tr>
-          <td><strong>Tier 2: Zero-Tuition Arbitrage</strong></td>
+          <td><strong>Tier 2: Zero-Tuition Public Universities</strong></td>
           <td>TU Munich, RWTH Aachen, Heidelberg, KTH Sweden</td>
-          <td>Zero / nominal tuition (€0–€3k/yr), living costs only, 94% EU Blue Card survival</td>
-          <td><strong>Maximum Arbitrage:</strong> Ideal for capital-constrained students; lowest debt default risk.</td>
+          <td>Zero or low tuition (€0–€3k/yr), living costs only, 94% EU Blue Card visa retention</td>
+          <td><strong>Best Financial Safety:</strong> Ideal for families with budget limits; near-zero risk of loan distress.</td>
         </tr>
         <tr>
-          <td><strong>Tier 3: Convex Ceiling Elite</strong></td>
-          <td>Stanford, MIT, CMU (LTI/CS), Oxford, Imperial</td>
-          <td>High tuition (\$60k–\$75k/yr), extraordinary \(P_{90}\) upside into global AI research/founding</td>
-          <td><strong>Conditional Buy:</strong> Recommended for top-tier academic profiles seeking maximum convexity.</td>
+          <td><strong>Tier 3: Elite Brand Ceiling</strong></td>
+          <td>Stanford, MIT, CMU, Oxford, Imperial College</td>
+          <td>High tuition (\$60k–\$75k/yr), extraordinary upside into global AI research and startups</td>
+          <td><strong>Selective Buy:</strong> Recommended for top academic candidates aiming for high-growth tech careers.</td>
         </tr>
         <tr>
-          <td><strong>Tier 4: Danger Zone</strong></td>
+          <td><strong>Tier 4: Danger Zone (Diploma Mills)</strong></td>
           <td>Unaccredited private colleges, regional non-STEM diplomas</td>
-          <td>High tuition (\$30k–\$45k/yr), low placement rates, 1-year OPT, high loan default probability</td>
-          <td><strong>Strong Avoid:</strong> Negative expected 20-year NPV; flagged with high-risk UI warnings.</td>
+          <td>High tuition (\$30k–\$45k/yr), low placement rates, 1-year OPT, high loan default danger</td>
+          <td><strong>Strong Avoid:</strong> Negative expected return; flagged with red alert warnings on IndiaLens.</td>
         </tr>
       </tbody>
     </table>
@@ -1538,10 +1810,15 @@ CONTEXT_PACKET = {
   <span class="sec-tag">Section 11 · International Admissions Strategy</span>
   <h2 class="sec-heading">The Global Portfolio Builder & Admissions Spike System</h2>
 
-  <p>Elite international universities (Ivy League, Stanford, Oxbridge, NUS) reject >90% of applicants who present "well-rounded" generic profiles (e.g., standard high school grades, generic NGO volunteering, Model United Nations participation). Top-tier holistic admissions reward <strong>Angular Spikes</strong>—extraordinary, authentic excellence in a tightly focused intellectual or technical domain. The Project integrates an automated, multi-year Portfolio Builder that engineers differentiated student profiles.</p>
+  <p>Top international universities (Ivy League, Stanford, Oxford, Cambridge, NUS) reject over 90% of applicants who submit generic "well-rounded" resumes (like playing an instrument, general school sports, and generic volunteering certificates). Holistic admissions officers look for an <strong>Angular Spike</strong>—genuine, focused excellence in one specific subject or technical area. <strong>IndiaLens</strong> includes an automated Portfolio Builder that helps students craft authentic, high-impact profiles.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · What Is an "Angular Spike"?</div>
+    <p>Admissions committees read thousands of essays that all sound the same: <em>"I was the school prefect, I like coding, and I volunteered for an NGO for two weeks."</em> These generic profiles are immediately rejected. An <strong>Angular Spike</strong> means showing deep, continuous passion in ONE specific field. For example, instead of claiming you love biology, you build an open-source tool that analyzes local water pollution data, test it across 10 villages, and publish your findings. IndiaLens helps you plan and execute a genuine spike project from 9th grade through 12th grade.</p>
+  </div>
 
   <h3 class="sub-heading">11.1 The Angular Spike Authenticity Formulation</h3>
-  <p>A student’s portfolio is evaluated via an empirical Spike Authenticity Tensor:</p>
+  <p>A student’s portfolio is evaluated through an authenticity score that rewards genuine commitment over superficial resume padding:</p>
 
   <div class="math-block">
     <div class="math-title">Equation 11.1 — Angular Spike Authenticity Score</div>
@@ -1549,12 +1826,12 @@ CONTEXT_PACKET = {
     \mathcal{A}_{\text{spike}}(s) = \sum_{a \in \text{Activities}(s)} \frac{1}{N_a}\cdot \mathcal{E}_a \cdot \mathcal{D}_a \cdot \cos\!\left(\mathbf{v}_a,\, \mathbf{u}_{\text{target\_major}}\right)
     $$
     <div class="math-context">
-      Where:
+      <strong>Understanding What the Formula Rewards:</strong>
       <ul>
-        <li>\(\frac{1}{N_a}\): The Activity Rarity Index. Inverse of the estimated population frequency of activity \(a\) among Indian applicants. (e.g., "School Prefect" has \(N_a \approx 50{,}000\); "First-Author Computational Biology Preprint in peer-reviewed journal" has \(N_a \approx 30\)).</li>
-        <li>\(\mathcal{E}_a = \text{Rank}(\text{Award}_a)\cdot \text{Prestige}(\text{IssuingBody}_a)\): External Institutional Validation Coefficient.</li>
-        <li>\(\mathcal{D}_a = \text{MonthsInvested}_a \cdot \text{MeasurableImpactScore}_a\): Demonstrable depth of commitment over multi-year cycles.</li>
-        <li>\(\cos(\mathbf{v}_a, \mathbf{u}_{\text{target\_major}})\): Cosine semantic alignment between the activity's skill output and the intended collegiate discipline.</li>
+        <li>\(\frac{1}{N_a}\): <strong>Rarity of Activity.</strong> Doing something unique (like building a working solar battery controller) scores much higher than common activities that 50,000 other students list.</li>
+        <li>\(\mathcal{E}_a\): <strong>External Validation.</strong> Winning a recognized science olympiad, getting a research paper indexed, or receiving a government grant.</li>
+        <li>\(\mathcal{D}_a\): <strong>Multi-Year Commitment.</strong> Dedicating 2 years of steady effort to a project scores 5x higher than cramming a project in the month before college applications.</li>
+        <li>\(\cos(\mathbf{v}_a, \mathbf{u}_{\text{target\_major}})\): <strong>Major Alignment.</strong> How directly your activities connect to your chosen college degree.</li>
       </ul>
     </div>
   </div>
@@ -1562,26 +1839,26 @@ CONTEXT_PACKET = {
   <div class="callout callout-info">
     <div class="callout-title">Engineering Integration Guide · Spike Authenticity Engine</div>
     <p><strong>Input Pipeline:</strong> Triggered on <code>/portfolio-builder</code> when student adds or modifies activities. Activity descriptions are embedded using <code>sentence-transformers</code> to construct \(\mathbf{v}_a\) and matched against \(\mathbf{u}_{\text{major}}\).</p>
-    <p><strong>Execution Runtime:</strong> Vector similarity and formula computation executed in < 35ms.</p>
+    <p><strong>Execution Runtime:</strong> Vector similarity and formula computation executed in &lt; 35ms.</p>
     <p><strong>Output Destination:</strong> Persisted to <code>portfolio_profiles.spike_authenticity_score</code> and rendered as an interactive live gauge on the Portfolio Studio.</p>
   </div>
 
-  <h3 class="sub-heading">11.2 The Action-Impact X-Y-Z Formulation</h3>
-  <p>To eliminate weak narrative resumes, every activity bullet in the student’s profile is algorithmically restructured using the Google/CommonApp X-Y-Z benchmark:</p>
+  <h3 class="sub-heading">11.2 The Action-Impact X-Y-Z Resume Standard</h3>
+  <p>Every activity bullet on your resume is rewritten using the proven Google/CommonApp X-Y-Z formula:</p>
   <div class="callout callout-info">
     <div class="callout-title">The X-Y-Z Resume Transformation Standard</div>
     <p><i>"Accomplished <strong>[X]</strong>, as measured by quantitative metric <strong>[Y]</strong>, by executing technical/strategic initiative <strong>[Z]</strong>."</i></p>
-    <p><strong>Weak Baseline:</strong> "Built a machine learning project for water quality monitoring."</p>
-    <p><strong>The Project Optimized:</strong> "Engineered an edge-deployed computer vision model running on Raspberry Pi, detecting bacterial micro-turbidity with 94.2% precision across 14 rural wells, reducing local contamination response time by 72% in collaboration with Maharashtra Jal Sanjeevani Authority."</p>
+    <p><strong>Weak Generic Resume Bullet:</strong> "Built a machine learning project for water quality monitoring."</p>
+    <p><strong>IndiaLens Optimized Bullet:</strong> "Engineered an edge-deployed computer vision model running on Raspberry Pi, detecting bacterial water contamination with 94.2% precision across 14 rural wells, reducing local contamination response time by 72% in collaboration with regional health authorities."</p>
   </div>
 
-  <h3 class="sub-heading">11.3 4-Year Milestone Framework & Research Incubator</h3>
+  <h3 class="sub-heading">11.3 4-Year Milestone Framework (Grade 9 to Grade 12)</h3>
   <ul>
-    <li><strong>Grade 9 (Broad Intellectual Exploration):</strong> 3 domain experiments, baseline algorithmic competitive coding, and foundational open-source contributions.</li>
-    <li><strong>Grade 10 (Spike Hypothesis & Regional Validation):</strong> Selection of a singular spike domain; entry into national olympiads (INMO, INPhO, INOI) or national science fairs (IRIS/ISEF).</li>
-    <li><strong>Grade 11 (Peak Output & External Validation):</strong> Completion of a primary research artifact; publication in indexed preprints (arXiv, SSRN, Journal of Emerging Investigators); patent application filings.</li>
-    <li><strong>Grade 12 (Synthesis & Common App Optimization):</strong> Socratic narrative essay development with Gemini 3.7 Flash; Early Decision (ED) / Early Action (EA) financial aid optimization.</li>
-    <li><strong>Predatory Journal Filter:</strong> Automatic regex and ISSN cross-checking against <strong>Beall’s List of Predatory Open-Access Publishers</strong> to prevent students from damaging their admissions credibility through pay-to-publish schemes.</li>
+    <li><strong>Grade 9 (Explore &amp; Experiment):</strong> Try 3 different academic interests, start coding or practical building, and contribute to beginner open-source projects.</li>
+    <li><strong>Grade 10 (Pick Your Core Spike):</strong> Choose your singular focus area; compete in national olympiads (Mathematics, Physics, Informatics) or science fairs.</li>
+    <li><strong>Grade 11 (Execute &amp; Validate):</strong> Build and launch a complete project; publish verified research in indexed preprints; file provisional patent applications.</li>
+    <li><strong>Grade 12 (Polish &amp; Apply):</strong> Draft authentic college essays with DeepSeek V4 Flash; optimize Early Action (EA) applications and apply for merit scholarships.</li>
+    <li><strong>Fake Journal Protection:</strong> Automatically checks research journals against <strong>Beall’s List of Predatory Publishers</strong> to prevent students from wasting money on scam "pay-to-publish" journals that damage their college credibility.</li>
   </ul>
 </div>
 
@@ -1589,7 +1866,13 @@ CONTEXT_PACKET = {
   <span class="sec-tag">Section 12 · Data Pipelines & Ingestion Connectors</span>
   <h2 class="sec-heading">Data Ingestion Infrastructure & External API Integration Contracts</h2>
 
-  <p>To eliminate manual data entry, guarantee empirical freshness, and support the platform's zero-hardcoding mandate, The Project operates an automated ingestion mesh comprising 18 specialized data connectors. Orchestrated via weekly and monthly Apache Airflow DAGs, these connectors continuously extract, normalize, validate, and persist economic, educational, and compensation telemetry.</p>
+  <p>To eliminate manual data entry, guarantee empirical freshness, and support the platform's zero-hardcoding mandate, IndiaLens operates an automated ingestion mesh comprising 18 specialized data connectors. Orchestrated via weekly and monthly Apache Airflow DAGs, these connectors continuously extract, normalize, validate, and persist economic, educational, and compensation telemetry.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · Our Automated Truth-Detection Mesh</div>
+    <p>College websites and brochures are filled with marketing exaggerations. To ensure students only see 100% verified facts, <strong>IndiaLens runs 18 automated digital connectors</strong> that continually pull official records directly from government portals, audited salary databases, and live admission counters. If a college claims their average salary mysteriously doubled overnight without proof, our quarantine gate automatically flags and blocks the fake number.</p>
+  </div>
+
 
   <h3 class="sub-heading">12.1 Detailed Specification of the 18 External Ingestion Connectors</h3>
 
@@ -1920,50 +2203,50 @@ CONTEXT_PACKET = {
 
   <div class="spec-card">
     <div class="spec-card-header">
-      <span class="spec-card-title">API-14 · Google Gemini 3.7 Flash Fiduciary Engine</span>
-      <span class="badge-tag badge-high">Reliability: 0.95 (Foundation Model)</span>
+      <span class="spec-card-title">API-14 · DeepSeek V4 Flash Cognitive Memory &amp; Fiduciary Engine</span>
+      <span class="badge-tag badge-high">Reliability: 0.98 (Frontier LLM)</span>
     </div>
     <div class="spec-grid-2">
       <div class="spec-grid-item">
         <span class="spec-item-label">Endpoint & Ingestion Protocol</span>
-        <span class="spec-item-val"><code>https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash</code> — Real-time streaming WebSocket/REST API per user turn.</span>
+        <span class="spec-item-val"><code>https://api.deepseek.com/v1/chat/completions</code> (Model: <code>deepseek-v4-flash</code>) — Real-time streaming WebSocket/REST API per user turn.</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">Extracted Schema & Fields</span>
-        <span class="spec-item-val"><code>streaming_tokens</code>, <code>grounding_metadata</code> (search chunks, citation URLs), <code>tool_calls</code> (for Path DAG mutation), <code>usage_metadata</code>.</span>
+        <span class="spec-item-val"><code>streaming_tokens</code>, <code>prompt_cache_hit_tokens</code>, <code>tool_calls</code> (for Path DAG mutation), <code>finish_reason</code>, <code>usage</code>.</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">Downstream Consuming Engine</span>
-        <span class="spec-item-val">Drives the interactive Student Intelligence Copilot, executes Socratic portfolio interviews, and generates tailored admissions essays.</span>
+        <span class="spec-item-val">Drives the interactive Student Intelligence Copilot, executes Pass 1 constraint formulation, authors Socratic portfolio essays, and synthesizes Pass 2 downside-first fiduciary memorandums.</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">Validation & Quarantine Gate</span>
-        <span class="spec-item-val">Strict <code>require_grounding=True</code> directive; outputs failing grounding citation validation are rejected before reaching the UI.</span>
+        <span class="spec-item-val">Strictly enforces zero numerical hallucination; answers failing verification against the <code>actuarial_ml_outputs</code> packet are regenerated before reaching the UI.</span>
       </div>
     </div>
   </div>
 
   <div class="spec-card">
     <div class="spec-card-header">
-      <span class="spec-card-title">API-15 · Tavily Real-Time Search Grounding Gateway</span>
-      <span class="badge-tag badge-high">Reliability: 0.90 (Live Search)</span>
+      <span class="spec-card-title">API-15 · Perplexity Sonar Live Research &amp; Grounding Gateway</span>
+      <span class="badge-tag badge-high">Reliability: 0.96 (Live Search Index)</span>
     </div>
     <div class="spec-grid-2">
       <div class="spec-grid-item">
         <span class="spec-item-label">Endpoint & Ingestion Protocol</span>
-        <span class="spec-item-val"><code>https://api.tavily.com/search</code> — Real-time REST query.</span>
+        <span class="spec-item-val"><code>https://api.perplexity.ai/chat/completions</code> (Model: <code>sonar</code>) — Real-time async REST query with native search indexing.</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">Extracted Schema & Fields</span>
-        <span class="spec-item-val"><code>query</code>, <code>results_array</code>, <code>url</code>, <code>title</code>, <code>content_snippet</code>, <code>published_date</code>, <code>score</code>.</span>
+        <span class="spec-item-val"><code>content</code>, <code>citations</code> (array of verified URLs), <code>search_results</code> (structured title, URL, snippet), <code>query_plan</code>.</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">Downstream Consuming Engine</span>
-        <span class="spec-item-val">Fallback real-time grounding connector when official state counseling portals (JoSAA, JAC, MHT-CET) release unscheduled mid-cycle seat matrix changes.</span>
+        <span class="spec-item-val">Powers the Fork-and-Join pipeline; extracts real-time tuition revisions, cutoffs, and regulatory alerts; splits numerical params to Python ML and qualitative context to DeepSeek.</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">Validation & Quarantine Gate</span>
-        <span class="spec-item-val">Restricted to indexed government domains (<code>.gov.in</code>, <code>.nic.in</code>, <code>.ac.in</code>, <code>.edu</code>).</span>
+        <span class="spec-item-val">Strict domain indexing prioritizes official education and government portals (<code>.gov.in</code>, <code>.nic.in</code>, <code>.ac.in</code>, <code>.edu</code>); cached in Redis with a 72-hour TTL.</span>
       </div>
     </div>
   </div>
@@ -2049,6 +2332,12 @@ CONTEXT_PACKET = {
   <h2 class="sec-heading">Production Relational Database Schema (PostgreSQL 15+)</h2>
 
   <p>The persistence layer is implemented in PostgreSQL 15+ utilizing native JSONB document storage for dynamic graph structures, strict foreign-key relational integrity, and GiST/GIN indexes for sub-millisecond query latency.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · The Master Digital Health Chart for Your Career</div>
+    <p>Why 21 tables? Think of this database like a high-precision medical health record, but built for your educational future. It securely stores your personal quiz strengths, connects real-world college fees, tracks 20-year alumni salary curves, stress-tests bank loan terms, and monitors AI job threats—allowing IndiaLens to deliver personalized, lightning-fast career answers in milliseconds.</p>
+  </div>
+
 
   <h3 class="sub-heading">13.1 Complete Specifications for All 21 Core Database Tables</h3>
 
@@ -2234,7 +2523,7 @@ CONTEXT_PACKET = {
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">Operational Purpose & Constraints</span>
-        <span class="spec-item-val">Stateful memory store for the Gemini 3.7 Flash Copilot, holding the dynamic Path DAG, conversation turns, and rejected option logs.</span>
+        <span class="spec-item-val">Stateful memory store for the DeepSeek V4 Flash Copilot, holding the dynamic Path DAG, conversation turns, Sonar citations, and rejected option logs.</span>
       </div>
     </div>
   </div>
@@ -2414,7 +2703,13 @@ CONTEXT_PACKET = {
   <span class="sec-tag">Section 14 · User Experience & Interface Architecture</span>
   <h2 class="sec-heading">Page-by-Page UI/UX Architecture & Screen Specifications</h2>
 
-  <p>The visual and operational design language of The Project rejects the colorful, gamified aesthetic common in legacy EdTech. Instead, it adopts a high-density, professional <strong>Financial Terminal aesthetic</strong> (combining the data density of Bloomberg with modern, accessible web ergonomics) to instill immediate institutional credibility and trust.</p>
+  <p>The visual and operational design language of IndiaLens rejects the colorful, gamified aesthetic common in legacy EdTech. Instead, it adopts a high-density, professional <strong>Financial Terminal aesthetic</strong> (combining the data density of Bloomberg with modern, accessible web ergonomics) to instill immediate institutional credibility and trust.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · How Students & Parents Experience IndiaLens</div>
+    <p>We deliberately rejected childish, gamified cartoons and distracting college advertisements. Instead, <strong>IndiaLens is built like a clean, high-precision financial dashboard</strong> that anyone can use in seconds. You get clear wage charts showing your likely salary growth, simple sliders to test what happens if bank interest rates rise, and straightforward color-coded cards that highlight college risks without confusion.</p>
+  </div>
+
 
   <h3 class="sub-heading">14.1 Comprehensive Screen Specifications Across All 12 Routes</h3>
 
@@ -2426,7 +2721,7 @@ CONTEXT_PACKET = {
     <div class="spec-grid-2">
       <div class="spec-grid-item">
         <span class="spec-item-label">Key Visual Components & Widgets</span>
-        <span class="spec-item-val">Live Indexed Programs Ticker (3,400+ programs across India/Global), Interactive 3-College ROI Card Carousel, NIRF vs. The Project Asymmetric Contrast Table, Real-time Macroeconomic Ticker Bar (RBI Repo Rate, MoSPI Baseline Earnings, US STEM H-1B Odds).</span>
+        <span class="spec-item-val">Live Indexed Programs Ticker (3,400+ programs across India/Global), Interactive 3-College ROI Card Carousel, NIRF vs. IndiaLens Asymmetric Contrast Table, Real-time Macroeconomic Ticker Bar (RBI Repo Rate, MoSPI Baseline Earnings, US STEM H-1B Odds).</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">User Interactions & Workflows</span>
@@ -2472,11 +2767,10 @@ CONTEXT_PACKET = {
     <div class="spec-card-header">
       <span class="spec-card-title">Route 03 · /report/:token (The Actuarial Intelligence Dossier)</span>
       <span class="badge-tag badge-high">Primary Actuarial Artifact</span>
-    </div>
     <div class="spec-grid-2">
       <div class="spec-grid-item">
         <span class="spec-item-label">Key Visual Components & Widgets</span>
-        <span class="spec-item-val">Executive Composite ROI Score Ring (0–100), 20-Year Wage Dispersion Fan Chart (Recharts rendering \(P_{10}, P_{25}, P_{50}, P_{75}, P_{90}\) curves), Monte Carlo Net Worth Curves, 8-Vector AI Risk Radar Chart, Loan Solvency Stress Barometer (Default Probability %), Grounded Gemini 3.7 Flash Fiduciary Synthesis Memorandum.</span>
+        <span class="spec-item-val">Executive Composite ROI Score Ring (0–100), 20-Year Wage Dispersion Fan Chart (Recharts rendering \(P_{10}, P_{25}, P_{50}, P_{75}, P_{90}\) curves), Monte Carlo Net Worth Curves, 8-Vector AI Risk Radar Chart, Loan Solvency Stress Barometer (Default Probability %), Grounded DeepSeek V4 Flash Fiduciary Synthesis Memorandum (Paired with Sonar Grounding).</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">User Interactions & Workflows</span>
@@ -2488,7 +2782,7 @@ CONTEXT_PACKET = {
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">State Management & Performance Target</span>
-        <span class="spec-item-val">Server-Side Rendered (SSR) with React Query caching; client-side re-simulation updates in < 150ms.</span>
+        <span class="spec-item-val">Server-Side Rendered (SSR) with React Query caching; client-side re-simulation updates in &lt; 150ms.</span>
       </div>
     </div>
   </div>
@@ -2526,7 +2820,7 @@ CONTEXT_PACKET = {
     <div class="spec-grid-2">
       <div class="spec-grid-item">
         <span class="spec-item-label">Key Visual Components & Widgets</span>
-        <span class="spec-item-val">Institutional Scorecard, Verified RTI Placement Audit Table (Median vs. Highest vs. Batch Placement Rate), Historical Closing Rank Cutoff Trends, Granular 8-Vector AI Risk Breakdown with Skill Moat Recommendations, Embedded Grounded Gemini Advisor Widget.</span>
+        <span class="spec-item-val">Institutional Scorecard, Verified RTI Placement Audit Table (Median vs. Highest vs. Batch Placement Rate), Historical Closing Rank Cutoff Trends, Granular 8-Vector AI Risk Breakdown with Skill Moat Recommendations, Embedded Grounded Advisor Widget (DeepSeek + Sonar).</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">User Interactions & Workflows</span>
@@ -2551,7 +2845,7 @@ CONTEXT_PACKET = {
     <div class="spec-grid-2">
       <div class="spec-grid-item">
         <span class="spec-item-label">Key Visual Components & Widgets</span>
-        <span class="spec-item-val">Tri-Column Head-to-Head Comparative Matrix: Net Present Value Differential (\(\Delta\text{NPV}\)), Breakeven Horizon Gap (\(\Delta T_{\text{BEP}}\)), Downside Risk Overlay (P10 vs P10), Student Psychometric Fit Delta (\(\Delta \text{Fit}\)).</span>
+        <span class="spec-item-val">Tri-Column Head-to-Head Comparative Matrix: Net Present Value Differential (\(\Delta \text{NPV}\)), Breakeven Horizon Gap (\(\Delta T_{\text{BEP}}\)), Downside Risk Overlay (P10 vs P10), Student Psychometric Fit Delta (\(\Delta \text{Fit}\)).</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">User Interactions & Workflows</span>
@@ -2576,11 +2870,11 @@ CONTEXT_PACKET = {
     <div class="spec-grid-2">
       <div class="spec-grid-item">
         <span class="spec-item-label">Key Visual Components & Widgets</span>
-        <span class="spec-item-val">Full-Screen Conversational Terminal, Active Context Drawer (displaying the student's constraints, trait vector, and loan tolerance), Inline Grounded Citation Cards with verified source URLs, Socratic Counterargument Prompts.</span>
+        <span class="spec-item-val">Full-Screen Conversational Terminal, Active Context Drawer (displaying student constraints, IRT trait vector, and loan tolerance), Inline Grounded Citation Cards with verified source URLs, Socratic Counterargument Prompts.</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">User Interactions & Workflows</span>
-        <span class="spec-item-val">Live streaming multi-turn conversation with Gemini 3.7 Flash; users can challenge advice, request alternative scenario simulations, and approve Path DAG updates directly via conversational actions.</span>
+        <span class="spec-item-val">Live streaming multi-turn conversation with DeepSeek V4 Flash (Cognitive Memory Core) &amp; Perplexity Sonar (Epistemic Grounding Core); users can challenge advice, request alternative scenario simulations, and approve Path DAG updates directly via conversational actions.</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">Backend Endpoints & API Calls</span>
@@ -2588,7 +2882,7 @@ CONTEXT_PACKET = {
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">State Management & Performance Target</span>
-        <span class="spec-item-val">WebSocket streaming with optimistic UI updates; initial token latency < 450ms.</span>
+        <span class="spec-item-val">WebSocket streaming with optimistic UI updates; initial token latency &lt; 400ms.</span>
       </div>
     </div>
   </div>
@@ -2655,7 +2949,7 @@ CONTEXT_PACKET = {
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">User Interactions & Workflows</span>
-        <span class="spec-item-val">Students draft activity bullets; Gemini 3.7 Flash provides real-time restructuring into high-impact X-Y-Z format; validates preprints against Beall's List.</span>
+        <span class="spec-item-val">Students draft activity bullets; DeepSeek V4 Flash provides real-time restructuring into high-impact X-Y-Z format; validates preprints against Beall's List.</span>
       </div>
       <div class="spec-grid-item">
         <span class="spec-item-label">Backend Endpoints & API Calls</span>
@@ -2723,7 +3017,13 @@ CONTEXT_PACKET = {
   <span class="sec-tag">Section 15 · Commercialization & Financial Model</span>
   <h2 class="sec-heading">Monetization Architecture, Unit Economics & Financial Projections</h2>
 
-  <p>The Project strictly rejects the predatory lead-generation advertising model. By maintaining complete fiduciary independence from university marketing budgets, The Project monetizes through consumer premium analytics, high-intent curated upskilling affiliate commissions, and enterprise B2B actuarial data licensing.</p>
+  <p>IndiaLens strictly rejects the predatory lead-generation advertising model. By maintaining complete fiduciary independence from university marketing budgets, IndiaLens monetizes through consumer premium analytics, high-intent curated upskilling affiliate commissions, and enterprise B2B actuarial data licensing.</p>
+
+  <div class="callout callout-plain">
+    <div class="callout-title">💡 In Plain English · Honest, Transparent Business Economics</div>
+    <p>Traditional college portals make money by selling your phone number to private colleges for ₹500 to ₹2,500. <strong>IndiaLens operates on complete independence:</strong> We never take advertising money from colleges. Students pay a modest fee (₹499 one-time or ₹199/month) for full access to 20-year salary graphs and loan stress simulations. In addition, education lenders and banks pay us to evaluate loan repayment safety. This ensures our only loyalty is to the student and family.</p>
+  </div>
+
 
   <h3 class="sub-heading">15.1 Multi-Tiered Feature & Paywall Matrix</h3>
 
@@ -2770,8 +3070,8 @@ CONTEXT_PACKET = {
           <td>Enterprise workforce automation exposure dataset access</td>
         </tr>
         <tr>
-          <td><strong>Personalized Copilot (Gemini 3.7 Flash)</strong></td>
-          <td>5 exploratory messages per session</td>
+          <td><strong>Personalized Copilot (DeepSeek + Sonar)</strong></td>
+          <td>15 exploratory messages per session (sub-cent cached inference)</td>
           <td>Unlimited multi-turn grounded fiduciary advisory sessions</td>
           <td>Dedicated enterprise counselor workspace with audit logs</td>
         </tr>
@@ -2866,19 +3166,24 @@ CONTEXT_PACKET = {
         </tr>
         <tr>
           <td><strong>Lifetime Value to CAC Ratio (LTV / CAC)</strong></td>
-          <td class="num"><strong>12.4x</strong></td>
-          <td class="num"><strong>18.6x</strong></td>
-          <td class="num"><strong>28.2x</strong></td>
+          <td class="num"><strong>19.8x (Re-Indexed)</strong></td>
+          <td class="num"><strong>24.2x</strong></td>
+          <td class="num"><strong>34.5x</strong></td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="callout callout-key">
+    <div class="callout-title">Strategic Architectural Moat · 90% AI OPEX Reduction</div>
+    <p>By replacing the monolithic Gemini 3.7 Flash stack ($35/1,000 queries) with the <strong>Fork-and-Join DeepSeek V4 Flash + Perplexity Sonar</strong> architecture ($3.20/1,000 queries blended), IndiaLens slashes direct inference OPEX by ~88%. This structural cost advantage allows us to triple the free-tier conversational allowance (from 5 to 15 turns per session) without burning runway, accelerating top-of-funnel viral acquisition while expanding Year 1 net operating margins to 84%.</p>
   </div>
 </div>
 
 </div><!-- content-wrap -->
 <div class="doc-footer">
   <div>CONFIDENTIAL — FOR INTERNAL ARCHITECTURAL EVALUATION ONLY</div>
-  <div>THE PROJECT PRODUCT REQUIREMENTS SPECIFICATION · v2.0</div>
+  <div>INDIALENS PRODUCT REQUIREMENTS SPECIFICATION · v2.0</div>
 </div>
 </div><!-- page-container -->
 </body>

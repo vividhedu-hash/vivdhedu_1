@@ -31,7 +31,7 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
 
   if (!programs || programs.length === 0) {
     return (
-      <div className="p-8 text-center bg-slate-900/60 border border-slate-800 rounded-2xl text-slate-400">
+      <div className="p-8 text-center bg-white border border-slate-200 rounded-2xl text-slate-500 shadow-sm">
         No colleges selected for comparison. Add programs to compare ROI.
       </div>
     );
@@ -80,32 +80,32 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
   return (
     <div className="space-y-6">
       {/* ── Side-by-Side Comparison Table ───────────────────────────────── */}
-      <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/90 backdrop-blur-md shadow-2xl">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-left border-collapse min-w-[650px]">
           <thead>
-            <tr className="border-b border-slate-800 bg-slate-950/80">
-              <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-1/4">
+            <tr className="border-b border-slate-200 bg-slate-50/80">
+              <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-1/4">
                 Comparison Metric
               </th>
               {programs.map((p, idx) => (
-                <th key={p.id} className="p-4 text-sm font-bold text-white border-l border-slate-800/80">
-                  <div className="text-indigo-400 text-xs font-semibold">{p.college}</div>
-                  <div className="text-base text-white font-extrabold">{p.name}</div>
-                  <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                <th key={p.id} className="p-4 text-sm font-bold text-slate-900 border-l border-slate-200">
+                  <div className="text-slate-500 text-xs font-semibold">{p.college}</div>
+                  <div className="text-base text-slate-950 font-extrabold">{p.name}</div>
+                  <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono">
                     Tier {p.tier}
                   </span>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/80 text-sm">
+          <tbody className="divide-y divide-slate-100 text-sm">
             {/* Total Fee */}
             <tr>
-              <td className="p-4 font-semibold text-slate-300 flex items-center gap-1.5">
-                <DollarSign className="w-4 h-4 text-amber-400" /> Total Degree Fee
+              <td className="p-4 font-semibold text-slate-700 flex items-center gap-1.5">
+                <DollarSign className="w-4 h-4 text-amber-500" /> Total Degree Fee
               </td>
               {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-800/80 text-white font-bold font-mono">
+                <td key={p.id} className="p-4 border-l border-slate-200 text-slate-900 font-bold font-mono">
                   ₹{p.fee_lakhs} Lakhs
                 </td>
               ))}
@@ -113,11 +113,11 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
 
             {/* Placement Rate */}
             <tr>
-              <td className="p-4 font-semibold text-slate-300 flex items-center gap-1.5">
-                <Briefcase className="w-4 h-4 text-emerald-400" /> Placement Consistency
+              <td className="p-4 font-semibold text-slate-700 flex items-center gap-1.5">
+                <Briefcase className="w-4 h-4 text-emerald-600" /> Placement Consistency
               </td>
               {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-800/80 text-emerald-400 font-bold font-mono">
+                <td key={p.id} className="p-4 border-l border-slate-200 text-emerald-700 font-bold font-mono">
                   {p.placement_rate_pct}%
                 </td>
               ))}
@@ -125,11 +125,11 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
 
             {/* Starting Salary */}
             <tr>
-              <td className="p-4 font-semibold text-slate-300 flex items-center gap-1.5">
-                <Award className="w-4 h-4 text-indigo-400" /> Median Year-1 Salary
+              <td className="p-4 font-semibold text-slate-700 flex items-center gap-1.5">
+                <Award className="w-4 h-4 text-blue-600" /> Median Year-1 Salary
               </td>
               {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-800/80 text-indigo-300 font-bold font-mono">
+                <td key={p.id} className="p-4 border-l border-slate-200 text-slate-900 font-bold font-mono">
                   ₹{p.median_salary_lpa} LPA
                 </td>
               ))}
@@ -137,19 +137,19 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
 
             {/* Payback Horizon */}
             <tr>
-              <td className="p-4 font-semibold text-slate-300">Net Payback Horizon</td>
+              <td className="p-4 font-semibold text-slate-700">Net Payback Horizon</td>
               {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-800/80 text-slate-200 font-mono">
+                <td key={p.id} className="p-4 border-l border-slate-200 text-slate-700 font-mono">
                   {p.payback_years} Years
                 </td>
               ))}
             </tr>
 
             {/* 20-Year NPV */}
-            <tr className="bg-emerald-500/5">
-              <td className="p-4 font-bold text-emerald-400">20-Year Net Present Value (NPV)</td>
+            <tr className="bg-emerald-50/50">
+              <td className="p-4 font-bold text-emerald-800">20-Year Net Present Value (NPV)</td>
               {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-800/80 text-emerald-400 font-extrabold text-base font-mono">
+                <td key={p.id} className="p-4 border-l border-slate-200 text-emerald-700 font-extrabold text-base font-mono">
                   ₹{p.npv_20yr_lakhs} Lakhs
                 </td>
               ))}
@@ -157,12 +157,12 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
 
             {/* AI Risk */}
             <tr>
-              <td className="p-4 font-semibold text-slate-300 flex items-center gap-1.5">
-                <ShieldAlert className="w-4 h-4 text-red-400" /> AI Automation Risk
+              <td className="p-4 font-semibold text-slate-700 flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4 text-rose-500" /> AI Automation Risk
               </td>
               {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-800/80 font-mono">
-                  <span className={`font-bold ${p.ai_risk_pct > 30 ? "text-amber-400" : "text-emerald-400"}`}>
+                <td key={p.id} className="p-4 border-l border-slate-200 font-mono">
+                  <span className={`font-bold ${p.ai_risk_pct > 30 ? "text-amber-600" : "text-emerald-600"}`}>
                     {p.ai_risk_pct}%
                   </span>
                 </td>
@@ -173,20 +173,20 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
       </div>
 
       {/* ── Synthetic Control Counterfactual Verdict Suite ──────────────── */}
-      <div className="p-6 rounded-2xl bg-slate-900/90 border border-indigo-500/30 backdrop-blur-md">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-800">
+      <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[11px] font-semibold mb-1">
-              <Scale className="w-3 h-3" /> Econometric Counterfactual Engine (Abadie Standard)
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-semibold mb-1">
+              <Scale className="w-3 h-3 text-slate-500" /> Econometric Counterfactual Engine (Abadie Standard)
             </div>
-            <h3 className="text-base font-bold text-white">Pairwise Counterfactual Delta Evaluation</h3>
+            <h3 className="text-base font-bold text-slate-950">Pairwise Counterfactual Delta Evaluation</h3>
           </div>
 
           <div className="flex items-center gap-2">
             <select
               value={selectedPair[0]}
               onChange={(e) => setSelectedPair([Number(e.target.value), selectedPair[1]])}
-              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
+              className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-slate-400"
             >
               {programs.map((p, idx) => (
                 <option key={p.id} value={idx}>
@@ -200,7 +200,7 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
             <select
               value={selectedPair[1]}
               onChange={(e) => setSelectedPair([selectedPair[0], Number(e.target.value)])}
-              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
+              className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-slate-400"
             >
               {programs.map((p, idx) => (
                 <option key={p.id} value={idx}>
@@ -212,7 +212,7 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
             <button
               onClick={handleRunCounterfactual}
               disabled={loading}
-              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition-all flex items-center gap-1.5"
+              className="px-3.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition-all flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {loading ? <Sparkles className="w-3.5 h-3.5 animate-spin" /> : <Activity className="w-3.5 h-3.5" />}
               Run Econometric Analysis
@@ -221,17 +221,17 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
         </div>
 
         {counterfactual ? (
-          <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-            <div className="flex items-center justify-between text-xs text-indigo-400 font-semibold">
-              <span>🏆 Strategic Verdict Winner: {counterfactual.strategic_winner}</span>
-              <span>20-Year NPV Delta</span>
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-700 font-semibold">
+              <span className="text-slate-900 font-bold">🏆 Strategic Verdict Winner: {counterfactual.strategic_winner}</span>
+              <span className="font-mono text-emerald-700 font-bold">20-Year NPV Delta</span>
             </div>
-            <p className="text-sm text-slate-200 leading-relaxed font-medium">
+            <p className="text-sm text-slate-700 leading-relaxed font-medium">
               {counterfactual.counterfactual_verdict}
             </p>
           </div>
         ) : (
-          <p className="text-xs text-slate-400 italic">
+          <p className="text-xs text-slate-500 italic">
             Select two programs above and click &quot;Run Econometric Analysis&quot; to calculate the counterfactual career NPV delta.
           </p>
         )}

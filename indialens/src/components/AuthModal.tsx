@@ -56,23 +56,23 @@ export function AuthModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-md p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl text-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+      <div className="relative w-full max-w-md p-6 bg-[#0A0A0A] border border-white/[0.1] rounded-2xl shadow-2xl text-[#F5F5F7]">
         {/* Close Button */}
         <button
           onClick={() => setIsAuthModalOpen(false)}
-          className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+          className="absolute top-4 right-4 p-1.5 text-[#86868B] hover:text-[#F5F5F7] rounded-lg hover:bg-white/[0.06] transition"
         >
           <X size={18} />
         </button>
 
         {/* Brand Header */}
         <div className="flex items-center gap-2.5 mb-2">
-          <div className="w-7 h-7 rounded-lg bg-[#002F6C] border border-[#0077C8]/40 flex items-center justify-center">
-            <Zap size={14} className="text-[#0077C8]" />
+          <div className="w-7 h-7 rounded-lg bg-[#E11D48] flex items-center justify-center">
+            <Zap size={14} className="text-white" />
           </div>
-          <span className="font-extrabold text-base tracking-tight text-white">
-            The <span className="text-[#0077C8]">Project</span>
+          <span className="font-extrabold text-base tracking-tight text-[#F5F5F7]">
+            India<span className="text-[#E11D48]">Lens</span>
           </span>
         </div>
 

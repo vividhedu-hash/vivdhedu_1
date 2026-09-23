@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>India Lens — Investor Pitch Deck + Financial Roadmap</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@page { size:A4 portrait; margin:0; }
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --N:#040E1C; --B:#1A6CF6; --S:#3B9EFF; --M:#F4F7FB; --BR:#DDE4EF;
+  --SL:#374151; --G:#12B76A; --R:#F04438; --A:#F79009; --P:#7C3AED;
+  --W:#FFFFFF; --ICE:#EAF2FF; --mono:'JetBrains Mono',monospace;
+}
+body { font-family:'Inter',sans-serif; color:var(--N); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.slide { width:210mm; height:297mm; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
+.tr { height:3px; background:linear-gradient(90deg,#1A6CF6,#3B9EFF 60%,#040E1C); flex-shrink:0; }
+
+/* COVER */
+.cover-bg { background:var(--N); flex:1; display:flex; flex-direction:column; position:relative;
+  background-image:linear-gradient(rgba(26,108,246,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(26,108,246,.055) 1px,transparent 1px);
+  background-size:26px 26px; }
+.cover-body { padding:38px 44px 24px; flex:1; display:flex; flex-direction:column; position:relative; z-index:2; }
+.cover-tag { display:flex; align-items:center; gap:8px; margin-bottom:30px; }
+.cover-tag-dot { width:6px;height:6px;background:var(--B);border-radius:50%; }
+.cover-tag-text { font-size:7.5pt;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.38); }
+.cover-h1 { font-size:40pt;font-weight:900;letter-spacing:-.038em;line-height:.95;color:var(--W);margin-bottom:6px; }
+.cover-h1 .bl { color:#3B9EFF; }
+.cover-sub { font-size:10.5pt;color:rgba(255,255,255,.45);line-height:1.55;max-width:360px;margin-top:14px; }
+.cover-rule { width:44px;height:2px;background:var(--B);margin:24px 0; }
+.kpi-row { display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(255,255,255,.1); }
+.kpi { padding:16px 0;padding-right:16px;border-right:1px solid rgba(255,255,255,.07); }
+.kpi:last-child { border-right:none; }
+.kpi-n { font-family:var(--mono);font-size:21pt;font-weight:700;color:#3B9EFF;line-height:1;letter-spacing:-.02em; }
+.kpi-l { font-size:6.8pt;color:rgba(255,255,255,.35);margin-top:4px;font-weight:500; }
+.cover-svg { position:absolute;right:0;top:0;width:270px;height:100%;opacity:.15;pointer-events:none; }
+.cover-foot { background:rgba(0,0,0,.28);padding:9px 44px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;position:relative;z-index:2; }
+.cf-brand { font-size:7.5pt;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.04em;text-transform:uppercase; }
+.cf-meta { font-size:6.8pt;color:rgba(255,255,255,.25); }
+
+/* SHARED HEADER */
+.sh { background:var(--N);padding:11px 36px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0; }
+.sh-left { display:flex;align-items:center;gap:10px; }
+.sh-logo { font-size:9.5pt;font-weight:800;color:var(--W);letter-spacing:-.01em; }
+.sh-logo span { color:#3B9EFF; }
+.sh-tag { background:rgba(26,108,246,.22);border:1px solid rgba(26,108,246,.38);color:#3B9EFF;font-size:6.3pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2.5px 8px;border-radius:2px; }
+.sh-pg { font-family:var(--mono);font-size:7pt;color:rgba(255,255,255,.28); }
+
+/* BODY */
+.sb { padding:18px 36px 0;flex:1;display:flex;flex-direction:column;overflow:hidden; }
+.ey { font-size:6.8pt;font-weight:700;color:var(--B);text-transform:uppercase;letter-spacing:.14em;margin-bottom:2px; }
+.st { font-size:15.5pt;font-weight:800;color:var(--N);letter-spacing:-.022em;line-height:1.1;margin-bottom:4px; }
+.ss { font-size:8pt;color:var(--SL);line-height:1.5;max-width:530px;margin-bottom:12px; }
+
+/* FOOTER */
+.sf { padding:6px 36px;border-top:1px solid var(--BR);display:flex;justify-content:space-between;align-items:center;flex-shrink:0; }
+.sf span { font-size:6.5pt;color:#9CA3AF; }
+
+/* TABLES */
+table.T { width:100%;border-collapse:collapse;font-size:7.3pt; }
+.T th { background:var(--N);color:var(--W);font-size:6.8pt;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:5.5px 8px;border:1px solid var(--N);text-align:left; }
+.T th.r,.T td.r { text-align:right; }
+.T th.hl { background:var(--B); }
+.T td { padding:4.5px 8px;border:1px solid var(--BR);color:var(--SL);vertical-align:middle;line-height:1.35; }
+.T tr:nth-child(even) td { background:var(--M); }
+.T tr.grp td { background:#F0F4F8;font-size:6.8pt;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1E293B;border-bottom:1px solid #CBD5E1; }
+.T tr.ttl td { background:var(--N);color:var(--W);font-weight:700;border-color:var(--N); }
+.T tr.ttl td.r { color:#3B9EFF;background:var(--N); }
+.T tr.sub td { background:var(--ICE);color:#1E3A5F;font-weight:600; }
+.T tr.sub td.r { color:var(--B);background:var(--ICE);font-weight:700; }
+.T td.mono { font-family:var(--mono);font-size:7pt;color:var(--N);text-align:right; }
+.T td.g { color:var(--G);font-weight:700;font-family:var(--mono);font-size:7pt;text-align:right; }
+.T td.rr { color:var(--R);font-weight:700;font-family:var(--mono);font-size:7pt;text-align:right; }
+.T td.hl { background:var(--ICE);font-weight:600;color:#1E3A5F; }
+.T td.us { background:var(--ICE);color:#1E3A5F;font-weight:600; }
+.T th.us { background:var(--B); }
+.tick { color:var(--G);font-weight:700; }
+.cross { color:var(--R);font-weight:700; }
+
+/* CARDS */
+.sc4 { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px; }
+.sc3 { display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px; }
+.sc2 { display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:10px; }
+.card { border:1px solid var(--BR);padding:10px 11px;display:flex;flex-direction:column; }
+.card-n { font-family:var(--mono);font-size:13pt;font-weight:700;color:var(--N);line-height:1;margin-bottom:2px; }
+.card-lbl { font-size:6.3pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9CA3AF;margin-bottom:2px; }
+.card-desc { font-size:6.5pt;color:#6B7280;line-height:1.35; }
+.card-mg { font-family:var(--mono);font-size:7pt;font-weight:600;color:var(--G);margin-top:4px; }
+.accent-top-navy { border-top:3px solid var(--N); }
+.accent-top-blue  { border-top:3px solid var(--B); }
+.accent-top-teal  { border-top:3px solid #00A3E0; }
+.accent-top-pur   { border-top:3px solid var(--P); }
+.accent-top-green { border-top:3px solid var(--G); }
+.accent-top-red   { border-top:3px solid var(--R); }
+
+/* MOAT CARDS */
+.moat { border:1px solid var(--BR);padding:12px;position:relative;overflow:hidden; }
+.moat-n { font-family:var(--mono);font-size:24pt;font-weight:700;color:var(--BR);position:absolute;top:6px;right:8px;line-height:1; }
+.moat-h { font-size:8pt;font-weight:700;color:var(--N);margin:18px 0 4px;line-height:1.2; }
+.moat-d { font-size:6.8pt;color:#6B7280;line-height:1.45; }
+.moat-d strong { color:var(--N); }
+
+/* ALGO CARDS */
+.algo4 { display:grid;grid-template-columns:1fr 1fr;gap:9px;flex:1; }
+.algoc { border:1px solid var(--BR);padding:10px 11px;display:flex;flex-direction:column;gap:5px; }
+.algoc-head { display:flex;align-items:flex-start;gap:8px; }
+.algoc-icon { width:28px;height:28px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:3px; }
+.algoc-lbl { font-size:6.2pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9CA3AF;margin-bottom:2px; }
+.algoc-title { font-size:8pt;font-weight:700;color:var(--N);line-height:1.2; }
+.algoc-f { background:#F4F7FB;border-left:2.5px solid var(--B);padding:5px 8px;font-family:var(--mono);font-size:5.7pt;color:var(--N);line-height:1.65;white-space:pre; }
+.algoc-d { font-size:6.7pt;color:#6B7280;line-height:1.4; }
+.algoc-tags { display:flex;flex-wrap:wrap;gap:3px; }
+.atag { background:var(--ICE);border:1px solid #BFDBFE;color:#1D4ED8;font-size:5.7pt;font-weight:600;padding:1.5px 5px;border-radius:2px; }
+
+/* AI STACK BAR */
+.ai-bar { background:var(--M);border:1px solid var(--BR);display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:10px; }
+.ai-cell { padding:9px 12px;border-right:1px solid var(--BR); }
+.ai-cell:last-child { border-right:none; }
+.ai-lbl { font-size:6.2pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9CA3AF;margin-bottom:2px; }
+.ai-name { font-size:8.5pt;font-weight:700;color:var(--N);margin-bottom:2px; }
+.ai-detail { font-size:6.3pt;color:#6B7280;line-height:1.35; }
+.ai-cost { font-family:var(--mono);font-size:7pt;font-weight:600;color:var(--G);margin-top:3px; }
+
+/* ARCH FLOW */
+.arch { display:flex;align-items:stretch;gap:0;margin-bottom:10px; }
+.abox { flex:1;border:1px solid var(--BR);padding:9px 10px; }
+.abox.dark { background:var(--N);border-color:var(--N); }
+.abox.blue { background:var(--B);border-color:var(--B); }
+.abox-step { font-family:var(--mono);font-size:6.5pt;font-weight:600;color:var(--B);margin-bottom:3px; }
+.abox.dark .abox-step,.abox.blue .abox-step { color:rgba(255,255,255,.45); }
+.abox-title { font-size:7.5pt;font-weight:700;color:var(--N);margin-bottom:5px;line-height:1.2; }
+.abox.dark .abox-title,.abox.blue .abox-title { color:var(--W); }
+.abox-item { font-size:6.2pt;color:#6B7280;line-height:1.4;margin-bottom:2px;padding-left:8px;position:relative; }
+.abox-item::before { content:"·";position:absolute;left:1px;color:#CBD5E1;font-weight:700; }
+.abox.dark .abox-item,.abox.blue .abox-item { color:rgba(255,255,255,.6); }
+.abox.dark .abox-item::before,.abox.blue .abox-item::before { color:rgba(255,255,255,.25); }
+.aarrow { display:flex;align-items:center;justify-content:center;width:14px;flex-shrink:0; }
+
+/* TAM BOXES */
+.tam-row { display:flex;gap:0;margin-bottom:12px; }
+.tam-box { flex:1;padding:12px;border:1px solid var(--BR); }
+.tam-n { font-family:var(--mono);font-size:18pt;font-weight:700;line-height:1; }
+.tam-lbl { font-size:6.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-top:3px;margin-bottom:4px; }
+.tam-desc { font-size:6.8pt;color:#6B7280;line-height:1.4; }
+
+/* MANTRA */
+.mantra { background:var(--N);padding:12px 16px;display:flex;align-items:center;gap:12px; }
+.mantra-t { font-size:9pt;font-weight:700;color:var(--W); }
+.mantra-t em { color:#3B9EFF;font-style:normal; }
+.mantra-s { font-size:7pt;color:rgba(255,255,255,.38);margin-top:2px; }
+
+/* LEGEND */
+.leg { display:flex;gap:14px;align-items:center;margin-bottom:5px; }
+.leg-item { display:flex;align-items:center;gap:4px; }
+.leg-sq { width:8px;height:8px; }
+.leg-t { font-size:6.2pt;color:#6B7280; }
+
+/* CHART WRAPPER */
+.cw { background:var(--M);border:1px solid var(--BR);padding:10px 14px;margin-bottom:10px; }
+.cw-title { font-size:7pt;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--N);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center; }
+.cw-sub { font-size:6.5pt;color:#9CA3AF; }
+
+/* SCENARIO CARDS */
+.scn { border:1px solid var(--BR);padding:10px;position:relative;overflow:hidden; }
+.scn-acc { position:absolute;top:0;left:0;width:100%;height:3px; }
+.scn-lbl { font-size:6.3pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em; }
+.scn-n { font-family:var(--mono);font-size:13pt;font-weight:700;line-height:1;margin:3px 0; }
+.scn-pct { font-size:6.5pt;font-weight:600;margin-bottom:3px; }
+.scn-d { font-size:6.7pt;color:#6B7280;line-height:1.4; }
+
+/* USE OF FUNDS */
+.uof-row { display:flex;gap:8px;margin-bottom:10px; }
+.uof-item { flex:1;border:1px solid var(--BR);padding:9px 10px; }
+.uof-pct { font-family:var(--mono);font-size:15pt;font-weight:700;line-height:1;margin-bottom:3px; }
+.uof-lbl { font-size:7pt;font-weight:600;color:var(--B);margin-bottom:3px; }
+.uof-desc { font-size:6.3pt;color:#6B7280;line-height:1.35; }
+.uof-val { font-family:var(--mono);font-size:7pt;font-weight:600;color:var(--G);margin-top:4px; }
+
+/* MILESTONE TABLE */
+.ml-table { width:100%;border-collapse:collapse;font-size:7.2pt; }
+.ml-table th { background:var(--N);color:var(--W);font-size:6.8pt;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:5px 8px;border:1px solid var(--N); }
+.ml-table td { padding:4px 8px;border:1px solid var(--BR);color:var(--SL);line-height:1.3; }
+.ml-table tr:nth-child(even) td { background:var(--M); }
+.ml-dot { display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle; }
+
+/* CLOSING BAR */
+.close-bar { background:var(--N);padding:13px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:auto; }
+.cb-tag { font-size:6.5pt;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px; }
+.cb-h { font-size:9pt;font-weight:700;color:var(--W); }
+.cb-h em { color:#3B9EFF;font-style:normal; }
+.cb-contact-lbl { font-size:6.5pt;color:rgba(255,255,255,.3);margin-bottom:3px; }
+.cb-contact { font-family:var(--mono);font-size:8pt;font-weight:600;color:#3B9EFF; }
+</style>
+</head>
+<body>
+
+<!-- ════════════ SLIDE 1 · COVER ════════════ -->
+<div class="slide">
+  <div class="tr"></div>
+  <div class="cover-bg">
+    <svg class="cover-svg" viewBox="0 0 270 800" fill="none">
+      <circle cx="210" cy="110" r="85"  stroke="#3B9EFF" stroke-width=".5"/>
+      <circle cx="210" cy="110" r="130" stroke="#1A6CF6" stroke-width=".35"/>
+      <circle cx="210" cy="110" r="180" stroke="#1A6CF6" stroke-width=".25"/>
+      <circle cx="210" cy="110" r="10"  fill="#3B9EFF" opacity=".6"/>
+      <circle cx="140" cy="45"  r="5"   fill="#1A6CF6" opacity=".7"/>
+      <circle cx="255" cy="185" r="6"   fill="#3B9EFF" opacity=".5"/>
+      <circle cx="100" cy="170" r="4"   fill="#1A6CF6" opacity=".5"/>
+      <circle cx="240" cy="30"  r="3"   fill="#3B9EFF" opacity=".6"/>
+      <circle cx="155" cy="205" r="4"   fill="#3B9EFF" opacity=".4"/>
+      <line x1="210" y1="110" x2="140" y2="45"  stroke="#3B9EFF" stroke-width=".6" opacity=".8"/>
+      <line x1="210" y1="110" x2="255" y2="185" stroke="#3B9EFF" stroke-width=".6" opacity=".6"/>
+      <line x1="210" y1="110" x2="100" y2="170" stroke="#1A6CF6" stroke-width=".6" opacity=".7"/>
+      <line x1="210" y1="110" x2="240" y2="30"  stroke="#3B9EFF" stroke-width=".5" opacity=".5"/>
+      <line x1="210" y1="110" x2="155" y2="205" stroke="#1A6CF6" stroke-width=".5" opacity=".4"/>
+      <circle cx="150" cy="340" r="55"  stroke="#1A6CF6" stroke-width=".35"/>
+      <circle cx="220" cy="420" r="38"  stroke="#3B9EFF" stroke-width=".3"/>
+      <circle cx="90"  cy="380" r="28"  stroke="#1A6CF6" stroke-width=".35"/>
+      <circle cx="180" cy="570" r="70"  stroke="#1A6CF6" stroke-width=".25"/>
+    </svg>
+    <div class="cover-body">
+      <div class="cover-tag">
+        <div class="cover-tag-dot"></div>
+        <div class="cover-tag-text">India Lens &nbsp;·&nbsp; Series A Pitch + Financial Roadmap &nbsp;·&nbsp; September 2026</div>
+      </div>
+      <div class="cover-h1">The OS That<br>Tells the <span class="bl">Truth</span><br>About Education</div>
+      <div class="cover-sub">
+        India's first smart career guidance platform — we treat a college degree like a financial investment and tell you exactly whether it's worth it, before you spend a single rupee.
+      </div>
+      <div class="cover-rule"></div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-n">₹33Cr</div><div class="kpi-l">Revenue target, Year 3</div></div>
+        <div class="kpi"><div class="kpi-n">57.4%</div><div class="kpi-l">Profit margin by Year 3</div></div>
+        <div class="kpi"><div class="kpi-n">96×</div><div class="kpi-l">Value earned per ₹1 spent acquiring a user</div></div>
+        <div class="kpi"><div class="kpi-n">Month 19</div><div class="kpi-l">When we stop losing money (break-even)</div></div>
+      </div>
+    </div>
+    <div class="cover-foot">
+      <div class="cf-brand">India Lens &nbsp;/&nbsp; Smart Career Guidance Platform</div>
+      <div class="cf-meta">Strictly Confidential &nbsp;·&nbsp; For Authorised Investor Review Only &nbsp;·&nbsp; Slide 1 / 10</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════ SLIDE 2 · EXECUTIVE SUMMARY ════════════ -->
+<div class="slide">
+  <div class="tr"></div>
+  <div class="sh">
+    <div class="sh-left"><div class="sh-logo">India <span>Lens</span></div><div class="sh-tag">Summary</div></div>
+    <div class="sh-pg">2 / 10</div>
+  </div>
+  <div class="sb">
+    <div class="ey">The Short Version</div>
+    <div class="st">Everything You Need to Know — One Page</div>
+
+    <div style="border-left:3px solid var(--B);padding:8px 12px;background:var(--M);border-right:1px solid var(--BR);border-top:1px solid var(--BR);border-bottom:1px solid var(--BR);margin-bottom:12px;">
+      <div style="font-size:7pt;color:#9CA3AF;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Why We Exist</div>
+      <div style="font-size:9pt;font-weight:700;color:var(--N);line-height:1.4;">India Lens is the first platform that <span style="color:var(--B);">treats a college degree like a financial investment</span> — calculating whether it will actually make you money, whether the loan will ruin you, and whether AI will take your job, all before you pay anything. Every other platform earns money by selling your contact details to colleges. We earn money only when we genuinely help you.</div>
+    </div>
+
+    <div class="sc4" style="margin-bottom:10px;">
+      <div class="card accent-top-navy">
+        <div class="card-lbl">Total Market Size</div>
+        <div class="card-n" style="font-size:12pt;">₹180B</div>
+        <div class="card-desc">The total size of India's college guidance, student loan, and online course markets. 4.3 crore students enroll in college every year.</div>
+      </div>
+      <div class="card accent-top-blue">
+        <div class="card-lbl">When We Become Profitable</div>
+        <div class="card-n" style="font-size:12pt;">Month 19</div>
+        <div class="card-desc">We stop losing money by month 19. After that, we are fully self-sustaining and do not need any more investment to survive.</div>
+      </div>
+      <div class="card accent-top-green">
+        <div class="card-lbl">Year 3 Revenue</div>
+        <div class="card-n" style="font-size:12pt;">₹33.70Cr</div>
+        <div class="card-desc">Earned from 4 different income streams — so no single stream failing can sink the company. Profit margin of 57.4% by year 3.</div>
+      </div>
+      <div class="card accent-top-pur">
+        <div class="card-lbl">Funding We Are Raising</div>
+        <div class="card-n" style="font-size:12pt;">₹8.5 Cr</div>
+        <div class="card-desc">Covers 18 months of operations. Used to build the product, sign bank partnerships, and grow the student network.</div>
+      </div>
+    </div>
+
+    <table class="T" style="margin-bottom:11px;">
+      <thead>
+        <tr><th>What We Are Doing Differently</th><th>What Every Other Platform Does</th><th class="hl">What India Lens Does Instead</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>How We Make Money</strong></td><td>Sell student phone numbers to colleges — highest bidder wins</td><td class="hl">We earn only when students make better decisions — our incentives match yours</td></tr>
+        <tr><td><strong>AI Job Risk</strong></td><td>Zero platforms tell you if your chosen career will be automated away</td><td class="hl">We show exactly which parts of your job AI will replace — and what skills to learn to stay safe</td></tr>
+        <tr><td><strong>Loan Safety Check</strong></td><td>Push students to borrow as much as possible; no risk warning</td><td class="hl">We run 10,000 "what-if" computer simulations to tell you the exact chance you'll default on your loan</td></tr>
+        <tr><td><strong>Salary Data</strong></td><td>Show unverified numbers from college marketing brochures</td><td class="hl">Use AI models trained on real salary data to predict your earnings 20 years into the future</td></tr>
+        <tr><td><strong>Personal Fit</strong></td><td>Generic college rankings — same list for everyone</td><td class="hl">An adaptive quiz figures out your personality and risk tolerance; every recommendation is tailored to you</td></tr>
+        <tr><td><strong>Proof of Your Work</strong></td><td>A self-typed Word-doc resume anyone can fake</td><td class="hl">Digitally signed research papers, mentor recommendation letters, and verified code — employers trust it like a background check</td></tr>
+        <tr><td><strong>Bank Partnership</strong></td><td>No platform offers banks a way to check student credit risk</td><td class="hl">Banks pay us ₹85 per check to use our student loan risk tool before approving a loan</td></tr>
+      </tbody>
+    </table>
+
+    <div class="mantra">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="10" stroke="#3B9EFF" stroke-width="1"/><path d="M6.5 11l3 3L15.5 8" stroke="#3B9EFF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>
+        <div class="mantra-t">Rankings judge colleges. <em>India Lens judges whether a college is right for you.</em></div>
+        <div class="mantra-s">The only platform that earns money by helping you — not by selling your data to the college that bids the most.</div>
+      </div>
+    </div>
+  </div>
+  <div class="sf"><span>India Lens · Confidential</span><span>Series A · September 2026</span></div>
+</div>
+
+
+<!-- ════════════ SLIDE 3 · MARKET OPPORTUNITY ════════════ -->
+<div class="slide">
+  <div class="tr"></div>
+  <div class="sh">
+    <div class="sh-left"><div class="sh-logo">India <span>Lens</span></div><div class="sh-tag">Market Size</div></div>
+    <div class="sh-pg">3 / 10</div>
+  </div>
+  <div class="sb">
+    <div class="ey">How Big Is the Opportunity</div>
+    <div class="st">₹180B Market. We Go After<br>Where the Money Is Most Concentrated.</div>
+    <div class="ss">Four large markets sit right next to each other — college guidance, student loans, online courses, and career data tools. None of them are being served honestly. We are the first platform addressing all four.</div>
+
+    <div class="tam-row">
+      <div class="tam-box" style="border-top:3px solid var(--N);flex:1.5;">
+        <div class="tam-n" style="color:var(--N);">₹180B</div>
+        <div class="tam-lbl" style="color:var(--N);">Total Market (All of India)</div>
+        <div class="tam-desc">Every business in India that helps students pick a college, take a loan, learn a skill, or find a job. 4.3 crore students enroll every year. This market is growing at 19.4% per year.</div>
+      </div>
+      <div style="width:10px;"></div>
+      <div class="tam-box" style="border-top:3px solid var(--B);flex:1.2;">
+        <div class="tam-n" style="color:var(--B);">₹38B</div>
+        <div class="tam-lbl" style="color:var(--B);">Market We Can Realistically Reach</div>
+        <div class="tam-desc">Students in cities and towns with internet access who are actively deciding on college or a career upgrade. About 1.1 crore students per year — the ones we can genuinely serve right now.</div>
+      </div>
+      <div style="width:10px;"></div>
+      <div class="tam-box" style="border-top:3px solid #00A3E0;flex:1;">
+        <div class="tam-n" style="color:#00A3E0;">₹2.8B</div>
+        <div class="tam-lbl" style="color:#00A3E0;">Our Year 3 Realistic Target</div>
+        <div class="tam-desc">A conservative 7.4% slice of the reachable market — students making big degree decisions, plus 12 bank partnerships and 40 coaching institute software deals.</div>
+      </div>
+    </div>
+
+    <div style="font-size:7pt;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Four Reasons the Timing Is Perfect Right Now</div>
+    <div class="sc4">
+      <div class="card accent-top-blue">
+        <div class="card-lbl">AI Fear Is Real</div>
+        <div class="card-n" style="font-size:11pt;">68%</div>
+        <div class="card-desc">Of Indian students say they are scared AI will take their job — yet no platform tells them which careers are safe or what skills will protect them.</div>
+      </div>
+      <div class="card accent-top-navy">
+        <div class="card-lbl">Banks Are Losing Money on Student Loans</div>
+        <div class="card-n" style="font-size:11pt;">₹39,000Cr</div>
+        <div class="card-desc">Bad student loans on bank books (RBI data 2025). Banks desperately need a tool to check if a student can actually afford to repay before giving the loan. We built exactly that.</div>
+      </div>
+      <div class="card accent-top-teal">
+        <div class="card-lbl">Fake Resumes Are a Crisis</div>
+        <div class="card-n" style="font-size:11pt;">84%</div>
+        <div class="card-desc">Of Indian companies say they cannot trust what candidates write on their own resume. Our verified portfolios — where a third party confirms everything — solve this directly.</div>
+      </div>
+      <div class="card accent-top-pur">
+        <div class="card-lbl">AI Is Now Affordable</div>
+        <div class="card-n" style="font-size:11pt;">↓78%</div>
+        <div class="card-desc">The AI tools we use (Perplexity + DeepSeek) cost 78% less than older AI platforms. For the first time, we can give every student a personal AI advisor for less than ₹10 per session.</div>
+      </div>
+    </div>
+
+    <table class="T">
+      <thead>
+        <tr><th>Income Stream</th><th class="r">Total Pool</th><th class="r">How We Earn From It</th><th class="r">Year 3 Target</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>College Guidance and Matching</td><td class="mono">₹62B</td><td class="hl">We charge ₹4,500 for each pre-verified student we send to a college or bank — not ₹300 for a cold phone number</td><td class="g">₹890 L</td></tr>
+        <tr><td>Student Loan Origination</td><td class="mono">₹78B</td><td class="hl">Banks pay us 1.5% of the loan value when a student we vetted takes a loan through them</td><td class="g">₹580 L</td></tr>
+        <tr><td>Online Course Sales</td><td class="mono">₹28B</td><td class="hl">We earn 25% commission — but only show a course when our system is confident it matches what that specific student needs</td><td class="g">₹420 L</td></tr>
+        <tr><td>Research Portfolio + Group Programs</td><td class="mono">₹8B</td><td class="hl">₹35,000 for a 6-week guided research program that produces real, published work students can show employers</td><td class="g">₹1,680 L</td></tr>
+        <tr class="sub"><td colspan="3"><strong>Total India Lens Revenue Target — FY 2028</strong></td><td class="r" style="font-family:var(--mono);font-size:7pt;font-weight:700;color:var(--B);">₹3,370 L (₹33.70 Cr)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="sf"><span>India Lens · Confidential</span><span>Series A · September 2026</span></div>
+</div>
+
+
+<!-- ════════════ SLIDE 4 · PROBLEM + SOLUTION ════════════ -->
+<div class="slide">
+  <div class="tr"></div>
+  <div class="sh">
+    <div class="sh-left"><div class="sh-logo">India <span>Lens</span></div><div class="sh-tag">The Problem We Solve</div></div>
+    <div class="sh-pg">4 / 10</div>
+  </div>
+  <div class="sb">
+    <div class="ey">Why This Market Is Broken</div>
+    <div class="st">The People Supposed to Help Students<br>Are Actually Working Against Them</div>
+
+    <div style="display:flex;border:1px solid var(--BR);background:var(--M);margin-bottom:10px;">
+      <div style="flex:1;text-align:center;padding:10px 8px;border-right:1px solid var(--BR);">
+        <div style="font-family:var(--mono);font-size:14pt;font-weight:700;color:var(--N);">₹300</div>
+        <div style="font-size:6.3pt;color:#9CA3AF;margin-top:2px;">What portals charge colleges<br>per student contact sold</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:10px 8px;border-right:1px solid var(--BR);">
+        <div style="font-family:var(--mono);font-size:14pt;font-weight:700;color:var(--N);">1.2%</div>
+        <div style="font-size:6.3pt;color:#9CA3AF;margin-top:2px;">How many of those cold leads<br>actually enroll</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:10px 8px;border-right:1px solid var(--BR);">
+        <div style="font-family:var(--mono);font-size:14pt;font-weight:700;color:var(--N);">65%</div>
+        <div style="font-size:6.3pt;color:#9CA3AF;margin-top:2px;">Students in programs that don't<br>match their financial situation</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:10px 8px;border-right:1px solid var(--BR);">
+        <div style="font-family:var(--mono);font-size:14pt;font-weight:700;color:var(--N);">₹2.1L</div>
+        <div style="font-size:6.3pt;color:#9CA3AF;margin-top:2px;">Commission study-abroad agents<br>earn per student they place abroad</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:10px 8px;">
+        <div style="font-family:var(--mono);font-size:14pt;font-weight:700;color:var(--N);">0</div>
+        <div style="font-size:6.3pt;color:#9CA3AF;margin-top:2px;">Platforms that warn students<br>about AI replacing their career</div>
+      </div>
+    </div>
+
+    <div class="sc2" style="margin-bottom:10px;">
+      <div style="border:1px solid #FCA5A5;border-left:4px solid var(--R);background:#FFF8F8;padding:13px;">
+        <div style="font-size:7.5pt;font-weight:700;color:var(--R);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">❌  What Happens Right Now</div>
+        <div style="display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;"><div style="width:6px;height:6px;border-radius:50%;background:var(--R);flex-shrink:0;margin-top:3.5px;"></div><div style="font-size:7.5pt;color:var(--SL);line-height:1.4;"><strong>College portals earn ₹300</strong> for every student contact they sell — they sell it to whoever pays the most, not the best college for that student. You get spam calls from colleges you've never heard of.</div></div>
+        <div style="display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;"><div style="width:6px;height:6px;border-radius:50%;background:var(--R);flex-shrink:0;margin-top:3.5px;"></div><div style="font-size:7.5pt;color:var(--SL);line-height:1.4;"><strong>Study-abroad agents earn ₹2L–₹4L per student placed</strong> — paid by the foreign college, not by you. They push you toward whatever college pays them the most, even if the loan will cripple you financially.</div></div>
+        <div style="display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;"><div style="width:6px;height:6px;border-radius:50%;background:var(--R);flex-shrink:0;margin-top:3.5px;"></div><div style="font-size:7.5pt;color:var(--SL);line-height:1.4;"><strong>Salary numbers come from college brochures</strong> — not real data. Nobody tells you which jobs AI will automate in 5 years. Nobody checks if your loan is actually payable on your expected salary.</div></div>
+        <div style="display:flex;gap:7px;align-items:flex-start;"><div style="width:6px;height:6px;border-radius:50%;background:var(--R);flex-shrink:0;margin-top:3.5px;"></div><div style="font-size:7.5pt;color:var(--SL);line-height:1.4;"><strong>Students borrow lakhs</strong> for degrees that have a very high chance of leaving them unable to repay. Not one platform warns them before they sign.</div></div>
+      </div>
+      <div style="border:1px solid #86EFAC;border-left:4px solid var(--G);background:#F0FDF4;padding:13px;">
+        <div style="font-size:7.5pt;font-weight:700;color:var(--G);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">✅  What India Lens Does Instead</div>
+        <div style="display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;"><div style="width:6px;height:6px;border-radius:50%;background:var(--G);flex-shrink:0;margin-top:3.5px;"></div><div style="font-size:7.5pt;color:var(--SL);line-height:1.4;"><strong>We calculate the financial return on every degree</strong> — like a profit-and-loss statement for your education. You see exactly what you'll earn, when you'll break even on the degree cost, and whether it's actually worth it.</div></div>
+        <div style="display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;"><div style="width:6px;height:6px;border-radius:50%;background:var(--G);flex-shrink:0;margin-top:3.5px;"></div><div style="font-size:7.5pt;color:var(--SL);line-height:1.4;"><strong>We run 10,000 "what-if" loan scenarios</strong> — simulating salary dips, interest rate changes, and recession hits — and tell you the exact probability you'll struggle to repay, before the bank approves the loan.</div></div>
+        <div style="display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;"><div style="width:6px;height:6px;border-radius:50%;background:var(--G);flex-shrink:0;margin-top:3.5px;"></div><div style="font-size:7.5pt;color:var(--SL);line-height:1.4;"><strong>Our AI Disruption Tracker</strong> checks every career weekly against live job listings — showing which skills AI is replacing right now and which ones make you safe from automation for the next decade.</div></div>
+        <div style="display:flex;gap:7px;align-items:flex-start;"><div style="width:6px;height:6px;border-radius:50%;background:var(--G);flex-shrink:0;margin-top:3.5px;"></div><div style="font-size:7.5pt;color:var(--SL);line-height:1.4;"><strong>We build students a verified digital portfolio</strong> — published research papers, mentor recommendation letters, and real code contributions. Employers trust it like an official background check, not a self-written resume.</div></div>
+      </div>
+    </div>
+
+    <div class="mantra">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="10" stroke="#3B9EFF" stroke-width="1"/><path d="M6.5 11l3 3L15.5 8" stroke="#3B9EFF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>
+        <div class="mantra-t">Rankings judge colleges. <em>India Lens judges whether a college is right for you.</em></div>
+        <div class="mantra-s">The only platform whose business only works when students genuinely benefit — not when colleges pay the most for your phone number.</div>
+      </div>
+    </div>
+  </div>
+  <div class="sf"><span>India Lens · Confidential</span><span>Series A · September 2026</span></div>
+</div>
+
+
+<!-- ════════════ SLIDE 5 · TECHNOLOGY ════════════ -->
+<div class="slide">
+  <div class="tr"></div>
+  <div class="sh">
+    <div class="sh-left"><div class="sh-logo">India <span>Lens</span></div><div class="sh-tag">How the Technology Works</div></div>
+    <div class="sh-pg">5 / 10</div>
+  </div>
+  <div class="sb">
+    <div class="ey">Our Proprietary Engine</div>
+    <div class="st">Math Models + Live Web Intelligence + AI —<br>Built to Give Honest Answers</div>
+
+    <div class="ai-bar">
+      <div class="ai-cell">
+        <div class="ai-lbl">Live Web Search Tool</div>
+        <div class="ai-name">Perplexity Sonar Pro</div>
+        <div class="ai-detail">Looks up current college fees, placement records, and job market conditions in real time — from verified online sources, not old databases. Like having a research assistant that reads the internet for you instantly.</div>
+        <div class="ai-cost">Cost: ₹0.40 per search · ~10 searches per student session = ₹4</div>
+      </div>
+      <div class="ai-cell">
+        <div class="ai-lbl">Personal AI Advisor</div>
+        <div class="ai-name">DeepSeek V3</div>
+        <div class="ai-detail">Remembers everything about you across sessions — your goals, budget, risk appetite, and past questions. Gives honest advice even when it's hard to hear. Never just tells you what you want to hear.</div>
+        <div class="ai-cost">Cost: ₹5.50 per full session · Remembers up to 128,000 words of context</div>
+      </div>
+      <div class="ai-cell">
+        <div class="ai-lbl">Total AI Cost Per Student</div>
+        <div class="ai-name" style="color:var(--G);">~₹9.50 Per Full Session</div>
+        <div class="ai-detail">Both tools combined. 78% cheaper than the previous generation of AI tools. This is what makes it possible to offer a personal AI advisor to every student affordably, while still making strong profit margins.</div>
+        <div class="ai-cost">↓78% cheaper than prior generation · Profit margin on AI features: 95%+</div>
+      </div>
+    </div>
+
+    <div class="arch" style="margin-bottom:9px;">
+      <div class="abox">
+        <div class="abox-step">STEP 01</div>
+        <div class="abox-title">We Collect Real Data</div>
+        <div class="abox-item">Government wage surveys by state</div>
+        <div class="abox-item">Real salary history from working professionals</div>
+        <div class="abox-item">Live job postings (analysed weekly)</div>
+        <div class="abox-item">Bank interest rate forecasts</div>
+        <div class="abox-item">Official college placement reports</div>
+      </div>
+      <div class="aarrow"><svg width="13" height="13" viewBox="0 0 13 13"><path d="M2 6.5h9M7 3l3.5 3.5L7 10" stroke="#1A6CF6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="abox blue">
+        <div class="abox-step">STEP 02</div>
+        <div class="abox-title">Our Math Models Process It</div>
+        <div class="abox-item">Personality quiz (8 smart questions)</div>
+        <div class="abox-item">AI salary prediction model (20-year forecast)</div>
+        <div class="abox-item">Career path simulator</div>
+        <div class="abox-item">10,000-scenario loan stress test</div>
+        <div class="abox-item">Job automation risk calculator</div>
+      </div>
+      <div class="aarrow"><svg width="13" height="13" viewBox="0 0 13 13"><path d="M2 6.5h9M7 3l3.5 3.5L7 10" stroke="#1A6CF6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="abox dark">
+        <div class="abox-step">STEP 03</div>
+        <div class="abox-title">AI Explains It in Plain Language</div>
+        <div class="abox-item">Perplexity checks the latest online data</div>
+        <div class="abox-item">DeepSeek explains results specific to you</div>
+        <div class="abox-item">Remembers all your past conversations</div>
+        <div class="abox-item">Always honest — never flatters you</div>
+        <div class="abox-item">Every claim backed by a source</div>
+      </div>
+      <div class="aarrow"><svg width="13" height="13" viewBox="0 0 13 13"><path d="M2 6.5h9M7 3l3.5 3.5L7 10" stroke="#1A6CF6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="abox">
+        <div class="abox-step">STEP 04</div>
+        <div class="abox-title">What You Get</div>
+        <div class="abox-item" style="color:var(--G);font-weight:600;">Is this degree worth the money?</div>
+        <div class="abox-item" style="color:var(--R);font-weight:600;">Can you safely afford this loan?</div>
+        <div class="abox-item" style="color:var(--B);font-weight:600;">Will AI replace your career?</div>
+        <div class="abox-item" style="color:var(--P);font-weight:600;">A verified portfolio employers trust</div>
+        <div class="abox-item" style="color:var(--A);font-weight:600;">Courses you actually need right now</div>
+      </div>
+    </div>
+
+    <div class="algo4">
+      <div class="algoc">
+        <div class="algoc-head">
+          <div class="algoc-icon" style="background:#EFF6FF;"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="10" width="3" height="6" rx=".5" fill="#1A6CF6"/><rect x="7" y="6" width="3" height="10" rx=".5" fill="#1A6CF6" opacity=".7"/><rect x="12" y="2" width="3" height="14" rx=".5" fill="#1A6CF6" opacity=".4"/></svg></div>
+          <div class="algoc-meta"><div class="algoc-lbl">Model 1 · Is The Degree Worth It?</div><div class="algoc-title">Degree Return Calculator (NPV Engine)</div></div>
+        </div>
+        <div class="algoc-f">NPV(s,p) = Σ [ Ŝ(t)·(1−Tax)·P_visa(t)·FX(t)
+         · (1−P_rec)·(1−δ_AI(t)) ] / (1+r(t))^t
+       − Tuition·(1+Infl)^d − OC_PLFS·d</div>
+        <div class="algoc-d">Works like a financial model for your degree — adds up all the money you'll earn over 20 years, then subtracts tuition, living costs, and lost income while studying. Also adjusts for job risk, currency risk, and AI disruption. Gives you a single number: is this degree worth more than it costs?</div>
+        <div class="algoc-tags"><span class="atag">20-Year Return</span><span class="atag">Break-Even Point</span><span class="atag">Rate of Return</span></div>
+      </div>
+      <div class="algoc">
+        <div class="algoc-head">
+          <div class="algoc-icon" style="background:#FFFBEB;"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2L16 6v6c0 4-3.6 7.4-7 8-3.4-.6-7-4-7-8V6L9 2z" stroke="#F79009" stroke-width="1" fill="none"/><path d="M6 9Q9 5 12 9Q9 13 6 9Z" fill="#F79009" opacity=".4"/><circle cx="9" cy="9" r="1.5" fill="#F79009"/></svg></div>
+          <div class="algoc-meta"><div class="algoc-lbl">Model 2 · Will AI Take Your Job?</div><div class="algoc-title">AI Job Risk Tracker</div></div>
+        </div>
+        <div class="algoc-f">δ_AI(p,t) = D₀(p)·(1−H(p))·(1−e^(−λt))·M(p,t)
+M(p,t) = 1/(1+e^(−k(t−t₀(p))))
+Calibrated weekly from live job posting data</div>
+        <div class="algoc-d">Reads thousands of live job postings every week to track which skills are disappearing from listings (being replaced by AI) and which are growing. Shows you a risk score for your chosen career — and the exact skills that will keep you safe over the next 10 years.</div>
+        <div class="algoc-tags"><span class="atag">Risk Score</span><span class="atag">Safe Skills List</span><span class="atag">Timeline</span></div>
+      </div>
+      <div class="algoc">
+        <div class="algoc-head">
+          <div class="algoc-icon" style="background:#F5F3FF;"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="#7C3AED" stroke-width="1.1" fill="none"/><path d="M6 9C6 7 7.5 5.5 9 5.5s3 1.5 3 3.5" stroke="#7C3AED" stroke-width="1" fill="none"/><circle cx="9" cy="9" r="2" fill="#7C3AED" opacity=".5"/></svg></div>
+          <div class="algoc-meta"><div class="algoc-lbl">Model 3 · Who Are You Really?</div><div class="algoc-title">Smart 8-Question Personality Quiz</div></div>
+        </div>
+        <div class="algoc-f">P(x=1|θ,a,b,c) = c+(1−c)/(1+e^(−a(θ−b)))
+Stop: SE(θ̂) &lt; 0.35  or  n ≥ 8 questions
+Traits: [θ_risk, θ_value, θ_autonomy, θ_ai]</div>
+        <div class="algoc-d">An adaptive quiz that adjusts its next question based on your previous answer — like a smart interview. In just 8 questions it figures out 4 hidden traits: how much risk you can handle, how urgently you need money, whether you prefer independence, and how AI-ready you are. Every recommendation is then tuned to your specific profile.</div>
+        <div class="algoc-tags"><span class="atag">Your Risk Profile</span><span class="atag">Personalised Advice</span><span class="atag">Career Fit Score</span></div>
+      </div>
+      <div class="algoc">
+        <div class="algoc-head">
+          <div class="algoc-icon" style="background:#FFF1F2;"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 14Q5 4 8 10Q11 16 14 6Q16 2 16 4" stroke="#F04438" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M2 14Q5 8 8 11Q11 14 14 9" stroke="#F04438" stroke-width=".7" fill="none" opacity=".4" stroke-linecap="round"/></svg></div>
+          <div class="algoc-meta"><div class="algoc-lbl">Model 4 · Can You Afford the Loan?</div><div class="algoc-title">10,000-Scenario Loan Safety Check</div></div>
+        </div>
+        <div class="algoc-f">10,000 computer simulations run with:
+  Salary dips (randomised by industry data)
+  Recession hits: once every ~12 years avg.
+  Floating bank interest rate movements
+Danger flag: loan payment > 38% of salary</div>
+        <div class="algoc-d">Before you take an education loan, our system runs 10,000 different future scenarios — salary dropping, bank rates rising, recession hitting — and tells you in plain language: what is the chance you will struggle to repay this? Banks now pay us to run this check before they approve student loans, because it saves them from bad debt.</div>
+        <div class="algoc-tags"><span class="atag">Default Chance %</span><span class="atag">Best/Worst/Middle Case</span><span class="atag">Safe Loan Amount</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="sf"><span>India Lens · Confidential</span><span>Series A · September 2026</span></div>
+</div>
+
+
+<!-- ════════════ SLIDE 6 · COMPETITIVE MOAT ════════════ -->
+<div class="slide">
+  <div class="tr"></div>
+  <div class="sh">
+    <div class="sh-left"><div class="sh-logo">India <span>Lens</span></div><div class="sh-tag">Why We Can't Be Copied</div></div>
+    <div class="sh-pg">6 / 10</div>
+  </div>
+  <div class="sb">
+    <div class="ey">Competitive Advantage</div>
+    <div class="st">Three Reasons Competitors Cannot<br>Build What We Have Built</div>
+
+    <table class="T" style="margin-bottom:11px;">
+      <thead>
+        <tr><th>Feature</th><th>Shiksha / CollegeDunia</th><th>Study-Abroad Agents</th><th class="us">India Lens</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>How They Make Money</strong></td><td>Sell your phone number to colleges for ₹300</td><td>Earn ₹2–4L commission from the foreign college they place you in</td><td class="us">Earn only when you make a better decision — our income depends on your outcome</td></tr>
+        <tr><td><strong>Salary Predictions</strong></td><td class="cross">✗ Copy-pasted from college brochures</td><td class="cross">✗ Outdated, unverified numbers</td><td class="us"><span class="tick">✓</span> AI model trained on real salary data — predicts your earnings over 20 years</td></tr>
+        <tr><td><strong>AI Job Risk Warning</strong></td><td class="cross">✗ Doesn't exist anywhere</td><td class="cross">✗ Doesn't exist anywhere</td><td class="us"><span class="tick">✓</span> Weekly tracker — shows which parts of your job AI will replace and when</td></tr>
+        <tr><td><strong>Loan Safety Check</strong></td><td class="cross">✗ Encourage maximum borrowing</td><td class="cross">✗ Actively push expensive foreign loans</td><td class="us"><span class="tick">✓</span> 10,000 simulations — tells you if the loan is safe before you sign</td></tr>
+        <tr><td><strong>Personalisation</strong></td><td class="cross">✗ Same rankings for everyone</td><td class="cross">✗ Manual notes from a human agent</td><td class="us"><span class="tick">✓</span> 8-question quiz + AI that remembers everything about you</td></tr>
+        <tr><td><strong>Verified Portfolio</strong></td><td class="cross">✗ Nothing</td><td class="cross">✗ Template essay edits only</td><td class="us"><span class="tick">✓</span> Published papers, signed letters, verified code — trusted by employers like a background check</td></tr>
+        <tr><td><strong>Quality of Matches Sent to Colleges</strong></td><td>1.2% of sold contacts actually enroll</td><td>Manual, expensive, slow</td><td class="us">12.4% conversion — because students are pre-checked and willing</td></tr>
+      </tbody>
+    </table>
+
+    <div class="sc3">
+      <div class="moat">
+        <div style="position:absolute;top:0;left:0;width:100%;height:3px;background:var(--N);"></div>
+        <div class="moat-n">01</div>
+        <div class="moat-h">The Trap Competitors Can't Escape</div>
+        <div class="moat-d">Shiksha and CollegeDunia earn most of their money from low-quality private colleges. If they add our loan risk tool, that tool will tell students: "don't go to this college." Those colleges will stop paying them. <strong>They would destroy their own income just to compete with us.</strong> This is not a technology gap — it is a business model trap they cannot exit without going bankrupt.</div>
+      </div>
+      <div class="moat">
+        <div style="position:absolute;top:0;left:0;width:100%;height:3px;background:var(--B);"></div>
+        <div class="moat-n">02</div>
+        <div class="moat-h">Credentials That Cannot Be Faked</div>
+        <div class="moat-d">Anyone can copy a resume template. Nobody can copy our verified credential network: <strong>research papers published on official academic platforms, recommendation letters with digital signatures, and audited code contributions employers can inspect themselves.</strong> Recruiters treat our portfolio link like an official background check — not a student's self-description. This trust is built over years. Competitors start from zero.</div>
+      </div>
+      <div class="moat">
+        <div style="position:absolute;top:0;left:0;width:100%;height:3px;background:#00A3E0;"></div>
+        <div class="moat-n">03</div>
+        <div class="moat-h">We Get Smarter as We Grow</div>
+        <div class="moat-d">Portals lose the student the moment they get admitted. India Lens stays connected for 4 full years — filling skill gaps, running research programs, placing students in internships. <strong>Every student who graduates feeds their actual salary back into our prediction models</strong>, making our future predictions more accurate. Competitors who enter today face 4 years of our data advantage — and that gap only widens.</div>
+      </div>
+    </div>
+  </div>
+  <div class="sf"><span>India Lens · Confidential</span><span>Series A · September 2026</span></div>
+</div>
+
+
+<!-- ════════════ SLIDE 7 · REVENUE + UNIT ECONOMICS ════════════ -->
+<div class="slide">
+  <div class="tr"></div>
+  <div class="sh">
+    <div class="sh-left"><div class="sh-logo">India <span>Lens</span></div><div class="sh-tag">How We Make Money</div></div>
+    <div class="sh-pg">7 / 10</div>
+  </div>
+  <div class="sb">
+    <div class="ey">4 Income Streams — None Dependent on the Others</div>
+    <div class="st">High Margins. Each Stream Grows the Next.<br>No Single Point of Failure.</div>
+
+    <div class="sc4" style="margin-bottom:10px;">
+      <div class="card accent-top-navy">
+        <div class="card-lbl">Stream 1 · Direct from Students</div>
+        <div class="card-n">₹35,000</div>
+        <div style="font-size:7.5pt;font-weight:600;color:var(--B);margin-bottom:3px;">Guided Research Program</div>
+        <div class="card-desc">A 6-week program where a PhD mentor guides the student to produce a real, published research paper and a signed recommendation letter — things employers and universities take seriously. 40%+ of seats filled by referrals from past students.</div>
+        <div class="card-mg">64% profit after costs</div>
+      </div>
+      <div class="card accent-top-blue">
+        <div class="card-lbl">Stream 2 · From Banks</div>
+        <div class="card-n">1.50%</div>
+        <div style="font-size:7.5pt;font-weight:600;color:var(--B);margin-bottom:3px;">Loan Referral Fee</div>
+        <div class="card-desc">When a student we have pre-screened takes a loan from one of our partner banks (Credila, Avanse, Auxilo), the bank pays us 1.5% of the loan amount. They pay because our students are safer — they default far less than average. Earns ₹18k–₹67k per loan.</div>
+        <div class="card-mg">98% profit after costs</div>
+      </div>
+      <div class="card accent-top-teal">
+        <div class="card-lbl">Stream 3 · From Course Providers</div>
+        <div class="card-n">25% avg</div>
+        <div style="font-size:7.5pt;font-weight:600;color:var(--B);margin-bottom:3px;">Course Recommendation Fee</div>
+        <div class="card-desc">We only recommend a course when our system is at least 75% confident it matches what that student needs right now. Because of this filtering, 4.2% of students buy — vs 0.8% industry average. Partners: Coursera, Udemy, Emeritus, Physics Wallah.</div>
+        <div class="card-mg">88% profit after costs</div>
+      </div>
+      <div class="card accent-top-pur">
+        <div class="card-lbl">Stream 4 · From Banks + Coaching Institutes</div>
+        <div class="card-n">₹85/Check</div>
+        <div style="font-size:7.5pt;font-weight:600;color:var(--B);margin-bottom:3px;">Risk API + Coaching Software</div>
+        <div class="card-desc">Banks pay ₹85 each time they use our loan risk tool to check a student before approving a loan. Coaching centres (Allen, FIITJEE etc.) pay ₹400–₹800 per student per year to use our guidance platform under their own brand name.</div>
+        <div class="card-mg">96% profit after costs</div>
+      </div>
+    </div>
+
+    <div style="font-size:7pt;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">What Happens When 10,000 Students Sign Up — Step by Step</div>
+    <table class="T" style="margin-bottom:10px;">
+      <thead>
+        <tr><th>What Students Do</th><th class="r">Number</th><th class="r">Conversion Rate</th><th class="r">What We Earn Each</th><th class="r">Total Earned</th><th class="r">Profit %</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Sign up for free (via a friend's portfolio link — zero ad spend)</td><td class="mono">10,000</td><td class="mono">100%</td><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td></tr>
+        <tr><td>Buy a ₹1,999 verified portfolio subscription</td><td class="mono">1,350</td><td class="mono">13.5%</td><td class="mono">₹1,999</td><td class="mono">₹26.98 L</td><td class="mono">92.4%</td></tr>
+        <tr><td>Enroll in a ₹35,000 guided research program</td><td class="mono">250</td><td class="mono">2.5%</td><td class="mono">₹35,000</td><td class="mono">₹87.50 L</td><td class="mono">64.2%</td></tr>
+        <tr><td>Buy a recommended online course (avg ₹2,125 commission)</td><td class="mono">1,200</td><td class="mono">12.0%</td><td class="mono">₹2,125</td><td class="mono">₹25.50 L</td><td class="mono">88.5%</td></tr>
+        <tr><td>Take a student loan via our bank partners (avg ₹18,500 referral fee)</td><td class="mono">180</td><td class="mono">1.8%</td><td class="mono">₹18,500</td><td class="mono">₹33.30 L</td><td class="mono">98.0%</td></tr>
+        <tr class="sub"><td colspan="4"><strong>Total earned from 10,000 students</strong></td><td class="r" style="font-family:var(--mono);font-size:7pt;font-weight:700;color:var(--B);">₹173.28 L</td><td class="r" style="font-family:var(--mono);font-size:7pt;font-weight:700;color:var(--G);">77.8%</td></tr>
+        <tr><td colspan="4">Total cost to acquire 10,000 students (₹18 per student, mostly organic)</td><td class="mono">₹1.80 L</td><td class="mono">—</td></tr>
+        <tr class="ttl"><td colspan="4"><strong>Value earned for every ₹1 spent on getting users (LTV / CAC)</strong></td><td class="r">96.2×</td><td class="r">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="sf"><span>India Lens · Confidential</span><span>Series A · September 2026</span></div>
+</div>
+
+
+<!-- ════════════ SLIDE 8 · FULL FINANCIAL ROADMAP ════════════ -->
+<div class="slide">
+  <div class="tr"></div>
+  <div class="sh">
+    <div class="sh-left"><div class="sh-logo">India <span>Lens</span></div><div class="sh-tag">Financial Roadmap</div></div>
+    <div class="sh-pg">8 / 10</div>
+  </div>
+  <div class="sb">
+    <div class="ey">3-Year Detailed Financial Model</div>
+    <div class="st">Revenue, Costs, Profit, and Cash —<br>The Full Picture</div>
+
+    <div class="cw" style="margin-bottom:9px;">
+      <div class="cw-title">Monthly Revenue Growth — Year 1 (INR Lakhs) <span class="cw-sub">April 2025 – March 2026 &nbsp;·&nbsp; We stop losing money in Month 19 (October 2026)</span></div>
+      <svg width="638" height="100" viewBox="0 0 638 100" style="display:block;"><line x1="54" y1="80.0" x2="622" y2="80.0" stroke="#DDE4EF" stroke-width="0.7" stroke-dasharray="0"/><text x="51" y="82.5" font-family="JetBrains Mono" font-size="6" fill="#9CA3AF" text-anchor="end">0</text><line x1="54" y1="56.66666666666667" x2="622" y2="56.66666666666667" stroke="#DDE4EF" stroke-width="0.7" stroke-dasharray="3,3"/><text x="51" y="59.16666666666667" font-family="JetBrains Mono" font-size="6" fill="#9CA3AF" text-anchor="end">8L</text><line x1="54" y1="33.333333333333336" x2="622" y2="33.333333333333336" stroke="#DDE4EF" stroke-width="0.7" stroke-dasharray="3,3"/><text x="51" y="35.833333333333336" font-family="JetBrains Mono" font-size="6" fill="#9CA3AF" text-anchor="end">16L</text><line x1="54" y1="10.0" x2="622" y2="10.0" stroke="#DDE4EF" stroke-width="0.7" stroke-dasharray="3,3"/><text x="51" y="12.5" font-family="JetBrains Mono" font-size="6" fill="#9CA3AF" text-anchor="end">24L</text><polygon points="54,80 54.0,73.58333333333333 105.63636363636363,69.79166666666667 157.27272727272725,65.125 208.9090909090909,59.0 260.5454545454545,51.416666666666664 312.1818181818182,46.75 363.8181818181818,42.083333333333336 415.45454545454544,36.83333333333333 467.09090909090907,31.875 518.7272727272727,26.624999999999993 570.3636363636364,22.249999999999993 622.0,17.583333333333336 622.0,80" fill="#1A6CF6" opacity="0.08"/><polyline points="54.0,73.58333333333333 105.63636363636363,69.79166666666667 157.27272727272725,65.125 208.9090909090909,59.0 260.5454545454545,51.416666666666664 312.1818181818182,46.75 363.8181818181818,42.083333333333336 415.45454545454544,36.83333333333333 467.09090909090907,31.875 518.7272727272727,26.624999999999993 570.3636363636364,22.249999999999993 622.0,17.583333333333336" fill="none" stroke="#1A6CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="54.0" cy="73.58333333333333" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="54.0" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">Apr</text><text x="54.0" y="68.58333333333333" font-family="JetBrains Mono" font-size="6" fill="#1A6CF6" text-anchor="middle">₹2.2L</text><circle cx="105.63636363636363" cy="69.79166666666667" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="105.63636363636363" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">May</text><circle cx="157.27272727272725" cy="65.125" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="157.27272727272725" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">Jun</text><circle cx="208.9090909090909" cy="59.0" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="208.9090909090909" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">Jul</text><circle cx="260.5454545454545" cy="51.416666666666664" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="260.5454545454545" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">Aug</text><circle cx="312.1818181818182" cy="46.75" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="312.1818181818182" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">Sep</text><text x="312.1818181818182" y="41.75" font-family="JetBrains Mono" font-size="6" fill="#1A6CF6" text-anchor="middle">₹11.4L</text><circle cx="363.8181818181818" cy="42.083333333333336" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="363.8181818181818" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">Oct</text><circle cx="415.45454545454544" cy="36.83333333333333" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="415.45454545454544" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">Nov</text><circle cx="467.09090909090907" cy="31.875" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="467.09090909090907" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">Dec</text><circle cx="518.7272727272727" cy="26.624999999999993" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="518.7272727272727" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">Jan</text><circle cx="570.3636363636364" cy="22.249999999999993" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="570.3636363636364" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">Feb</text><circle cx="622.0" cy="17.583333333333336" r="2.5" fill="white" stroke="#1A6CF6" stroke-width="1.5"/><text x="622.0" y="90" font-family="JetBrains Mono" font-size="5.8" fill="#9CA3AF" text-anchor="middle">Mar</text><text x="622.0" y="12.583333333333336" font-family="JetBrains Mono" font-size="6" fill="#1A6CF6" text-anchor="middle">₹21.4L</text></svg>
+    </div>
+
+    <table class="T">
+      <thead>
+        <tr><th>Income and Cost Line</th><th class="r">Year 1 (FY26)</th><th class="r">Year 2 (FY27)</th><th class="r">Year 3 (FY28)</th><th>What Drives This Number</th></tr>
+      </thead>
+      <tbody>
+        <tr class="grp"><td colspan="5">Income — 4 Streams</td></tr>
+        <tr><td>Stream 1: Guided Research Programs + Portfolio Subscriptions</td><td class="mono">₹78.5 L</td><td class="mono">₹425 L</td><td class="mono">₹1,680 L</td><td>₹1,999 subscription + ₹35,000 program seats; 2.5% of monthly active users</td></tr>
+        <tr><td>Stream 2: Bank Loan Fees + Student Matching</td><td class="mono">₹38 L</td><td class="mono">₹215 L</td><td class="mono">₹890 L</td><td>1.5% of loan amount + ₹4,500 for each pre-verified student sent to a bank</td></tr>
+        <tr><td>Stream 3: Online Course Commissions (match ≥ 75% only)</td><td class="mono">₹24 L</td><td class="mono">₹110 L</td><td class="mono">₹420 L</td><td>25% average commission; 4.2% of students buy vs 0.8% industry average</td></tr>
+        <tr><td>Stream 4: Bank Risk API + Coaching Institute Software</td><td class="mono">₹12.5 L</td><td class="mono">₹85 L</td><td class="mono">₹380 L</td><td>₹85 per bank check + ₹500 per student per year for coaching software licence</td></tr>
+        <tr class="ttl"><td><strong>TOTAL INCOME</strong></td><td class="r">₹153 L</td><td class="r">₹835 L</td><td class="r">₹3,370 L</td><td>₹1.53 Cr → ₹8.35 Cr → ₹33.70 Cr</td></tr>
+        <tr class="grp"><td colspan="5">Costs — What We Spend to Deliver the Service</td></tr>
+        <tr><td>PhD Mentors + Research Reviewers</td><td class="mono">₹28 L</td><td class="mono">₹145 L</td><td class="mono">₹540 L</td><td>32% of program income; mentors who guide students through research</td></tr>
+        <tr><td>AI Searches — Perplexity Sonar Pro (live web lookups)</td><td class="mono">₹2.2 L</td><td class="mono">₹8.5 L</td><td class="mono">₹28 L</td><td>₹0.40 per search × 10 searches per student session; cost drops as volume grows</td></tr>
+        <tr><td>AI Advisor — DeepSeek V3 (personalised student reasoning)</td><td class="mono">₹2.3 L</td><td class="mono">₹9.5 L</td><td class="mono">₹34 L</td><td>₹5.50 per full session; 78% cheaper than previous generation AI tools</td></tr>
+        <tr><td>Credential Verification + Paper Publishing</td><td class="mono">₹4.2 L</td><td class="mono">₹14 L</td><td class="mono">₹42 L</td><td>Digital signatures, academic publishing fees, verification infrastructure</td></tr>
+        <tr><td>Cloud Servers + Security + Platform Hosting</td><td class="mono">₹3.3 L</td><td class="mono">₹12 L</td><td class="mono">₹36 L</td><td>AWS + Cloudflare; grows at 40% the rate of revenue growth</td></tr>
+        <tr class="sub"><td><strong>TOTAL COST OF SERVICE</strong></td><td class="r">₹40 L</td><td class="r">₹189 L</td><td class="r">₹680 L</td><td>Drops from 26% to 20% of revenue as we scale — costs grow slower than income</td></tr>
+        <tr class="sub"><td><strong>GROSS PROFIT (Income minus Service Costs)</strong></td><td class="r">₹113 L</td><td class="r">₹646 L</td><td class="r">₹2,690 L</td><td>Profit margin improves: 73.8% → 77.4% → 79.8% year on year</td></tr>
+        <tr class="grp"><td colspan="5">Operating Expenses — Running the Company</td></tr>
+        <tr><td>Technology + AI Research Team</td><td class="mono">₹48 L</td><td class="mono">₹130 L</td><td class="mono">₹310 L</td><td>4 people Year 1 → 9 Year 2 → 18 Year 3; avg ₹12L/year per person</td></tr>
+        <tr><td>Sales + Bank and Institute Partnerships</td><td class="mono">₹18 L</td><td class="mono">₹62 L</td><td class="mono">₹160 L</td><td>2 people Year 1 → 5 Year 2 → 12 Year 3; signing NBFC and coaching deals</td></tr>
+        <tr><td>Student Growth + Campus Network</td><td class="mono">₹22 L</td><td class="mono">₹68 L</td><td class="mono">₹180 L</td><td>Campus representatives at colleges; viral portfolio sharing; zero paid ads</td></tr>
+        <tr><td>Legal, Accounts, HR, and Office</td><td class="mono">₹15 L</td><td class="mono">₹37 L</td><td class="mono">₹105 L</td><td>Stays flat until Year 3 scale; includes compliance for bank API licensing</td></tr>
+        <tr class="sub"><td><strong>TOTAL RUNNING COSTS</strong></td><td class="r">₹103 L</td><td class="r">₹297 L</td><td class="r">₹755 L</td><td>Drops from 67% to 22% of revenue — overhead grows much slower than income</td></tr>
+        <tr class="ttl"><td><strong>OPERATING PROFIT (EBITDA)</strong></td><td class="r">₹10 L</td><td class="r">₹349 L</td><td class="r">₹1,935 L</td><td>Profit margin: 6.5% → 41.8% → 57.4% — every rupee of revenue makes more profit each year</td></tr>
+        <tr class="grp"><td colspan="5">Cash and Runway</td></tr>
+        <tr><td>Series A Investment Raised</td><td class="mono">₹850 L</td><td class="mono">—</td><td class="mono">—</td><td>Raised at the start; covers 18 months before we are self-sustaining</td></tr>
+        <tr><td>Cash Used While Growing (before profitability)</td><td class="rr" style="background:#FFF8F8;">₹(93) L</td><td class="g">₹349 L+</td><td class="g">₹1,935 L+</td><td>We stop losing money by Month 19 (October 2026). Self-funding after that.</td></tr>
+        <tr class="ttl"><td><strong>CASH IN THE BANK (End of Year)</strong></td><td class="r">₹757 L</td><td class="r">₹1,106 L+</td><td class="r">₹3,041 L+</td><td>No further investment required in our plan or even in a worse-case scenario</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="sf"><span>India Lens · Confidential</span><span>Series A · September 2026</span></div>
+</div>
+
+
+<!-- ════════════ SLIDE 9 · HEADCOUNT + SCENARIOS ════════════ -->
+<div class="slide">
+  <div class="tr"></div>
+  <div class="sh">
+    <div class="sh-left"><div class="sh-logo">India <span>Lens</span></div><div class="sh-tag">Team Growth + Stress Tests</div></div>
+    <div class="sh-pg">9 / 10</div>
+  </div>
+  <div class="sb">
+    <div class="ey">Who We're Hiring + What If Things Go Wrong</div>
+    <div class="st">Hiring Plan, Revenue Chart,<br>and Three Honest Scenarios</div>
+
+    <div class="cw" style="margin-bottom:10px;">
+      <div class="cw-title">
+        <span>Annual Income by Stream (INR Lakhs) + Profit Margin %</span>
+        <div class="leg">
+          <div class="leg-item"><div class="leg-sq" style="background:var(--N);"></div><span class="leg-t">Research Programs</span></div>
+          <div class="leg-item"><div class="leg-sq" style="background:var(--B);"></div><span class="leg-t">Bank Loans</span></div>
+          <div class="leg-item"><div class="leg-sq" style="background:#00A3E0;"></div><span class="leg-t">Courses</span></div>
+          <div class="leg-item"><div class="leg-sq" style="background:var(--P);"></div><span class="leg-t">API + SaaS</span></div>
+          <div class="leg-item"><div style="width:14px;height:2px;background:var(--G);"></div><span class="leg-t" style="color:var(--G);font-weight:600;">Profit Margin %</span></div>
+        </div>
+      </div>
+      <svg width="638" height="120" viewBox="0 0 638 120" style="display:block;"><line x1="58" y1="90.0" x2="620" y2="90.0" stroke="#DDE4EF" stroke-width="0.7" stroke-dasharray="0"/><text x="55" y="92.5" font-family="JetBrains Mono" font-size="6" fill="#9CA3AF" text-anchor="end">0</text><line x1="58" y1="72.17142857142858" x2="620" y2="72.17142857142858" stroke="#DDE4EF" stroke-width="0.7" stroke-dasharray="3,3"/><text x="55" y="74.67142857142858" font-family="JetBrains Mono" font-size="6" fill="#9CA3AF" text-anchor="end">800L</text><line x1="58" y1="45.42857142857143" x2="620" y2="45.42857142857143" stroke="#DDE4EF" stroke-width="0.7" stroke-dasharray="3,3"/><text x="55" y="47.92857142857143" font-family="JetBrains Mono" font-size="6" fill="#9CA3AF" text-anchor="end">2000L</text><line x1="58" y1="12.0" x2="620" y2="12.0" stroke="#DDE4EF" stroke-width="0.7" stroke-dasharray="3,3"/><text x="55" y="14.5" font-family="JetBrains Mono" font-size="6" fill="#9CA3AF" text-anchor="end">3500L</text><rect x="122" y="89.72142857142858" width="32" height="0.8" fill="#7C3AED"/><rect x="122" y="89.18657142857143" width="32" height="0.8" fill="#00A3E0"/><rect x="122" y="88.33971428571428" width="32" height="0.8468571428571429" fill="#1A6CF6"/><rect x="122" y="86.59028571428571" width="32" height="1.7494285714285716" fill="#040E1C"/><text x="138" y="83.59028571428571" font-family="JetBrains Mono" font-size="7" fill="#040E1C" text-anchor="middle">₹153.0L</text><rect x="303" y="88.10571428571428" width="32" height="1.8942857142857144" fill="#7C3AED"/><rect x="303" y="85.65428571428572" width="32" height="2.4514285714285715" fill="#00A3E0"/><rect x="303" y="80.86285714285715" width="32" height="4.791428571428572" fill="#1A6CF6"/><rect x="303" y="71.39142857142858" width="32" height="9.471428571428572" fill="#040E1C"/><text x="319" y="68.39142857142858" font-family="JetBrains Mono" font-size="7" fill="#040E1C" text-anchor="middle">₹835L</text><rect x="484" y="81.53142857142858" width="32" height="8.468571428571428" fill="#7C3AED"/><rect x="484" y="72.17142857142858" width="32" height="9.36" fill="#00A3E0"/><rect x="484" y="52.337142857142865" width="32" height="19.834285714285713" fill="#1A6CF6"/><rect x="484" y="14.897142857142867" width="32" height="37.44" fill="#040E1C"/><text x="500" y="11.897142857142853" font-family="JetBrains Mono" font-size="7" fill="#040E1C" text-anchor="middle">₹3370L</text><polyline points="138,81.55 319,35.660000000000004 500,15.379999999999995" fill="none" stroke="#12B76A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4,2.5"/><circle cx="138" cy="81.55" r="3.5" fill="white" stroke="#12B76A" stroke-width="1.8"/><text x="138" y="77.55" font-family="JetBrains Mono" font-size="6.5" fill="#12B76A" text-anchor="middle">6.5%</text><circle cx="319" cy="35.660000000000004" r="3.5" fill="white" stroke="#12B76A" stroke-width="1.8"/><text x="319" y="31.660000000000004" font-family="JetBrains Mono" font-size="6.5" fill="#12B76A" text-anchor="middle">41.8%</text><circle cx="500" cy="15.379999999999995" r="3.5" fill="white" stroke="#12B76A" stroke-width="1.8"/><text x="500" y="11.379999999999995" font-family="JetBrains Mono" font-size="6.5" fill="#12B76A" text-anchor="middle">57.4%</text><text x="138" y="99" font-family="Inter" font-size="7" font-weight="600" fill="#040E1C" text-anchor="middle">FY 2026</text><text x="138" y="107" font-family="Inter" font-size="6" font-weight="400" fill="#9CA3AF" text-anchor="middle">Traction</text><text x="319" y="99" font-family="Inter" font-size="7" font-weight="600" fill="#040E1C" text-anchor="middle">FY 2027</text><text x="319" y="107" font-family="Inter" font-size="6" font-weight="400" fill="#9CA3AF" text-anchor="middle">Expansion</text><text x="500" y="99" font-family="Inter" font-size="7" font-weight="600" fill="#040E1C" text-anchor="middle">FY 2028</text><text x="500" y="107" font-family="Inter" font-size="6" font-weight="400" fill="#9CA3AF" text-anchor="middle">Scale</text></svg>
+    </div>
+
+    <div style="font-size:7pt;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Hiring Plan — Who We Bring On and When</div>
+    <table class="T" style="margin-bottom:10px;">
+      <thead>
+        <tr><th>Team</th><th class="r">Year 1 End</th><th class="r">Year 2 Mid</th><th class="r">Year 2 End</th><th class="r">Year 3 End</th><th>Key Hires We Are Making</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Engineering + AI and Maths Research</td><td class="mono">4</td><td class="mono">6</td><td class="mono">9</td><td class="mono">18</td><td>Maths model specialist, 2 backend engineers, 1 AI infrastructure lead</td></tr>
+        <tr><td>Product + Design</td><td class="mono">1</td><td class="mono">2</td><td class="mono">3</td><td class="mono">5</td><td>1 senior product manager (ed-tech experience), 1 UX designer, 1 growth PM</td></tr>
+        <tr><td>Bank and Institute Partnerships</td><td class="mono">2</td><td class="mono">3</td><td class="mono">5</td><td class="mono">12</td><td>2 bank deal closers, 2 coaching institute deal closers, enterprise salespeople</td></tr>
+        <tr><td>Campus Growth Network</td><td class="mono">1</td><td class="mono">2</td><td class="mono">4</td><td class="mono">10</td><td>10 campus representatives at top colleges + 2 growth team leads by Year 3</td></tr>
+        <tr><td>Research + Mentor Management</td><td class="mono">1</td><td class="mono">2</td><td class="mono">4</td><td class="mono">7</td><td>PhD research fellows; IIT/IIM faculty agreements for letter-of-recommendation signing</td></tr>
+        <tr><td>Legal, Finance, and Operations</td><td class="mono">1</td><td class="mono">2</td><td class="mono">2</td><td class="mono">3</td><td>CFO by Year 2 mid; compliance lawyer for bank licensing</td></tr>
+        <tr class="sub"><td><strong>Total Team Size</strong></td><td class="r">10</td><td class="r">17</td><td class="r">27</td><td class="r">55</td><td>Average cost ₹12L/year per person (range: ₹7L–₹22L)</td></tr>
+      </tbody>
+    </table>
+
+    <div style="font-size:7pt;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Year 2 Profit — Three Honest Scenarios (What If Things Go Wrong?)</div>
+    <div class="sc3">
+      <div class="scn">
+        <div class="scn-acc" style="background:var(--R);"></div>
+        <div class="scn-lbl" style="color:var(--R);">▼  Worst Case</div>
+        <div class="scn-n" style="color:var(--R);">₹248 L</div>
+        <div class="scn-pct" style="color:var(--R);">29.7% profit margin</div>
+        <div class="scn-d">Student growth 30% below plan. Banks pay a lower fee of 1.0% instead of 1.5%. We launch the bank API one quarter late. We still make a profit and have enough cash — the ₹850L investment covers this comfortably with no top-up needed.</div>
+      </div>
+      <div class="scn" style="border-color:var(--B);">
+        <div class="scn-acc" style="background:var(--B);"></div>
+        <div class="scn-lbl" style="color:var(--B);">→  Our Target Plan</div>
+        <div class="scn-n" style="color:var(--B);">₹349 L</div>
+        <div class="scn-pct" style="color:var(--B);">41.8% profit margin</div>
+        <div class="scn-d">Students share portfolio links and the network grows organically at 18–22% per month. 3 bank partnerships signed by mid-Year 2. Past program graduates refer new students — covers 40%+ of new enrolments with no marketing spend.</div>
+      </div>
+      <div class="scn">
+        <div class="scn-acc" style="background:var(--G);"></div>
+        <div class="scn-lbl" style="color:var(--G);">▲  Best Case</div>
+        <div class="scn-n" style="color:var(--G);">₹540 L</div>
+        <div class="scn-pct" style="color:var(--G);">55.1% profit margin</div>
+        <div class="scn-d">India's top 3 banks make our loan risk tool mandatory for every student loan application (pushed by the RBI's bad-loan problem). Bank API income carries near-zero cost. We could return money to investors from Year 2, Quarter 4 onwards.</div>
+      </div>
+    </div>
+  </div>
+  <div class="sf"><span>India Lens · Confidential</span><span>Series A · September 2026</span></div>
+</div>
+
+
+<!-- ════════════ SLIDE 10 · USE OF FUNDS + MILESTONES ════════════ -->
+<div class="slide">
+  <div class="tr"></div>
+  <div class="sh">
+    <div class="sh-left"><div class="sh-logo">India <span>Lens</span></div><div class="sh-tag">Where the Money Goes + What We Commit To</div></div>
+    <div class="sh-pg">10 / 10</div>
+  </div>
+  <div class="sb">
+    <div class="ey">Series A — ₹8.5 Crore</div>
+    <div class="st">18 Months of Runway. Four Clear Goals<br>Before We Raise Again.</div>
+
+    <div class="uof-row" style="margin-bottom:10px;">
+      <div class="uof-item accent-top-navy">
+        <div class="uof-pct" style="color:var(--N);">38%</div>
+        <div class="uof-lbl">Building the Technology</div>
+        <div class="uof-desc">Strengthening our maths models. Connecting Perplexity and DeepSeek to our platform. Weekly automated data refresh pipeline. Mobile app. Bank API gateway for our loan risk tool.</div>
+        <div class="uof-val">₹3.23 Cr</div>
+      </div>
+      <div class="uof-item accent-top-blue">
+        <div class="uof-pct" style="color:var(--B);">22%</div>
+        <div class="uof-lbl">Growing the Student Network</div>
+        <div class="uof-desc">100 student representatives at IITs, NITs, and top private colleges. Hackathon and career event series. Our main growth engine is free — students sharing their own portfolio links — this money supports that network.</div>
+        <div class="uof-val">₹1.87 Cr</div>
+      </div>
+      <div class="uof-item accent-top-teal">
+        <div class="uof-pct" style="color:#00A3E0;">20%</div>
+        <div class="uof-lbl">Building the Research Network</div>
+        <div class="uof-desc">Agreements with IIT and IIM faculty to sign letters of recommendation. 3 PhD research fellows on staff. Fast-track publishing agreements with academic platforms. 6 inaugural research programs (150 students at ₹35k each).</div>
+        <div class="uof-val">₹1.70 Cr</div>
+      </div>
+      <div class="uof-item accent-top-pur">
+        <div class="uof-pct" style="color:var(--P);">12%</div>
+        <div class="uof-lbl">Signing Bank and Institute Deals</div>
+        <div class="uof-desc">Closing 3 bank API contracts (Credila, Avanse, Auxilo). Launching 10 coaching institute software pilots. Regulatory filing to operate as a bank-facing tool. 2 enterprise salespeople dedicated to this.</div>
+        <div class="uof-val">₹1.02 Cr</div>
+      </div>
+      <div class="uof-item accent-top-green">
+        <div class="uof-pct" style="color:var(--G);">8%</div>
+        <div class="uof-lbl">Legal, Finance, and Buffer</div>
+        <div class="uof-desc">Data privacy law compliance. Annual audit. Regulatory approvals for the bank licensing. 12 months of office and operations costs. Cash buffer for unexpected delays.</div>
+        <div class="uof-val">₹0.68 Cr</div>
+      </div>
+    </div>
+
+    <div style="font-size:7pt;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">4 Goals We Commit to Before Raising Again</div>
+    <table class="ml-table" style="margin-bottom:10px;">
+      <thead>
+        <tr><th>Goal</th><th>Target Date</th><th>How We Measure It</th><th>Why It Matters for the Next Round</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="ml-dot" style="background:var(--B);"></span><strong>Goal 1: Stop Losing Money</strong> — become profitable</td>
+          <td>Month 19 (Oct 2026)</td>
+          <td>Monthly operating profit ≥ ₹0; no further cash injection needed</td>
+          <td>Proves the business works without needing investors to keep it alive</td>
+        </tr>
+        <tr>
+          <td><span class="ml-dot" style="background:var(--N);"></span><strong>Goal 2: 3 Bank Partnerships Live</strong></td>
+          <td>Year 2 Mid (Q2 FY27)</td>
+          <td>3 active bank contracts; ₹25L+ annual income from banks alone</td>
+          <td>Proves we have a second revenue stream independent of students — de-risks the model</td>
+        </tr>
+        <tr>
+          <td><span class="ml-dot" style="background:var(--G);"></span><strong>Goal 3: 50,000 Verified Student Portfolios</strong></td>
+          <td>Year 2 Q3 (Q3 FY27)</td>
+          <td>50,000 live portfolio pages with verified work; employers clicking on 25%+ of profiles</td>
+          <td>Proves the data flywheel is real — enables a talent-intelligence product for companies</td>
+        </tr>
+        <tr>
+          <td><span class="ml-dot" style="background:var(--A);"></span><strong>Goal 4: ₹5 Crore Annual Run Rate</strong></td>
+          <td>Year 2 End (Q4 FY27)</td>
+          <td>Monthly income ≥ ₹41.7L for 2 months in a row; all 4 streams positive</td>
+          <td>Unlocks Series B raise at 8–10× annual run rate — target valuation ₹40–₹50 Crore</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="close-bar">
+      <div style="flex:1;">
+        <div class="cb-tag">What We Are Asking You to Believe</div>
+        <div class="cb-h">The first platform that <em>earns money by helping students</em> — not by selling their data to colleges.</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;padding-left:20px;">
+        <div class="cb-contact-lbl">Get in Touch</div>
+        <div class="cb-contact">founders@indialens.in</div>
+      </div>
+    </div>
+  </div>
+  <div class="sf"><span>India Lens · Confidential · September 2026</span><span>Series A · For Authorised Review Only</span></div>
+</div>
+
+</body>
+</html>

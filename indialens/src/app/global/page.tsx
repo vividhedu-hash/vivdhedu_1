@@ -205,59 +205,58 @@ export default function GlobalDegreesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header Section */}
-        <div className="border-b border-slate-800 pb-8 mb-10">
-          <div className="flex items-center gap-3 text-blue-400 text-xs uppercase tracking-widest font-mono font-semibold mb-2">
+        <div className="border-b border-slate-200 pb-8 mb-10">
+          <div className="flex items-center gap-2 text-rose-600 text-xs uppercase tracking-widest font-mono font-semibold mb-2">
             <Globe className="w-4 h-4" />
             <span>Cross-Border Actuarial Valuation Hub · Section 10 Specification</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950">
             Global Degree Valuation & Visa Arbitrage
           </h1>
-          <p className="mt-3 text-base text-slate-400 max-w-3xl leading-relaxed">
+          <p className="mt-3 text-base text-slate-600 max-w-3xl leading-relaxed">
             Evaluating foreign master's programs through 20-year cross-border Net Present Value, STEM OPT H-1B retention probabilities, and spatial cost-of-living tax drag. Zero agent commissions; pure actuarial math.
           </p>
 
           {/* Core Actuarial KPI Ribbon */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-            <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-lg">
-              <span className="text-xs font-mono text-slate-400 uppercase">STEM OPT H-1B Odds (3-Yr)</span>
-              <div className="text-2xl font-bold text-emerald-400 mt-1">57.8%</div>
-              <span className="text-[11px] text-slate-500">1 - (1 - 0.25)³ Cumulative</span>
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+              <span className="text-xs font-mono text-slate-500 uppercase">STEM OPT H-1B Odds (3-Yr)</span>
+              <div className="text-2xl font-bold text-emerald-700 mt-1">57.8%</div>
+              <span className="text-[11px] text-slate-400">1 - (1 - 0.25)³ Cumulative</span>
             </div>
-            <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-lg">
-              <span className="text-xs font-mono text-slate-400 uppercase">Non-STEM H-1B Odds (1-Yr)</span>
-              <div className="text-2xl font-bold text-rose-400 mt-1">25.0%</div>
-              <span className="text-[11px] text-rose-500/80">75% Structural Deportation Hazard</span>
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+              <span className="text-xs font-mono text-slate-500 uppercase">Non-STEM H-1B Odds (1-Yr)</span>
+              <div className="text-2xl font-bold text-rose-600 mt-1">25.0%</div>
+              <span className="text-[11px] text-rose-600/80">75% Structural Deportation Hazard</span>
             </div>
-            <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-lg">
-              <span className="text-xs font-mono text-slate-400 uppercase">Germany EU Blue Card</span>
-              <div className="text-2xl font-bold text-blue-400 mt-1">94.0%</div>
-              <span className="text-[11px] text-slate-500">PR fast-track in 21 months</span>
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+              <span className="text-xs font-mono text-slate-500 uppercase">Germany EU Blue Card</span>
+              <div className="text-2xl font-bold text-blue-700 mt-1">94.0%</div>
+              <span className="text-[11px] text-slate-400">PR fast-track in 21 months</span>
             </div>
-            <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-lg">
-              <span className="text-xs font-mono text-slate-400 uppercase">US Dollar Benchmark</span>
-              <div className="text-2xl font-bold text-amber-400 mt-1">₹86.50</div>
-              <span className="text-[11px] text-slate-500">RBI Forward FX Drift Calibrated</span>
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+              <span className="text-xs font-mono text-slate-500 uppercase">US Dollar Benchmark</span>
+              <div className="text-2xl font-bold text-amber-600 mt-1">₹86.50</div>
+              <span className="text-[11px] text-slate-400">RBI Forward FX Drift Calibrated</span>
             </div>
           </div>
         </div>
 
         {/* Filter Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-4 rounded-lg mb-8">
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="text-xs font-mono text-slate-400 uppercase">Country:</label>
-            {/* [AI-CoLab: Cursor] Derived from data — the hardcoded list omitted the UK */}
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200 p-4 rounded-2xl shadow-sm mb-8">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-xs font-mono text-slate-500 uppercase">Country:</label>
             {["All", ...Array.from(new Set(GLOBAL_PROGRAMS.map((p) => p.country)))].map((c) => (
               <button
                 key={c}
                 onClick={() => setSelectedCountry(c)}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   selectedCountry === c
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    ? "bg-slate-950 text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
                 {c}
@@ -265,16 +264,16 @@ export default function GlobalDegreesPage() {
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="text-xs font-mono text-slate-400 uppercase">Tier:</label>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-xs font-mono text-slate-500 uppercase">Tier:</label>
             {["All", "Value Kings", "Zero-Tuition Arbitrage", "Convex Ceiling Elite"].map((t) => (
               <button
                 key={t}
                 onClick={() => setSelectedTier(t)}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   selectedTier === t
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    ? "bg-slate-950 text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
                 {t}
@@ -288,9 +287,9 @@ export default function GlobalDegreesPage() {
               id="stem"
               checked={stemOnly}
               onChange={(e) => setStemOnly(e.target.checked)}
-              className="rounded bg-slate-800 border-slate-700 text-blue-500 focus:ring-0"
+              className="rounded bg-white border-slate-300 text-slate-950 focus:ring-0"
             />
-            <label htmlFor="stem" className="text-xs font-mono text-slate-300 cursor-pointer">
+            <label htmlFor="stem" className="text-xs font-mono text-slate-600 cursor-pointer">
               STEM OPT Designated Only
             </label>
           </div>
@@ -307,58 +306,58 @@ export default function GlobalDegreesPage() {
             return (
               <div
                 key={idx}
-                className="bg-slate-900 border border-slate-800 rounded-lg p-5 flex flex-col justify-between hover:border-slate-700 transition"
+                className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-800">
+                    <span className="text-[11px] font-mono uppercase px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                       {p.global_tier}
                     </span>
                     <span className={`text-[11px] font-mono font-semibold ${
-                      p.visa_survival_prob >= 0.90 ? "text-emerald-400" : "text-amber-400"
+                      p.visa_survival_prob >= 0.90 ? "text-emerald-700" : "text-amber-700"
                     }`}>
                       Visa Survival: {Math.round(p.visa_survival_prob * 100)}%
                     </span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-white leading-tight">{p.university_name}</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">{p.city}, {p.country}</p>
-                  <div className="text-xs text-slate-300 font-medium mt-2 bg-slate-800/60 p-2 rounded">
+                  <h3 className="text-lg font-bold text-slate-950 leading-tight">{p.university_name}</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">{p.city}, {p.country}</p>
+                  <div className="text-xs text-slate-700 font-medium mt-2 bg-slate-50 border border-slate-100 p-2 rounded-xl">
                     {p.degree_name} in {p.major}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs border-t border-slate-800 pt-3">
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-3">
                     <div>
-                      <span className="text-slate-500 font-mono">Total 2-Yr Cost:</span>
-                      <div className="text-slate-200 font-bold">
+                      <span className="text-slate-400 font-mono text-[11px]">Total 2-Yr Cost:</span>
+                      <div className="text-slate-900 font-bold font-mono">
                         {p.annual_tuition_usd === 0 ? "€0 Tuition (Living Only)" : `$${totalCostUsd.toLocaleString()}`}
                       </div>
                       <span className="text-[10px] text-slate-500">₹{(totalCostInr / 100000).toFixed(1)} Lakhs</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 font-mono">Starting Salary (Y1):</span>
-                      <div className="text-emerald-400 font-bold">${p.median_salary_usd_y1.toLocaleString()}</div>
+                      <span className="text-slate-400 font-mono text-[11px]">Starting Salary (Y1):</span>
+                      <div className="text-emerald-700 font-bold font-mono">${p.median_salary_usd_y1.toLocaleString()}</div>
                       <span className="text-[10px] text-slate-500">₹{(p.median_salary_usd_y1 * USD_TO_INR / 100000).toFixed(1)} L/yr</span>
                     </div>
                   </div>
 
-                  <div className="mt-3 bg-slate-950/60 border border-slate-800/80 p-2.5 rounded text-[11px]">
-                    <div className="flex justify-between items-center text-slate-400">
+                  <div className="mt-3 bg-slate-50 border border-slate-200 p-3 rounded-xl text-[11px]">
+                    <div className="flex justify-between items-center text-slate-600">
                       <span>Net Annual Savings (Post-Tax/Rent):</span>
-                      <span className="text-white font-bold">${Math.round(netSavingsUsd).toLocaleString()}</span>
+                      <span className="text-slate-950 font-bold font-mono">${Math.round(netSavingsUsd).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center text-slate-500 mt-1">
                       <span>Effective Tax Drag:</span>
-                      <span>{(p.effective_tax_rate * 100).toFixed(1)}%</span>
+                      <span className="font-mono text-slate-700">{(p.effective_tax_rate * 100).toFixed(1)}%</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between">
-                  <span className="text-[11px] font-mono text-slate-400">Visa: {p.visa_type}</span>
+                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-slate-500">Visa: {p.visa_type}</span>
                   <Link
                     href={`/analyze?country=${encodeURIComponent(p.country)}`}
-                    className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1"
+                    className="text-xs text-slate-950 hover:underline font-bold flex items-center gap-1"
                   >
                     <span>Model NPV</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -370,12 +369,12 @@ export default function GlobalDegreesPage() {
         </div>
 
         {/* Spatial Arbitrage Commentary */}
-        <div className="mt-12 bg-slate-900 border border-slate-800 rounded-lg p-6">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Calculator className="w-4 h-4 text-blue-400" />
+        <div className="mt-12 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-base font-bold text-slate-950 flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-rose-600" />
             <span>Spatial Arbitrage Law: Austin TX vs San Francisco vs Munich</span>
           </h3>
-          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+          <p className="text-xs text-slate-600 mt-2 leading-relaxed">
             A $120,000 gross offer in the San Francisco Bay Area carries an effective ~40.5% combined tax burden plus $3,200/mo median rent, generating ~$16,200 in net annual savings. The exact same candidate earning $100,000 in Austin, Texas (zero state tax, $1,450/mo rent) yields ~$48,000 in net savings—a <strong>300% higher capital accumulation rate</strong> despite a lower headline number.
           </p>
         </div>

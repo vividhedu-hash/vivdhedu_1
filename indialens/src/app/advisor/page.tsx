@@ -29,104 +29,94 @@ export default function AdvisorPage({
   searchParams: { token?: string };
 }) {
   return (
-    <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
-
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900">
       {/* ── Citation Standard Bar */}
-      <div style={{
-        background: "rgba(13,148,136,0.04)",
-        borderBottom: "1px solid rgba(13,148,136,0.15)",
-        padding: "8px 0",
-      }}>
+      <div className="bg-white border-b border-slate-200 py-2.5">
         <div className="container-lg">
-          <div className="flex items-center gap-3 flex-wrap" style={{ rowGap: 4 }}>
-            <span style={{ color: "#0D9488", flexShrink: 0 }}>
-              <Shield size={13} />
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-emerald-600 shrink-0">
+              <Shield size={14} />
             </span>
-            <span style={{ fontSize: 12, color: "#8B8BA7" }}>
-              <strong style={{ color: "#F0F0F5" }}>Gemini 2.5 Flash + Google Search grounding.</strong>{" "}
-              Every claim requires a live source. No invented ranks, packages, or cutoffs. Verified program IDs attached only when in the Supabase database.
+            <span className="text-xs text-slate-600">
+              <strong className="text-slate-900 font-semibold">Gemini 2.5 Flash + Google Search grounding.</strong>{" "}
+              Every claim requires a live source. No invented ranks, packages, or cutoffs. Verified program IDs attached only when in the database.
             </span>
           </div>
         </div>
       </div>
 
-      <div className="container-lg" style={{ paddingTop: 36, paddingBottom: 60 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 28, alignItems: "start" }}>
-
+      <div className="container-lg pt-10 pb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8 items-start">
           {/* ── LEFT: Header + Studio */}
           <div>
-            <p className="kicker-web mb-3">Live Search Grounding · Cited Sources</p>
-            <h1 className="headline" style={{ fontSize: "clamp(1.8rem,3.5vw,2.8rem)", color: "#F0F0F5", marginBottom: 12 }}>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold mb-3">
+              <Shield className="w-3.5 h-3.5" />
+              Live Search Grounding · Zero Sycophancy
+            </div>
+            <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-950 tracking-tight mb-3">
               Ask with sources.
               <br />
               Map the path.
             </h1>
-            <p className="headline-sub" style={{ marginBottom: 28, maxWidth: 560 }}>
-              Same mechanism as Google AI Mode: Gemini searches live, then we show the citations.
-              No invented data. No sycophancy.
+            <p className="text-base text-slate-600 mb-8 max-w-xl leading-relaxed">
+              Same mechanism as Google AI Mode: Gemini searches live, then we verify and ground citations against official data.
             </p>
 
             <AIModeStudio initialToken={searchParams.token} />
           </div>
 
           {/* ── RIGHT: Sidebar */}
-          <div style={{ position: "sticky", top: 100 }}>
-
+          <div className="sticky top-24 space-y-4">
             {/* What this IS NOT */}
-            <div className="glass-card p-5 mb-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle size={13} style={{ color: "#D97706" }} />
-                <p style={{ fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#D97706" }}>
+                <AlertTriangle size={14} className="text-amber-600" />
+                <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-600">
                   Not This
                 </p>
               </div>
               {NOT_THIS.map((item) => (
-                <div key={item} className="flex items-start gap-2 mb-2">
-                  <span style={{ color: "#DC2626", fontSize: 12, flexShrink: 0, marginTop: 1 }}>✕</span>
-                  <span style={{ fontSize: 12, color: "#8B8BA7", lineHeight: 1.5 }}>{item}</span>
+                <div key={item} className="flex items-start gap-2 mb-2.5">
+                  <span className="text-rose-500 text-xs shrink-0 mt-0.5">✕</span>
+                  <span className="text-xs text-slate-600 leading-relaxed">{item}</span>
                 </div>
               ))}
             </div>
 
             {/* Profile connector */}
-            <div className="card-accent mb-4">
-              <p style={{ fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#1A6CF6", marginBottom: 6 }}>
+            <div className="bg-rose-50/50 border border-rose-200 rounded-2xl p-5 shadow-sm">
+              <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-rose-600 mb-1.5">
                 For personalised answers
               </p>
-              <p style={{ fontSize: 12, color: "#8B8BA7", lineHeight: 1.5, marginBottom: 10 }}>
+              <p className="text-xs text-slate-600 leading-relaxed mb-3">
                 Build your profile first. The AI advisor uses your exact budget, psychometric traits, and target programs to ground its answers.
               </p>
-              <Link href="/onboard" style={{
-                display: "flex", alignItems: "center", gap: 5,
-                fontSize: 12, fontWeight: 700, color: "#60A5FA", textDecoration: "none",
-              }}>
+              <Link
+                href="/onboard"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-950 hover:underline"
+              >
                 Build my OS profile
                 <ArrowRight size={12} />
               </Link>
             </div>
 
             {/* Example questions */}
-            <div className="glass-card p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
-                <BookOpen size={13} style={{ color: "#4A4A6A" }} />
-                <p style={{ fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A4A6A" }}>
+                <BookOpen size={14} className="text-slate-400" />
+                <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
                   Example Questions
                 </p>
               </div>
               {EXAMPLE_QUESTIONS.map((q) => (
                 <div
                   key={q}
-                  style={{
-                    padding: "8px 0",
-                    borderBottom: "1px solid rgba(30,30,46,0.4)",
-                    fontSize: 12, color: "#4A4A6A", lineHeight: 1.45, cursor: "default",
-                  }}
+                  className="py-2 border-b border-slate-100 last:border-0 text-xs text-slate-600 leading-snug cursor-pointer hover:text-slate-950 transition"
                 >
                   "{q.length > 65 ? q.slice(0, 63) + "…" : q}"
                 </div>
               ))}
             </div>
-
           </div>
         </div>
       </div>

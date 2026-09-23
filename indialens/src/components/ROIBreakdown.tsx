@@ -95,13 +95,13 @@ export function ROIBreakdown({
                 />
                 <span
                   className="text-xs font-semibold"
-                  style={{ color: "#8B8BA7" }}
+                  style={{ color: "#475569" }}
                 >
                   {comp.label}
                 </span>
                 <span
                   className="text-xs font-mono"
-                  style={{ color: "#4A4A6A" }}
+                  style={{ color: "#94A3B8" }}
                 >
                   ×{comp.weight}
                 </span>
@@ -109,7 +109,7 @@ export function ROIBreakdown({
               <div className="flex items-center gap-3">
                 <span
                   className="text-xs font-mono"
-                  style={{ color: "#8B8BA7" }}
+                  style={{ color: "#64748B" }}
                 >
                   {comp.value}/100
                 </span>
@@ -124,7 +124,7 @@ export function ROIBreakdown({
             <div
               style={{
                 height: 6,
-                background: "#1E1E2E",
+                background: "#E2E8F0",
                 borderRadius: 3,
                 overflow: "hidden",
               }}
@@ -145,7 +145,7 @@ export function ROIBreakdown({
       })}
       <div
         style={{
-          borderTop: "1px solid #1E1E2E",
+          borderTop: "1px solid #E2E8F0",
           paddingTop: 12,
           marginTop: 8,
           display: "flex",
@@ -155,13 +155,13 @@ export function ROIBreakdown({
       >
         <span
           className="text-xs font-semibold uppercase tracking-wider"
-          style={{ color: "#4A4A6A" }}
+          style={{ color: "#64748B" }}
         >
           Composite Score
         </span>
         <span
           className="font-mono font-bold text-lg"
-          style={{ color: "#F0F0F5" }}
+          style={{ color: "#09090B" }}
         >
           {Math.round(totalWeighted)}/100
         </span>
