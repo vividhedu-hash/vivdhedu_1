@@ -13,35 +13,35 @@
 /* ─── DARK MODE (default) ─────────────────────────── */
 :root {
   /* Backgrounds */
-  --bg:           #000000;
-  --bg-surface:   #0A0A0A;
-  --bg-elevated:  #141414;
-  --bg-overlay:   #1C1C1E;
-  --bg-hover:     rgba(255,255,255,0.04);
-  --bg-chip:      rgba(255,255,255,0.06);
-  --bg-input:     #141414;
+  --bg:           #FFFFFF;
+  --bg-surface:   #F8FAFC;
+  --bg-elevated:  #FFFFFF;
+  --bg-overlay:   #F1F5F9;
+  --bg-hover:     rgba(0,0,0,0.04);
+  --bg-chip:      rgba(0,0,0,0.05);
+  --bg-input:     #F8FAFC;
 
   /* Navbar */
-  --nav-bg:       rgba(0,0,0,0.85);
-  --nav-bg-scrolled: rgba(0,0,0,0.95);
+  --nav-bg:       rgba(255,255,255,0.85);
+  --nav-bg-scrolled: rgba(255,255,255,0.97);
 
   /* Borders */
-  --border:       rgba(255,255,255,0.08);
-  --border-focus: rgba(255,255,255,0.18);
-  --border-subtle:rgba(255,255,255,0.04);
-  --border-strong:rgba(255,255,255,0.14);
-  --divider:      rgba(255,255,255,0.06);
+  --border:       rgba(0,0,0,0.09);
+  --border-focus: rgba(0,0,0,0.20);
+  --border-subtle:rgba(0,0,0,0.05);
+  --border-strong:rgba(0,0,0,0.14);
+  --divider:      rgba(0,0,0,0.07);
 
-  /* Text Hierarchy (Apple dark) */
-  --text-primary:   #F5F5F7;
-  --text-secondary: #86868B;
-  --text-tertiary:  #48484A;
-  --text-inverse:   #000000;
+  /* Text Hierarchy (Apple dark text on light) */
+  --text-primary:   #09090B;
+  --text-secondary: #52525B;
+  --text-tertiary:  #A1A1AA;
+  --text-inverse:   #FFFFFF;
 
-  /* Accent (stays the same in both modes) */
+  /* Accent */
   --accent:       #E11D48;
-  --accent-hover: #F43F5E;
-  --accent-dim:   rgba(225,29,72,0.12);
+  --accent-hover: #BE123C;
+  --accent-dim:   rgba(225,29,72,0.08);
 
   /* System palette (vivid on dark, slightly muted on light) */
   --blue:         #0A84FF;

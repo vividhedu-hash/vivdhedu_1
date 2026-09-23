@@ -12,12 +12,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isImmersive) {
     return (
-      <div className="min-h-screen bg-black text-[#F5F5F7]">{children}</div>
+      <div className="min-h-screen bg-[#F8FAFC] text-zinc-950">{children}</div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-black text-[#F5F5F7]">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-zinc-950">
       <Navbar />
       <main className="flex-1 pt-[58px]">{children}</main>
       <Footer />

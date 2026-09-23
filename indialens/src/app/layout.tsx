@@ -60,7 +60,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-black text-[#F5F5F7] antialiased selection:bg-rose-900/30 selection:text-rose-300">
+      <body className="bg-[#F8FAFC] text-zinc-950 antialiased selection:bg-rose-100 selection:text-rose-900">
         <PostHogProvider>
           <AuthProvider>
             <AppShell>{children}</AppShell>
