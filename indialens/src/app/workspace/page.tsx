@@ -299,10 +299,10 @@ function WorkspaceView() {
             </span>
           </div>
 
-          {/* New Analysis Button with Dashed Ring (Screens 10–12) */}
+          {/* New Analysis Button (Screens 10–12) */}
           <button
             onClick={() => handleAsk("Run comprehensive profile trajectory re-calibration")}
-            className="w-full mt-3 mb-4 py-2.5 px-3 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center justify-between shadow-sm outline-dashed outline-2 outline-blue-400 outline-offset-2 transition-all cursor-pointer"
+            className="w-full mt-3 mb-4 py-2.5 px-3 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center justify-between shadow-sm transition-all cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <span className="text-sm leading-none font-bold">+</span>
