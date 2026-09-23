@@ -137,7 +137,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
   // -------------------------------------------------------------------------
   if (step === 0) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-zinc-950 font-sans">
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-zinc-950 font-sans animate-fade-slide-up">
         {/* Top Header */}
         <header className="px-6 py-4 flex items-center justify-between border-b border-slate-200/80 bg-white/70 backdrop-blur-sm">
           <div className="flex items-center gap-2">
@@ -173,13 +173,13 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
             We’ll ask a few questions so everything you see here is built around your goals.
           </p>
 
-          {/* Black CTA Button with Blue Dashed Outline Ring */}
+          {/* Black CTA Button with smooth hover and click feedback */}
           <button
             onClick={() => setStep(1)}
-            className="group relative inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-black hover:bg-zinc-800 text-white font-semibold text-sm rounded-xl transition shadow-sm dashed-ring cursor-pointer"
+            className="group relative inline-flex items-center justify-center gap-2.5 px-8 py-3.5 bg-black hover:bg-zinc-800 active:scale-[0.98] text-white font-semibold text-sm rounded-xl transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
           >
             <span>Get started</span>
-            <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+            <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-200" />
           </button>
 
           <p className="text-zinc-400 text-xs mt-3 mb-10">
@@ -280,7 +280,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8">
+      <main key={step} className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 animate-fade-slide-up">
         {/* Title Header */}
         <div className="mb-8 text-center sm:text-left">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200/60 text-rose-700 text-[11px] font-bold tracking-wide uppercase font-mono mb-3">

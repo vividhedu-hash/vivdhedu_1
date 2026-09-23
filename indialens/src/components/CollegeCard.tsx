@@ -36,8 +36,7 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
   return (
     <Link href={`/college/${record.id}`} className="block group">
       <div
-        className="bg-[#0A0A0A] border border-white/[0.08] rounded-2xl p-5 transition-all duration-200 hover:border-white/[0.18] hover:-translate-y-1 hover:shadow-lg"
-        style={{ boxShadow: "0 0 0 0 transparent" }}
+        className="bg-white border border-slate-200/90 rounded-2xl p-5 transition-all duration-200 hover:border-slate-300 hover:-translate-y-1 hover:shadow-md shadow-xs"
       >
         {/* Score ring + info row */}
         <div className="flex items-start gap-4">
@@ -47,18 +46,18 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
             <div className="flex items-start justify-between gap-2 mb-1">
               <div className="flex items-center gap-1.5">
                 {rank && (
-                  <span className="text-[11px] font-mono font-bold text-[#E11D48]">
+                  <span className="text-[11px] font-mono font-bold text-rose-600">
                     #{rank}
                   </span>
                 )}
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#48484A] font-mono">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-mono">
                   {college.shortName}
                 </span>
               </div>
               <DataFreshnessBadge days={meta?.dataFreshnessDays ?? 0} />
             </div>
 
-            <h3 className="font-semibold leading-snug truncate text-[15px] text-[#F5F5F7]">
+            <h3 className="font-semibold leading-snug truncate text-[15px] text-zinc-900 group-hover:text-rose-600 transition-colors">
               {degree.shortName}
             </h3>
 
@@ -67,14 +66,14 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
                 AI Risk: {meta?.aiRiskLabel ?? "—"}
               </span>
               <span className="badge badge-blue">{TIER_LABELS[college.tier]}</span>
-              <span className="text-[11px] text-[#48484A] font-mono">{college.city}</span>
+              <span className="text-[11px] text-zinc-400 font-mono">{college.city}</span>
             </div>
           </div>
         </div>
 
         {/* Stats row */}
         {!compact && (
-          <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-white/[0.06]">
+          <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-100">
             <StatBlock
               icon={<TrendingUp size={11} />}
               label="Median Y1"
@@ -99,7 +98,7 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
 
         {/* Confidence bar */}
         <div className="mt-4 flex items-center gap-2">
-          <div className="flex-1 h-[2px] bg-white/[0.06] rounded-full overflow-hidden">
+          <div className="flex-1 h-[2px] bg-slate-100 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all"
               style={{
@@ -108,7 +107,7 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
               }}
             />
           </div>
-          <span className="text-[10px] font-mono text-[#48484A] whitespace-nowrap">
+          <span className="text-[10px] font-mono text-zinc-400 whitespace-nowrap">
             CI: {roi?.confidenceIntervalLow ?? "—"}–{roi?.confidenceIntervalHigh ?? "—"}
           </span>
         </div>
@@ -120,11 +119,11 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
 function StatBlock({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div>
-      <div className="flex items-center gap-1 mb-1 text-[#48484A]">
+      <div className="flex items-center gap-1 mb-1 text-zinc-400">
         {icon}
         <span className="text-[9px] font-mono uppercase tracking-wider">{label}</span>
       </div>
-      <span className="font-mono font-bold text-[13px] text-[#F5F5F7]">{value}</span>
+      <span className="font-mono font-bold text-[13px] text-zinc-900">{value}</span>
     </div>
   );
 }

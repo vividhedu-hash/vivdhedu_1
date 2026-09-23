@@ -34,32 +34,31 @@ export default function OnboardPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#000000",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col transition-colors duration-300">
       {phase === "wizard" && (
-        <OnboardWizard onComplete={handleWizardComplete} />
+        <div className="animate-fade-slide-up w-full">
+          <OnboardWizard onComplete={handleWizardComplete} />
+        </div>
       )}
 
       {phase === "synthesis" && wizardData && (
-        <SynthesisLoader
-          studentName={wizardData.fullName}
-          profileData={wizardData}
-          onComplete={handleSynthesisComplete}
-        />
+        <div className="animate-fade-slide-up w-full">
+          <SynthesisLoader
+            studentName={wizardData.fullName}
+            profileData={wizardData}
+            onComplete={handleSynthesisComplete}
+          />
+        </div>
       )}
 
       {phase === "baseline" && wizardData && (
-        <BaselineDiagnosticReport
-          token={reportToken}
-          wizardData={wizardData}
-          onEnterWorkspace={handleEnterWorkspace}
-        />
+        <div className="animate-fade-slide-up w-full">
+          <BaselineDiagnosticReport
+            token={reportToken}
+            wizardData={wizardData}
+            onEnterWorkspace={handleEnterWorkspace}
+          />
+        </div>
       )}
     </div>
   );

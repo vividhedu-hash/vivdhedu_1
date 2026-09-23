@@ -47,8 +47,8 @@ export function Navbar() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-black/95 backdrop-blur-xl border-b border-white/[0.06] py-2"
-          : "bg-black/80 backdrop-blur-md border-b border-white/[0.04] py-2.5"
+          ? "bg-white/95 backdrop-blur-xl border-b border-slate-200/90 py-2 shadow-xs"
+          : "bg-white/80 backdrop-blur-md border-b border-slate-200/70 py-2.5"
       }`}
     >
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
@@ -56,12 +56,12 @@ export function Navbar() {
 
           {/* ── Logo */}
           <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
-            <div className="w-7 h-7 rounded-lg bg-[#E11D48] flex items-center justify-center shadow-sm">
-              <span className="font-bold text-white text-[11px] tracking-tight">IL</span>
+            <div className="w-7 h-7 rounded-lg bg-black flex items-center justify-center shadow-xs">
+              <span className="font-bold text-white text-[11px] tracking-tight">OS</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-[14px] text-[#F5F5F7] tracking-tight">IndiaLens</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#30D158] inline-block animate-pulse" />
+              <span className="font-bold text-[14px] text-zinc-900 tracking-tight">Your Student OS</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
             </div>
           </Link>
 
@@ -75,9 +75,9 @@ export function Navbar() {
                   href={link.href}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
                     active
-                      ? "bg-white/[0.08] text-[#F5F5F7] font-semibold"
-                      : "text-[#86868B] hover:text-[#F5F5F7] hover:bg-white/[0.04]"
-                  } ${link.highlight && !active ? "text-[#E11D48] hover:text-[#F43F5E]" : ""}`}
+                      ? "bg-slate-100 text-zinc-950 font-semibold"
+                      : "text-zinc-600 hover:text-zinc-950 hover:bg-slate-100/70"
+                  } ${link.highlight && !active ? "text-rose-600 hover:text-rose-700" : ""}`}
                 >
                   {link.icon}
                   {link.label}
@@ -89,35 +89,35 @@ export function Navbar() {
           {/* ── Right: Status + Auth + CTA */}
           <div className="hidden md:flex items-center gap-2">
             {/* Live indicator */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#30D158] animate-pulse" />
-              <span className="font-mono text-[#86868B] text-[11px]">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-mono text-zinc-600 text-[11px]">
                 {dataSource === "database" ? "Live" : "Calibrated"}
               </span>
             </div>
 
             {/* Auth */}
             {user && (user.full_name || user.email) ? (
-              <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.07] py-1 px-2.5 rounded-full text-xs">
+              <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 py-1 px-2.5 rounded-full text-xs">
                 {user.avatar_url ? (
                   <img src={user.avatar_url} alt="User" className="w-5 h-5 rounded-full" />
                 ) : (
-                  <div className="w-5 h-5 rounded-full bg-[#E11D48] text-white flex items-center justify-center font-bold text-[10px]">
+                  <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center font-bold text-[10px]">
                     {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
                   </div>
                 )}
-                <span className="text-[#F5F5F7] font-medium max-w-[80px] truncate text-[12px]">
+                <span className="text-zinc-900 font-medium max-w-[80px] truncate text-[12px]">
                   {user.full_name || user.email?.split("@")[0] || "User"}
                 </span>
                 {user.is_premium && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#E11D48]/20 text-[#E11D48] border border-[#E11D48]/30">
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
                     PRO
                   </span>
                 )}
                 <button
                   onClick={logout}
                   title="Sign out"
-                  className="text-[#48484A] hover:text-[#E11D48] transition ml-0.5"
+                  className="text-zinc-400 hover:text-rose-600 transition ml-0.5"
                 >
                   <LogOut size={11} />
                 </button>
@@ -125,7 +125,7 @@ export function Navbar() {
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="flex items-center gap-1.5 text-[12px] text-[#86868B] hover:text-[#F5F5F7] bg-white/[0.04] border border-white/[0.07] hover:border-white/[0.14] font-medium px-3 py-1.5 rounded-full transition"
+                className="flex items-center gap-1.5 text-[12px] text-zinc-700 hover:text-zinc-950 bg-slate-100 hover:bg-slate-200 border border-slate-200 font-medium px-3 py-1.5 rounded-lg transition cursor-pointer"
               >
                 <UserRound size={12} />
                 Sign in
@@ -134,7 +134,7 @@ export function Navbar() {
 
             <Link
               href="/onboard"
-              className="px-4 py-1.5 text-[13px] font-semibold text-black bg-[#F5F5F7] hover:bg-white rounded-full shadow-sm transition-all"
+              className="px-4 py-1.5 text-[13px] font-semibold text-white bg-black hover:bg-zinc-800 active:scale-[0.98] rounded-lg shadow-xs transition-all cursor-pointer"
             >
               Get started
             </Link>
@@ -142,7 +142,7 @@ export function Navbar() {
 
           {/* Mobile toggle */}
           <button
-            className="md:hidden p-1.5 text-[#86868B] hover:text-[#F5F5F7] rounded-lg hover:bg-white/[0.06] transition"
+            className="md:hidden p-1.5 text-zinc-600 hover:text-zinc-950 rounded-lg hover:bg-slate-100 transition"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"
           >
@@ -153,7 +153,7 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-white/[0.06] bg-black/98 backdrop-blur-2xl px-5 py-4 space-y-1 animate-slide-down">
+        <div className="md:hidden border-t border-slate-200 bg-white/98 backdrop-blur-2xl px-5 py-4 space-y-1 animate-slide-down">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -161,20 +161,20 @@ export function Navbar() {
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 pathname.startsWith(link.href)
-                  ? "bg-white/[0.08] text-[#F5F5F7] font-semibold"
-                  : "text-[#86868B] hover:bg-white/[0.04] hover:text-[#F5F5F7]"
+                  ? "bg-slate-100 text-zinc-950 font-semibold"
+                  : "text-zinc-600 hover:bg-slate-50 hover:text-zinc-950"
               }`}
             >
               {link.icon}
               <span>{link.label}</span>
-              <span className="ml-auto text-[11px] text-[#48484A] font-normal">{link.desc}</span>
+              <span className="ml-auto text-[11px] text-zinc-400 font-normal">{link.desc}</span>
             </Link>
           ))}
-          <div className="pt-3 border-t border-white/[0.06]">
+          <div className="pt-3 border-t border-slate-200">
             <Link
               href="/onboard"
               onClick={() => setMobileOpen(false)}
-              className="w-full py-2.5 text-center text-sm font-bold text-black bg-[#F5F5F7] rounded-xl block hover:bg-white transition"
+              className="w-full py-2.5 text-center text-sm font-bold text-white bg-black rounded-xl block hover:bg-zinc-800 transition"
             >
               Start free — Build my OS
             </Link>
