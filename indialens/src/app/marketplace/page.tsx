@@ -11,10 +11,9 @@ import {
   CheckCircle2,
   Filter,
   DollarSign,
-  BookOpen
+  BookOpen,
+  Lock
 } from "lucide-react";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 
 interface Course {
   id: string;
@@ -147,7 +146,6 @@ export default function MarketplacePage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-      <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
@@ -194,10 +192,18 @@ export default function MarketplacePage() {
                     {course.provider}
                   </span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-mono text-slate-400 uppercase">Match:</span>
-                    <span className="text-xs font-bold text-emerald-400 font-mono">
-                      {Math.round(course.match_score * 100)}%
-                    </span>
+                    {/* Match Score Gate — M(s,c) >= 0.75 required */}
+                    {course.match_score >= 0.75 ? (
+                      <span className="epistemic-tag tag-ui flex items-center gap-1">
+                        <CheckCircle2 size={9} />
+                        M={Math.round(course.match_score * 100)}%
+                      </span>
+                    ) : (
+                      <span className="epistemic-tag tag-gap flex items-center gap-1" title="Below match threshold M(s,c) < 0.75 — not recommended">
+                        <Lock size={9} />
+                        Gated
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -233,18 +239,30 @@ export default function MarketplacePage() {
               <div className="mt-5 pt-3 border-t border-slate-800">
                 <button
                   onClick={() => handleTrackClick(course)}
-                  className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold py-2 flex items-center justify-center gap-1.5 transition"
+                  disabled={course.match_score < 0.75}
+                  className={`w-full text-white rounded text-xs font-semibold py-2 flex items-center justify-center gap-1.5 transition ${
+                    course.match_score >= 0.75
+                      ? "bg-blue-600 hover:bg-blue-500"
+                      : "bg-slate-800 cursor-not-allowed opacity-50"
+                  }`}
                 >
-                  <span>Enroll on {course.provider}</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  {course.match_score >= 0.75 ? (
+                    <>
+                      <span>Enroll on {course.provider}</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={12} />
+                      <span>Build profile to unlock</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           ))}
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

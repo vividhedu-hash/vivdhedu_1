@@ -5,7 +5,7 @@ export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get('title') || 'The Project — Education & Career Intelligence OS';
+  const title = searchParams.get('title') || 'IndiaLens · Student OS — Sovereign Education & Career Intelligence';
   const score = searchParams.get('score');
   const college = searchParams.get('college');
 

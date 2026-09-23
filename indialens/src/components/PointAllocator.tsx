@@ -161,6 +161,7 @@ export function PointAllocator({ onComplete }: PointAllocatorProps) {
       <div className="mt-6 flex justify-end">
         <button
           type="button"
+          disabled={remaining !== 0}
           onClick={() => onComplete(points)}
           style={{
             padding: "12px 28px",

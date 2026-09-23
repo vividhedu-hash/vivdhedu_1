@@ -85,7 +85,7 @@ export default function ReportPage() {
           <Share2 size={16} />
           {shareCopied ? "Copied!" : "Share Link"}
         </button>
-        <button onClick={() => alert('PDF export coming soon')} className="btn-secondary" style={{ padding: "8px 16px", fontSize: 13 }}>
+        <button onClick={() => window.print()} className="btn-secondary" style={{ padding: "8px 16px", fontSize: 13 }}>
           <Download size={16} />
           Download PDF
         </button>
@@ -126,16 +126,17 @@ export default function ReportPage() {
               Token: <span className="font-mono" style={{ color: "#4A4A6A" }}>{token}</span> ·{" "}
               Shareable at{" "}
               <span className="font-mono" style={{ color: "#0077C8" }}>
-                theproject.edu.in/report/{token}
+                /report/{token}
               </span>
             </p>
           </div>
           <div className="flex gap-2">
-            <button className="btn-secondary" style={{ fontSize: 13 }}>
+            {/* [AI-CoLab: Cursor] These buttons previously had no handlers */}
+            <button onClick={handleShare} className="btn-secondary" style={{ fontSize: 13 }}>
               <Share2 size={13} />
-              Share
+              {shareCopied ? "Copied!" : "Share"}
             </button>
-            <button className="btn-secondary" style={{ fontSize: 13 }}>
+            <button onClick={() => window.print()} className="btn-secondary" style={{ fontSize: 13 }}>
               <Download size={13} />
               PDF
             </button>
@@ -340,21 +341,23 @@ export default function ReportPage() {
                             ))}
                           </div>
                         </div>
-                        <Link
-                          href={`/college/${recId}`}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 6,
-                            fontSize: 13,
-                            color: "#4F6EF7",
-                            textDecoration: "none",
-                            marginTop: 16,
-                            fontWeight: 600,
-                          }}
-                        >
-                          Full program analysis <ArrowRight size={13} />
-                        </Link>
+                        {(rec.id || rec.programId) && (
+                          <Link
+                            href={`/college/${rec.id || rec.programId}`}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              fontSize: 13,
+                              color: "#4F6EF7",
+                              textDecoration: "none",
+                              marginTop: 16,
+                              fontWeight: 600,
+                            }}
+                          >
+                            Full program analysis <ArrowRight size={13} />
+                          </Link>
+                        )}
                       </div>
                     )}
                   </div>
@@ -385,9 +388,11 @@ export default function ReportPage() {
                 </p>
                 <div className="flex items-center gap-3 mt-4">
                   <span className="badge badge-gold">Model confidence: {hiddenGem.modelConfidence ?? 88}%</span>
-                  <Link href={`/college/${hiddenGem.id || hiddenGem.programId || ""}`} style={{ fontSize: 13, color: "#4F6EF7", textDecoration: "none" }}>
-                    Full analysis →
-                  </Link>
+                  {(hiddenGem.id || hiddenGem.programId) && (
+                    <Link href={`/college/${hiddenGem.id || hiddenGem.programId}`} style={{ fontSize: 13, color: "#4F6EF7", textDecoration: "none" }}>
+                      Full analysis →
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

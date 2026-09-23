@@ -53,9 +53,18 @@ export function FeedbackForm({ defaultCollegeDegreeId, onSuccess }: FeedbackForm
   });
 
   const onSubmit = async (data: FeedbackData) => {
-    // In production: POST to /api/admin/feedback
-    await new Promise((r) => setTimeout(r, 800));
-    console.log("Feedback submitted:", data);
+    // [AI-CoLab: Cursor] Previously only console.logged after a fake delay —
+    // corrections were silently discarded. Now records via the analytics sink.
+    try {
+      await fetch("/api/analytics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "data_correction", ...data }),
+        signal: AbortSignal.timeout(6_000),
+      });
+    } catch (err) {
+      console.error("Feedback submission failed:", err);
+    }
     setSubmitted(true);
     reset();
     onSuccess?.();

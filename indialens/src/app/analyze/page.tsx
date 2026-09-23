@@ -712,6 +712,9 @@ function Section8({ data, update, errors }: { data: IntakeFormData; update: (k: 
             { value: "own-business", label: "Own business / entrepreneurship" },
           ]}
         />
+        {errors.preferred_work_structure && (
+          <p style={{ color: "#EF4444", fontSize: 11, marginTop: 4 }}>{errors.preferred_work_structure}</p>
+        )}
       </div>
 
       <div>
@@ -836,6 +839,7 @@ export default function AnalyzePage() {
   const [loadingMsg, setLoadingMsg] = useState(0);
   const [completedToken, setCompletedToken] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const router = useRouter();
 
   if (!useLegacy) {
@@ -880,6 +884,7 @@ export default function AnalyzePage() {
 
   const handleSubmit = async () => {
     setLoading(true);
+    setSubmitError(null);
     let i = 0;
     const interval = setInterval(() => {
       i = (i + 1) % LOADING_MESSAGES.length;
@@ -906,9 +911,13 @@ export default function AnalyzePage() {
       clearInterval(interval);
       setLoading(false);
       setCompletedToken(savedData.token || analyzeResult.token);
-    } catch {
+    } catch (err) {
+      // [AI-CoLab: Cursor] Errors were silently swallowed, dumping users back
+      // on the form with no feedback.
+      console.error("[Analyze] submission failed:", err);
       clearInterval(interval);
       setLoading(false);
+      setSubmitError("Report generation failed. Please check your connection and try again.");
     }
   };
 
@@ -1102,6 +1111,16 @@ export default function AnalyzePage() {
 
           <CurrentSection data={data} update={update} errors={errors} />
         </div>
+
+        {/* Submission error */}
+        {submitError && (
+          <div
+            className="glass-card p-4 mb-4"
+            style={{ borderLeft: "3px solid #EF4444", display: "flex", alignItems: "center", gap: 10 }}
+          >
+            <p style={{ fontSize: 13, color: "#EF4444" }}>{submitError}</p>
+          </div>
+        )}
 
         {/* Navigation */}
         <div className="flex items-center justify-between">

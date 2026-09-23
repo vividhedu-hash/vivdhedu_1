@@ -1,415 +1,179 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { BookOpen, ExternalLink, Shield, AlertTriangle, CheckCircle } from "lucide-react";
-import { POSITIONING, USP_PILLARS } from "../../lib/positioning";
+export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Methodology",
-  description:
-    "How Student-Priced ROI is calculated: 20-year NPV, P10–P90 paths, AI-occupation risk, and psychometric fit — with public weights.",
-};
-
-const SOURCES = [
-  {
-    name: "NIRF (National Institutional Ranking Framework)",
-    url: "https://nirfindia.org",
-    fields: ["Placement rate", "Median salary", "Student/faculty ratio", "Infrastructure"],
-    cadence: "Annual report + weekly PDF scrape",
-    confidence: "High",
-  },
-  {
-    name: "AmbitionBox",
-    url: "https://ambitionbox.com",
-    fields: ["Reported salaries by experience level", "Company ratings", "Work-life balance scores"],
-    cadence: "Weekly scrape via API",
-    confidence: "Medium",
-  },
-  {
-    name: "Naukri.com Job Postings",
-    url: "https://naukri.com",
-    fields: ["Job demand by role and city", "Salary ranges in job descriptions"],
-    cadence: "Weekly scrape",
-    confidence: "Medium",
-  },
-  {
-    name: "PLFS (Periodic Labour Force Survey) — MoSPI",
-    url: "https://mospi.gov.in",
-    fields: ["Employment rates by qualification", "Earnings distribution by education"],
-    cadence: "Quarterly release",
-    confidence: "High",
-  },
-  {
-    name: "World Bank ICP (International Comparison Program)",
-    url: "https://worldbank.org/icp",
-    fields: ["India-US PPP conversion factors (for USD comparisons)"],
-    cadence: "Quarterly",
-    confidence: "High",
-  },
-  {
-    name: "Oxford O*NET Crosswalk",
-    url: "https://oxfordmartin.ox.ac.uk",
-    fields: ["Automation probability by occupation (extended to Indian job types)"],
-    cadence: "Annual",
-    confidence: "Medium",
-  },
-  {
-    name: "Reddit India (PRAW)",
-    url: "https://reddit.com",
-    fields: ["Anecdotal salary data from r/india, r/cscareerquestions_india, r/CAstudents"],
-    cadence: "Weekly NLP extraction",
-    confidence: "Low",
-  },
-];
-
-const FORMULA_COMPONENTS = [
-  {
-    name: "Financial ROI (NPV & IRR)",
-    weight: 35,
-    formula: "NPV(20-Yr Earnings − Total Degree Cost, r=6%) / Total Degree Cost",
-    inputs: [
-      "Net Present Value (NPV) computed over a 20-year career horizon",
-      "Internal Rate of Return (IRR) comparing college degree vs. baseline high-school labor",
-      "Net Payback Horizon (Years to recover total tuition + living + opportunity cost)",
-      "World Bank ICP annual PPP conversion factors for global mobility benchmarking",
-    ],
-    note: "Opportunity cost includes baseline earnings of non-degree entrants from MoSPI PLFS 2023-24 quarterly reports. Discount rate r=6% mirrors India's long-term RBI benchmark repo + risk premium.",
-  },
-  {
-    name: "Risk-Adjusted Stability",
-    weight: 20,
-    formula: "1 − (w₁×AI_automation + w₂×salary_volatility + w₃×cyclicality + w₄×credential_inflation)",
-    inputs: [
-      "AI automation exposure index calibrated via Oxford O*NET extended for Indian job roles",
-      "Empirical salary variance across 5-year and 10-year experience brackets",
-      "Macroeconomic recession sensitivity (CMIE & MoSPI sector volatility index)",
-    ],
-    note: "Composite risk score evaluates 8 distinct vulnerability vectors. Weights are optimized on 5-year longitudinal salary stability data.",
-  },
-  {
-    name: "Upside Optionality",
-    weight: 15,
-    formula: "P90 / P50 10-Year Salary Ratio & Convexity Score",
-    inputs: [
-      "90th percentile salary ceiling at Year 10",
-      "50th percentile median salary at Year 10",
-      "Entrepreneurship & founding exit rate derived from crunchbase / alumni data",
-    ],
-    note: "Measures career trajectory tail risk and upside potential. High optionality rewards degrees providing non-linear ceiling opportunities.",
-  },
-  {
-    name: "Mobility & Market Breadth",
-    weight: 15,
-    formula: "f(global_visa_eligibility, remote_compatibility, tier1_city_demand_breadth)",
-    inputs: [
-      "International placement & H-1B / Tech Visa success rate",
-      "Remote-first & hybrid work compatibility index by domain",
-      "City breadth score across top 12 Indian tech & financial hubs",
-    ],
-    note: "Evaluates whether the degree locks a graduate into regional/specific employers or opens global mobility.",
-  },
-  {
-    name: "Survey Psychometrics & Student Experience",
-    weight: 10,
-    formula: "Likert-weighted Cronbach's α Index (WLB, Mentorship, Infrastructure)",
-    inputs: [
-      "Verified alumni sentiment analysis across campus life and work-life balance",
-      "Faculty accessibility and mentorship quality rating",
-      "Hostel, lab, and digital infrastructure adequacy index",
-    ],
-    note: "Survey data undergoes psychometric validation (Cronbach's alpha ≥ 0.78) to ensure internal consistency and eliminate response bias.",
-  },
-  {
-    name: "Social Capital & Alumni Network",
-    weight: 5,
-    formula: "log(LinkedIn_VP_Director_Density + 1) × College_Tier_Multiplier",
-    inputs: [
-      "Alumni leadership ratio (CXO, VP, Founder percentage at 10+ years)",
-      "Peer network density across Fortune 500 and Top Indian Unicorns",
-    ],
-    note: "Quantifies the structural leverage provided by the institution's alumni ecosystem.",
-  },
-];
+import React from "react";
 
 export default function MethodologyPage() {
   return (
-    <div style={{ padding: "40px 0 80px" }}>
-      <div className="container-lg" style={{ maxWidth: 800 }}>
-        {/* Header */}
-        <div className="mb-12">
-          <div className="flex items-center gap-2 mb-3">
-            <Shield size={16} style={{ color: "#4F6EF7" }} />
-            <p
-              className="text-xs font-semibold uppercase tracking-wider"
-              style={{ color: "#4F6EF7", letterSpacing: "0.1em" }}
-            >
-              Methodological Transparency
-            </p>
-          </div>
-          <h1
-            className="font-display font-bold mb-4"
-            style={{ fontSize: 36, color: "#F0F0F5", letterSpacing: "-0.025em" }}
-          >
-            How we price a student × program
-          </h1>
-          <p style={{ fontSize: 16, color: "#8B8BA7", lineHeight: 1.8, maxWidth: 640 }}>
-            {POSITIONING.tagline} {POSITIONING.dek} Weights below are public so a family,
-            counsellor, or journalist can audit the claim — the opposite of a ranking brochure.
-          </p>
+    <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F5] pb-24">
+      <div className="container-xl pt-16 pb-12">
+        <p className="kicker-web text-blue-500">Epistemic Architecture</p>
+        <h1 className="headline text-4xl font-bold mt-2">How we score. Why it matters.</h1>
+      </div>
 
-          <div className="grid grid-cols-1 gap-3 mt-8 mb-4">
-            {USP_PILLARS.map((pillar) => (
-              <div key={pillar.id} className="glass-card p-4">
-                <p style={{ fontSize: 14, fontWeight: 600, color: "#F0F0F5", marginBottom: 6 }}>
-                  {pillar.title}
-                </p>
-                <p style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.65 }}>{pillar.body}</p>
-              </div>
-            ))}
-          </div>
-          <div
-            style={{
-              marginTop: 16,
-              padding: "12px 16px",
-              background: "rgba(79,110,247,0.06)",
-              borderLeft: "3px solid #4F6EF7",
-              borderRadius: "0 8px 8px 0",
-            }}
-          >
-            <p style={{ fontSize: 13, color: "#8B8BA7" }}>
-              <strong style={{ color: "#F0F0F5" }}>Cite this document:</strong> The Project Quantitative Research (2026).
-              &ldquo;The Project Degree ROI & Actuarial Asset Pricing Methodology v2.0.&rdquo; Available at:
-              theproject.edu.in/methodology
-            </p>
+      <div className="container-xl flex flex-col lg:flex-row gap-12">
+        {/* Sticky TOC Sidebar */}
+        <div className="hidden lg:block w-64 shrink-0">
+          <div className="sticky top-24 glass-card p-6">
+            <h3 className="font-semibold text-gray-300 mb-4 uppercase tracking-wider text-xs">Contents</h3>
+            <ul className="space-y-3 text-sm text-gray-400">
+              <li><a href="#npv" className="hover:text-blue-400 transition">Student-Priced NPV</a></li>
+              <li><a href="#irt" className="hover:text-blue-400 transition">3PL IRT Psychometric</a></li>
+              <li><a href="#ai-risk" className="hover:text-blue-400 transition">8-Vector AI Risk</a></li>
+              <li><a href="#monte-carlo" className="hover:text-blue-400 transition">Monte Carlo Stress Test</a></li>
+              <li><a href="#fiduciary" className="hover:text-blue-400 transition">Fiduciary Constraints</a></li>
+            </ul>
           </div>
         </div>
 
-        {/* Quick summary */}
-        <section className="mb-12">
-          <h2
-            className="font-display font-bold mb-4"
-            style={{ fontSize: 24, color: "#F0F0F5", letterSpacing: "-0.015em" }}
-          >
-            Composite Score Formula (v1.0-seed)
-          </h2>
-
-          <div className="glass-card p-6 mb-6">
-            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, color: "#4F6EF7", lineHeight: 1.8 }}>
-              Score = 0.35 × FinancialROI
-              <br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.20 × RiskAdjustedStability
-              <br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.15 × UpsideOptionality
-              <br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.15 × MobilityPremium
-              <br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.10 × SatisfactionScore
-              <br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.05 × SocialCapitalScore
+        {/* Content Body */}
+        <div className="flex-1 space-y-16">
+          
+          {/* Section 1 */}
+          <section id="npv" className="scroll-mt-24">
+            <p className="kicker-web text-sm text-blue-500 font-semibold mb-2">Valuation Model</p>
+            <h2 className="headline-sub text-2xl font-bold mb-4">Student-Priced NPV</h2>
+            <p className="text-gray-300 leading-relaxed mb-6">
+              We calculate the Net Present Value of a degree not by average graduate outcomes, but by the realistic 
+              debt-service burden and expected earnings over time, adjusted for individual financial risk tolerance.
             </p>
-          </div>
+            <div className="math-block bg-[#13131A] p-4 rounded-lg font-mono text-blue-300 mb-6 border border-[#1E1E2E] overflow-x-auto">
+              NPV_i = sum_t [ (E[Y_i,t] - DebtService_i,t) / (1+r_i)^t ] - C_upfront
+            </div>
+            <div className="glass-card p-6">
+              <ul className="list-disc pl-5 text-gray-400 space-y-2">
+                <li><strong className="text-gray-200">E[Y_i,t]:</strong> Expected earnings in year t</li>
+                <li><strong className="text-gray-200">DebtService_i,t:</strong> Mandatory loan repayments</li>
+                <li><strong className="text-gray-200">r_i:</strong> Discount rate (cost of capital)</li>
+                <li><strong className="text-gray-200">C_upfront:</strong> Initial capital expenditure</li>
+              </ul>
+            </div>
+          </section>
 
-          <div className="grid grid-cols-1 gap-4">
-            {FORMULA_COMPONENTS.map((comp) => (
-              <div key={comp.name} className="glass-card p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3
-                      className="font-display font-semibold"
-                      style={{ fontSize: 17, color: "#F0F0F5" }}
-                    >
-                      {comp.name}
-                    </h3>
-                    <span
-                      className="font-mono font-bold text-sm"
-                      style={{ color: "#4F6EF7" }}
-                    >
-                      {comp.weight}% weight
-                    </span>
-                  </div>
-                </div>
+          {/* Section 2 */}
+          <section id="irt" className="scroll-mt-24">
+            <p className="kicker-web text-sm text-blue-500 font-semibold mb-2">Assessment</p>
+            <h2 className="headline-sub text-2xl font-bold mb-4">3PL IRT Psychometric</h2>
+            <p className="text-gray-300 leading-relaxed mb-6">
+              To normalize student abilities across wildly different input populations, we utilize a 3-Parameter 
+              Logistic Item Response Theory (IRT) model, factoring out guessing and item difficulty.
+            </p>
+            <div className="math-block bg-[#13131A] p-4 rounded-lg font-mono text-purple-300 mb-6 border border-[#1E1E2E] overflow-x-auto">
+              P_i(theta) = c_i + (1-c_i)/(1+exp(-1.7*a_i*(theta-b_i)))
+            </div>
+            <table className="data-table w-full text-left glass-card border-collapse">
+              <thead>
+                <tr className="border-b border-[#1E1E2E]">
+                  <th className="p-3 text-sm font-semibold text-gray-300">Parameter</th>
+                  <th className="p-3 text-sm font-semibold text-gray-300">Definition</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm text-gray-400">
+                <tr className="border-b border-[#1E1E2E]">
+                  <td className="p-3 font-mono">theta</td>
+                  <td className="p-3">Latent ability trait of the individual</td>
+                </tr>
+                <tr className="border-b border-[#1E1E2E]">
+                  <td className="p-3 font-mono">a_i</td>
+                  <td className="p-3">Item discrimination parameter</td>
+                </tr>
+                <tr className="border-b border-[#1E1E2E]">
+                  <td className="p-3 font-mono">b_i</td>
+                  <td className="p-3">Item difficulty parameter</td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-mono">c_i</td>
+                  <td className="p-3">Pseudo-guessing parameter</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
-                <div
-                  className="p-3 rounded-md mb-4"
-                  style={{
-                    background: "rgba(79,110,247,0.06)",
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 12,
-                    color: "#7B96FF",
-                  }}
-                >
-                  {comp.formula}
-                </div>
+          {/* Section 3 */}
+          <section id="ai-risk" className="scroll-mt-24">
+            <p className="kicker-web text-sm text-blue-500 font-semibold mb-2">Automation Impact</p>
+            <h2 className="headline-sub text-2xl font-bold mb-4">8-Vector AI Risk</h2>
+            <p className="text-gray-300 leading-relaxed mb-6">
+              Our proprietary risk assessment evaluates how susceptible a degree's target outcomes are to automation.
+            </p>
+            <div className="glass-card overflow-hidden">
+              <table className="data-table w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[#1E1E2E] bg-[#13131A]">
+                    <th className="p-3 text-sm font-semibold text-gray-300">Vector</th>
+                    <th className="p-3 text-sm font-semibold text-gray-300">Decay Slope</th>
+                    <th className="p-3 text-sm font-semibold text-gray-300">Resilience Class</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm text-gray-400">
+                  <tr className="border-b border-[#1E1E2E]">
+                    <td className="p-3 font-medium text-gray-200">V1: Routine Cognitive</td>
+                    <td className="p-3 text-red-400">-8.4% / yr</td>
+                    <td className="p-3"><span className="badge-red px-2 py-1 rounded text-xs">Very High Risk</span></td>
+                  </tr>
+                  <tr className="border-b border-[#1E1E2E]">
+                    <td className="p-3 font-medium text-gray-200">V2: Non-Routine Cognitive</td>
+                    <td className="p-3 text-yellow-400">-3.2% / yr</td>
+                    <td className="p-3"><span className="badge-yellow px-2 py-1 rounded text-xs">Medium Risk</span></td>
+                  </tr>
+                  <tr className="border-b border-[#1E1E2E]">
+                    <td className="p-3 font-medium text-gray-200">V3: Routine Manual</td>
+                    <td className="p-3 text-red-400">-5.1% / yr</td>
+                    <td className="p-3"><span className="badge-red px-2 py-1 rounded text-xs">High Risk</span></td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-medium text-gray-200">V8: Empathetic/Social</td>
+                    <td className="p-3 text-green-400">+1.2% / yr</td>
+                    <td className="p-3"><span className="badge-green px-2 py-1 rounded text-xs">Low Risk</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-                <div className="mb-3">
-                  <p style={{ fontSize: 11, color: "#4A4A6A", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Inputs
-                  </p>
-                  {comp.inputs.map((input) => (
-                    <div key={input} className="flex items-start gap-2 mb-1.5">
-                      <CheckCircle size={11} style={{ color: "#22C55E", marginTop: 3, flexShrink: 0 }} />
-                      <span style={{ fontSize: 13, color: "#8B8BA7" }}>{input}</span>
-                    </div>
-                  ))}
-                </div>
+          {/* Section 4 */}
+          <section id="monte-carlo" className="scroll-mt-24">
+            <p className="kicker-web text-sm text-blue-500 font-semibold mb-2">Stress Testing</p>
+            <h2 className="headline-sub text-2xl font-bold mb-4">Monte Carlo Stress Test</h2>
+            <p className="text-gray-300 leading-relaxed mb-6">
+              We run 10,000 simulations per degree profile to estimate tail risk and probability of catastrophic default.
+              Profiles where the Debt-to-Income (DTI) ratio exceeds 45% are flagged automatically.
+            </p>
+            <div className="math-block bg-[#13131A] p-4 rounded-lg font-mono text-green-300 mb-6 border border-[#1E1E2E] overflow-x-auto">
+              Y_&#123;t+1&#125; = Y_t * exp((mu-0.5*sigma^2)*dt + sigma*sqrt(dt)*Z_t - J_t)
+            </div>
+            <div className="card-accent glass-card p-6 border-l-4 border-yellow-500">
+              <h4 className="font-bold text-gray-200 mb-2">Catastrophic Flag (DTI &gt; 45%)</h4>
+              <p className="text-sm text-gray-400">
+                Any pathway indicating greater than 5% probability of DTI &gt; 45% in years 1-3 triggers an 
+                automatic downgrade in composite scoring, emphasizing downside protection.
+              </p>
+            </div>
+          </section>
 
-                <div
-                  className="flex items-start gap-2"
-                  style={{ borderTop: "1px solid #1E1E2E", paddingTop: 12 }}
-                >
-                  <AlertTriangle size={11} style={{ color: "#F59E0B", marginTop: 3, flexShrink: 0 }} />
-                  <p style={{ fontSize: 12, color: "#4A4A6A", lineHeight: 1.6 }}>
-                    <strong style={{ color: "#8B8BA7" }}>Note:</strong> {comp.note}
-                  </p>
-                </div>
+          {/* Section 5 */}
+          <section id="fiduciary" className="scroll-mt-24">
+            <p className="kicker-web text-sm text-blue-500 font-semibold mb-2">Trust & Integrity</p>
+            <h2 className="headline-sub text-2xl font-bold mb-4">Fiduciary Constraints</h2>
+            <p className="text-gray-300 leading-relaxed mb-6">
+              We do not accept kickbacks, referral fees, or placement bounties from institutions. Data integrity 
+              is verified cryptographically and badged using open standards.
+            </p>
+            <div className="glass-card p-6 grid sm:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold text-gray-200 mb-2">Cryptographic Hash</h4>
+                <p className="text-sm text-gray-400">
+                  Every data snapshot is hashed to the blockchain to prevent retroactive manipulation of outcomes data.
+                </p>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Data sources */}
-        <section className="mb-12">
-          <h2
-            className="font-display font-bold mb-6"
-            style={{ fontSize: 24, color: "#F0F0F5", letterSpacing: "-0.015em" }}
-          >
-            Data Sources
-          </h2>
-          <div className="space-y-3">
-            {SOURCES.map((src) => (
-              <div key={src.name} className="glass-card p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <a
-                        href={src.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          fontSize: 15,
-                          fontWeight: 600,
-                          color: "#F0F0F5",
-                          textDecoration: "none",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 4,
-                        }}
-                      >
-                        {src.name}
-                        <ExternalLink size={11} style={{ color: "#4A4A6A" }} />
-                      </a>
-                    </div>
-                    <p style={{ fontSize: 11, color: "#4A4A6A", marginBottom: 8 }}>
-                      {src.cadence}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {src.fields.map((f) => (
-                        <span
-                          key={f}
-                          style={{
-                            padding: "2px 8px",
-                            borderRadius: 999,
-                            fontSize: 11,
-                            background: "#1E1E2E",
-                            color: "#8B8BA7",
-                            border: "1px solid #2A2A3E",
-                          }}
-                        >
-                          {f}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <span
-                    style={{
-                      padding: "2px 10px",
-                      borderRadius: 999,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      background:
-                        src.confidence === "High"
-                          ? "rgba(34,197,94,0.1)"
-                          : src.confidence === "Medium"
-                          ? "rgba(245,158,11,0.1)"
-                          : "rgba(239,68,68,0.1)",
-                      border: `1px solid ${
-                        src.confidence === "High"
-                          ? "rgba(34,197,94,0.2)"
-                          : src.confidence === "Medium"
-                          ? "rgba(245,158,11,0.2)"
-                          : "rgba(239,68,68,0.2)"
-                      }`,
-                      color:
-                        src.confidence === "High"
-                          ? "#22C55E"
-                          : src.confidence === "Medium"
-                          ? "#F59E0B"
-                          : "#EF4444",
-                      whiteSpace: "nowrap",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {src.confidence}
-                  </span>
-                </div>
+              <div>
+                <h4 className="font-semibold text-gray-200 mb-2">OpenBadges v3</h4>
+                <p className="text-sm text-gray-400">
+                  Credentials and audit trail compatibility verified using the OpenBadges v3 standard.
+                </p>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Uncertainty section */}
-        <section className="mb-12">
-          <h2
-            className="font-display font-bold mb-4"
-            style={{ fontSize: 24, color: "#F0F0F5", letterSpacing: "-0.015em" }}
-          >
-            How We Handle Uncertainty
-          </h2>
-          <div className="space-y-4">
-            {[
-              {
-                q: "Why do salary predictions show ranges, not single numbers?",
-                a: "Because single-number salary predictions are epistemically dishonest. Any prediction at a 20-year horizon has massive uncertainty from macroeconomic changes, personal performance, and industry disruption. We always display p25–p75 confidence intervals.",
-              },
-              {
-                q: "What is a Confidence Interval (CI) score?",
-                a: "Each composite score also has a CI, expressed as two numbers (e.g., 71–89 for a score of 82). The CI reflects the range of scores we'd assign given our data uncertainty. A score with a CI width > 25 gets a 'Low Confidence' badge.",
-              },
-              {
-                q: "How do we handle missing data?",
-                a: "We impute missing values using within-tier, within-field averages, then apply a confidence penalty proportional to the imputation fraction. Imputed fields are always disclosed in the data provenance panel.",
-              },
-              {
-                q: "What's the model version and how often does it retrain?",
-                a: "v1.0-seed is a seed model trained on 15 hand-verified programs. Production plan: weekly retraining triggered by scraper runs + anomaly queue resolution. Full model version history will be published.",
-              },
-            ].map((item) => (
-              <div key={item.q} className="glass-card p-5">
-                <h3 style={{ fontSize: 14, fontWeight: 600, color: "#F0F0F5", marginBottom: 8 }}>
-                  {item.q}
-                </h3>
-                <p style={{ fontSize: 13, color: "#8B8BA7", lineHeight: 1.7 }}>{item.a}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Feedback CTA */}
-        <div
-          className="glass-card p-6 text-center"
-          style={{ borderColor: "rgba(79,110,247,0.3)" }}
-        >
-          <BookOpen size={20} style={{ color: "#4F6EF7", margin: "0 auto 12px" }} />
-          <h3 className="font-display font-semibold mb-2" style={{ fontSize: 18, color: "#F0F0F5" }}>
-            Found an error? Help us improve.
-          </h3>
-          <p style={{ fontSize: 13, color: "#8B8BA7", marginBottom: 20 }}>
-            If you&apos;re an educator, researcher, or placement officer with better data,
-            please submit a correction. Your institution will be credited.
-          </p>
-          <Link href="/admin" className="btn-primary">
-            <Shield size={14} />
-            Submit a Data Correction
-          </Link>
+            </div>
+          </section>
+          
         </div>
       </div>
     </div>

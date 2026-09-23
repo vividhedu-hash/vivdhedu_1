@@ -190,10 +190,12 @@ export default function AdminPage() {
               </h1>
             </div>
             <p style={{ fontSize: 13, color: "#8B8BA7" }}>
-              Model v1.0-seed · Last scrape: 3 hours ago · 7 anomalies pending
+              Model v1.0-seed · {anomalies.filter((a) => a.status === "pending").length} anomalies pending
             </p>
           </div>
+          {/* [AI-CoLab: Cursor] Button previously had no onClick */}
           <button
+            onClick={triggerRetrain}
             className="btn-primary"
             style={{ background: "#22C55E", fontSize: 13 }}
           >
@@ -201,6 +203,15 @@ export default function AdminPage() {
             Force Retrain
           </button>
         </div>
+
+        {queueError && (
+          <div
+            className="glass-card p-4 mb-6"
+            style={{ borderLeft: "3px solid #EF4444" }}
+          >
+            <p style={{ fontSize: 13, color: "#EF4444" }}>{queueError}</p>
+          </div>
+        )}
 
         {/* Tabs */}
         <div
@@ -368,7 +379,7 @@ export default function AdminPage() {
                     field={anomaly.field_name || "Scraped Metric"}
                     priorValue={anomaly.prior_value ?? "N/A"}
                     newValue={anomaly.new_value}
-                    deltaPct={anomaly.delta_pct}
+                    deltaPct={anomaly.delta_pct ?? 0}
                     status={anomaly.status}
                     onAccept={() => reviewAnomaly(anomaly.id, "accept")}
                     onReject={() => reviewAnomaly(anomaly.id, "reject")}

@@ -61,10 +61,9 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setCounterfactual(data);
-      }
+      if (!res.ok) throw new Error(`analytics ${res.status}`);
+      const data = await res.json();
+      setCounterfactual(data);
     } catch (e) {
       // Local fallback calculation
       const npvDeltaLakhs = Number((pA.npv_20yr_lakhs - pB.npv_20yr_lakhs).toFixed(1));

@@ -15,8 +15,6 @@ import {
   CheckCircle2,
   Info
 } from "lucide-react";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 
 interface GlobalProgram {
   university_name: string;
@@ -139,6 +137,57 @@ const GLOBAL_PROGRAMS: GlobalProgram[] = [
     effective_tax_rate: 0.150,
     monthly_rent_median_usd: 1600,
   },
+  {
+    university_name: "London School of Economics (LSE)",
+    country: "United Kingdom",
+    city: "London",
+    degree_name: "BSc / MSc",
+    major: "Economics & Quantitative Methods",
+    global_tier: "Convex Ceiling Elite",
+    is_stem_designated: true,
+    annual_tuition_usd: 36500,
+    living_cost_annual_usd: 21000,
+    median_salary_usd_y1: 94000,
+    median_salary_usd_y5: 165000,
+    visa_type: "UK Graduate Route (2-Yr PSW)",
+    visa_survival_prob: 0.880,
+    effective_tax_rate: 0.280,
+    monthly_rent_median_usd: 1550,
+  },
+  {
+    university_name: "University of Warwick",
+    country: "United Kingdom",
+    city: "Coventry",
+    degree_name: "BSc / MSc",
+    major: "Economics & Econometrics",
+    global_tier: "Value Kings",
+    is_stem_designated: true,
+    annual_tuition_usd: 28500,
+    living_cost_annual_usd: 14000,
+    median_salary_usd_y1: 76000,
+    median_salary_usd_y5: 125000,
+    visa_type: "UK Graduate Route (2-Yr PSW)",
+    visa_survival_prob: 0.880,
+    effective_tax_rate: 0.260,
+    monthly_rent_median_usd: 900,
+  },
+  {
+    university_name: "University of Oxford",
+    country: "United Kingdom",
+    city: "Oxford",
+    degree_name: "MSc",
+    major: "Financial Economics / Mathematical Modeling",
+    global_tier: "Convex Ceiling Elite",
+    is_stem_designated: true,
+    annual_tuition_usd: 48000,
+    living_cost_annual_usd: 19500,
+    median_salary_usd_y1: 135000,
+    median_salary_usd_y5: 220000,
+    visa_type: "UK Graduate Route (2-Yr PSW)",
+    visa_survival_prob: 0.910,
+    effective_tax_rate: 0.310,
+    monthly_rent_median_usd: 1350,
+  },
 ];
 
 const USD_TO_INR = 86.5;
@@ -157,8 +206,6 @@ export default function GlobalDegreesPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-      <Navbar />
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header Section */}
         <div className="border-b border-slate-800 pb-8 mb-10">
@@ -202,7 +249,8 @@ export default function GlobalDegreesPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-4 rounded-lg mb-8">
           <div className="flex flex-wrap items-center gap-3">
             <label className="text-xs font-mono text-slate-400 uppercase">Country:</label>
-            {["All", "United States", "Germany", "Singapore"].map((c) => (
+            {/* [AI-CoLab: Cursor] Derived from data — the hardcoded list omitted the UK */}
+            {["All", ...Array.from(new Set(GLOBAL_PROGRAMS.map((p) => p.country)))].map((c) => (
               <button
                 key={c}
                 onClick={() => setSelectedCountry(c)}
@@ -332,8 +380,6 @@ export default function GlobalDegreesPage() {
           </p>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

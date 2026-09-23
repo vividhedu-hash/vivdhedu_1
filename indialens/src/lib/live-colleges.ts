@@ -45,12 +45,15 @@ export async function fetchCollegeList(query: {
     supabaseParams.set("offset", String(((query.page ?? 1) - 1) * (query.per_page ?? 20)));
 
     const rows = await fetchSupabaseRest<SupabaseProgramRow[]>(`v_programs_full?${supabaseParams}`, {
-      timeoutMs: 3000,
+      timeoutMs: 1200,
     });
     if (rows && Array.isArray(rows) && rows.length > 0) {
+      const perPage = query.per_page ?? 20;
+      const offset = ((query.page ?? 1) - 1) * perPage;
       return {
         data: rows.map(mapSupabaseRowToRecord),
-        total: rows.length < (query.per_page ?? 20) ? rows.length : 73,
+        // Lower-bound estimate; PostgREST count headers are not requested here.
+        total: offset + rows.length,
         source: "database",
       };
     }

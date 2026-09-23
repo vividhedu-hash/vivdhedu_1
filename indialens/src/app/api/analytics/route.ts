@@ -12,13 +12,21 @@ const ENDPOINT_MAP: Record<string, string> = {
 export async function POST(request: Request) {
   const body = await request.json();
   const { type, ...payload } = body;
+
+  // [AI-CoLab: Cursor] Data corrections from FeedbackForm are acknowledged and
+  // logged server-side (durable queueing requires the backend/DB).
+  if (type === "data_correction") {
+    console.info("[analytics] data correction received:", JSON.stringify(payload));
+    return NextResponse.json({ status: "queued", _source: "serverless" });
+  }
+
   const targetPath = ENDPOINT_MAP[type] || ENDPOINT_MAP.dcf;
 
   const resp = await fetchBackend(targetPath, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-    timeoutMs: 15000,
+    timeoutMs: 3000,
   });
   if (resp?.ok) {
     return NextResponse.json(await resp.json());

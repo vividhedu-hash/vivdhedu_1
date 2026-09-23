@@ -24,29 +24,32 @@ export function Footer() {
                   width: 28,
                   height: 28,
                   borderRadius: 6,
-                  background: "linear-gradient(135deg, #4F6EF7, #8BA4FF)",
+                  background: "#1A6CF6",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  fontWeight: 900,
+                  fontSize: 12,
+                  color: "#FFFFFF",
                 }}
               >
-                <Zap size={14} fill="white" color="white" />
+                IL
               </div>
               <span
                 className="font-display font-bold"
                 style={{ fontSize: 18, color: "#F0F0F5" }}
               >
-                The <span style={{ color: "#0077C8" }}>Project</span>
+                IndiaLens <span style={{ color: "#1A6CF6", fontSize: 13, fontFamily: "var(--font-mono)" }}>· Student OS</span>
               </span>
             </div>
-            <p style={{ color: "#8B8BA7", fontSize: 14, lineHeight: 1.7, maxWidth: 320 }}>
-              {POSITIONING.tagline} {POSITIONING.oneSentence}
+            <p style={{ color: "#8B8BA7", fontSize: 13, lineHeight: 1.7, maxWidth: 360 }}>
+              The sovereign educational operating system. Pricing degrees as capital assets, evaluating AI labor displacement, and engineering verified admissions spikes.
             </p>
             <p
-              className="mt-4 text-xs font-mono"
+              className="mt-3 text-xs font-mono"
               style={{ color: "#4A4A6A" }}
             >
-              {POSITIONING.uspName} · public methodology · no brochure medians
+              Zero agency kickbacks · Fiduciary alignment · Open methodology
             </p>
           </div>
 
@@ -60,14 +63,15 @@ export function Footer() {
             </p>
             <div className="flex flex-col gap-2">
               {[
-                { href: "/explore", label: "ROI Index" },
-                { href: "/analyze", label: "Student Engine" },
-                { href: "/global", label: "Global Valuation" },
-                { href: "/portfolio-builder", label: "Spike Studio" },
+                { href: "/workspace", label: "Decision Workspace" },
+                { href: "/onboard", label: "Calibration Onboarding" },
+                { href: "/explore", label: "Program Asset Index" },
+                { href: "/psychometric", label: "3PL IRT Assessment" },
+                { href: "/portfolio-builder", label: "Flagship Portfolio Studio" },
                 { href: "/marketplace", label: "Course Marketplace" },
-                { href: "/advisor", label: "AI Mode" },
-                { href: "/methodology", label: "Methodology" },
-                { href: "/admin", label: "Educator Portal" },
+                { href: "/global", label: "Global Degree Valuation" },
+                { href: "/advisor", label: "AI Mode & Search Grounding" },
+                { href: "/methodology", label: "Epistemic Methodology" },
               ].map((link) => (
                 <Link
                   key={link.href}
@@ -125,7 +129,7 @@ export function Footer() {
         >
           <div className="flex flex-wrap items-center gap-4">
             <span style={{ color: "#4A4A6A", fontSize: 12 }}>
-              © 2026 The Project. Quantitative Education & Career Intelligence OS.
+              © 2026 IndiaLens. Sovereign Student Operating System.
             </span>
             <Link
               href="/methodology"

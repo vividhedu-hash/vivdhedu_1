@@ -19,6 +19,22 @@ function mapAdminPath(subpath: string, method: string): string {
 async function proxy(request: Request, path: string[], method: string) {
   const mapped = mapAdminPath((path ?? []).join("/"), method);
   const apiKey = request.headers.get("x-api-key") ?? "";
+
+  // [AI-CoLab: Cursor] The serverless fallback previously accepted ANY key,
+  // which was an auth bypass since the backend is the only real validator and
+  // it is offline. The route now enforces ADMIN_API_KEY server-side and fails
+  // closed when it is not configured.
+  const expectedKey = process.env.ADMIN_API_KEY;
+  if (!expectedKey) {
+    return NextResponse.json(
+      { error: "Admin access not configured. Set ADMIN_API_KEY on the server." },
+      { status: 503 },
+    );
+  }
+  if (apiKey !== expectedKey) {
+    return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
+  }
+
   const body = method === "GET" || method === "HEAD" ? undefined : await request.text();
 
   const resp = await fetchBackend(`/api/admin/${mapped}`, {
@@ -28,7 +44,7 @@ async function proxy(request: Request, path: string[], method: string) {
       ...(body ? { "Content-Type": "application/json" } : {}),
     },
     body: body || undefined,
-    timeoutMs: 15000,
+    timeoutMs: 3000,
   });
 
   if (!resp) {

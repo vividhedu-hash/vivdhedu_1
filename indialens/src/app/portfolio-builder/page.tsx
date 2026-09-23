@@ -14,10 +14,12 @@ import {
   Plus,
   Trash2,
   HelpCircle,
-  FileText
+  FileText,
+  Lock,
+  GitCommit,
+  GraduationCap,
+  Briefcase
 } from "lucide-react";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 
 interface Activity {
   title: string;
@@ -152,8 +154,6 @@ export default function PortfolioBuilderPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-      <Navbar />
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="border-b border-slate-800 pb-8 mb-10">
@@ -417,9 +417,94 @@ export default function PortfolioBuilderPage() {
             )}
           </div>
         </div>
-      </main>
 
-      <Footer />
+        {/* Flagship Opportunity Architecture: 3 Pillars from Master PRD Section 11 & 12 */}
+        <div className="mt-12 pt-10 border-t border-slate-800">
+          <div className="flex items-center gap-2 text-blue-400 text-xs font-mono font-semibold uppercase tracking-wider mb-2">
+            <span>Opportunity Architecture · Flagship Program</span>
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Research Fellowships, Corporate Sprints & Verified Credentials
+          </h2>
+          <p className="text-sm text-slate-400 max-w-3xl mb-8 leading-relaxed">
+            Over 80% of Indian applicants submit unverified resume claims. Student OS integrates direct 1:1 PhD faculty mentorship, corporate micro-internships, and tamper-proof OpenBadges v3.0 cryptographic verification.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Pillar 1: Research */}
+            <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-blue-500 rounded-lg p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-blue-400 mb-2">
+                  <GraduationCap className="w-4 h-4" />
+                  <span className="text-xs font-mono font-bold uppercase">1. 1:1 PhD Research Fellowship</span>
+                </div>
+                <h3 className="text-sm font-bold text-white mb-2">SSRN / arXiv Working Paper + Registered DOI</h3>
+                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                  Match with PhD mentors from Cambridge, Oxford, Ashoka, or IISc. Develop empirical econometric models or ML pipelines and publish on verified pre-print servers.
+                </p>
+                <div className="bg-slate-950 p-2.5 rounded border border-slate-800/80 text-[11px] text-slate-300 font-mono space-y-1">
+                  <div>• Faculty Co-Authorship Protocol</div>
+                  <div>• Registered Crossref DOI</div>
+                  <div>• +2.4x Tier-1 Admissions Odds</div>
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-slate-800">
+                <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5" /> 3 Cohorts Open for Application
+                </span>
+              </div>
+            </div>
+
+            {/* Pillar 2: Micro-Internships */}
+            <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-purple-500 rounded-lg p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-purple-400 mb-2">
+                  <Briefcase className="w-4 h-4" />
+                  <span className="text-xs font-mono font-bold uppercase">2. Corporate Micro-Internships</span>
+                </div>
+                <h3 className="text-sm font-bold text-white mb-2">4–8 Week Vetted High-Growth Sprints</h3>
+                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                  Curated technical and policy sprints at algorithmic trading desks, AI startups, and think tanks. Ship production code instead of hypothetical essays.
+                </p>
+                <div className="bg-slate-950 p-2.5 rounded border border-slate-800/80 text-[11px] text-slate-300 font-mono space-y-1">
+                  <div>• Applied LLM Fine-Tuning</div>
+                  <div>• Quantitative Factor Backtesting</div>
+                  <div>• Bi-Weekly Senior Practitioner Hours</div>
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-slate-800">
+                <span className="text-[11px] text-blue-400 font-semibold flex items-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5" /> Google / Goldman Sachs Mentors
+                </span>
+              </div>
+            </div>
+
+            {/* Pillar 3: OpenBadges */}
+            <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-emerald-500 rounded-lg p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-emerald-400 mb-2">
+                  <GitCommit className="w-4 h-4" />
+                  <span className="text-xs font-mono font-bold uppercase">3. OpenBadges v3.0 Verification</span>
+                </div>
+                <h3 className="text-sm font-bold text-white mb-2">Cryptographic Commit Ledger</h3>
+                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                  Tamper-proof verifiable credentials signed with Ed25519 keys, embedding your GitHub SHA-256 commit hashes directly into the admissions metadata.
+                </p>
+                <div className="bg-slate-950 p-2.5 rounded border border-slate-800/80 text-[11px] text-slate-300 font-mono space-y-1">
+                  <div>• Zero Resume Fraud Guarantee</div>
+                  <div>• Ed25519 Cryptographic Proof</div>
+                  <div>• ATS & LinkedIn JSON-LD Embeds</div>
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-slate-800">
+                <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5" /> Institutional Proof-of-Work
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

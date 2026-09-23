@@ -1,590 +1,265 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
-import { useState, useMemo, useCallback } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  flexRender,
-  createColumnHelper,
-  type SortingState,
-} from "@tanstack/react-table";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import {
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  Download,
-  Filter,
-  Search,
-  X,
-  Info,
-  RefreshCw,
-} from "lucide-react";
-import { ScoreRing } from "@/components/ScoreRing";
-import { DataFreshnessBadge } from "@/components/DataFreshnessBadge";
-import { formatInr, UNIQUE_FIELDS, UNIQUE_STATES, UNIQUE_TIERS } from "../../lib/mock-data";
-import type { CollegeDegreeRecord } from "../../lib/mock-data";
-import { useColleges } from "@/hooks/useData";
+import { Search, Lock, RefreshCw } from "lucide-react";
+import type { CollegeDegreeRecord, DegreeField } from "@/lib/mock-data";
 
+// [AI-CoLab: Cursor] Explore previously crashed with "cannot read tuitionTotal of
+// undefined": it read `item.cost.tuitionTotal` (schema is `costs.totalTuitionInr`)
+// and invoked the server-side data layer from a client component. It now consumes
+// the /api/colleges route and uses the canonical CollegeDegreeRecord shape.
 
-const FIELD_LABELS: Record<string, string> = {
+const FIELD_LABELS: Record<DegreeField, string> = {
   "engineering-cs": "Engineering — CS",
-  "engineering-non-cs": "Engineering — Non-CS",
+  "engineering-non-cs": "Engineering — Core",
   medicine: "Medicine",
   management: "Management",
   commerce: "Commerce",
   design: "Design",
   law: "Law",
+  arts: "Arts & Humanities",
 };
 
-const AI_RISK_COLORS: Record<string, string> = {
-  Low: "#22C55E",
-  Medium: "#F59E0B",
-  High: "#F97316",
-  "Very High": "#EF4444",
-};
-
-const columnHelper = createColumnHelper<CollegeDegreeRecord>();
-
-function downloadCSV(data: CollegeDegreeRecord[]) {
-  const rows = [
-    [
-      "College",
-      "Degree",
-      "State",
-      "Tier",
-      "Composite Score",
-      "Financial ROI %",
-      "AI Risk",
-      "Placement Rate",
-      "Median Salary Y1 (INR)",
-      "Median Salary Y10 (INR)",
-      "Last Updated (days ago)",
-    ],
-    ...data.map((r) => [
-      r.college.shortName,
-      r.degree.shortName,
-      r.college.state,
-      r.college.tier,
-      r.roi.compositeScore,
-      r.roi.financialRoiPct,
-      r.meta.aiRiskLabel,
-      (r.placement?.rate ?? 0) <= 1 ? Math.round((r.placement?.rate ?? 0) * 100) : Math.round(r.placement?.rate ?? 0),
-      r.salary.year1.p50,
-      r.salary.year10.p50,
-      r.meta.dataFreshnessDays,
-    ]),
-  ];
-  const csv = rows.map((r) => r.join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `theproject-roi-index-${new Date().toISOString().split("T")[0]}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+/** Placement rates arrive either as fractions (0–1) or percentages (0–100). */
+function placementPct(record: CollegeDegreeRecord): number {
+  const rate = record.placement?.rate ?? 0;
+  return Math.round(rate <= 1 ? rate * 100 : rate);
 }
 
-export default function ROIIndexPage() {
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "compositeScore", desc: true },
-  ]);
-  const [globalFilter, setGlobalFilter] = useState("");
+export default function ExplorePage() {
+  const [data, setData] = useState<CollegeDegreeRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Filter states
+  const [search, setSearch] = useState("");
   const [fieldFilter, setFieldFilter] = useState("");
-  const [stateFilter, setStateFilter] = useState("");
-  const [tierFilter, setTierFilter] = useState("");
-  const [aiRiskFilter, setAiRiskFilter] = useState("");
-  const [showMethodology, setShowMethodology] = useState(false);
+  const [sortBy, setSortBy] = useState("score-desc");
 
-  // Live data — FastAPI first, mock fallback automatically
-  const { response, isLoading, error, refetch } = useColleges({
-    field:    fieldFilter  || undefined,
-    state:    stateFilter  || undefined,
-    tier:     tierFilter   || undefined,
-    search:   globalFilter || undefined,
-    per_page: 100,
-  });
-
-  const allData: CollegeDegreeRecord[] = response?.data ?? [];
-  const isLive = response?._source === "database";
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setIsLoading(true);
+      setLoadError(false);
+      try {
+        const res = await fetch("/api/colleges?per_page=100", { cache: "no-store" });
+        if (!res.ok) throw new Error(`API ${res.status}`);
+        const json = await res.json();
+        if (!cancelled) setData(Array.isArray(json.data) ? json.data : []);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) {
+          setData([]);
+          setLoadError(true);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   const filteredData = useMemo(() => {
-    return allData.filter((r) => {
-      if (aiRiskFilter && r.meta.aiRiskLabel !== aiRiskFilter) return false;
-      return true;
+    let filtered = [...data];
+
+    if (search) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(
+        (c) =>
+          c.college.shortName.toLowerCase().includes(q) ||
+          c.college.name.toLowerCase().includes(q) ||
+          c.college.city.toLowerCase().includes(q) ||
+          c.degree.shortName.toLowerCase().includes(q) ||
+          c.degree.name.toLowerCase().includes(q)
+      );
+    }
+
+    if (fieldFilter) {
+      filtered = filtered.filter((c) => c.degree.field === fieldFilter);
+    }
+
+    filtered.sort((a, b) => {
+      if (sortBy === "score-desc") return b.roi.compositeScore - a.roi.compositeScore;
+      if (sortBy === "score-asc") return a.roi.compositeScore - b.roi.compositeScore;
+      if (sortBy === "tuition-asc") return a.costs.totalTuitionInr - b.costs.totalTuitionInr;
+      if (sortBy === "tuition-desc") return b.costs.totalTuitionInr - a.costs.totalTuitionInr;
+      return 0;
     });
-  }, [allData, aiRiskFilter]);
 
+    return filtered;
+  }, [data, search, fieldFilter, sortBy]);
 
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor("roi.compositeScore", {
-        id: "compositeScore",
-        header: "Score",
-        cell: ({ getValue }) => (
-          <ScoreRing score={getValue()} size={48} strokeWidth={4} showLabel={false} animate={false} />
-        ),
-        size: 64,
-      }),
-      columnHelper.display({
-        id: "college",
-        header: "College & Degree",
-        cell: ({ row }) => {
-          const r = row.original;
-          return (
-            <Link
-              href={`/college/${r.id}`}
-              style={{ textDecoration: "none" }}
-            >
-              <div>
-                <p
-                  style={{
-                    fontWeight: 600,
-                    fontSize: 13,
-                    color: "#F0F0F5",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  {r.college.shortName}
-                </p>
-                <p style={{ fontSize: 12, color: "#8B8BA7", marginTop: 2 }}>
-                  {r.degree.shortName}
-                </p>
-              </div>
-            </Link>
-          );
-        },
-      }),
-      columnHelper.display({
-        id: "location",
-        header: "State",
-        cell: ({ row }) => (
-          <span style={{ fontSize: 12, color: "#8B8BA7" }}>
-            {row.original.college.state}
-          </span>
-        ),
-      }),
-      columnHelper.display({
-        id: "tier",
-        header: "Tier",
-        cell: ({ row }) => (
-          <span
-            className="badge badge-blue"
-            style={{ fontSize: 10 }}
-          >
-            T{row.original.college.tier}
-          </span>
-        ),
-      }),
-      columnHelper.accessor("roi.financialRoiPct", {
-        id: "financialRoi",
-        header: "Financial ROI",
-        cell: ({ getValue }) => (
-          <span className="font-mono font-bold text-sm" style={{ color: "#4F6EF7" }}>
-            {getValue().toLocaleString()}%
-          </span>
-        ),
-      }),
-      columnHelper.display({
-        id: "aiRisk",
-        header: "AI Risk",
-        cell: ({ row }) => {
-          const label = row.original.meta.aiRiskLabel;
-          return (
-            <span
-              style={{
-                color: AI_RISK_COLORS[label],
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
-              {label}
-            </span>
-          );
-        },
-      }),
-      columnHelper.accessor("placement.rate", {
-        id: "placementRate",
-        header: "Placement %",
-        cell: ({ getValue }) => {
-          const raw = getValue();
-          const pct = raw <= 1 ? Math.round(raw * 100) : Math.round(raw);
-          return (
-            <div className="flex items-center gap-2">
-              <div
-                style={{
-                  width: 36,
-                  height: 4,
-                  background: "#1E1E2E",
-                  borderRadius: 2,
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: `${pct}%`,
-                    height: "100%",
-                    background: "#22C55E",
-                    borderRadius: 2,
-                  }}
-                />
-              </div>
-              <span className="font-mono text-xs" style={{ color: "#8B8BA7" }}>
-                {pct}%
-              </span>
-            </div>
-          );
-        },
-      }),
-      columnHelper.display({
-        id: "salaryY1",
-        header: "Salary Y1",
-        cell: ({ row }) => (
-          <span className="font-mono text-sm" style={{ color: "#F0F0F5" }}>
-            {formatInr(row.original.salary.year1.p50)}
-          </span>
-        ),
-      }),
-      columnHelper.display({
-        id: "salaryY10",
-        header: "Salary Y10",
-        cell: ({ row }) => (
-          <span className="font-mono text-sm" style={{ color: "#22C55E" }}>
-            {formatInr(row.original.salary.year10.p50)}
-          </span>
-        ),
-      }),
-      columnHelper.display({
-        id: "freshness",
-        header: "Updated",
-        cell: ({ row }) => (
-          <DataFreshnessBadge days={row.original.meta.dataFreshnessDays} />
-        ),
-      }),
-    ],
-    []
-  );
-
-  const table = useReactTable({
-    data: filteredData,
-    columns,
-    state: { sorting, globalFilter },
-    onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-  });
-
-  const hasFilters = fieldFilter || stateFilter || tierFilter || aiRiskFilter || globalFilter;
+  const uniqueFields = Array.from(new Set(data.map((d) => d.degree.field)));
 
   return (
-    <div style={{ padding: "40px 0 80px" }}>
-      <div className="container-xl">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <p
-                className="text-xs font-semibold uppercase tracking-wider"
-                style={{ color: "#4F6EF7", letterSpacing: "0.1em" }}
-              >
-                Public Index
-              </p>
-              {/* Live / Mock badge */}
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: "2px 8px",
-                  borderRadius: 99,
-                  background: isLive ? "rgba(34,197,94,0.12)" : "rgba(245,158,11,0.12)",
-                  color: isLive ? "#22C55E" : "#F59E0B",
-                  border: `1px solid ${isLive ? "rgba(34,197,94,0.3)" : "rgba(245,158,11,0.3)"}`,
-                  letterSpacing: "0.08em",
-                }}
-              >
-                {isLoading ? "LOADING…" : error ? "● BACKEND ERROR" : isLive ? "● LIVE DB" : "● SEED DATA"}
-              </span>
-            </div>
-            <h1
-              className="font-display font-bold"
-              style={{ fontSize: 32, color: "#F0F0F5", letterSpacing: "-0.02em", marginBottom: 8 }}
-            >
-              Degree ROI Index
-            </h1>
-            <p style={{ fontSize: 14, color: "#8B8BA7" }}>
-              {isLoading ? "Loading programs…" : error ? `Backend error: ${error}` : `${filteredData.length} programs`}
-              {" "}· Sorted by composite ROI score ·{" "}
-              <button
-                onClick={() => setShowMethodology((v) => !v)}
-                style={{
-                  color: "#4F6EF7",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 14,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: 0,
+    <div className="min-h-screen pb-20">
+      <div className="container-xl pt-12 pb-8">
+        <p className="kicker-web">Program Asset Index</p>
+        <h1 className="headline mb-6">India&apos;s degrees, priced as financial assets.</h1>
+        <Link href="/analyze" className="btn-primary inline-block mb-8">
+          Analyze a specific degree
+        </Link>
+      </div>
 
-                }}
-              >
-                <Info size={12} />
-                How is this scored?
-              </button>
-            </p>
+      {/* Sticky Filter Bar */}
+      <div className="sticky top-0 z-10 glass-card border-b border-[#1E1E2E] py-4 mb-8">
+        <div className="container-xl flex flex-wrap items-center gap-4">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="Search institutions, programs, or cities..."
+              className="form-input w-full pl-10"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          <button
-            onClick={() => downloadCSV(filteredData)}
-            className="btn-secondary"
-            style={{ fontSize: 13 }}
+
+          <select
+            className="form-input"
+            value={fieldFilter}
+            onChange={(e) => setFieldFilter(e.target.value)}
           >
-            <Download size={14} />
-            Export CSV
-          </button>
-        </div>
+            <option value="">All Fields</option>
+            {uniqueFields.map((f) => (
+              <option key={f} value={f}>
+                {FIELD_LABELS[f] ?? f}
+              </option>
+            ))}
+          </select>
 
-        {/* Methodology sidebar (collapsible) */}
-        {showMethodology && (
-          <div
-            className="glass-card p-6 mb-6 animate-slide-up"
-            style={{ borderLeft: "3px solid #4F6EF7", borderRadius: "0 8px 8px 0" }}
+          <select
+            className="form-input"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <h3
-                  className="font-display font-semibold mb-2"
-                  style={{ fontSize: 16, color: "#F0F0F5" }}
-                >
-                  How composite scores are calculated
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3">
-                  {[
-                    { label: "PPP-Adjusted Financial ROI", w: "35%" },
-                    { label: "Risk-Adjusted Stability", w: "20%" },
-                    { label: "Upside Optionality", w: "15%" },
-                    { label: "Mobility Premium", w: "15%" },
-                    { label: "Satisfaction & Wellbeing", w: "10%" },
-                    { label: "Social Capital", w: "5%" },
-                  ].map((c) => (
-                    <div key={c.label} style={{ fontSize: 12 }}>
-                      <span style={{ color: "#8B8BA7" }}>{c.label}</span>
-                      <span
-                        className="font-mono font-bold ml-2"
-                        style={{ color: "#4F6EF7" }}
-                      >
-                        {c.w}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <Link
-                  href="/methodology"
-                  style={{ fontSize: 12, color: "#4F6EF7", textDecoration: "none", marginTop: 8, display: "inline-block" }}
-                >
-                  Full methodology →
-                </Link>
-              </div>
-              <button
-                onClick={() => setShowMethodology(false)}
-                style={{ background: "none", border: "none", color: "#4A4A6A", cursor: "pointer" }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-        )}
+            <option value="score-desc">Highest Score First</option>
+            <option value="score-asc">Lowest Score First</option>
+            <option value="tuition-asc">Lowest Tuition First</option>
+            <option value="tuition-desc">Highest Tuition First</option>
+          </select>
 
-        {/* Filters */}
-        <div className="glass-card p-4 mb-4">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Search */}
-            <div
-              style={{
-                position: "relative",
-                flex: "1",
-                minWidth: 200,
-              }}
-            >
-              <Search
-                size={14}
-                style={{
-                  position: "absolute",
-                  left: 12,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "#4A4A6A",
-                  pointerEvents: "none",
-                }}
-              />
-              <input
-                value={globalFilter}
-                onChange={(e) => setGlobalFilter(e.target.value)}
-                placeholder="Search colleges or degrees..."
-                className="form-input"
-                style={{ paddingLeft: 36 }}
-              />
-            </div>
-
-            {/* Field filter */}
-            <select
-              value={fieldFilter}
-              onChange={(e) => setFieldFilter(e.target.value)}
-              className="form-input form-select"
-              style={{ maxWidth: 180, background: "#0A0A0F" }}
-            >
-              <option value="">All Fields</option>
-              {UNIQUE_FIELDS.map((f) => (
-                <option key={f} value={f} style={{ background: "#13131A" }}>
-                  {FIELD_LABELS[f] || f}
-                </option>
-              ))}
-            </select>
-
-            {/* State filter */}
-            <select
-              value={stateFilter}
-              onChange={(e) => setStateFilter(e.target.value)}
-              className="form-input form-select"
-              style={{ maxWidth: 160, background: "#0A0A0F" }}
-            >
-              <option value="">All States</option>
-              {UNIQUE_STATES.map((s) => (
-                <option key={s} value={s} style={{ background: "#13131A" }}>
-                  {s}
-                </option>
-              ))}
-            </select>
-
-            {/* Tier filter */}
-            <select
-              value={tierFilter}
-              onChange={(e) => setTierFilter(e.target.value)}
-              className="form-input form-select"
-              style={{ maxWidth: 120, background: "#0A0A0F" }}
-            >
-              <option value="">All Tiers</option>
-              {UNIQUE_TIERS.map((t) => (
-                <option key={t} value={t} style={{ background: "#13131A" }}>
-                  Tier {t}
-                </option>
-              ))}
-            </select>
-
-            {/* AI Risk filter */}
-            <select
-              value={aiRiskFilter}
-              onChange={(e) => setAiRiskFilter(e.target.value)}
-              className="form-input form-select"
-              style={{ maxWidth: 140, background: "#0A0A0F" }}
-            >
-              <option value="">All AI Risk</option>
-              {["Low", "Medium", "High", "Very High"].map((l) => (
-                <option key={l} value={l} style={{ background: "#13131A" }}>
-                  {l}
-                </option>
-              ))}
-            </select>
-
-            {/* Clear */}
-            {hasFilters && (
-              <button
-                onClick={() => {
-                  setFieldFilter("");
-                  setStateFilter("");
-                  setTierFilter("");
-                  setAiRiskFilter("");
-                  setGlobalFilter("");
-                }}
-                className="btn-secondary"
-                style={{ fontSize: 12, padding: "8px 12px" }}
-              >
-                <X size={12} />
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="glass-card overflow-hidden">
-          <div style={{ overflowX: "auto" }}>
-            <table className="data-table" style={{ minWidth: 900 }}>
-              <thead>
-                {table.getHeaderGroups().map((hg) => (
-                  <tr key={hg.id}>
-                    {hg.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        onClick={header.column.getToggleSortingHandler()}
-                        style={{ cursor: header.column.getCanSort() ? "pointer" : "default" }}
-                      >
-                        <div className="flex items-center gap-1">
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {header.column.getCanSort() && (
-                            <span style={{ color: "#4A4A6A" }}>
-                              {header.column.getIsSorted() === "asc" ? (
-                                <ArrowUp size={10} />
-                              ) : header.column.getIsSorted() === "desc" ? (
-                                <ArrowDown size={10} />
-                              ) : (
-                                <ArrowUpDown size={10} />
-                              )}
-                            </span>
-                          )}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Empty state */}
-          {table.getRowModel().rows.length === 0 && (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "48px 24px",
-                color: "#4A4A6A",
-              }}
-            >
-              <Filter size={24} style={{ margin: "0 auto 12px" }} />
-              <p style={{ fontWeight: 600, marginBottom: 4 }}>No programs match your filters</p>
-              <p style={{ fontSize: 13 }}>Try removing some filters</p>
-            </div>
+          {!isLoading && (
+            <span className="text-xs text-gray-500 font-mono">
+              {filteredData.length} program{filteredData.length === 1 ? "" : "s"}
+            </span>
           )}
         </div>
+      </div>
 
-        {/* Footer note */}
-        <p
-          className="text-xs font-mono mt-4"
-          style={{ color: "#4A4A6A", textAlign: "center" }}
-        >
-          Showing {table.getRowModel().rows.length} of {allData.length} programs ·
-          Composite scores calculated per The Project quantitative methodology ·{" "}
-          <Link href="/methodology" style={{ color: "#4F6EF7", textDecoration: "none" }}>
-            See formula
-          </Link>
-        </p>
+      <div className="container-xl">
+        {isLoading ? (
+          <div className="text-center py-12 text-gray-400">Loading the program index…</div>
+        ) : loadError ? (
+          <div className="glass-card text-center py-12 px-6">
+            <p className="text-gray-300 mb-4">
+              The program index could not be loaded. Please try again.
+            </p>
+            <button className="btn-secondary inline-flex items-center gap-2" onClick={() => setReloadKey((k) => k + 1)}>
+              <RefreshCw size={14} /> Retry
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto glass-card">
+              <table className="data-table w-full text-left">
+                <thead>
+                  <tr>
+                    <th className="p-4 border-b border-[#1E1E2E]">Rank</th>
+                    <th className="p-4 border-b border-[#1E1E2E]">Institution + Program</th>
+                    <th className="p-4 border-b border-[#1E1E2E]">Composite Score</th>
+                    <th className="p-4 border-b border-[#1E1E2E]">AI Risk</th>
+                    <th className="p-4 border-b border-[#1E1E2E]">Placement %</th>
+                    <th className="p-4 border-b border-[#1E1E2E]">Tuition (₹L)</th>
+                    <th className="p-4 border-b border-[#1E1E2E]">Audit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredData.map((item, index) => {
+                    const badgeClass =
+                      item.meta.aiRiskLabel === "Low"
+                        ? "badge-green"
+                        : item.meta.aiRiskLabel === "Medium"
+                        ? "badge-yellow"
+                        : "badge-red";
+
+                    const tuitionL = (item.costs.totalTuitionInr / 100000).toFixed(1);
+
+                    return (
+                      <tr key={item.id} className="border-b border-[#1E1E2E]/50 hover:bg-[#1E1E2E]/30">
+                        <td className="p-4 font-mono">{index + 1}</td>
+                        <td className="p-4">
+                          <Link href={`/college/${item.id}`} className="hover:text-blue-400 transition">
+                            <div className="font-semibold text-white">{item.college.shortName}</div>
+                            <div className="text-sm text-gray-400">{item.degree.shortName}</div>
+                          </Link>
+                        </td>
+                        <td className="p-4">
+                          <span className={`font-mono font-bold ${item.roi.compositeScore >= 80 ? 'text-green-500' : item.roi.compositeScore >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+                            {item.roi.compositeScore.toFixed(1)}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${badgeClass}`}>
+                            {item.meta.aiRiskLabel}
+                          </span>
+                        </td>
+                        <td className="p-4 font-mono text-gray-300">{placementPct(item)}%</td>
+                        <td className="p-4 font-mono text-gray-300">{tuitionL}L</td>
+                        <td className="p-4">
+                          <Lock size={16} className="text-gray-500" />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden grid gap-4 grid-cols-1 sm:grid-cols-2">
+              {filteredData.map((item, index) => (
+                <div key={item.id} className="glass-card p-4 rounded-lg border border-[#1E1E2E]">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="text-xs text-gray-500 font-mono mb-1">#{index + 1}</div>
+                      <Link href={`/college/${item.id}`}>
+                        <h3 className="font-bold text-white leading-tight mb-1">{item.college.shortName}</h3>
+                        <p className="text-sm text-gray-400">{item.degree.shortName}</p>
+                      </Link>
+                    </div>
+                    <div className={`font-mono text-xl font-bold ${item.roi.compositeScore >= 80 ? 'text-green-500' : item.roi.compositeScore >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+                      {item.roi.compositeScore.toFixed(0)}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-sm mt-4">
+                    <div>
+                      <div className="text-gray-500 text-xs">Tuition</div>
+                      <div className="font-mono text-gray-200">₹{(item.costs.totalTuitionInr / 100000).toFixed(1)}L</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500 text-xs">Placement</div>
+                      <div className="font-mono text-gray-200">{placementPct(item)}%</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {filteredData.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                No programs found matching filters.
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

@@ -211,8 +211,10 @@ async function proxy(request: Request, path: string[], method: string) {
       path: {
         nodes: [
           { id: "gate_1", label: "Entrance Gate (JEE / BITSAT / State CET)", kind: "exam", layer: 0, note: "Target percentile >96th" },
-          { id: "prog_1", label: "Tier-1 / Flagship NIT Tech Program", kind: "program", layer: 1, note: "Median ₹18 LPA · Payback 1.2y", catalog_program_id: "p1" },
-          { id: "prog_2", label: "State Flagship / Autonomous Institute", kind: "program", layer: 1, note: "Median ₹10 LPA · Payback 1.6y", catalog_program_id: "p2" },
+          // [AI-CoLab: Cursor] catalog_program_id must reference real MOCK_DATA ids;
+          // "p1"/"p2" produced dead /college/p1 links.
+          { id: "prog_1", label: "Tier-1 / Flagship NIT Tech Program", kind: "program", layer: 1, note: "Median ₹18 LPA · Payback 1.2y", catalog_program_id: "iitb-btech-cse" },
+          { id: "prog_2", label: "State Flagship / Autonomous Institute", kind: "program", layer: 1, note: "Median ₹10 LPA · Payback 1.6y", catalog_program_id: "dtu-btech-se" },
           { id: "skill_1", label: "Distributed Systems & Cloud Architecture", kind: "skill", layer: 2, note: "High AI-complementarity" },
           { id: "skill_2", label: "Applied ML & Systems Optimization", kind: "skill", layer: 2, note: "Top 5% market demand in 2026" },
           { id: "role_1", label: "Core Backend / Infrastructure Engineer", kind: "role", layer: 3, note: "Starting ₹14-22 LPA" },
@@ -376,6 +378,52 @@ async function proxy(request: Request, path: string[], method: string) {
         { url: "https://rbi.org.in", title: "Reserve Bank of India Macroeconomic Indicators", snippet: "Education inflation calibrated at 7.2% YoY" }
       ],
       search_queries: ["NIRF placement median CTC 2024", "AI displacement risk India IT engineering"],
+    });
+  }
+
+  if (subpath === "analytics/opportunities") {
+    return NextResponse.json({
+      status: "ok",
+      count: 4,
+      waves: [
+        { 
+          id: "w1", 
+          category: "competition", 
+          title: "3 Econ & Quant Competitions Open", 
+          body: "Pre-university track open for Class 11-12 students. Judged by faculty from Delhi School of Economics and IGIDR. Offers verified external spike validation.", 
+          matchPct: 98, 
+          deadlineDays: 14, 
+          source: "EconOlympiad 2026" 
+        },
+        { 
+          id: "w2", 
+          category: "admissions", 
+          title: "LSE & Warwick Update Int'l Math Requirements", 
+          body: "Higher Mathematics now listed as required (not preferred) for Economics BSc from Cohort 2027. Shifts SAT/CUET priority immediately into the current sprint.", 
+          matchPct: 91, 
+          deadlineDays: null, 
+          source: "LSE Admissions Portal" 
+        },
+        { 
+          id: "w3", 
+          category: "research", 
+          title: "Ashoka Comp. Econ Lab: 3 Pre-Uni Fellows", 
+          body: "Ashoka University's Computational Economics Lab accepting pre-university research fellows for AY 2026-27. Directly addresses co-authorship gap, unlocking 2.4x odds multiplier.", 
+          matchPct: 94, 
+          deadlineDays: 21, 
+          source: "Ashoka Univ. Research Office" 
+        },
+        { 
+          id: "w4", 
+          category: "scholarship", 
+          title: "Need-Aware Global Merit Fellowship $24k/yr", 
+          body: "Rolling review cycle open. Requires 2 academic letters + research abstract. Income threshold: household <$65k USD equivalent, perfectly aligning with budget constraints.", 
+          matchPct: 76, 
+          deadlineDays: null, 
+          source: "GlobalMerit Foundation" 
+        },
+      ],
+      _source: "serverless",
     });
   }
 

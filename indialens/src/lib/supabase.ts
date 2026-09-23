@@ -33,7 +33,7 @@ export async function fetchSupabaseRest<T>(
   if (!supabaseUrl || !anonKey) return null;
 
   const url = `${supabaseUrl}/rest/v1/${endpoint.replace(/^\//, "")}`;
-  const { timeoutMs = 6000, ...rest } = options;
+  const { timeoutMs = 1200, ...rest } = options;
 
   try {
     const fetchOptions: RequestInit = {

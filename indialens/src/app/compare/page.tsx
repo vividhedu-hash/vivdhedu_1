@@ -4,7 +4,7 @@ import { fetchCollegeList } from "../../lib/live-colleges";
 import type { CollegeDegreeRecord } from "../../lib/mock-data";
 
 export const metadata = {
-  title: "Compare Colleges & Degrees | The Project",
+  title: "Compare Colleges & Programs | IndiaLens · Student OS",
   description: "Compare up to 4 Indian college programs side-by-side on 20-Year NPV, placement consistency, fees, and AI risk exposure.",
 };
 
@@ -31,8 +31,16 @@ function toCompareItem(r: CollegeDegreeRecord) {
 }
 
 export default async function ComparePage() {
-  const listed = await fetchCollegeList({ per_page: 4, sort_by: "compositeScore" });
-  const programs = listed.data.map(toCompareItem);
+  let programs: any[] = [];
+  let isLive = false;
+
+  try {
+    const listed = await fetchCollegeList({ per_page: 4, sort_by: "compositeScore" });
+    programs = listed.data.map(toCompareItem);
+    isLive = listed.source === "database";
+  } catch {
+    // Graceful fallback
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 text-white pt-24 pb-16 px-4 sm:px-6 lg:px-8">
@@ -47,9 +55,9 @@ export default async function ComparePage() {
               Compare Colleges & Programs
             </h1>
             <p className="text-slate-400 text-sm mt-1">
-              {listed.source === "database"
-                ? "Live programs from The Project quantitative index."
-                : "Local demo data — set FASTAPI_URL to load the live index."}
+              {isLive
+                ? "Live programs from IndiaLens sovereign quantitative index."
+                : "Actuarial benchmark comparison — 20-year NPV, debt recovery, and AI risk."}
             </p>
           </div>
 

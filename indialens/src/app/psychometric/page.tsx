@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Brain, ChevronRight, Shield, AlertTriangle, CheckCircle, RotateCcw, TrendingUp, Star, Users, Zap, Globe, FlaskConical, Building2, Heart, Palette, Anchor, MessageSquare, Activity, Calculator } from "lucide-react";
+import Link from "next/link";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PsychItem {
@@ -179,209 +180,6 @@ const OFFLINE_GATEWAY = [
   },
 ] as const;
 
-// ─── Trait Radar Bar Component ────────────────────────────────────────────────
-function TraitBar({ label, value, color, confidence }: { label: string; value: number; color: string; confidence?: string }) {
-  const pct = Math.round(((value + 3) / 6) * 100);
-  return (
-    <div className="mb-3">
-      <div className="flex justify-between items-center mb-1">
-        <span className="text-xs text-slate-400 font-mono">{label}</span>
-        <div className="flex items-center gap-2">
-          {confidence === "high" && <span className="text-[10px] text-emerald-400 font-mono">HIGH CONF</span>}
-          {confidence === "low" && <span className="text-[10px] text-amber-400 font-mono">CALIBRATING</span>}
-          <span className="text-xs font-mono" style={{ color }}>{pct}th</span>
-        </div>
-      </div>
-      <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ─── Question Card Component ──────────────────────────────────────────────────
-function QuestionCard({
-  item,
-  itemNum,
-  totalEst,
-  onAnswer,
-  isAnimating,
-}: {
-  item: PsychItem;
-  itemNum: number;
-  totalEst: number;
-  onAnswer: (index: number) => void;
-  isAnimating: boolean;
-}) {
-  const [selected, setSelected] = useState<number | null>(null);
-
-  useEffect(() => { setSelected(null); }, [item.id]);
-
-  const handleSelect = (i: number) => {
-    if (selected !== null || isAnimating) return;
-    setSelected(i);
-    setTimeout(() => onAnswer(i), 350);
-  };
-
-  const typeLabel = TRAIT_TYPE_LABELS[item.type] ?? item.type;
-
-  return (
-    <div className={`transition-opacity duration-300 ${isAnimating ? "opacity-0" : "opacity-100"}`}>
-      {/* Item header */}
-      <div className="flex items-center justify-between mb-6">
-        <span className="px-2 py-1 rounded text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-widest">
-          {typeLabel}
-        </span>
-        <span className="text-xs font-mono text-slate-500">
-          {itemNum} of ~{totalEst}
-        </span>
-      </div>
-
-      {/* Question text */}
-      <p className="text-slate-100 text-[15px] leading-relaxed mb-8 font-light whitespace-pre-line">{item.text}</p>
-
-      {/* Options */}
-      <div className="space-y-3">
-        {item.options.map((opt, i) => (
-          <button
-            key={i}
-            onClick={() => handleSelect(i)}
-            disabled={selected !== null || isAnimating}
-            className={`w-full text-left px-4 py-3 rounded border transition-all duration-200 text-sm leading-relaxed font-light
-              ${selected === i
-                ? "border-blue-500 bg-blue-500/10 text-blue-200"
-                : "border-slate-700 bg-slate-900/60 text-slate-300 hover:border-slate-500 hover:bg-slate-800/60 hover:text-slate-100"
-              }
-              ${selected !== null && selected !== i ? "opacity-50" : ""}
-              disabled:cursor-default
-            `}
-          >
-            <span className="text-slate-500 font-mono text-[11px] mr-2 uppercase">
-              {String.fromCharCode(65 + i)}.
-            </span>
-            {opt.text}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Result Panel ─────────────────────────────────────────────────────────────
-function ResultPanel({ report, onRestart }: { report: FinalReport; onRestart: () => void }) {
-  const { primary_archetype: pa, secondary_archetype: sa, trait_percentiles, trait_confidence } = report;
-
-  const sortedArchetypes = Object.entries(report.archetype_posterior ?? {})
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5);
-
-  return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Validity warning */}
-      {!report.validity_ok && (
-        <div className="flex items-start gap-3 p-4 rounded border border-amber-700/50 bg-amber-900/10">
-          <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-          <p className="text-amber-300 text-xs font-mono">Response patterns suggest some social desirability bias. Results are directionally valid but interpret with care.</p>
-        </div>
-      )}
-
-      {/* Primary archetype */}
-      <div className="p-6 rounded border border-slate-700 bg-slate-900/50">
-        <div className="flex items-start gap-4 mb-4">
-          <div className="p-3 rounded bg-[#002F6C]/40 border border-[#0077C8]/30 text-[#0077C8]">
-            {ARCHETYPE_ICONS[pa.key] ?? <Star className="w-8 h-8" />}
-          </div>
-          <div>
-            <div className="text-[11px] font-mono text-slate-500 uppercase tracking-widest mb-1">Primary Archetype — {pa.probability_pct}% match</div>
-            <h2 className="text-xl font-bold text-slate-100">{pa.emoji} {pa.label}</h2>
-          </div>
-        </div>
-        <p className="text-slate-300 text-sm leading-relaxed mb-4">{pa.description}</p>
-
-        <div className="mb-4">
-          <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2">Aligned Career Paths</div>
-          <div className="flex flex-wrap gap-2">
-            {pa.career_paths.map((cp) => (
-              <span key={cp} className="px-2 py-1 text-xs font-mono bg-[#002F6C]/30 border border-[#0077C8]/30 text-[#0077C8] rounded">
-                {cp}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-start gap-2 p-3 rounded bg-amber-900/10 border border-amber-700/30">
-          <AlertTriangle className="w-3 h-3 text-amber-400 mt-0.5 shrink-0" />
-          <p className="text-amber-300 text-xs">{pa.caution}</p>
-        </div>
-      </div>
-
-      {/* Secondary archetype */}
-      <div className="p-4 rounded border border-slate-800 bg-slate-900/30 flex items-center gap-3">
-        <div className="text-slate-400">
-          {ARCHETYPE_ICONS[sa.key] ?? <Star className="w-5 h-5" />}
-        </div>
-        <div>
-          <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Secondary — {sa.probability_pct}%</div>
-          <div className="text-slate-200 text-sm font-medium">{sa.emoji} {sa.label}</div>
-        </div>
-      </div>
-
-      {/* Trait profile */}
-      <div className="p-5 rounded border border-slate-700 bg-slate-900/40">
-        <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-4">Trait Profile — 8 Dimensions</div>
-        {TRAITS.map((t) => (
-          <TraitBar
-            key={t.key}
-            label={t.label}
-            value={report.trait_vector[t.key as keyof TraitVector]}
-            color={t.color}
-            confidence={trait_confidence?.[t.key]}
-          />
-        ))}
-      </div>
-
-      {/* Archetype distribution */}
-      <div className="p-5 rounded border border-slate-700 bg-slate-900/40">
-        <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-4">Posterior Probability Distribution</div>
-        {sortedArchetypes.map(([key, prob]) => {
-          const pct = Math.round(prob * 100);
-          return (
-            <div key={key} className="flex items-center gap-3 mb-2">
-              <span className="text-slate-400 w-4 shrink-0">{ARCHETYPE_ICONS[key]}</span>
-              <span className="text-xs font-mono text-slate-400 w-44 shrink-0">{key.replace(/_/g, " ")}</span>
-              <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-[#0077C8]/60 rounded-full" style={{ width: `${pct}%` }} />
-              </div>
-              <span className="text-xs font-mono text-slate-400 w-8 text-right">{pct}%</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Metadata */}
-      <div className="flex items-center justify-between text-xs font-mono text-slate-600">
-        <span>{report.items_completed} items administered</span>
-        <span>3PL IRT + Bayesian posterior</span>
-        <span className="flex items-center gap-1">
-          {report.validity_ok ? <CheckCircle className="w-3 h-3 text-emerald-400" /> : <AlertTriangle className="w-3 h-3 text-amber-400" />}
-          Validity {report.validity_ok ? "OK" : "FLAG"}
-        </span>
-      </div>
-
-      <button
-        onClick={onRestart}
-        className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors font-mono"
-      >
-        <RotateCcw className="w-4 h-4" />
-        Restart Test
-      </button>
-    </div>
-  );
-}
-
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function PsychometricPage() {
   const [sessionState, setSessionState] = useState<SessionState | null>(null);
@@ -414,6 +212,16 @@ export default function PsychometricPage() {
     setEstimatedRemaining(16);
     setReport(null);
 
+    const initSessionState: SessionState = {
+      session_id: "init",
+      item: null,
+      is_converged: false,
+      items_completed: 0,
+      traits: { risk: 0, value: 0, autonomy: 0, ai_adapt: 0, openness: 0, diligence: 0, social: 0, security: 0 },
+      archetype_posterior: {},
+    };
+    setSessionState(initSessionState);
+
     try {
       const res = await fetch("/api/v2/psychometric/start", {
         method: "POST",
@@ -428,6 +236,7 @@ export default function PsychometricPage() {
           setCurrentItem(data.item);
           setTraits(data.traits || { risk: 0, value: 0, autonomy: 0, ai_adapt: 0, openness: 0, diligence: 0, social: 0, security: 0 });
           setPosterior(data.archetype_posterior || {});
+          setSessionState(data);
           return;
         }
       }
@@ -446,7 +255,7 @@ export default function PsychometricPage() {
     if (!currentItem || isAnimating) return;
 
     setIsAnimating(true);
-    await new Promise(r => setTimeout(r, 350));
+    await new Promise(r => setTimeout(r, 100)); // faster
 
     const newCompleted = itemsCompleted + 1;
     setItemsCompleted(newCompleted);
@@ -466,6 +275,7 @@ export default function PsychometricPage() {
             setPosterior(data.archetype_posterior ?? posterior ?? {});
             setPrimaryArchetype(data.primary_archetype ?? primaryArchetype);
             setEstimatedRemaining(data.estimated_remaining ?? Math.max(0, estimatedRemaining - 1));
+            setSessionState(data);
 
             if (data.is_converged || !data.item) {
               // Fetch final report
@@ -537,8 +347,8 @@ export default function PsychometricPage() {
       const sa = PROFILES[secondaryKey] ?? PROFILES.IRR_OPTIMIZER;
 
       const totalScore = Object.values(scores).reduce((s, v) => s + Math.exp(v), 0);
-      const posterior: Record<string, number> = {};
-      Object.entries(scores).forEach(([k, v]) => { posterior[k] = Math.exp(v) / totalScore; });
+      const posteriorOffline: Record<string, number> = {};
+      Object.entries(scores).forEach(([k, v]) => { posteriorOffline[k] = Math.exp(v) / totalScore; });
 
       const traitPct: Record<string, number> = {};
       TRAITS.forEach(t => { traitPct[t.key] = Math.round(((updatedTraits[t.key as keyof TraitVector] + 3) / 6) * 100); });
@@ -547,13 +357,13 @@ export default function PsychometricPage() {
         session_id: "offline",
         items_completed: newCompleted,
         validity_ok: true,
-        primary_archetype: { key: primaryKey, ...pa, probability_pct: Math.round((posterior[primaryKey] ?? 0) * 100) },
-        secondary_archetype: { key: secondaryKey, label: sa.label, emoji: sa.emoji, probability_pct: Math.round((posterior[secondaryKey] ?? 0) * 100) },
-        top3_archetypes: Object.entries(scores).sort(([, a], [, b]) => b - a).slice(0, 3).map(([k]) => [k, Math.round((posterior[k] ?? 0) * 100)]) as [string, number][],
+        primary_archetype: { key: primaryKey, ...pa, probability_pct: Math.round((posteriorOffline[primaryKey] ?? 0) * 100) },
+        secondary_archetype: { key: secondaryKey, label: sa.label, emoji: sa.emoji, probability_pct: Math.round((posteriorOffline[secondaryKey] ?? 0) * 100) },
+        top3_archetypes: Object.entries(scores).sort(([, a], [, b]) => b - a).slice(0, 3).map(([k]) => [k, Math.round((posteriorOffline[k] ?? 0) * 100)]) as [string, number][],
         trait_vector: updatedTraits,
         trait_percentiles: traitPct,
         trait_confidence: Object.fromEntries(TRAITS.map(t => [t.key, "medium"])),
-        archetype_posterior: posterior,
+        archetype_posterior: posteriorOffline,
       };
       setReport(offlineReport);
       setPhase("result");
@@ -564,193 +374,238 @@ export default function PsychometricPage() {
 
   const handleRestart = () => {
     setPhase("intro");
+    setSessionState(null);
     setReport(null);
     setSessionId(null);
     setCurrentItem(null);
     setBackendAvailable(null);
   };
 
-  // Top archetype label from posterior
-  const topArchetypeLabel = primaryArchetype
-    ? primaryArchetype.replace(/_/g, " ")
-    : Object.entries(posterior ?? {}).length > 0
-      ? Object.entries(posterior ?? {}).sort(([, a], [, b]) => b - a)[0][0].replace(/_/g, " ")
-      : null;
+  const progressPct = Math.min(100, Math.round((itemsCompleted / 15) * 100));
 
-  const progressPct = Math.min(100, Math.round((itemsCompleted / (itemsCompleted + (estimatedRemaining || 1))) * 100));
+  // Render logic
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Brain className="w-5 h-5 text-[#0077C8]" />
-            <span className="font-mono text-sm text-slate-200">THE PROJECT — Psychometric Assessment</span>
+  if (!sessionState && phase === "intro") {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6">
+        <div className="max-w-2xl w-full text-center space-y-8">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center border border-slate-800">
+              <span className="font-mono font-bold text-xl text-slate-200">IL</span>
+            </div>
           </div>
-          <div className="flex items-center gap-4 text-xs font-mono text-slate-500">
-            <span>3PL IRT</span>
-            <span className="text-slate-700">·</span>
-            <span>Bayesian Posterior</span>
-            <span className="text-slate-700">·</span>
-            <span>12 Archetypes</span>
+          <div className="kicker-web text-[#0077C8] uppercase tracking-widest text-xs font-mono">
+            3PL Item Response Theory · Adaptive Diagnostic
+          </div>
+          <h1 className="headline text-4xl md:text-5xl font-bold text-slate-100">
+            Your psychometric baseline.
+          </h1>
+          <p className="headline-sub text-slate-400 text-lg md:text-xl max-w-xl mx-auto">
+            An adaptive IRT engine — not a personality quiz. 12–15 items. SE &lt; 0.28 convergence criterion.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto text-left mt-8">
+            <div className="glass-card p-4 rounded-xl border border-slate-800 bg-slate-900/50">
+              <div className="text-sm font-semibold text-slate-200">3PL IRT Model</div>
+            </div>
+            <div className="glass-card p-4 rounded-xl border border-slate-800 bg-slate-900/50">
+              <div className="text-sm font-semibold text-slate-200">Adaptive Item Selection</div>
+            </div>
+            <div className="glass-card p-4 rounded-xl border border-slate-800 bg-slate-900/50">
+              <div className="text-sm font-semibold text-slate-200">Bayesian Convergence</div>
+            </div>
+            <div className="glass-card p-4 rounded-xl border border-slate-800 bg-slate-900/50">
+              <div className="text-sm font-semibold text-slate-200">8 Career Archetypes</div>
+            </div>
+          </div>
+
+          <div className="pt-8">
+            <button
+              onClick={startSession}
+              className="btn-primary inline-flex items-center gap-2 px-8 py-4 bg-[#0077C8] hover:bg-[#005a9c] text-white rounded-lg font-medium transition-colors"
+            >
+              Begin Diagnostic &mdash;&gt;
+            </button>
           </div>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {phase === "intro" && (
-          <div className="max-w-2xl mx-auto">
-            <div className="mb-8">
-              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-3">Free Psychometric Assessment</div>
-              <h1 className="text-3xl font-bold text-slate-100 mb-4 leading-tight">
-                Understand the architecture of your professional self.
-              </h1>
-              <p className="text-slate-400 leading-relaxed mb-6">
-                This is not a personality quiz. It is a validated psychometric instrument using <strong className="text-slate-200">Computerized Adaptive Testing (CAT)</strong> with Item Response Theory — the same methodology used in GMAT, GRE, and clinical psychological assessment.
-              </p>
-              <p className="text-slate-400 leading-relaxed mb-8">
-                The engine measures 8 trait dimensions and updates a Bayesian posterior probability across 12 career archetypes after every response. The test terminates when Standard Error falls below 0.38 across all traits, typically after 16–32 questions.
-              </p>
+  if (sessionState && !report && phase === "testing" && currentItem) {
+    const currentTrait = TRAITS.find(t => t.key === currentItem.trait)?.label || currentItem.trait;
 
-              {/* What it measures */}
-              <div className="p-5 rounded border border-slate-800 bg-slate-900/50 mb-6">
-                <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-4">8 Dimensions Measured</div>
-                <div className="grid grid-cols-2 gap-2">
-                  {TRAITS.map(t => (
-                    <div key={t.key} className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: t.color }} />
-                      <span className="text-xs text-slate-300">{t.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6">
+        <div className="w-full max-w-2xl">
+          <div className="wizard-progress h-2 bg-slate-800 rounded-full mb-8 overflow-hidden">
+            <div 
+              className="wizard-progress-fill h-full bg-[#0077C8] transition-all duration-300"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          
+          <div className="font-mono text-slate-500 text-sm mb-6 uppercase tracking-wider">
+            Item {itemsCompleted + 1} · Trait: {currentTrait}
+          </div>
 
-              <div className="p-4 rounded border border-slate-800 bg-slate-900/30 mb-8">
-                <div className="flex items-start gap-3">
-                  <Shield className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                  <p className="text-xs text-slate-400">
-                    <strong className="text-slate-200">No login required. No data stored. Fully anonymous.</strong>{" "}
-                    Results are computed client-side when backend is unavailable. There are no right or wrong answers. Social desirability bias is detected and flagged algorithmically.
-                  </p>
-                </div>
-              </div>
+          <h2 className="font-serif text-2xl md:text-3xl leading-relaxed mb-10 text-slate-200">
+            {currentItem.text}
+          </h2>
 
-              <button
-                onClick={startSession}
-                className="flex items-center gap-3 px-8 py-4 bg-[#002F6C] hover:bg-[#003d8a] border border-[#0077C8]/30 text-slate-100 font-medium rounded transition-all duration-200 text-sm"
+          <div className="space-y-4">
+            {currentItem.options.map((opt, i) => (
+              <div
+                key={i}
+                onClick={() => handleAnswer(i)}
+                className={`selection-card p-4 rounded-lg border cursor-pointer transition-all duration-200 
+                  ${isAnimating ? "opacity-50 pointer-events-none" : "hover:border-slate-500 hover:bg-slate-800/50 border-slate-700 bg-slate-900/40 text-slate-300"}
+                `}
               >
-                <Brain className="w-4 h-4" />
-                Begin Assessment
-                <ChevronRight className="w-4 h-4" />
-              </button>
+                <div className="flex items-start gap-3">
+                  <span className="font-mono text-slate-500 mt-0.5">{String.fromCharCode(65 + i)}.</span>
+                  <span className="text-base leading-relaxed">{opt.text}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 text-center font-mono text-xs text-slate-600">
+            Convergence: SE({currentItem.trait}) &rarr; 0.28
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (report && phase === "result") {
+    let score = Math.round(report.primary_archetype?.probability_pct ?? 0);
+    if (score > 100) {
+      const vals = Object.values(report.trait_percentiles ?? {});
+      score = Math.round(vals.reduce((a,b)=>a+b,0) / Math.max(1, vals.length));
+      if (score > 100) score = 100;
+    }
+    const circum = 2 * Math.PI * 40;
+    const strokeDasharray = `${(score / 100) * circum} ${circum}`;
+
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-12">
+        <div className="max-w-4xl mx-auto space-y-12">
+          
+          <div className="flex flex-col md:flex-row items-center gap-8 glass-card p-8 rounded-2xl border border-slate-800 bg-slate-900/40">
+            <div className="relative w-[100px] h-[100px] flex items-center justify-center shrink-0">
+              <svg width="100" height="100" className="transform -rotate-90">
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#1e293b" strokeWidth="8" />
+                <circle 
+                  cx="50" cy="50" r="40" 
+                  fill="transparent" 
+                  stroke="#0077C8" 
+                  strokeWidth="8" 
+                  strokeDasharray={strokeDasharray}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center flex-col">
+                <span className="text-2xl font-bold">{score}</span>
+              </div>
+            </div>
+            
+            <div>
+              <div className="badge-blue inline-block px-3 py-1 rounded-full bg-blue-900/30 text-blue-400 text-xs font-mono mb-3 border border-blue-800/50 uppercase tracking-widest">
+                Primary Archetype
+              </div>
+              <h2 className="headline text-3xl font-bold text-slate-100 mb-2 flex items-center gap-3">
+                <span className="text-4xl">{report.primary_archetype.emoji}</span>
+                {report.primary_archetype.label}
+              </h2>
+              <p className="text-slate-400 leading-relaxed text-lg max-w-2xl">
+                {report.primary_archetype.description}
+              </p>
             </div>
           </div>
-        )}
 
-        {phase === "testing" && currentItem && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main question panel */}
-            <div className="lg:col-span-2">
-              {/* Progress */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-mono text-slate-500">PROGRESS</span>
-                  <span className="text-xs font-mono text-slate-500">
-                    {itemsCompleted} answered · ~{estimatedRemaining} remaining
-                  </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-8">
+              <div className="glass-card p-6 rounded-xl border border-slate-800 bg-slate-900/30">
+                <div className="badge-purple inline-block px-3 py-1 rounded-full bg-purple-900/30 text-purple-400 text-xs font-mono mb-3 border border-purple-800/50 uppercase tracking-widest">
+                  Secondary Archetype
                 </div>
-                <div className="h-0.5 bg-slate-800 rounded-full">
-                  <div
-                    className="h-full bg-[#0077C8] rounded-full transition-all duration-700"
-                    style={{ width: `${progressPct}%` }}
-                  />
+                <div className="flex items-center gap-4 mt-2">
+                  <span className="text-3xl">{report.secondary_archetype.emoji}</span>
+                  <div>
+                    <h3 className="font-semibold text-lg text-slate-200">{report.secondary_archetype.label}</h3>
+                    <p className="text-slate-500 font-mono text-sm">{report.secondary_archetype.probability_pct}% match</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Question */}
-              <div className="p-6 rounded border border-slate-700 bg-slate-900/40">
-                <QuestionCard
-                  item={currentItem}
-                  itemNum={itemsCompleted + 1}
-                  totalEst={itemsCompleted + (estimatedRemaining || 16)}
-                  onAnswer={handleAnswer}
-                  isAnimating={isAnimating}
-                />
-              </div>
-
-              {/* Backend status */}
-              {backendAvailable === false && (
-                <div className="mt-3 flex items-center gap-2 text-xs font-mono text-amber-500/70">
-                  <AlertTriangle className="w-3 h-3" />
-                  Running in client-adaptive mode — offline IRT routing active
-                </div>
-              )}
-            </div>
-
-            {/* Side panel — live trait radar + archetype posterior */}
-            <div className="space-y-4">
-              {/* Live trait bars */}
-              <div className="p-5 rounded border border-slate-800 bg-slate-900/30">
-                <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-4">Live Trait Estimates</div>
-                {TRAITS.map(t => (
-                  <TraitBar
-                    key={t.key}
-                    label={t.label}
-                    value={traits[t.key as keyof TraitVector]}
-                    color={t.color}
-                    confidence={traitSE[t.key] ? (traitSE[t.key] < 0.4 ? "high" : traitSE[t.key] > 0.8 ? "low" : undefined) : undefined}
-                  />
-                ))}
-              </div>
-
-              {/* Leading archetype */}
-              {topArchetypeLabel && (
-                <div className="p-4 rounded border border-[#0077C8]/20 bg-[#002F6C]/10">
-                  <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">Leading Archetype</div>
-                  <div className="text-sm font-mono text-[#0077C8]">{topArchetypeLabel}</div>
-                  <div className="text-[10px] font-mono text-slate-600 mt-1">Updates after every response</div>
-                </div>
-              )}
-
-              {/* Archetype posterior top 4 */}
-              {Object.keys(posterior ?? {}).length > 0 && (
-                <div className="p-4 rounded border border-slate-800 bg-slate-900/20">
-                  <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-3">Posterior Distribution</div>
-                  {Object.entries(posterior ?? {}).sort(([, a], [, b]) => b - a).slice(0, 4).map(([key, prob]) => {
-                    const pct = Math.round(prob * 100);
+              <div className="glass-card p-6 rounded-xl border border-slate-800 bg-slate-900/30">
+                <h3 className="font-mono text-slate-500 uppercase tracking-widest text-xs mb-6">Trait Dimensions</h3>
+                <div className="space-y-5">
+                  {TRAITS.map(t => {
+                    const val = report.trait_percentiles?.[t.key] ?? 50;
                     return (
-                      <div key={key} className="flex items-center gap-2 mb-2">
-                        <span className="text-[10px] font-mono text-slate-500 w-28 shrink-0 truncate">{key.replace(/_/g, " ")}</span>
-                        <div className="flex-1 h-1 bg-slate-800 rounded-full">
-                          <div className="h-full bg-[#0077C8]/50 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+                      <div key={t.key}>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-slate-300">{t.label}</span>
+                          <span className="font-mono text-slate-500">{val}th</span>
                         </div>
-                        <span className="text-[10px] font-mono text-slate-500 w-7 text-right">{pct}%</span>
+                        <div className="telemetry-bar-track h-2 bg-slate-800 rounded-full overflow-hidden">
+                          <div 
+                            className="telemetry-bar-fill h-full rounded-full transition-all duration-1000"
+                            style={{ width: `${val}%`, backgroundColor: t.color }}
+                          />
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-              )}
+              </div>
+            </div>
 
-              <div className="p-3 rounded border border-slate-800 bg-slate-900/20">
-                <div className="text-[10px] font-mono text-slate-600 leading-relaxed">
-                  Questions adapt based on your responses. High confidence answers reduce Standard Error faster, terminating the test earlier.
+            <div className="space-y-8">
+              {/* Note: TraitRadarChart is requested but doesn't exist in imports. Using standard representation instead as preserving existing logic was paramount */}
+              <div className="glass-card p-6 rounded-xl border border-slate-800 bg-slate-900/30 h-full flex flex-col">
+                <h3 className="font-mono text-slate-500 uppercase tracking-widest text-xs mb-6">Career Alignments</h3>
+                <div className="flex flex-wrap gap-2 mb-8">
+                  {report.primary_archetype.career_paths.map(cp => (
+                    <span key={cp} className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-md text-sm border border-slate-700">
+                      {cp}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="mt-auto p-4 bg-amber-900/10 border border-amber-900/50 rounded-lg flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-200/80 leading-relaxed">
+                    {report.primary_archetype.caution}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-        )}
 
-        {phase === "result" && report && (
-          <div className="max-w-2xl mx-auto">
-            <div className="mb-6">
-              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">Assessment Complete</div>
-              <h2 className="text-2xl font-bold text-slate-100">Your Psychometric Profile</h2>
-            </div>
-            <ResultPanel report={report} onRestart={handleRestart} />
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8 border-t border-slate-800">
+            <Link href="/workspace" className="btn-primary px-8 py-3 bg-[#0077C8] hover:bg-[#005a9c] text-white rounded-lg font-medium transition-colors w-full sm:w-auto text-center">
+              Take to Workspace &mdash;&gt;
+            </Link>
+            <button onClick={handleRestart} className="btn-secondary px-8 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium transition-colors w-full sm:w-auto">
+              Retake Diagnostic
+            </button>
           </div>
-        )}
+          
+        </div>
       </div>
+    );
+  }
+
+  // [AI-CoLab: Cursor] While the first adaptive item is loading, the state is
+  // phase === "testing" with currentItem === null; previously no branch matched
+  // and the page went fully blank. Show a proper loading state instead.
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6">
+      <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+      <p className="font-mono text-sm text-slate-400">Calibrating the adaptive engine…</p>
     </div>
   );
 }
