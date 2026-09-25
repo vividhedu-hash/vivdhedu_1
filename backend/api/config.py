@@ -2,12 +2,20 @@
 IndiaLens backend configuration — reads from environment variables / .env file
 """
 from pathlib import Path
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 ROOT_DIR = BACKEND_DIR.parent
 ENV_FILES = (str(BACKEND_DIR / ".env"), str(ROOT_DIR / ".env"), ".env")
+
+# Shipped defaults that must never be used to sign or gate production traffic.
+_PLACEHOLDER_SECRETS = {
+    "change-me-in-production-use-32-char-minimum",
+    "the-project-jwt-secret-key-32-chars-min",
+    "admin-dev-key-change-in-production",
+}
 
 
 class Settings(BaseSettings):
@@ -85,6 +93,36 @@ class Settings(BaseSettings):
         env_file = ENV_FILES
         env_file_encoding = "utf-8"
         extra = "ignore"
+
+    @model_validator(mode="after")
+    def _reject_placeholder_secrets_in_production(self):
+        """Fail closed at boot rather than boot with a forgeable secret.
+
+        A weak/default JWT_SECRET in production means anyone can mint a token with
+        is_premium=True, so treat it as a hard startup error, not a warning.
+        """
+        if self.environment.lower() not in {"production", "prod"}:
+            return self
+
+        problems: list[str] = []
+
+        # 1) Secrets must be overridden from the shipped defaults.
+        for field in ("secret_key", "jwt_secret", "api_key_admin"):
+            value = getattr(self, field) or ""
+            if not value or value in _PLACEHOLDER_SECRETS:
+                problems.append(f"{field} is still the built-in placeholder")
+
+        # 2) The JWT signing key must actually be strong.
+        if len(self.jwt_secret or "") < 32:
+            problems.append("jwt_secret must be at least 32 characters")
+
+        if problems:
+            raise ValueError(
+                "Refusing to start in production with insecure config: "
+                + "; ".join(problems)
+                + ". Set these as real environment variables."
+            )
+        return self
 
 
 @lru_cache()
