@@ -94,14 +94,20 @@ GitHub Actions secrets.
 
 ## 5. What is now automated
 
-| Check | Blocks merge? |
-|---|---|
-| `type-check` — `tsc --noEmit` | yes |
-| `python-check` — ruff | yes |
-| `Vercel – vivdhedu-1` — real production build | yes |
-| `backend-tests` — 66 pytest | yes |
-| `secret-scan` — committed credentials | yes |
-| `rls-audit` — unconditional policies, SECURITY DEFINER views | yes |
+`main` is protected. All six of these must pass before a PR can merge:
 
-`main` is protected: nothing lands without those passing. Never push to `main`
-directly — branch and open a PR.
+| Check | What it does |
+|---|---|
+| `type-check` | `tsc --noEmit` |
+| `python-check` | ruff on `scrapers/` + `api/` |
+| `Vercel – vivdhedu-1` | real production build |
+| `backend-tests` | 50 pytest, sandboxed off the live database |
+| `secret-scan` | blocks committed Supabase secrets, legacy JWTs, live keys |
+| `rls-audit` | blocks unconditional policies and `SECURITY DEFINER` views |
+
+Never push to `main` directly — branch and open a PR. Admin bypass is off, so
+this applies to you too.
+
+Note: `Vercel – vivdhedu-1-47pi` is **not** a required check, which is
+intentional — it disappears when you delete that project (§2).
+
