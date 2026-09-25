@@ -7,19 +7,15 @@
 
 import type { CollegeDegreeRecord, CollegeTier, DegreeField } from "./mock-data";
 
-const DEFAULT_SUPABASE_URL = "https://sxqdidcddmesamnpxxsp.supabase.co";
-const DEFAULT_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4cWRpZGNkZG1lc2FtbnB4eHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwNjk3ODYsImV4cCI6MjEwMjY0NTc4Nn0.uvJmilf_OH7FURTluZxwOnuCkxdVKJo7k1-7XCdt9to";
-
 export function getSupabaseUrl(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL;
+  return process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
 }
 
 export function getSupabaseAnonKey(): string {
   return (
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.SUPABASE_ANON_KEY ||
-    DEFAULT_SUPABASE_ANON_KEY
+    ""
   );
 }
 
