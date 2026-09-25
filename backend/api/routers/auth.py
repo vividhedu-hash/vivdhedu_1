@@ -177,6 +177,13 @@ async def google_oauth_callback(
     google_id = None
 
     # Verify ID token via Google TokenInfo API if provided
+    #
+    # Hardened (was silently swallowed):
+    #   - `aud` must match our client id, otherwise a token minted for another
+    #     app could be replayed against us.
+    #   - `email_verified` must be true.
+    #   - a failure no longer leaves the flow half-authenticated: if the token
+    #     cannot be validated we stop rather than continuing with no identity.
     if payload.id_token:
         try:
             import urllib.request
@@ -187,12 +194,28 @@ async def google_oauth_callback(
             )
             with urllib.request.urlopen(req, timeout=5) as resp:
                 data = json.loads(resp.read().decode())
-                email = data.get("email")
-                name = data.get("name")
-                avatar = data.get("picture")
-                google_id = data.get("sub")
+
+            audience = data.get("aud")
+            if settings.google_client_id and audience != settings.google_client_id:
+                raise ValueError(
+                    f"ID token audience mismatch: {audience!r} != configured client id"
+                )
+            if data.get("email_verified") not in ("true", True, "1", 1):
+                raise ValueError("Google account email is not verified")
+
+            email = data.get("email")
+            name = data.get("name")
+            avatar = data.get("picture")
+            google_id = data.get("sub")
+
+            if not email:
+                raise ValueError("Verified Google token contained no email claim")
         except Exception as e:
-            logger.warning(f"Google TokenInfo verification failed: {e}")
+            logger.warning(f"Google ID token verification failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Google identity could not be verified",
+            )
 
     # If code exchange is requested
     if not email and payload.code and settings.google_client_secret:

@@ -21,11 +21,12 @@ interface TrajectoryData {
 
 interface SalaryTrajectoryProps {
   data?: TrajectoryData[];
+  /** Each horizon is null when there is no measured salary to project from. */
   salaryByYear?: {
-    year1: { p25: number; p50: number; p75: number };
-    year5: { p25: number; p50: number; p75: number };
-    year10: { p25: number; p50: number; p75: number };
-    year20: { p25: number; p50: number; p75: number };
+    year1: { p25: number; p50: number; p75: number } | null;
+    year5: { p25: number; p50: number; p75: number } | null;
+    year10: { p25: number; p50: number; p75: number } | null;
+    year20: { p25: number; p50: number; p75: number } | null;
   };
 }
 
@@ -106,37 +107,27 @@ const CustomTooltip = ({
 };
 
 export function SalaryTrajectory({ data, salaryByYear }: SalaryTrajectoryProps) {
-  // Build chart data from salaryByYear if data not provided directly
+  // Build chart data from salaryByYear if data not provided directly.
+  // Horizons with no measured value are omitted from the series rather than
+  // plotted as 0, which would read as "this program pays nothing".
   const chartData: TrajectoryData[] =
     data ||
     (salaryByYear
-      ? [
-          { year: 0, conservative: 0, base: 0, optimistic: 0 },
-          {
-            year: 1,
-            conservative: salaryByYear.year1.p25,
-            base: salaryByYear.year1.p50,
-            optimistic: salaryByYear.year1.p75,
-          },
-          {
-            year: 5,
-            conservative: salaryByYear.year5.p25,
-            base: salaryByYear.year5.p50,
-            optimistic: salaryByYear.year5.p75,
-          },
-          {
-            year: 10,
-            conservative: salaryByYear.year10.p25,
-            base: salaryByYear.year10.p50,
-            optimistic: salaryByYear.year10.p75,
-          },
-          {
-            year: 20,
-            conservative: salaryByYear.year20.p25,
-            base: salaryByYear.year20.p50,
-            optimistic: salaryByYear.year20.p75,
-          },
-        ]
+      ? (
+          [
+            { year: 1, band: salaryByYear.year1 },
+            { year: 5, band: salaryByYear.year5 },
+            { year: 10, band: salaryByYear.year10 },
+            { year: 20, band: salaryByYear.year20 },
+          ] as { year: number; band: { p25: number; p50: number; p75: number } | null }[]
+        )
+          .filter((row) => row.band != null)
+          .map((row) => ({
+            year: row.year,
+            conservative: row.band!.p25,
+            base: row.band!.p50,
+            optimistic: row.band!.p75,
+          }))
       : []);
 
   return (

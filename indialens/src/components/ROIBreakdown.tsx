@@ -2,7 +2,7 @@
 
 interface ROIComponent {
   label: string;
-  value: number; // 0–100 (the score for this component)
+  value: number | null; // 0–100, or null when the score is not measured
   weight: number; // 0–1 (formula weight)
   color: string;
 }
@@ -10,14 +10,22 @@ interface ROIComponent {
 interface ROIBreakdownProps {
   financialRoi: number;
   riskScore: number;
-  optionalityScore: number;
-  mobilityScore: number;
-  satisfactionScore: number;
-  networkScore: number;
+  /** null = not measured. These have no backing column in the schema. */
+  optionalityScore: number | null;
+  mobilityScore: number | null;
+  satisfactionScore: number | null;
+  networkScore: number | null;
 }
 
-function normalizeScore(val: number | null | undefined, fallback: number = 75): number {
-  if (val == null || isNaN(val)) return fallback;
+/**
+ * Normalize a score to 0–100, preserving "not measured" as null.
+ *
+ * The previous version substituted a hardcoded fallback (75, and 78/82/85/88 per
+ * component), which meant unmeasured sub-scores were rendered as if they were
+ * real model output. Null now stays null so the UI can label it honestly.
+ */
+function normalizeScore(val: number | null | undefined): number | null {
+  if (val == null || isNaN(val)) return null;
   if (val <= 1 && val > 0) return Math.min(100, Math.max(0, Math.round(val * 100)));
   return Math.min(100, Math.max(0, Math.round(val)));
 }
@@ -47,39 +55,41 @@ export function ROIBreakdown({
     },
     {
       label: "Optionality",
-      value: normalizeScore(optionalityScore, 78),
+      value: normalizeScore(optionalityScore),
       weight: 0.15,
       color: "#F7C94F",
     },
     {
       label: "Mobility",
-      value: normalizeScore(mobilityScore, 82),
+      value: normalizeScore(mobilityScore),
       weight: 0.15,
       color: "#A78BFA",
     },
     {
       label: "Satisfaction",
-      value: normalizeScore(satisfactionScore, 85),
+      value: normalizeScore(satisfactionScore),
       weight: 0.1,
       color: "#F97316",
     },
     {
       label: "Network",
-      value: normalizeScore(networkScore, 88),
+      value: normalizeScore(networkScore),
       weight: 0.05,
       color: "#EC4899",
     },
   ];
 
-  const totalWeighted = components.reduce(
-    (sum, c) => sum + c.value * c.weight,
-    0
-  );
+  // Only average over the components that were actually measured, and reweight
+  // accordingly — otherwise a program with two missing inputs is silently
+  // penalised for the gap.
+  const measured = components.filter((c) => c.value != null);
+  const measuredWeight = measured.reduce((sum, c) => sum + c.weight, 0);
+  const totalWeighted = measured.reduce((sum, c) => sum + c.value! * c.weight, 0);
 
   return (
     <div className="space-y-3">
       {components.map((comp) => {
-        const contribution = Math.round(comp.value * comp.weight);
+        const contribution = comp.value == null ? null : Math.round(comp.value * comp.weight);
         return (
           <div key={comp.label}>
             <div className="flex items-center justify-between mb-1.5">
@@ -107,18 +117,29 @@ export function ROIBreakdown({
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span
-                  className="text-xs font-mono"
-                  style={{ color: "#64748B" }}
-                >
-                  {comp.value}/100
-                </span>
-                <span
-                  className="text-xs font-mono font-bold"
-                  style={{ color: comp.color, minWidth: 32, textAlign: "right" }}
-                >
-                  +{contribution}
-                </span>
+                {comp.value == null ? (
+                  <span
+                    className="text-xs font-mono"
+                    style={{ color: "#94A3B8" }}
+                  >
+                    not measured
+                  </span>
+                ) : (
+                  <>
+                    <span
+                      className="text-xs font-mono"
+                      style={{ color: "#64748B" }}
+                    >
+                      {comp.value}/100
+                    </span>
+                    <span
+                      className="text-xs font-mono font-bold"
+                      style={{ color: comp.color, minWidth: 32, textAlign: "right" }}
+                    >
+                      +{contribution}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
             <div
@@ -129,16 +150,18 @@ export function ROIBreakdown({
                 overflow: "hidden",
               }}
             >
-              <div
-                style={{
-                  height: "100%",
-                  width: `${comp.value}%`,
-                  background: comp.color,
-                  borderRadius: 3,
-                  transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
-                  boxShadow: `0 0 8px ${comp.color}40`,
-                }}
-              />
+              {comp.value != null && (
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${comp.value}%`,
+                    background: comp.color,
+                    borderRadius: 3,
+                    transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
+                    boxShadow: `0 0 8px ${comp.color}40`,
+                  }}
+                />
+              )}
             </div>
           </div>
         );
@@ -158,12 +181,26 @@ export function ROIBreakdown({
           style={{ color: "#64748B" }}
         >
           Composite Score
+          {measured.length < components.length && (
+            <span
+              style={{
+                textTransform: "none",
+                letterSpacing: 0,
+                fontWeight: 400,
+                marginLeft: 8,
+              }}
+            >
+              ({measured.length}/{components.length} inputs measured)
+            </span>
+          )}
         </span>
         <span
           className="font-mono font-bold text-lg"
           style={{ color: "#09090B" }}
         >
-          {Math.round(totalWeighted)}/100
+          {measuredWeight > 0
+            ? `${Math.round(totalWeighted / measuredWeight)}/100`
+            : "—"}
         </span>
       </div>
     </div>

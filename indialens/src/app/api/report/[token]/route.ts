@@ -18,7 +18,7 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
   try {
     const rows = await fetchSupabaseRest<any[]>(
       `student_reports?token=eq.${encodeURIComponent(token)}&limit=1`,
-      { timeoutMs: 3000 },
+      { timeoutMs: 3000, reportToken: token },
     );
     if (rows && Array.isArray(rows) && rows.length > 0) {
       const row = rows[0];
@@ -37,6 +37,7 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
       // Asynchronously bump view count
       fetchSupabaseRest(`student_reports?token=eq.${encodeURIComponent(token)}`, {
         method: "PATCH",
+        reportToken: token,
         body: JSON.stringify({ viewed_count: (row.viewed_count || 0) + 1 }),
       }).catch(() => null);
 

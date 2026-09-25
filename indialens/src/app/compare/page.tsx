@@ -10,11 +10,22 @@ export const metadata = {
 
 function toCompareItem(r: CollegeDegreeRecord) {
   const feeLakhs = (r.costs?.totalCostOfDegreeInr ?? 0) / 100000;
-  const salaryLpa = (r.salary?.year1?.p50 ?? r.placement?.medianSalaryInr ?? 0) / 100000;
-  const placementPct = (r.placement?.rate ?? 0) > 1 ? r.placement.rate : (r.placement?.rate ?? 0) * 100;
-  const aiRisk = (r.risk?.aiAutomationProbability ?? 0) * 100;
-  const payback = salaryLpa > 0 ? Number((feeLakhs / salaryLpa).toFixed(1)) : 0;
-  const npv = Number((salaryLpa * 8.5 - feeLakhs).toFixed(1));
+  // Only derive salary/placement figures when they were actually measured.
+  // Defaulting to 0 previously rendered unmeasured programs as "0% placement,
+  // ₹0 salary, -₹X NPV", which reads as real data rather than a gap.
+  const medianRaw = r.salary?.year1?.p50 ?? r.placement?.medianSalaryInr ?? null;
+  const salaryLpa = medianRaw != null ? medianRaw / 100000 : null;
+  const rateRaw = r.placement?.rate ?? null;
+  const placementPct =
+    rateRaw == null ? null : rateRaw > 1 ? rateRaw : rateRaw * 100;
+  const aiRiskRaw = r.risk?.aiAutomationProbability ?? null;
+  const aiRisk = aiRiskRaw == null ? null : aiRiskRaw * 100;
+  const payback =
+    salaryLpa != null && salaryLpa > 0
+      ? Number((feeLakhs / salaryLpa).toFixed(1))
+      : null;
+  const npv =
+    salaryLpa == null ? null : Number((salaryLpa * 8.5 - feeLakhs).toFixed(1));
 
   return {
     id: r.id,
@@ -22,9 +33,9 @@ function toCompareItem(r: CollegeDegreeRecord) {
     college: r.college.name,
     tier: String(r.college.tier),
     fee_lakhs: Number(feeLakhs.toFixed(1)),
-    placement_rate_pct: Number(placementPct.toFixed(1)),
-    median_salary_lpa: Number(salaryLpa.toFixed(1)),
-    ai_risk_pct: Number(aiRisk.toFixed(1)),
+    placement_rate_pct: placementPct == null ? null : Number(placementPct.toFixed(1)),
+    median_salary_lpa: salaryLpa == null ? null : Number(salaryLpa.toFixed(1)),
+    ai_risk_pct: aiRisk == null ? null : Number(aiRisk.toFixed(1)),
     payback_years: payback,
     npv_20yr_lakhs: npv,
   };

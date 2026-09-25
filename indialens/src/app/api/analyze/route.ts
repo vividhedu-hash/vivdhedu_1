@@ -289,7 +289,7 @@ export async function GET(request: Request) {
   try {
     const rows = await fetchSupabaseRest<any[]>(
       `student_reports?token=eq.${encodeURIComponent(token)}&limit=1`,
-      { timeoutMs: 3000 },
+      { timeoutMs: 3000, reportToken: token },
     );
     if (rows && Array.isArray(rows) && rows.length > 0) {
       const row = rows[0];

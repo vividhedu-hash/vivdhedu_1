@@ -36,37 +36,45 @@ export interface CollegeDegreeRecord {
   };
   program: {
     annualTuitionInr: number;
-    totalSeats: number;
+    /** Not modelled in the DB schema; null means "not measured". */
+    totalSeats: number | null;
     isActive: boolean;
   };
   roi: {
     financialRoiPct: number;
     riskScore: number;
-    optionalityScore: number;
-    mobilityScore: number;
-    satisfactionScore: number;
-    networkScore: number;
+    /**
+     * No backing column exists for these four. They were previously hardcoded
+     * to the same constants (78/82/85/88) for every program, which made them
+     * indistinguishable from real model output. null = not measured.
+     */
+    optionalityScore: number | null;
+    mobilityScore: number | null;
+    satisfactionScore: number | null;
+    networkScore: number | null;
     compositeScore: number;
     confidenceIntervalLow: number;
     confidenceIntervalHigh: number;
     modelVersion: string;
   };
+  /** null when there is no measured median salary to project from. */
   salary: {
-    year1: { p25: number; p50: number; p75: number };
-    year5: { p25: number; p50: number; p75: number };
-    year10: { p25: number; p50: number; p75: number };
-    year20: { p25: number; p50: number; p75: number };
+    year1: { p25: number; p50: number; p75: number } | null;
+    year5: { p25: number; p50: number; p75: number } | null;
+    year10: { p25: number; p50: number; p75: number } | null;
+    year20: { p25: number; p50: number; p75: number } | null;
   };
   placement: {
-    rate: number;
-    medianSalaryInr: number;
-    highestSalaryInr: number;
-    companiesVisited: number;
+    rate: number | null;
+    medianSalaryInr: number | null;
+    highestSalaryInr: number | null;
+    companiesVisited: number | null;
     year: number;
   };
   risk: {
     aiAutomationProbability: number;
-    employmentRateAtGraduation: number;
+    /** null when placement rate is unmeasured. */
+    employmentRateAtGraduation: number | null;
     salaryVolatility: number;
     industryCyclicality: number;
     geographicConcentration: number;
