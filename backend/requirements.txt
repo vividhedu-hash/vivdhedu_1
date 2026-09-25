@@ -55,5 +55,9 @@ slowapi==0.1.9             # rate limiting
 
 # ── Smart Scraping Layer (free) ────────────────────────────────────
 tavily-python==0.5.0     # real-time AI search API (1000 free/month)
-crawl4ai==0.4.3          # JS-capable async crawler, handles anti-bot
+# crawl4ai 0.4.3 was never published to PyPI (only 0.4.3b1/b2/b3 pre-releases
+# exist), so `pip install -r requirements.txt` failed outright on any clean
+# machine — including CI. 0.4.246 is the last 0.4.x stable. The scraper
+# imports are lazy, so this only needs to resolve, not match the old API.
+crawl4ai==0.4.246        # JS-capable async crawler, handles anti-bot
 mangum==0.17.0           # Vercel/AWS Lambda adapter for FastAPI
