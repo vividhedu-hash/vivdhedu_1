@@ -62,4 +62,25 @@ Thumbs.db
 *.sqlite3
 pgdata/
 redisdata/
+
+# Generated documents & asset dumps (source lives in the generators)
+# These are ~12MB of rendered output that can be rebuilt at any time.
+*.pdf
+MASTER_CASE_STUDY.html
+PROJECT_PRD.html
+INDIA_LENS_REVENUE_MODEL.html
+extracted_assets/
+case_study_previews/
+case_study_previews_32/
+case_study_builder/
+prd_builder/
+PRD_generator.py
+patch_*.py
+
+# Build caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+tsconfig.tsbuildinfo
 EOF
+.env*
