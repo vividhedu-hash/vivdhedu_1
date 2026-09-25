@@ -21,7 +21,7 @@ export function getSupabaseAnonKey(): string {
 
 export async function fetchSupabaseRest<T>(
   endpoint: string,
-  options: RequestInit & { timeoutMs?: number } = {},
+  options: RequestInit & { timeoutMs?: number; reportToken?: string } = {},
 ): Promise<T | null> {
   const supabaseUrl = getSupabaseUrl();
   const anonKey = getSupabaseAnonKey();
@@ -29,7 +29,7 @@ export async function fetchSupabaseRest<T>(
   if (!supabaseUrl || !anonKey) return null;
 
   const url = `${supabaseUrl}/rest/v1/${endpoint.replace(/^\//, "")}`;
-  const { timeoutMs = 1200, ...rest } = options;
+  const { timeoutMs = 1200, reportToken, ...rest } = options;
 
   try {
     const fetchOptions: RequestInit = {
@@ -39,6 +39,10 @@ export async function fetchSupabaseRest<T>(
         Authorization: `Bearer ${anonKey}`,
         "Content-Type": "application/json",
         Prefer: "return=representation",
+        // RLS on student-owned tables (student_reports, personal_intelligence,
+        // portfolio_profiles) only grants SELECT when the caller presents the
+        // matching token. Without this header those reads return zero rows.
+        ...(reportToken ? { "x-report-token": reportToken } : {}),
         ...options.headers,
       },
       signal: options.signal ?? AbortSignal.timeout(timeoutMs),
@@ -97,11 +101,25 @@ export function mapSupabaseRowToRecord(row: SupabaseProgramRow): CollegeDegreeRe
   const financialRoiPct = Number(row.financial_roi_pct ?? 250);
   const riskScore = Number(row.risk_score ?? 0.25);
 
-  const medianSalary = Number(row.median_salary_inr ?? 1_200_000);
+  // Data honesty: several active programs have no current placement_data row
+  // (19 of 73 at time of writing), so these arrive null. The old code
+  // substituted plausible constants (1_200_000 median, 88% placement), which
+  // meant fabricated numbers were rendered as if they were measurements.
+  // We now pass null through and let the UI show an explicit
+  // "insufficient data" state instead of an invented figure.
+  const medianSalary =
+    row.median_salary_inr != null ? Number(row.median_salary_inr) : null;
   const totalCost = Number(row.total_cost_of_degree ?? 1_000_000);
-  const rawPlacement = Number(row.placement_rate_pct ?? 88);
-  const placementRatePct = rawPlacement > 1 ? Math.round(rawPlacement) : Math.round(rawPlacement * 100);
-  const employmentRateFrac = rawPlacement > 1 ? rawPlacement / 100 : rawPlacement;
+  const rawPlacement =
+    row.placement_rate_pct != null ? Number(row.placement_rate_pct) : null;
+  const placementRatePct =
+    rawPlacement == null
+      ? null
+      : rawPlacement > 1
+        ? Math.round(rawPlacement)
+        : Math.round(rawPlacement * 100);
+  const employmentRateFrac =
+    rawPlacement == null ? null : rawPlacement > 1 ? rawPlacement / 100 : rawPlacement;
 
   return {
     id: row.program_id,
@@ -127,48 +145,62 @@ export function mapSupabaseRowToRecord(row: SupabaseProgramRow): CollegeDegreeRe
     },
     program: {
       annualTuitionInr: row.annual_tuition_inr ?? Math.round(totalCost / (row.duration_years || 4)),
-      totalSeats: 120,
+      // Not modelled in the schema — reported as null rather than a round
+      // number that reads like real seat data.
+      totalSeats: null,
       isActive: true,
     },
     roi: {
       financialRoiPct,
       riskScore,
-      optionalityScore: 78,
-      mobilityScore: 82,
-      satisfactionScore: 85,
-      networkScore: 88,
+      // These four sub-scores have no backing column. They were previously
+      // hardcoded per-record (78/82/85/88 for every single program), which made
+      // them look like model output. Surfaced as null for the UI to handle.
+      optionalityScore: null,
+      mobilityScore: null,
+      satisfactionScore: null,
+      networkScore: null,
       compositeScore,
       confidenceIntervalLow: Number(row.ci_low ?? compositeScore - 2),
       confidenceIntervalHigh: Number(row.ci_high ?? compositeScore + 2),
       modelVersion: row.model_version ?? "v2.0-live",
     },
-    salary: {
-      year1: {
-        p25: Math.round(medianSalary * 0.8),
-        p50: Math.round(medianSalary),
-        p75: Math.round(medianSalary * 1.3),
-      },
-      year5: {
-        p25: Math.round(medianSalary * 1.5),
-        p50: Math.round(medianSalary * 2.1),
-        p75: Math.round(medianSalary * 2.8),
-      },
-      year10: {
-        p25: Math.round(medianSalary * 2.6),
-        p50: Math.round(medianSalary * 3.8),
-        p75: Math.round(medianSalary * 5.2),
-      },
-      year20: {
-        p25: Math.round(medianSalary * 4.2),
-        p50: Math.round(medianSalary * 6.8),
-        p75: Math.round(medianSalary * 9.5),
-      },
-    },
+    // Trajectory bands are only meaningful once a real median exists; without
+    // one we return nulls instead of scaling a fabricated base.
+    salary: medianSalary == null
+      ? { year1: null, year5: null, year10: null, year20: null }
+      : {
+          year1: {
+            p25: Math.round(medianSalary * 0.8),
+            p50: Math.round(medianSalary),
+            p75: Math.round(medianSalary * 1.3),
+          },
+          year5: {
+            p25: Math.round(medianSalary * 1.5),
+            p50: Math.round(medianSalary * 2.1),
+            p75: Math.round(medianSalary * 2.8),
+          },
+          year10: {
+            p25: Math.round(medianSalary * 2.6),
+            p50: Math.round(medianSalary * 3.8),
+            p75: Math.round(medianSalary * 5.2),
+          },
+          year20: {
+            p25: Math.round(medianSalary * 4.2),
+            p50: Math.round(medianSalary * 6.8),
+            p75: Math.round(medianSalary * 9.5),
+          },
+        },
     placement: {
       rate: placementRatePct,
       medianSalaryInr: medianSalary,
-      highestSalaryInr: row.highest_salary_inr ?? Math.round(medianSalary * 2.8),
-      companiesVisited: 140,
+      highestSalaryInr:
+        row.highest_salary_inr != null
+          ? Number(row.highest_salary_inr)
+          : medianSalary == null
+            ? null
+            : Math.round(medianSalary * 2.8),
+      companiesVisited: null,
       year: 2024,
     },
     risk: {

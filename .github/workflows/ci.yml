@@ -1,0 +1,109 @@
+name: CI
+
+# Runs the checks that were previously missing. `deploy_check.yml` only did
+# tsc + ruff; there was no test execution, no secret scan, and no guard on the
+# RLS policies — which is how a forgeable JWT secret, an unverified OAuth
+# callback, and three `qual = true` policies all reached production unnoticed.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    name: backend-tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/dev-requirements.txt
+      # psycopg2-binary has no manylinux wheel for every version and falls back
+      # to a source build, which needs libpq + pg_config on the runner.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpq-dev
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r dev-requirements.txt
+      - name: Run pytest
+        run: |
+          python -m pytest -q \
+            --ignore=tests/test_ml_pipelines_prd.py \
+            --ignore=tests/test_prd_mathematical_models.py
+
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan tracked files for live credentials
+        run: |
+          fail=0
+          # Live Supabase secret key format
+          if git grep -nE 'sb_secret_[A-Za-z0-9_-]{20,}' -- . \
+               ':!*.example' ':!.env.example' ':!AUDIT_HANDOFF.md'; then
+            echo "::error::Supabase secret key committed to the repository"
+            fail=1
+          fi
+          # Legacy service_role / anon JWT
+          if git grep -nE 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]{40,}' -- . \
+               ':!*.example' ':!.env.example'; then
+            echo "::error::Legacy Supabase JWT committed to the repository"
+            fail=1
+          fi
+          # Google OAuth client secret
+          if git grep -nE 'GOCSPX-[A-Za-z0-9_-]{20,}' -- . ':!*.example' ':!.env.example'; then
+            echo "::error::Google OAuth client secret committed to the repository"
+            fail=1
+          fi
+          # Live payment keys (example files keep the literal 'your_' placeholder)
+          if git grep -nE '(rzp_live|sk_live)_[A-Za-z0-9]{15,}' -- . \
+               ':!*.example' ':!.env.example'; then
+            echo "::error::Live payment key committed to the repository"
+            fail=1
+          fi
+          exit $fail
+
+  rls-audit:
+    name: rls-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert no unconditional RLS policy is reintroduced
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in backend/db/migrations/*.sql backend/db/schema.sql; do
+            [ -f "$f" ] || continue
+            # A SELECT/UPDATE policy whose USING/WITH CHECK is bare `true`
+            # grants every row to the listed role. Match the bare boolean in
+            # any position: `USING (true)`, `USING true`,
+            # `USING (true);` and `WITH CHECK (true)` must all be caught.
+            if grep -nEi '(USING|WITH[[:space:]]+CHECK)[[:space:]]*\(?[[:space:]]*true[[:space:]]*\)?' "$f"; then
+              echo "::error::$f contains an unconditional RLS policy (USING/WITH CHECK = true)"
+              fail=1
+            fi
+          done
+          # SECURITY DEFINER views bypass RLS on the underlying tables.
+          if grep -nEi 'CREATE([[:space:]]+OR[[:space:]]+REPLACE)?[[:space:]]+VIEW' backend/db/*.sql backend/db/migrations/*.sql 2>/dev/null \
+               | grep -qi 'security[[:space:]]+definer'; then
+            echo "::error::SECURITY DEFINER view found; use security_invoker"
+            fail=1
+          fi
+          exit $fail

@@ -177,7 +177,7 @@ export default function CollegeDetailPage() {
                   {
                     icon: <Star size={14} />,
                     label: "Median Salary Y1",
-                    value: formatInr(salary.year1.p50),
+                    value: salary.year1 ? formatInr(salary.year1.p50) : "No data",
                     color: "#D97706",
                   },
                 ].map((stat) => (
@@ -218,7 +218,23 @@ export default function CollegeDetailPage() {
               <p style={{ fontSize: 12, color: "#64748B", marginBottom: 20 }}>
                 Conservative (p25) / Base Case (p50) / Optimistic (p75) · Confidence Interval: {roi.confidenceIntervalLow}–{roi.confidenceIntervalHigh}
               </p>
-              <SalaryTrajectory salaryByYear={salary} />
+              {salary.year1 || salary.year5 || salary.year10 || salary.year20 ? (
+                <SalaryTrajectory salaryByYear={salary} />
+              ) : (
+                <div
+                  style={{
+                    padding: 24,
+                    textAlign: "center",
+                    color: "#64748B",
+                    fontSize: 13,
+                    background: "#F8FAFC",
+                    borderRadius: 8,
+                  }}
+                >
+                  No measured salary data for this program yet. We do not publish
+                  estimated figures — check back once the next placement scrape lands.
+                </div>
+              )}
               <div
                 className="grid grid-cols-4 gap-4 mt-4 pt-4"
                 style={{ borderTop: "1px solid #E2E8F0" }}
@@ -233,12 +249,18 @@ export default function CollegeDetailPage() {
                     <p style={{ fontSize: 10, color: "#64748B", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                       {s.year}
                     </p>
-                    <p className="font-mono font-bold" style={{ fontSize: 13, color: "#09090B" }}>
-                      {formatInr(s.data.p50)}
-                    </p>
-                    <p style={{ fontSize: 10, color: "#94A3B8" }}>
-                      {formatInr(s.data.p25)}–{formatInr(s.data.p75)}
-                    </p>
+                    {s.data ? (
+                      <>
+                        <p className="font-mono font-bold" style={{ fontSize: 13, color: "#09090B" }}>
+                          {formatInr(s.data.p50)}
+                        </p>
+                        <p style={{ fontSize: 10, color: "#94A3B8" }}>
+                          {formatInr(s.data.p25)}–{formatInr(s.data.p75)}
+                        </p>
+                      </>
+                    ) : (
+                      <p style={{ fontSize: 12, color: "#94A3B8" }}>No data</p>
+                    )}
                   </div>
                 ))}
               </div>

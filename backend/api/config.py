@@ -20,8 +20,14 @@ _PLACEHOLDER_SECRETS = {
 
 class Settings(BaseSettings):
     # Database
-    database_url: str = "postgresql+asyncpg://indialens:indialens_dev@localhost:5432/indialens"
-    database_url_sync: str = "postgresql://indialens:indialens_dev@localhost:5432/indialens"
+    #
+    # No default on purpose. A hardcoded localhost URL meant the app always
+    # built a real async engine, so on any machine without that Postgres
+    # (CI, a fresh clone) DB-backed routes died with an opaque 500 from deep
+    # inside greenlet instead of degrading to 503. Empty means "no database
+    # configured" and routes fail closed.
+    database_url: str = ""
+    database_url_sync: str = ""
 
     # Redis (Airflow broker + result backend)
     redis_url: str = "redis://localhost:6379/0"

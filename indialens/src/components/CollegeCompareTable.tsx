@@ -13,11 +13,12 @@ interface ProgramItem {
   college: string;
   tier: string;
   fee_lakhs: number;
-  placement_rate_pct: number;
-  median_salary_lpa: number;
-  ai_risk_pct: number;
-  payback_years: number;
-  npv_20yr_lakhs: number;
+  /** null = not measured. Rendered as "—" rather than a fabricated 0/100. */
+  placement_rate_pct: number | null;
+  median_salary_lpa: number | null;
+  ai_risk_pct: number | null;
+  payback_years: number | null;
+  npv_20yr_lakhs: number | null;
 }
 
 interface CollegeCompareTableProps {
@@ -41,6 +42,18 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
   const pB = programs[selectedPair[1]] || programs[1] || programs[0];
 
   const handleRunCounterfactual = async () => {
+    // A counterfactual needs a measured salary for both programs. Without one
+    // the arithmetic would be built on a null, so refuse rather than invent.
+    if (pA.median_salary_lpa == null || pB.median_salary_lpa == null) {
+      setCounterfactual({
+        strategic_winner: null,
+        counterfactual_verdict:
+          "Not enough measured salary data to compare these two programs. We do not model figures we have not measured.",
+        npv_delta_20yr_inr: null,
+      });
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/analytics", {
@@ -66,11 +79,26 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
       setCounterfactual(data);
     } catch (e) {
       // Local fallback calculation
-      const npvDeltaLakhs = Number((pA.npv_20yr_lakhs - pB.npv_20yr_lakhs).toFixed(1));
+      const npvDeltaLakhs =
+        pA.npv_20yr_lakhs == null || pB.npv_20yr_lakhs == null
+          ? null
+          : Number((pA.npv_20yr_lakhs - pB.npv_20yr_lakhs).toFixed(1));
+      const paybackDelta =
+        pA.payback_years == null || pB.payback_years == null
+          ? null
+          : Math.abs(pB.payback_years - pA.payback_years).toFixed(1);
       setCounterfactual({
-        strategic_winner: npvDeltaLakhs >= 0 ? `${pA.college} ${pA.name}` : `${pB.college} ${pB.name}`,
-        counterfactual_verdict: `Choosing ${pA.college} ${pA.name} over ${pB.college} ${pB.name} yields ₹${Math.abs(npvDeltaLakhs)}L ${npvDeltaLakhs >= 0 ? "higher" : "lower"} 20-year career NPV with a ${(pB.payback_years - pA.payback_years).toFixed(1)} years payback delta.`,
-        npv_delta_20yr_inr: npvDeltaLakhs * 100000,
+        strategic_winner:
+          npvDeltaLakhs == null
+            ? null
+            : npvDeltaLakhs >= 0
+              ? `${pA.college} ${pA.name}`
+              : `${pB.college} ${pB.name}`,
+        counterfactual_verdict:
+          npvDeltaLakhs == null
+            ? "Not enough measured data to compare these two programs."
+            : `Choosing ${pA.college} ${pA.name} over ${pB.college} ${pB.name} yields ₹${Math.abs(npvDeltaLakhs)}L ${npvDeltaLakhs >= 0 ? "higher" : "lower"} 20-year career NPV${paybackDelta ? ` with a ${paybackDelta} years payback delta` : ""}.`,
+        npv_delta_20yr_inr: npvDeltaLakhs == null ? null : npvDeltaLakhs * 100000,
       });
     } finally {
       setLoading(false);
@@ -140,7 +168,7 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
               <td className="p-4 font-semibold text-slate-700">Net Payback Horizon</td>
               {programs.map((p) => (
                 <td key={p.id} className="p-4 border-l border-slate-200 text-slate-700 font-mono">
-                  {p.payback_years} Years
+                  {p.payback_years == null ? "—" : `${p.payback_years} Years`}
                 </td>
               ))}
             </tr>
@@ -150,7 +178,7 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
               <td className="p-4 font-bold text-emerald-800">20-Year Net Present Value (NPV)</td>
               {programs.map((p) => (
                 <td key={p.id} className="p-4 border-l border-slate-200 text-emerald-700 font-extrabold text-base font-mono">
-                  ₹{p.npv_20yr_lakhs} Lakhs
+                  {p.npv_20yr_lakhs == null ? "—" : `₹${p.npv_20yr_lakhs} Lakhs`}
                 </td>
               ))}
             </tr>
@@ -162,9 +190,13 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
               </td>
               {programs.map((p) => (
                 <td key={p.id} className="p-4 border-l border-slate-200 font-mono">
-                  <span className={`font-bold ${p.ai_risk_pct > 30 ? "text-amber-600" : "text-emerald-600"}`}>
-                    {p.ai_risk_pct}%
-                  </span>
+                  {p.ai_risk_pct == null ? (
+                    <span className="text-slate-400">—</span>
+                  ) : (
+                    <span className={`font-bold ${p.ai_risk_pct > 30 ? "text-amber-600" : "text-emerald-600"}`}>
+                      {p.ai_risk_pct}%
+                    </span>
+                  )}
                 </td>
               ))}
             </tr>

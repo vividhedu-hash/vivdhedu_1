@@ -13,6 +13,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from typing import Optional
+import secrets as _secrets
 
 from ..db.database import get_db
 from ..schemas import AnomalyReviewRequest, FeedbackCreateRequest
@@ -22,7 +23,20 @@ router = APIRouter()
 
 
 def _require_admin(x_api_key: Optional[str] = Header(None)):
-    if not x_api_key or x_api_key != settings.api_key_admin:
+    """Constant-time admin key check.
+
+    Uses secrets.compare_digest instead of `!=` so the comparison does not leak
+    the key byte-by-byte through response timing. An empty configured key is
+    rejected outright — otherwise a deployment that forgot to set it would
+    accept the literal empty header.
+    """
+    configured = settings.api_key_admin or ""
+    if not configured:
+        raise HTTPException(
+            status_code=503,
+            detail="Admin API is not configured (API_KEY_ADMIN unset)",
+        )
+    if not x_api_key or not _secrets.compare_digest(x_api_key, configured):
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 
