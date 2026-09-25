@@ -55,9 +55,18 @@ slowapi==0.1.9             # rate limiting
 
 # ── Smart Scraping Layer (free) ────────────────────────────────────
 tavily-python==0.5.0     # real-time AI search API (1000 free/month)
-# crawl4ai 0.4.3 was never published to PyPI (only 0.4.3b1/b2/b3 pre-releases
-# exist), so `pip install -r requirements.txt` failed outright on any clean
-# machine — including CI. 0.4.246 is the last 0.4.x stable. The scraper
-# imports are lazy, so this only needs to resolve, not match the old API.
-crawl4ai==0.4.246        # JS-capable async crawler, handles anti-bot
 mangum==0.17.0           # Vercel/AWS Lambda adapter for FastAPI
+
+# ── Optional extras (NOT installed by default) ───────────────────────────
+# crawl4ai is a JS-capable crawler used only by scrapers/crawl4ai_scraper.py,
+# which imports it lazily and degrades gracefully when it is absent.
+#
+# It cannot be a hard dependency: every crawl4ai release requires
+# pydantic>=2.10, while this project pins pydantic==2.8.2 (a FastAPI 0.115
+# requirement set). Pinning it made `pip install -r requirements.txt` fail
+# outright on every clean machine, which is why no CI job could ever install
+# the backend and no test job existed.
+#
+# To enable the crawl4ai scraper, upgrade pydantic first, then:
+#   pip install crawl4ai==0.4.246 && crawl4ai-setup
+crawl4ai==0.4.246 ; python_version >= "0" and extra == "crawl"
