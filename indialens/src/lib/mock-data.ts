@@ -21,28 +21,39 @@ export interface CollegeDegreeRecord {
     state: string;
     city: string;
     tier: CollegeTier;
-    nirfRank: number;
+    /** null when NIRF has not published/ingested a rank for this college. */
+    nirfRank: number | null;
     type: "IIT" | "NIT" | "private" | "deemed" | "central" | "autonomous";
-    naacGrade: string;
-    established: number;
+    /** null when no NAAC grade has been verified. Never a default "A++". */
+    naacGrade: string | null;
+    /** null when the founding year is unknown. */
+    established: number | null;
   };
   degree: {
     id: string;
     name: string;
     shortName: string;
     field: DegreeField;
-    durationYears: number;
+    /** null when the duration is not in the source data. */
+    durationYears: number | null;
     level: "UG" | "PG" | "PhD";
   };
   program: {
-    annualTuitionInr: number;
+    annualTuitionInr: number | null;
     /** Not modelled in the DB schema; null means "not measured". */
     totalSeats: number | null;
     isActive: boolean;
   };
   roi: {
-    financialRoiPct: number;
-    riskScore: number;
+    /**
+     * Every field below is `number | null`. null means **not measured** — the
+     * upstream pipeline deliberately refuses to emit a score when its inputs
+     * (total cost of degree, placement rate) are missing, so the UI must render
+     * an explicit "no data" state. Substituting a constant or a midpoint here
+     * would fabricate a financial figure, which is worse than showing a gap.
+     */
+    financialRoiPct: number | null;
+    riskScore: number | null;
     /**
      * No backing column exists for these four. They were previously hardcoded
      * to the same constants (78/82/85/88) for every program, which made them
@@ -52,10 +63,10 @@ export interface CollegeDegreeRecord {
     mobilityScore: number | null;
     satisfactionScore: number | null;
     networkScore: number | null;
-    compositeScore: number;
-    confidenceIntervalLow: number;
-    confidenceIntervalHigh: number;
-    modelVersion: string;
+    compositeScore: number | null;
+    confidenceIntervalLow: number | null;
+    confidenceIntervalHigh: number | null;
+    modelVersion: string | null;
   };
   /** null when there is no measured median salary to project from. */
   salary: {
@@ -72,7 +83,8 @@ export interface CollegeDegreeRecord {
     year: number;
   };
   risk: {
-    aiAutomationProbability: number;
+    /** null when no automation crosswalk has been applied. */
+    aiAutomationProbability: number | null;
     /** null when placement rate is unmeasured. */
     employmentRateAtGraduation: number | null;
     salaryVolatility: number;
@@ -84,11 +96,13 @@ export interface CollegeDegreeRecord {
     workLifeQuality: number;
   };
   costs: {
-    totalTuitionInr: number;
-    hostelLivingInr: number;
-    examPrepCostsInr: number;
-    opportunityCostInr: number;
-    totalCostOfDegreeInr: number;
+    /** null when the pipeline could not establish a cost basis for this degree. */
+    totalTuitionInr: number | null;
+    hostelLivingInr: number | null;
+    examPrepCostsInr: number | null;
+    opportunityCostInr: number | null;
+    /** The denominator of every ROI figure — null means ROI is not computable. */
+    totalCostOfDegreeInr: number | null;
   };
   meta: {
     lastUpdated: string;
@@ -3028,11 +3042,59 @@ export const UNIQUE_FIELDS = Array.from(new Set(MOCK_DATA.map((r) => r.degree.fi
 export const UNIQUE_STATES = Array.from(new Set(MOCK_DATA.map((r) => r.college.state))).sort();
 export const UNIQUE_TIERS = Array.from(new Set(MOCK_DATA.map((r) => r.college.tier))).sort();
 
-export const formatInr = (n: number): string => {
-  if (n >= 10000000) return `₹${(n / 10000000).toFixed(1)}Cr`;
-  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `₹${(n / 1000).toFixed(0)}K`;
-  return `₹${n}`;
+/** Placeholder rendered wherever a measurement is genuinely missing. */
+export const NO_DATA = "—";
+
+/**
+ * Coerce an unknown numeric value to a finite number, or null.
+ * Rejects NaN/Infinity so they can never reach the DOM as "NaN".
+ */
+export function finiteOrNull(v: unknown): number | null {
+  if (v == null || v === "") return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Format a possibly-missing number for display.
+ * `null`/NaN renders as NO_DATA ("—"), never as 0, NaN, or a stand-in.
+ */
+export function fmtNum(
+  v: number | null | undefined,
+  digits = 0,
+  suffix = "",
+): string {
+  const n = finiteOrNull(v);
+  return n == null ? NO_DATA : `${n.toFixed(digits)}${suffix}`;
+}
+
+/**
+ * Comparator for nullable scores: nulls always sort last, regardless of
+ * direction. Prevents an unmeasured program from topping the "lowest score"
+ * list or being dragged to the bottom of the "highest score" list.
+ */
+export function compareNullableDesc(a: number | null, b: number | null): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return b - a;
+}
+
+/** Ascending counterpart of {@link compareNullableDesc}; nulls still sort last. */
+export function compareNullableAsc(a: number | null, b: number | null): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return a - b;
+}
+
+export const formatInr = (n: number | null | undefined): string => {
+  const v = finiteOrNull(n);
+  if (v == null) return NO_DATA;
+  if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)}Cr`;
+  if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
+  if (v >= 1000) return `₹${(v / 1000).toFixed(0)}K`;
+  return `₹${v}`;
 };
 
 export const PLATFORM_STATS = {

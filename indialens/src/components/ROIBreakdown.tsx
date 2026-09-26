@@ -1,5 +1,7 @@
 "use client";
 
+import { finiteOrNull } from "../lib/mock-data";
+
 interface ROIComponent {
   label: string;
   value: number | null; // 0–100, or null when the score is not measured
@@ -8,8 +10,10 @@ interface ROIComponent {
 }
 
 interface ROIBreakdownProps {
-  financialRoi: number;
-  riskScore: number;
+  /** null = not measured. Rendered as an explicit unavailable state, never 0. */
+  financialRoi: number | null;
+  /** null = not measured. */
+  riskScore: number | null;
   /** null = not measured. These have no backing column in the schema. */
   optionalityScore: number | null;
   mobilityScore: number | null;
@@ -38,18 +42,23 @@ export function ROIBreakdown({
   satisfactionScore,
   networkScore,
 }: ROIBreakdownProps) {
-  const normalizedRisk = riskScore > 1 ? riskScore / 100 : riskScore;
+  const risk = finiteOrNull(riskScore);
+  const normalizedRisk = risk == null ? null : (risk > 1 ? risk / 100 : risk);
+  const roi = finiteOrNull(financialRoi);
 
   const components: ROIComponent[] = [
     {
       label: "Financial ROI",
-      value: Math.min(100, Math.max(0, Math.round(financialRoi / 50))),
+      // Previously `Math.round(financialRoi / 50)` with a non-null assumption;
+      // a null ROI would have produced 0/100 — the worst possible score — for a
+      // program we simply have not measured.
+      value: roi == null ? null : Math.min(100, Math.max(0, Math.round(roi / 50))),
       weight: 0.35,
       color: "#4F6EF7",
     },
     {
       label: "Risk-Adjusted",
-      value: Math.min(100, Math.max(0, Math.round((1 - normalizedRisk) * 100))),
+      value: normalizedRisk == null ? null : Math.min(100, Math.max(0, Math.round((1 - normalizedRisk) * 100))),
       weight: 0.2,
       color: "#22C55E",
     },

@@ -1,4 +1,4 @@
-import { MOCK_DATA, type CollegeDegreeRecord } from "./mock-data";
+import { MOCK_DATA, type CollegeDegreeRecord, finiteOrNull, compareNullableAsc, compareNullableDesc } from "./mock-data";
 import { allowMockFallback, fetchBackend } from "./backend";
 import { fetchSupabaseRest, mapSupabaseRowToRecord, type SupabaseProgramRow } from "./supabase";
 
@@ -80,6 +80,14 @@ export async function fetchCollegeList(query: {
 
   if (resp?.ok) {
     const json = await resp.json();
+    // Rows from the FastAPI list endpoint are already in `CollegeDegreeRecord`
+    // shape — same camelCase keys the Supabase mapper produces, including the
+    // `costs` block and `number | null` for every unmeasured figure. The cast
+    // is therefore sound, but it is a cast, not a validation: the endpoint is
+    // a separate deployable and could be an older build whose rows predate the
+    // `costs` block entirely. Consumers must read these fields defensively
+    // (`record.costs?.totalTuitionInr`) rather than assume the block exists.
+    // See the `tuitionInr` helper in src/app/explore/page.tsx.
     const rows: CollegeDegreeRecord[] = Array.isArray(json.data) ? json.data : [];
     if (rows.length > 0) {
       return {
@@ -148,14 +156,19 @@ function applyMockFilters(query: {
 
   const sortBy = query.sort_by ?? "compositeScore";
   const sortDir = query.sort_dir ?? "desc";
+  // Unmeasured scores sort last in both directions. Subtracting null directly
+  // yields NaN, which Array#sort treats as "keep original order" — so the gap
+  // would be arbitrary rather than deliberate.
   filtered.sort((a, b) => {
-    const val = (r: CollegeDegreeRecord) => {
-      if (sortBy === "financialRoiPct") return r.roi.financialRoiPct;
-      if (sortBy === "riskScore") return r.roi.riskScore;
-      if (sortBy === "year1Salary") return r.salary?.year1?.p50 ?? 0;
-      return r.roi.compositeScore;
+    const val = (r: CollegeDegreeRecord): number | null => {
+      if (sortBy === "financialRoiPct") return finiteOrNull(r.roi.financialRoiPct);
+      if (sortBy === "riskScore") return finiteOrNull(r.roi.riskScore);
+      if (sortBy === "year1Salary") return finiteOrNull(r.salary?.year1?.p50);
+      return finiteOrNull(r.roi.compositeScore);
     };
-    return sortDir === "asc" ? val(a) - val(b) : val(b) - val(a);
+    return sortDir === "asc"
+      ? compareNullableAsc(val(a), val(b))
+      : compareNullableDesc(val(a), val(b));
   });
 
   const page = query.page ?? 1;

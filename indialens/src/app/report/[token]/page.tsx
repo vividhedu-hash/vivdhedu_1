@@ -18,7 +18,7 @@ import PsychometricsRadar from "@/components/PsychometricsRadar";
 import AIAdvisorWidget from "@/components/AIAdvisorWidget";
 import { MultiDirectionalAnalysis } from "@/components/MultiDirectionalAnalysis";
 import { GlobalAnalyticsSuite } from "@/components/GlobalAnalyticsSuite";
-import { formatInr } from "../../../lib/mock-data";
+import { formatInr, finiteOrNull } from "../../../lib/mock-data";
 import { useState } from "react";
 import { useReport } from "@/hooks/useData";
 
@@ -68,6 +68,10 @@ export default function ReportPage() {
   const hiddenGem = results.hiddenGem;
   const roadmap = results.roadmap;
   const pathNotTaken = results.pathNotTaken;
+  // These were `?? 85` / `?? 78` — invented mid-tier scores for a comparison
+  // the model never ran. Absent comparison data now renders as "—".
+  const recommendedPathScore = finiteOrNull(pathNotTaken?.roiComparison?.recommended);
+  const alternativePathScore = finiteOrNull(pathNotTaken?.roiComparison?.alternative);
   const expiresAt = data.expires_at ? new Date(data.expires_at) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
@@ -211,10 +215,21 @@ export default function ReportPage() {
             pathways={(data?.results as any)?.pathways || (data as any)?.pathways}
           />
 
-          {/* Global Standards Institutional Analytics Suite */}
+          {/* Global Standards Institutional Analytics Suite.
+              Both figures were previously forced to 1_000_000 / 1_200_000, which
+              let the suite print a precise NPV, payback horizon and 95.8%
+              "positive ROI probability" for a program we have no data on. */}
           <GlobalAnalyticsSuite
-            startingSalary={(recommendations[0] as any)?.salary?.year1?.p50 || (recommendations[0] as any)?.predictedSalaryY1 || 1000000}
-            totalCost={(recommendations[0] as any)?.costs?.totalCostOfDegreeInr || (recommendations[0] as any)?.totalCostInr || 1200000}
+            startingSalary={
+              finiteOrNull((recommendations[0] as any)?.salary?.year1?.p50) ??
+              finiteOrNull((recommendations[0] as any)?.predictedSalaryY1) ??
+              undefined
+            }
+            totalCost={
+              finiteOrNull((recommendations[0] as any)?.costs?.totalCostOfDegreeInr) ??
+              finiteOrNull((recommendations[0] as any)?.totalCostInr) ??
+              undefined
+            }
             tier={String((recommendations[0] as any)?.college?.tier || (recommendations[0] as any)?.tier || "1")}
           />
 
@@ -227,27 +242,63 @@ export default function ReportPage() {
             <div className="space-y-3">
               {recommendations.map((rec, i) => {
                 const recId = rec.id || rec.programId || `rec-${i}`;
-                const compScore = rec.roi?.compositeScore ?? rec.compositeScore ?? 75;
+                // Was `rec.roi?.compositeScore ?? rec.compositeScore ?? 75` — the
+                // trailing 75 published a confident mid-tier score for a program
+                // the model never scored.
+                const compScore = finiteOrNull(rec.roi?.compositeScore) ?? finiteOrNull(rec.compositeScore);
                 const collegeShort = rec.college?.shortName || rec.college?.name || rec.collegeName || "College";
                 const degreeShort = rec.degree?.shortName || rec.degree?.name || rec.degreeName || "Degree";
                 const city = rec.college?.city || rec.city || "";
                 const collegeType = rec.college?.type || (rec.tier ? `Tier ${rec.tier}` : "");
                 const state = rec.college?.state || rec.state || "";
-                const fit = rec.fitScore ?? Math.max(50, 92 - i * 6);
-                const ciLow = rec.roi?.confidenceIntervalLow ?? Math.max(0, compScore - 4);
-                const ciHigh = rec.roi?.confidenceIntervalHigh ?? Math.min(100, compScore + 4);
+                const fit = finiteOrNull(rec.fitScore);
+                // A ±4 band is an editorial presentational choice, but it is only
+                // defensible when there is a real centre score to band around.
+                const ciLow = finiteOrNull(rec.roi?.confidenceIntervalLow) ?? (compScore == null ? null : Math.max(0, compScore - 4));
+                const ciHigh = finiteOrNull(rec.roi?.confidenceIntervalHigh) ?? (compScore == null ? null : Math.min(100, compScore + 4));
 
-                const y1Salary = rec.salary?.year1?.p50 ?? rec.trajectory?.y1?.p50 ?? rec.predictedSalaryY1 ?? 1200000;
-                const y5Salary = rec.salary?.year5?.p50 ?? rec.trajectory?.y5?.p50 ?? rec.predictedSalaryY5 ?? Math.round(y1Salary * 1.6);
-                const y10Salary = rec.salary?.year10?.p50 ?? rec.trajectory?.y10?.p50 ?? Math.round(y1Salary * 2.8);
-                const y20Salary = rec.salary?.year20?.p50 ?? rec.trajectory?.y20?.p50 ?? Math.round(y1Salary * 4.8);
+                // These chained to a ₹12L stand-in and then compounded it
+                // (×1.6, ×2.8, ×4.8) to invent a 20-year salary curve. Growth
+                // multipliers are only applied to a salary that was measured.
+                const y1Salary =
+                  finiteOrNull(rec.salary?.year1?.p50) ??
+                  finiteOrNull(rec.trajectory?.y1?.p50) ??
+                  finiteOrNull(rec.predictedSalaryY1);
+                const y5Salary =
+                  finiteOrNull(rec.salary?.year5?.p50) ??
+                  finiteOrNull(rec.trajectory?.y5?.p50) ??
+                  finiteOrNull(rec.predictedSalaryY5) ??
+                  (y1Salary == null ? null : Math.round(y1Salary * 1.6));
+                const y10Salary =
+                  finiteOrNull(rec.salary?.year10?.p50) ??
+                  finiteOrNull(rec.trajectory?.y10?.p50) ??
+                  (y1Salary == null ? null : Math.round(y1Salary * 2.8));
+                const y20Salary =
+                  finiteOrNull(rec.salary?.year20?.p50) ??
+                  finiteOrNull(rec.trajectory?.y20?.p50) ??
+                  (y1Salary == null ? null : Math.round(y1Salary * 4.8));
 
-                const salaryByYear = rec.salary ?? {
-                  year1: { p25: rec.trajectory?.y1?.p25 ?? Math.round(y1Salary * 0.8), p50: y1Salary, p75: rec.trajectory?.y1?.p75 ?? Math.round(y1Salary * 1.3) },
-                  year5: { p25: rec.trajectory?.y5?.p25 ?? Math.round(y5Salary * 0.8), p50: y5Salary, p75: rec.trajectory?.y5?.p75 ?? Math.round(y5Salary * 1.3) },
-                  year10: { p25: rec.trajectory?.y10?.p25 ?? Math.round(y10Salary * 0.8), p50: y10Salary, p75: rec.trajectory?.y10?.p75 ?? Math.round(y10Salary * 1.3) },
-                  year20: { p25: rec.trajectory?.y20?.p25 ?? Math.round(y20Salary * 0.8), p50: y20Salary, p75: rec.trajectory?.y20?.p75 ?? Math.round(y20Salary * 1.3) },
+                // Bands are derived from the measured horizon when one exists;
+                // otherwise the horizon stays null and is simply not charted.
+                const measuredSalary = rec.salary;
+                const trajBand = (t: any) =>
+                  t && t.p25 != null && t.p50 != null && t.p75 != null
+                    ? { p25: t.p25, p50: t.p50, p75: t.p75 }
+                    : null;
+                const derivedBand = (p50: number | null) =>
+                  p50 == null ? null : { p25: Math.round(p50 * 0.8), p50, p75: Math.round(p50 * 1.3) };
+                const salaryByYear = {
+                  year1: trajBand(rec.trajectory?.y1) ?? derivedBand(y1Salary),
+                  year5: trajBand(rec.trajectory?.y5) ?? derivedBand(y5Salary),
+                  year10: trajBand(rec.trajectory?.y10) ?? derivedBand(y10Salary),
+                  year20: trajBand(rec.trajectory?.y20) ?? derivedBand(y20Salary),
                 };
+                const hasAnySalary = [
+                  salaryByYear.year1,
+                  salaryByYear.year5,
+                  salaryByYear.year10,
+                  salaryByYear.year20,
+                ].some((b) => b != null);
 
                 return (
                   <div key={recId} className="glass-card overflow-hidden">
@@ -281,15 +332,25 @@ export default function ReportPage() {
                         <div className="text-right flex flex-col items-end gap-2">
                           <span
                             className="font-mono font-bold text-lg"
-                            style={{ color: "#22C55E" }}
+                            style={{ color: fit != null ? "#22C55E" : "#8B8BA7" }}
                           >
-                            {fit}% fit
+                            {fit != null ? `${fit}% fit` : "fit unavailable"}
                           </span>
-                          <ConfidenceBadge
-                            level="High"
-                            ciLow={ciLow}
-                            ciHigh={ciHigh}
-                          />
+                          {ciLow != null && ciHigh != null ? (
+                            <ConfidenceBadge
+                              level="High"
+                              ciLow={ciLow}
+                              ciHigh={ciHigh}
+                            />
+                          ) : (
+                            <span
+                              className="badge badge-amber"
+                              style={{ fontSize: 10 }}
+                              title="No model confidence interval for this program"
+                            >
+                              No CI
+                            </span>
+                          )}
                         </div>
                         <div style={{ color: "#4A4A6A" }}>
                           {expandedRec === i ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -310,13 +371,23 @@ export default function ReportPage() {
                               <p style={{ fontSize: 10, color: "#4A4A6A", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                                 {s.label}
                               </p>
-                              <p className="font-mono font-bold" style={{ fontSize: 15, color: "#F0F0F5" }}>
+                              <p className="font-mono font-bold" style={{ fontSize: 15, color: s.value === "—" ? "#8B8BA7" : "#F0F0F5" }}>
                                 {s.value}
                               </p>
                             </div>
                           ))}
                         </div>
-                        <SalaryTrajectory salaryByYear={salaryByYear} />
+                        {hasAnySalary ? (
+                          <SalaryTrajectory salaryByYear={salaryByYear} />
+                        ) : (
+                          <div
+                            className="p-4 rounded-lg text-center"
+                            style={{ background: "#13131A", color: "#8B8BA7", fontSize: 13 }}
+                          >
+                            No measured salary data for this program — we do not publish
+                            an estimated salary curve.
+                          </div>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                           <div>
                             <p style={{ fontSize: 11, fontWeight: 700, color: "#22C55E", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
@@ -378,7 +449,7 @@ export default function ReportPage() {
             }
           >
             <div className="flex items-start gap-4">
-              <ScoreRing score={hiddenGem.roi?.compositeScore ?? hiddenGem.compositeScore ?? 75} size={72} strokeWidth={5} />
+              <ScoreRing score={finiteOrNull(hiddenGem.roi?.compositeScore) ?? finiteOrNull(hiddenGem.compositeScore)} size={72} strokeWidth={5} />
               <div className="flex-1">
                 <h3 className="font-display font-semibold" style={{ fontSize: 18, color: "#F0F0F5" }}>
                   {hiddenGem.college?.shortName || hiddenGem.college?.name || hiddenGem.collegeName || "Recommended Institution"} — {hiddenGem.degree?.shortName || hiddenGem.degree?.name || hiddenGem.degreeName || "Program"}
@@ -475,13 +546,16 @@ export default function ReportPage() {
           >
             <RiskGrid
               items={[
-                { label: "AI Automation Risk", value: recommendations[0]?.risk?.aiAutomationProbability ?? (recommendations[0]?.roi?.riskScore ? recommendations[0].roi.riskScore * 0.8 : 0.25), description: "Probability occupation is automated in 10 years" },
-                { label: "Salary Volatility", value: recommendations[0]?.risk?.salaryVolatility ?? 0.18, description: "Std deviation of salary distribution" },
-                { label: "Industry Cyclicality", value: recommendations[0]?.risk?.industryCyclicality ?? 0.22, description: "Sensitivity to economic cycles" },
-                { label: "Credential Inflation", value: recommendations[0]?.risk?.credentialInflation ?? 0.15, description: "Graduate supply vs job demand" },
-                { label: "Geographic Concentration", value: recommendations[0]?.risk?.geographicConcentration ?? 0.35, description: "Jobs concentrated in few cities" },
-                { label: "Work-Life Quality", value: 1 - (recommendations[0]?.risk?.workLifeQuality ?? 0.75), description: "Burnout risk (higher = worse WLB)" },
-              ].filter((item) => item.value != null)}
+                // Previously `?? (riskScore ? riskScore * 0.8 : 0.25)`, which
+                // invented a 25% automation risk out of an absent score and,
+                // worse, silently swapped one risk metric for a different one.
+                { label: "AI Automation Risk", value: finiteOrNull(recommendations[0]?.risk?.aiAutomationProbability), description: "Probability occupation is automated in 10 years" },
+                { label: "Salary Volatility", value: finiteOrNull(recommendations[0]?.risk?.salaryVolatility), description: "Std deviation of salary distribution" },
+                { label: "Industry Cyclicality", value: finiteOrNull(recommendations[0]?.risk?.industryCyclicality), description: "Sensitivity to economic cycles" },
+                { label: "Credential Inflation", value: finiteOrNull(recommendations[0]?.risk?.credentialInflation), description: "Graduate supply vs job demand" },
+                { label: "Geographic Concentration", value: finiteOrNull(recommendations[0]?.risk?.geographicConcentration), description: "Jobs concentrated in few cities" },
+                { label: "Work-Life Quality", value: finiteOrNull(recommendations[0]?.risk?.workLifeQuality) == null ? null : 1 - finiteOrNull(recommendations[0]?.risk?.workLifeQuality)!, description: "Burnout risk (higher = worse WLB)" },
+              ]}
             />
           </ReportSection>
           )}
@@ -504,9 +578,9 @@ export default function ReportPage() {
                 <div>
                   <p style={{ fontSize: 11, color: "#4A4A6A", marginBottom: 4 }}>Recommended path</p>
                   <div className="flex items-center gap-2">
-                    <ScoreRing score={pathNotTaken.roiComparison?.recommended ?? 85} size={48} strokeWidth={4} showLabel={false} animate={false} />
-                    <span className="font-mono font-bold" style={{ fontSize: 16, color: "#F0F0F5" }}>
-                      {pathNotTaken.roiComparison?.recommended ?? 85}/100
+                    <ScoreRing score={recommendedPathScore} size={48} strokeWidth={4} showLabel={false} animate={false} />
+                    <span className="font-mono font-bold" style={{ fontSize: 16, color: recommendedPathScore != null ? "#F0F0F5" : "#8B8BA7" }}>
+                      {recommendedPathScore != null ? `${recommendedPathScore}/100` : "Not scored"}
                     </span>
                   </div>
                 </div>
@@ -514,9 +588,9 @@ export default function ReportPage() {
                 <div>
                   <p style={{ fontSize: 11, color: "#4A4A6A", marginBottom: 4 }}>Alternative path</p>
                   <div className="flex items-center gap-2">
-                    <ScoreRing score={pathNotTaken.roiComparison?.alternative ?? 78} size={48} strokeWidth={4} showLabel={false} animate={false} />
-                    <span className="font-mono font-bold" style={{ fontSize: 16, color: "#F0F0F5" }}>
-                      {pathNotTaken.roiComparison?.alternative ?? 78}/100
+                    <ScoreRing score={alternativePathScore} size={48} strokeWidth={4} showLabel={false} animate={false} />
+                    <span className="font-mono font-bold" style={{ fontSize: 16, color: alternativePathScore != null ? "#F0F0F5" : "#8B8BA7" }}>
+                      {alternativePathScore != null ? `${alternativePathScore}/100` : "Not scored"}
                     </span>
                   </div>
                 </div>

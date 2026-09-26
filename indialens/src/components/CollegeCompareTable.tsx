@@ -12,7 +12,8 @@ interface ProgramItem {
   name: string;
   college: string;
   tier: string;
-  fee_lakhs: number;
+  /** null = cost of degree not verified. Rendered as "—", never "₹0 Lakhs". */
+  fee_lakhs: number | null;
   /** null = not measured. Rendered as "—" rather than a fabricated 0/100. */
   placement_rate_pct: number | null;
   median_salary_lpa: number | null;
@@ -42,13 +43,24 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
   const pB = programs[selectedPair[1]] || programs[1] || programs[0];
 
   const handleRunCounterfactual = async () => {
-    // A counterfactual needs a measured salary for both programs. Without one
-    // the arithmetic would be built on a null, so refuse rather than invent.
+    // A counterfactual needs a measured salary AND a verified cost for both
+    // programs. Without them the NPV delta is arithmetic on null (which becomes
+    // 0 via `null * 100000`), so refuse rather than invent.
     if (pA.median_salary_lpa == null || pB.median_salary_lpa == null) {
       setCounterfactual({
         strategic_winner: null,
         counterfactual_verdict:
           "Not enough measured salary data to compare these two programs. We do not model figures we have not measured.",
+        npv_delta_20yr_inr: null,
+      });
+      setLoading(false);
+      return;
+    }
+    if (pA.fee_lakhs == null || pB.fee_lakhs == null) {
+      setCounterfactual({
+        strategic_winner: null,
+        counterfactual_verdict:
+          "At least one program has no verified total cost of degree, so its 20-year NPV cannot be computed.",
         npv_delta_20yr_inr: null,
       });
       setLoading(false);
@@ -134,7 +146,11 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
               </td>
               {programs.map((p) => (
                 <td key={p.id} className="p-4 border-l border-slate-200 text-slate-900 font-bold font-mono">
-                  ₹{p.fee_lakhs} Lakhs
+                  {p.fee_lakhs == null ? (
+                    <span className="text-slate-400 font-normal">Not verified</span>
+                  ) : (
+                    `₹${p.fee_lakhs} Lakhs`
+                  )}
                 </td>
               ))}
             </tr>
@@ -145,8 +161,12 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
                 <Briefcase className="w-4 h-4 text-emerald-600" /> Placement Consistency
               </td>
               {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-200 text-emerald-700 font-bold font-mono">
-                  {p.placement_rate_pct}%
+                <td key={p.id} className="p-4 border-l border-slate-200 font-mono">
+                  {p.placement_rate_pct == null ? (
+                    <span className="text-slate-400 font-normal">—</span>
+                  ) : (
+                    <span className="text-emerald-700 font-bold">{p.placement_rate_pct}%</span>
+                  )}
                 </td>
               ))}
             </tr>
@@ -158,7 +178,11 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
               </td>
               {programs.map((p) => (
                 <td key={p.id} className="p-4 border-l border-slate-200 text-slate-900 font-bold font-mono">
-                  ₹{p.median_salary_lpa} LPA
+                  {p.median_salary_lpa == null ? (
+                    <span className="text-slate-400 font-normal">—</span>
+                  ) : (
+                    `₹${p.median_salary_lpa} LPA`
+                  )}
                 </td>
               ))}
             </tr>
@@ -255,7 +279,11 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
         {counterfactual ? (
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-700 font-semibold">
-              <span className="text-slate-900 font-bold">🏆 Strategic Verdict Winner: {counterfactual.strategic_winner}</span>
+              <span className="text-slate-900 font-bold">
+                {counterfactual.strategic_winner
+                  ? `🏆 Strategic Verdict Winner: ${counterfactual.strategic_winner}`
+                  : "🏆 Strategic Verdict Winner: not determinable"}
+              </span>
               <span className="font-mono text-emerald-700 font-bold">20-Year NPV Delta</span>
             </div>
             <p className="text-sm text-slate-700 leading-relaxed font-medium">

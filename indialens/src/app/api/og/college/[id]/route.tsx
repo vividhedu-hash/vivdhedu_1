@@ -10,7 +10,12 @@ export async function GET(
   const { searchParams } = new URL(request.url);
   const college = searchParams.get('college') || 'College';
   const degree = searchParams.get('degree') || 'Program';
-  const score = searchParams.get('score') || 'N/A';
+  // The layout omits `score` entirely when it is unmeasured, so an absent or
+  // non-numeric value is a real state, not a formatting error. Rendering
+  // "NaN/100" on a social card is exactly the kind of claim we must not make.
+  const rawScore = searchParams.get('score');
+  const parsedScore = rawScore == null ? null : Number(rawScore);
+  const score = rawScore != null && Number.isFinite(parsedScore) ? parsedScore : null;
   
   return new ImageResponse(
     (
@@ -47,7 +52,16 @@ export async function GET(
               marginRight: '30px'
             }}>
               <span style={{ fontSize: '24px', color: '#8B8BA7', marginBottom: '10px', textTransform: 'uppercase' }}>Composite ROI</span>
-              <span style={{ fontSize: '56px', color: '#4F6EF7', fontWeight: 'bold' }}>{score}/100</span>
+              {score == null ? (
+                <>
+                  <span style={{ fontSize: '56px', color: '#8B8BA7', fontWeight: 'bold' }}>Not scored</span>
+                  <span style={{ fontSize: '18px', color: '#5A5A72', marginTop: '6px' }}>
+                    Insufficient verified cost &amp; placement data
+                  </span>
+                </>
+              ) : (
+                <span style={{ fontSize: '56px', color: '#4F6EF7', fontWeight: 'bold' }}>{score}/100</span>
+              )}
             </div>
           </div>
         </div>

@@ -8,38 +8,54 @@ import {
 import { formatInr } from "../lib/mock-data";
 
 interface GlobalAnalyticsProps {
+  /** Omit when the starting salary was not measured — the panel then explains
+   *  that it cannot run, rather than modelling a round substitute. */
   startingSalary?: number;
+  /** Omit when the total cost of degree was not measured. */
   totalCost?: number;
   tier?: string;
   field?: string;
 }
 
 export function GlobalAnalyticsSuite({
-  startingSalary = 1000000,
-  totalCost = 1200000,
+  startingSalary,
+  totalCost,
   tier = "1",
   field = "engineering-cs",
 }: GlobalAnalyticsProps) {
   const [activeTab, setActiveTab] = useState<"dcf" | "monte_carlo" | "chetty" | "skills">("dcf");
 
+  // Without both anchors every figure below (NPV, payback, Monte Carlo
+  // percentiles) is arithmetic on a guess. Show the gap instead.
+  const hasInputs = startingSalary != null && totalCost != null;
+  const missing = [
+    startingSalary == null ? "a verified starting salary" : null,
+    totalCost == null ? "a verified total cost of degree" : null,
+  ]
+    .filter(Boolean)
+    .join(" or ");
+
   // DCF state
   const [discountRate, setDiscountRate] = useState(7.0);
   const [loanAmount, setLoanAmount] = useState(500000);
 
-  // DCF Calculations (Global Standard)
+  // DCF Calculations (Global Standard). Non-null assertions are safe because
+  // the tabs that consume these are unreachable when hasInputs is false.
+  const salary = startingSalary ?? 0;
+  const cost = totalCost ?? 0;
   const annualEmi = Math.round(loanAmount * 0.105);
   const monthlyEmi = Math.round(annualEmi / 12);
-  const netFirstYearMonthly = Math.round((startingSalary * 0.85 - annualEmi) / 12);
-  const npv20yr = Math.round(startingSalary * 8.5 - totalCost - annualEmi * 7);
-  const paybackMonths = Math.round((totalCost / max(1, startingSalary)) * 12);
+  const netFirstYearMonthly = Math.round((salary * 0.85 - annualEmi) / 12);
+  const npv20yr = Math.round(salary * 8.5 - cost - annualEmi * 7);
+  const paybackMonths = Math.round((cost / max(1, salary)) * 12);
 
   function max(a: number, b: number) { return a > b ? a : b; }
 
   // Monte Carlo Mock percentiles
-  const p10 = Math.round(startingSalary * 1.15);
-  const p50 = Math.round(startingSalary * 1.85);
-  const p90 = Math.round(startingSalary * 3.10);
-  const var95 = Math.round(totalCost * 1.4);
+  const p10 = Math.round(salary * 1.15);
+  const p50 = Math.round(salary * 1.85);
+  const p90 = Math.round(salary * 3.10);
+  const var95 = Math.round(cost * 1.4);
 
   return (
     <div className="glass-card p-6 my-8" style={{ borderRadius: 20, border: "1px solid rgba(79, 110, 247, 0.3)" }}>
@@ -99,8 +115,26 @@ export function GlobalAnalyticsSuite({
         </div>
       </div>
 
+      {!hasInputs && (
+        <div
+          className="p-6 bg-slate-950/60 rounded-xl border border-white/[0.06] text-center"
+          role="status"
+        >
+          <ShieldAlert size={22} className="mx-auto mb-3 text-slate-500" />
+          <h4 className="text-sm font-bold text-slate-200">
+            Financial projections unavailable
+          </h4>
+          <p className="text-xs text-slate-400 mt-2 max-w-md mx-auto leading-relaxed">
+            Every number in this panel — 20-year NPV, payback horizon, Monte Carlo
+            percentiles — is derived from {missing}. We do not model those figures
+            from substitute values, because a plausible-looking NPV is worse than
+            an honest gap.
+          </p>
+        </div>
+      )}
+
       {/* ── TAB 1: DCF & LOAN AMORTIZATION ───────────────────────────────── */}
-      {activeTab === "dcf" && (
+      {activeTab === "dcf" && hasInputs && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="p-4 bg-slate-900/60 rounded-xl border border-white/[0.06]">
@@ -146,7 +180,7 @@ export function GlobalAnalyticsSuite({
               <input
                 type="range"
                 min={0}
-                max={totalCost}
+                max={cost}
                 step={50000}
                 value={loanAmount}
                 onChange={(e) => setLoanAmount(Number(e.target.value))}
@@ -174,7 +208,7 @@ export function GlobalAnalyticsSuite({
       )}
 
       {/* ── TAB 2: MONTE CARLO RISK SIMULATION ───────────────────────────── */}
-      {activeTab === "monte_carlo" && (
+      {activeTab === "monte_carlo" && hasInputs && (
         <div className="space-y-6">
           <div className="p-4 bg-purple-950/20 border border-purple-500/20 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-3">

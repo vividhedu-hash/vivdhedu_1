@@ -24,7 +24,7 @@ import JobMarketCard from "@/components/JobMarketCard";
 import EcosystemBadge from "@/components/EcosystemBadge";
 import PsychometricsRadar from "@/components/PsychometricsRadar";
 import AIAdvisorWidget from "@/components/AIAdvisorWidget";
-import { formatInr } from "../../../lib/mock-data";
+import { formatInr, finiteOrNull, NO_DATA } from "../../../lib/mock-data";
 import { useCollege, useColleges } from "@/hooks/useData";
 
 export default function CollegeDetailPage() {
@@ -56,17 +56,26 @@ export default function CollegeDetailPage() {
     );
   }
 
+  const medianY1 = finiteOrNull(record.salary?.year1?.p50) ?? finiteOrNull(record.placement?.medianSalaryInr);
+  const costOfDegree = finiteOrNull(record.costs?.totalCostOfDegreeInr);
+
+  // Metadata must never claim a score we do not have.
   const jsonLd = record ? {
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
     "name": `${record.college.name} — ${record.degree.name}`,
-    "description": `ROI score ${record.roi.compositeScore}/100. Median salary ₹${((record.salary?.year1?.p50 ?? 0) / 100000).toFixed(1)}L at graduation.`,
+    "description": [
+      finiteOrNull(record.roi.compositeScore) != null
+        ? `ROI score ${record.roi.compositeScore}/100.`
+        : "ROI score not yet available — insufficient verified cost and placement data.",
+      medianY1 != null
+        ? `Median salary ₹${(medianY1 / 100000).toFixed(1)}L at graduation.`
+        : "Median salary not yet available.",
+    ].join(" "),
     "url": `${process.env.NEXT_PUBLIC_APP_URL || "https://theproject.edu.in"}/college/${id}`,
-    "offers": {
-      "@type": "Offer",
-      "price": `${record.costs?.totalCostOfDegreeInr ?? 0}`,
-      "priceCurrency": "INR"
-    }
+    ...(costOfDegree != null
+      ? { offers: { "@type": "Offer", price: `${costOfDegree}`, priceCurrency: "INR" } }
+      : {}),
   } : null;
 
 
@@ -87,8 +96,19 @@ export default function CollegeDetailPage() {
     { label: "Work-Life Quality", value: 1 - risk.workLifeQuality, description: "Burnout risk (higher = worse WLB)" },
   ];
 
-  const ciWidth = roi.confidenceIntervalHigh - roi.confidenceIntervalLow;
-  const confidenceLevel = ciWidth < 10 ? "High" : ciWidth < 20 ? "Medium" : "Low";
+  const composite = finiteOrNull(roi.compositeScore);
+  const financialRoiPct = finiteOrNull(roi.financialRoiPct);
+  const riskScore = finiteOrNull(roi.riskScore);
+  const ciLow = finiteOrNull(roi.confidenceIntervalLow);
+  const ciHigh = finiteOrNull(roi.confidenceIntervalHigh);
+
+  // Confidence is derived from a real CI width, or it is unknown. A NaN here
+  // would silently become "Low" via the comparison chain.
+  const ciWidth = ciLow != null && ciHigh != null ? ciHigh - ciLow : null;
+  const confidenceLevel: "High" | "Medium" | "Low" | null =
+    ciWidth == null ? null : ciWidth < 10 ? "High" : ciWidth < 20 ? "Medium" : "Low";
+
+  const normalizedRisk = riskScore == null ? null : (riskScore <= 1 ? riskScore : riskScore / 100);
 
   return (
     <div style={{ padding: "40px 0 80px" }}>
@@ -124,20 +144,24 @@ export default function CollegeDetailPage() {
         {/* Header */}
         <div className="glass-card p-8 mb-6">
           <div className="flex flex-col md:flex-row items-start gap-8">
-            <ScoreRing score={roi.compositeScore} size={120} strokeWidth={8} />
+            <ScoreRing score={composite} size={120} strokeWidth={8} />
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <span className="badge badge-blue">
                   {college.type} · Tier {college.tier}
                 </span>
-                <span className="badge badge-gold">
-                  NIRF #{college.nirfRank}
-                </span>
-                <ConfidenceBadge
-                  level={confidenceLevel as "High" | "Medium" | "Low"}
-                  ciLow={roi.confidenceIntervalLow}
-                  ciHigh={roi.confidenceIntervalHigh}
-                />
+                {finiteOrNull(college.nirfRank) != null && (
+                  <span className="badge badge-gold">
+                    NIRF #{college.nirfRank}
+                  </span>
+                )}
+                {confidenceLevel != null && (
+                  <ConfidenceBadge
+                    level={confidenceLevel}
+                    ciLow={ciLow ?? undefined}
+                    ciHigh={ciHigh ?? undefined}
+                  />
+                )}
                 <DataFreshnessBadge days={meta.dataFreshnessDays} />
               </div>
               <h1
@@ -157,21 +181,35 @@ export default function CollegeDetailPage() {
                   {
                     icon: <TrendingUp size={14} />,
                     label: "Financial ROI",
-                    value: `${roi.financialRoiPct.toLocaleString()}%`,
+                    // `roi.financialRoiPct.toLocaleString()` used to throw on null.
+                    value:
+                      financialRoiPct != null
+                        ? `${financialRoiPct.toLocaleString()}%`
+                        : NO_DATA,
                     color: "#09090B",
                   },
                   {
                     icon: <Shield size={14} />,
                     label: "Risk Score",
-                    value: `${roi.riskScore <= 1 ? Math.round(roi.riskScore * 100) : Math.round(roi.riskScore)}/100`,
-                    color: (roi.riskScore <= 1 ? roi.riskScore : roi.riskScore / 100) < 0.3 ? "#10B981" : (roi.riskScore <= 1 ? roi.riskScore : roi.riskScore / 100) < 0.5 ? "#F59E0B" : "#E11D48",
+                    value:
+                      normalizedRisk == null
+                        ? NO_DATA
+                        : `${Math.round(normalizedRisk * 100)}/100`,
+                    color:
+                      normalizedRisk == null
+                        ? "#94A3B8"
+                        : normalizedRisk < 0.3
+                          ? "#10B981"
+                          : normalizedRisk < 0.5
+                            ? "#F59E0B"
+                            : "#E11D48",
                   },
                   {
                     icon: <Users size={14} />,
                     label: "Placement Rate",
                     value: placement?.rate != null
                       ? `${placement.rate <= 1 ? Math.round(placement.rate * 100) : Math.round(placement.rate)}%`
-                      : "—",
+                      : NO_DATA,
                     color: "#10B981",
                   },
                   {
@@ -216,7 +254,10 @@ export default function CollegeDetailPage() {
                 Salary Trajectory
               </h3>
               <p style={{ fontSize: 12, color: "#64748B", marginBottom: 20 }}>
-                Conservative (p25) / Base Case (p50) / Optimistic (p75) · Confidence Interval: {roi.confidenceIntervalLow}–{roi.confidenceIntervalHigh}
+                Conservative (p25) / Base Case (p50) / Optimistic (p75)
+                {ciLow != null && ciHigh != null
+                  ? ` · Confidence Interval: ${ciLow}–${ciHigh}`
+                  : ""}
               </p>
               {salary.year1 || salary.year5 || salary.year10 || salary.year20 ? (
                 <SalaryTrajectory salaryByYear={salary} />
@@ -322,12 +363,17 @@ export default function CollegeDetailPage() {
               >
                 <div className="flex justify-between items-center">
                   <span style={{ fontSize: 13, color: "#64748B" }}>Total Cost of Degree</span>
-                  <span className="font-mono font-bold" style={{ fontSize: 18, color: "#E11D48" }}>
-                    {formatInr(costs.totalCostOfDegreeInr)}
+                  <span
+                    className="font-mono font-bold"
+                    style={{ fontSize: 18, color: costOfDegree != null ? "#E11D48" : "#94A3B8" }}
+                  >
+                    {costOfDegree != null ? formatInr(costOfDegree) : "Not determinable"}
                   </span>
                 </div>
                 <p style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>
-                  Includes opportunity cost — what you'd earn if you'd taken a job after 12th (avg PLFS data)
+                  {costOfDegree != null
+                    ? "Includes opportunity cost — what you'd earn if you'd taken a job after 12th (avg PLFS data)"
+                    : "We could not verify a total tuition figure for this program, so we will not estimate a cost of degree. Every ROI figure on this page depends on it."}
                 </p>
               </div>
             </div>
@@ -343,7 +389,7 @@ export default function CollegeDetailPage() {
 
             {/* AI Advisor Floating Consultation Widget */}
             <AIAdvisorWidget
-              initialBudget={Math.round((costs?.totalCostOfDegreeInr || 1000000) / 100000)}
+              initialBudget={costOfDegree != null ? Math.round(costOfDegree / 100000) : undefined}
               initialField={degree.field}
             />
           </div>

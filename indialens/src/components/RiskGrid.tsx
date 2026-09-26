@@ -1,8 +1,11 @@
 "use client";
 
+import { finiteOrNull } from "../lib/mock-data";
+
 interface RiskItem {
   label: string;
-  value: number; // 0–1
+  /** 0–1, or null when this risk dimension was not measured. */
+  value: number | null;
   description?: string;
 }
 
@@ -10,6 +13,8 @@ interface RiskGridProps {
   items: RiskItem[];
   dots?: number; // total dots per indicator (default 5)
 }
+
+const NO_DATA_COLOR = "#94A3B8";
 
 function getColor(value: number): string {
   if (value <= 0.2) return "#22C55E";
@@ -31,8 +36,12 @@ export function RiskGrid({ items, dots = 5 }: RiskGridProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {items.map((item) => {
-        const filled = Math.round(item.value * dots);
-        const color = getColor(item.value);
+        // Unmeasured risks render as a neutral "no data" tile. Defaulting to 0
+        // would light up all five dots in the safest colour and assert "very
+        // low risk" for something we know nothing about.
+        const value = finiteOrNull(item.value);
+        const filled = value == null ? 0 : Math.round(value * dots);
+        const color = value == null ? NO_DATA_COLOR : getColor(value);
         return (
           <div
             key={item.label}
@@ -50,7 +59,7 @@ export function RiskGrid({ items, dots = 5 }: RiskGridProps) {
                 className="text-xs font-bold"
                 style={{ color }}
               >
-                {getRiskLevel(item.value)}
+                {value == null ? "No data" : getRiskLevel(value)}
               </span>
             </div>
             <div className="flex items-center gap-1.5 mt-2">
@@ -62,14 +71,14 @@ export function RiskGrid({ items, dots = 5 }: RiskGridProps) {
                     width: 8,
                     height: 8,
                     borderRadius: "50%",
-                    background: i < filled ? color : "#E2E8F0",
+                    background: value != null && i < filled ? color : "#E2E8F0",
                     transition: `background 0.2s ease ${i * 0.05}s`,
-                    boxShadow: i < filled ? `0 0 4px ${color}60` : "none",
+                    boxShadow: value != null && i < filled ? `0 0 4px ${color}60` : "none",
                   }}
                 />
               ))}
               <span className="ml-2 text-xs font-mono" style={{ color: "#64748B" }}>
-                {Math.round(item.value * 100)}%
+                {value == null ? "—" : `${Math.round(value * 100)}%`}
               </span>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import CollegeCompareTable from "@/components/CollegeCompareTable";
 import { Scale, Plus, Sparkles } from "lucide-react";
 import { fetchCollegeList } from "../../lib/live-colleges";
+import { finiteOrNull } from "../../lib/mock-data";
 import type { CollegeDegreeRecord } from "../../lib/mock-data";
 
 export const metadata = {
@@ -9,30 +10,32 @@ export const metadata = {
 };
 
 function toCompareItem(r: CollegeDegreeRecord) {
-  const feeLakhs = (r.costs?.totalCostOfDegreeInr ?? 0) / 100000;
+  // `?? 0` here would publish a program with an unverified cost as "₹0L",
+  // i.e. free. Unmeasured cost has to propagate as null all the way through
+  // to the table, which already renders an em dash for missing values.
+  const costOfDegree = finiteOrNull(r.costs?.totalCostOfDegreeInr);
+  const feeLakhs = costOfDegree == null ? null : costOfDegree / 100000;
   // Only derive salary/placement figures when they were actually measured.
   // Defaulting to 0 previously rendered unmeasured programs as "0% placement,
   // ₹0 salary, -₹X NPV", which reads as real data rather than a gap.
   const medianRaw = r.salary?.year1?.p50 ?? r.placement?.medianSalaryInr ?? null;
-  const salaryLpa = medianRaw != null ? medianRaw / 100000 : null;
-  const rateRaw = r.placement?.rate ?? null;
-  const placementPct =
-    rateRaw == null ? null : rateRaw > 1 ? rateRaw : rateRaw * 100;
-  const aiRiskRaw = r.risk?.aiAutomationProbability ?? null;
-  const aiRisk = aiRiskRaw == null ? null : aiRiskRaw * 100;
+  const salaryLpa = finiteOrNull(medianRaw) != null ? finiteOrNull(medianRaw)! / 100000 : null;
+  const rateRaw = finiteOrNull(r.placement?.rate);
+  const placementPct = rateRaw == null ? null : rateRaw > 1 ? rateRaw : rateRaw * 100;
+  const aiRisk = finiteOrNull(r.risk?.aiAutomationProbability);
   const payback =
-    salaryLpa != null && salaryLpa > 0
+    feeLakhs != null && salaryLpa != null && salaryLpa > 0
       ? Number((feeLakhs / salaryLpa).toFixed(1))
       : null;
   const npv =
-    salaryLpa == null ? null : Number((salaryLpa * 8.5 - feeLakhs).toFixed(1));
+    salaryLpa == null ? null : Number((salaryLpa * 8.5 - (feeLakhs ?? 0)).toFixed(1));
 
   return {
     id: r.id,
     name: r.degree.name,
     college: r.college.name,
     tier: String(r.college.tier),
-    fee_lakhs: Number(feeLakhs.toFixed(1)),
+    fee_lakhs: feeLakhs == null ? null : Number(feeLakhs.toFixed(1)),
     placement_rate_pct: placementPct == null ? null : Number(placementPct.toFixed(1)),
     median_salary_lpa: salaryLpa == null ? null : Number(salaryLpa.toFixed(1)),
     ai_risk_pct: aiRisk == null ? null : Number(aiRisk.toFixed(1)),

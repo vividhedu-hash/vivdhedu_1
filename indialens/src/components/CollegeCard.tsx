@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ScoreRing } from "./ScoreRing";
 import { DataFreshnessBadge } from "./DataFreshnessBadge";
-import { formatInr } from "../lib/mock-data";
+import { formatInr, finiteOrNull, NO_DATA } from "../lib/mock-data";
 import type { CollegeDegreeRecord } from "../lib/mock-data";
 import { TrendingUp, Users } from "lucide-react";
 
@@ -32,6 +32,13 @@ const AI_RISK_COLOR: Record<string, string> = {
 export function CollegeCard({ record, rank, compact = false }: CollegeCardProps) {
   const { college, degree, roi, salary, placement, meta } = record;
   const riskColor = AI_RISK_COLOR[meta?.aiRiskLabel] ?? "#FF9F0A";
+  // A missing composite score must never be drawn as 0/100 — that reads as
+  // "the worst program on the list" rather than "not measured".
+  const composite = finiteOrNull(roi?.compositeScore);
+  const ciLow = finiteOrNull(roi?.confidenceIntervalLow);
+  const ciHigh = finiteOrNull(roi?.confidenceIntervalHigh);
+  const medianY1 = finiteOrNull(salary?.year1?.p50) ?? finiteOrNull(placement?.medianSalaryInr);
+  const medianY10 = finiteOrNull(salary?.year10?.p50);
 
   return (
     <Link href={`/college/${record.id}`} className="block group">
@@ -40,7 +47,7 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
       >
         {/* Score ring + info row */}
         <div className="flex items-start gap-4">
-          <ScoreRing score={roi?.compositeScore ?? 0} size={68} strokeWidth={4.5} />
+          <ScoreRing score={composite} size={68} strokeWidth={4.5} />
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-1">
@@ -77,12 +84,12 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
             <StatBlock
               icon={<TrendingUp size={11} />}
               label="Median Y1"
-              value={formatInr(salary?.year1?.p50 ?? placement?.medianSalaryInr ?? 0)}
+              value={formatInr(medianY1)}
             />
             <StatBlock
               icon={<TrendingUp size={11} />}
               label="Median Y10"
-              value={formatInr(salary?.year10?.p50 ?? 0)}
+              value={formatInr(medianY10)}
             />
             <StatBlock
               icon={<Users size={11} />}
@@ -90,7 +97,7 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
               value={
                 placement?.rate != null
                   ? `${placement.rate <= 1 ? Math.round(placement.rate * 100) : Math.round(placement.rate)}%`
-                  : "—"
+                  : NO_DATA
               }
             />
           </div>
@@ -99,16 +106,19 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
         {/* Confidence bar */}
         <div className="mt-4 flex items-center gap-2">
           <div className="flex-1 h-[2px] bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${roi?.compositeScore ?? 0}%`,
-                background: `linear-gradient(90deg, ${riskColor}80, ${riskColor})`,
-              }}
-            />
+            {/* No bar at all when unscored — a zero-width bar would read as "0". */}
+            {composite != null && (
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${composite}%`,
+                  background: `linear-gradient(90deg, ${riskColor}80, ${riskColor})`,
+                }}
+              />
+            )}
           </div>
           <span className="text-[10px] font-mono text-zinc-400 whitespace-nowrap">
-            CI: {roi?.confidenceIntervalLow ?? "—"}–{roi?.confidenceIntervalHigh ?? "—"}
+            CI: {ciLow ?? NO_DATA}–{ciHigh ?? NO_DATA}
           </span>
         </div>
       </div>

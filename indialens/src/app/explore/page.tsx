@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Search, Lock, RefreshCw, SlidersHorizontal } from "lucide-react";
 import type { CollegeDegreeRecord, DegreeField } from "@/lib/mock-data";
+import { finiteOrNull, compareNullableAsc, compareNullableDesc, NO_DATA } from "@/lib/mock-data";
 
 const FIELD_LABELS: Record<DegreeField, string> = {
   "engineering-cs":     "Engineering — CS",
@@ -16,9 +17,39 @@ const FIELD_LABELS: Record<DegreeField, string> = {
   arts:       "Arts & Humanities",
 };
 
-function placementPct(record: CollegeDegreeRecord): number {
-  const rate = record.placement?.rate ?? 0;
+/** Unmeasured placement renders as null, which displays as "—" — not as 0%. */
+function placementPct(record: CollegeDegreeRecord): number | null {
+  const rate = finiteOrNull(record.placement?.rate);
+  if (rate == null) return null;
   return Math.round(rate <= 1 ? rate * 100 : rate);
+}
+
+/**
+ * Total tuition for a row, or null when unmeasured.
+ *
+ * Every list row reaches this page from one of two shapes: the Supabase
+ * mapper (which always builds a full `costs` object) or the FastAPI list
+ * endpoint. The FastAPI list rows are cast straight to `CollegeDegreeRecord`
+ * in `live-colleges.ts` with no validation, so a backend that predates the
+ * `costs` block — or one that omitted it for a program with no cost_data row
+ * — leaves `costs` undefined. A bare `a.costs.totalTuitionInr` inside the
+ * sort comparator then throws inside `useMemo` and blanks the whole page. The
+ * optional chain keeps a missing field a "no data" cell instead of a crash.
+ */
+function tuitionInr(record: CollegeDegreeRecord): number | null {
+  return finiteOrNull(record.costs?.totalTuitionInr);
+}
+
+/**
+ * Colour-code a composite score. A null score is deliberately NOT red — red
+ * asserts "this is the worst program on the list", when the truth is "we have
+ * not measured it". It renders neutral grey with an explicit dash instead.
+ */
+function scoreColor(score: number | null): string {
+  if (score == null) return "#6E6E73";
+  if (score >= 80) return "#30D158";
+  if (score >= 50) return "#FF9F0A";
+  return "#FF453A";
 }
 
 export default function ExplorePage() {
@@ -71,11 +102,24 @@ export default function ExplorePage() {
       filtered = filtered.filter((c) => c.degree.field === fieldFilter);
     }
 
+    // Programs with no measured score always sort last, in both directions —
+    // otherwise `null - 90` is NaN and an unscored row jumps to the top of the
+    // "Lowest Score" list, or to the bottom of "Highest Score" as if it were 0.
     filtered.sort((a, b) => {
-      if (sortBy === "score-desc")   return b.roi.compositeScore - a.roi.compositeScore;
-      if (sortBy === "score-asc")    return a.roi.compositeScore - b.roi.compositeScore;
-      if (sortBy === "tuition-asc")  return a.costs.totalTuitionInr - b.costs.totalTuitionInr;
-      if (sortBy === "tuition-desc") return b.costs.totalTuitionInr - a.costs.totalTuitionInr;
+      if (sortBy === "score-desc")
+        return compareNullableDesc(
+          finiteOrNull(a.roi.compositeScore),
+          finiteOrNull(b.roi.compositeScore),
+        );
+      if (sortBy === "score-asc")
+        return compareNullableAsc(
+          finiteOrNull(a.roi.compositeScore),
+          finiteOrNull(b.roi.compositeScore),
+        );
+      if (sortBy === "tuition-asc")
+        return compareNullableAsc(tuitionInr(a), tuitionInr(b));
+      if (sortBy === "tuition-desc")
+        return compareNullableDesc(tuitionInr(a), tuitionInr(b));
       return 0;
     });
 
@@ -183,9 +227,10 @@ export default function ExplorePage() {
                       item.meta.aiRiskLabel === "Low"    ? "badge-green" :
                       item.meta.aiRiskLabel === "Medium" ? "badge-amber" : "badge-red";
 
-                    const scoreColor =
-                      item.roi.compositeScore >= 80 ? "#30D158" :
-                      item.roi.compositeScore >= 50 ? "#FF9F0A" : "#FF453A";
+                    const composite = finiteOrNull(item.roi.compositeScore);
+                    const scoreTone = scoreColor(composite);
+                    const placement = placementPct(item);
+                    const tuition = tuitionInr(item);
 
                     return (
                       <tr key={item.id} className="transition-colors hover:bg-white/[0.03]">
@@ -197,16 +242,20 @@ export default function ExplorePage() {
                           </Link>
                         </td>
                         <td className="p-4">
-                          <span className="font-mono font-bold text-[13px]" style={{ color: scoreColor }}>
-                            {item.roi.compositeScore.toFixed(1)}
+                          {/* `.toFixed()` on a null score would throw; the dash
+                              is the honest answer, not "0.0". */}
+                          <span className="font-mono font-bold text-[13px]" style={{ color: scoreTone }}>
+                            {composite == null ? NO_DATA : composite.toFixed(1)}
                           </span>
                         </td>
                         <td className="p-4">
                           <span className={`badge ${badgeClass}`}>{item.meta.aiRiskLabel}</span>
                         </td>
-                        <td className="p-4 font-mono text-[#86868B] text-[13px]">{placementPct(item)}%</td>
                         <td className="p-4 font-mono text-[#86868B] text-[13px]">
-                          ₹{(item.costs.totalTuitionInr / 100000).toFixed(1)}L
+                          {placement == null ? NO_DATA : `${placement}%`}
+                        </td>
+                        <td className="p-4 font-mono text-[#86868B] text-[13px]">
+                          {tuition == null ? NO_DATA : `₹${(tuition / 100000).toFixed(1)}L`}
                         </td>
                         <td className="p-4">
                           <Lock size={14} className="text-[#48484A]" />
@@ -221,9 +270,10 @@ export default function ExplorePage() {
             {/* Mobile cards */}
             <div className="md:hidden grid gap-3 grid-cols-1 sm:grid-cols-2">
               {filteredData.map((item, index) => {
-                const scoreColor =
-                  item.roi.compositeScore >= 80 ? "#30D158" :
-                  item.roi.compositeScore >= 50 ? "#FF9F0A" : "#FF453A";
+                const composite = finiteOrNull(item.roi.compositeScore);
+                const scoreTone = scoreColor(composite);
+                const placement = placementPct(item);
+                const tuition = tuitionInr(item);
 
                 return (
                   <Link key={item.id} href={`/college/${item.id}`}>
@@ -234,8 +284,8 @@ export default function ExplorePage() {
                           <h3 className="font-bold text-[#F5F5F7] text-[13px] leading-tight">{item.college.shortName}</h3>
                           <p className="text-[11px] text-[#86868B] mt-0.5">{item.degree.shortName}</p>
                         </div>
-                        <span className="font-mono text-xl font-bold" style={{ color: scoreColor }}>
-                          {item.roi.compositeScore.toFixed(0)}
+                        <span className="font-mono text-xl font-bold" style={{ color: scoreTone }}>
+                          {composite == null ? NO_DATA : composite.toFixed(0)}
                         </span>
                       </div>
 
@@ -243,12 +293,14 @@ export default function ExplorePage() {
                         <div>
                           <div className="text-[9px] text-[#48484A] font-mono uppercase">Tuition</div>
                           <div className="font-mono text-[#86868B] text-[12px]">
-                            ₹{(item.costs.totalTuitionInr / 100000).toFixed(1)}L
+                            {tuition == null ? NO_DATA : `₹${(tuition / 100000).toFixed(1)}L`}
                           </div>
                         </div>
                         <div>
                           <div className="text-[9px] text-[#48484A] font-mono uppercase">Placement</div>
-                          <div className="font-mono text-[#86868B] text-[12px]">{placementPct(item)}%</div>
+                          <div className="font-mono text-[#86868B] text-[12px]">
+                            {placement == null ? NO_DATA : `${placement}%`}
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
-import { MOCK_DATA } from "../../../lib/mock-data";
+import { MOCK_DATA, finiteOrNull } from "../../../lib/mock-data";
 import { allowMockFallback, fetchBackend, unavailablePayload } from "../../../lib/backend";
 import { reportStore } from "../../../lib/report-store";
 import { fetchSupabaseRest } from "../../../lib/supabase";
@@ -54,11 +54,18 @@ export async function POST(request: Request) {
   const token = randomBytes(24).toString("base64url");
 
   const recommendations = MOCK_DATA.slice(0, 5).map((r, i) => {
-    const baseSalary = r.salary?.year1?.p50 ?? 1_000_000;
+    // Every one of these was previously defaulted to a round constant
+    // (1_000_000 salary, 1_200_000 cost, 88% placement). A payback horizon and
+    // a placement rate are financial claims about a student's life, so an
+    // unmeasured input yields null and an unavailable state, not a guess.
+    const baseSalary = finiteOrNull(r.salary?.year1?.p50);
     const field = r.degree?.field ?? "engineering-cs";
-    const trajectory = buildMockTrajectory(baseSalary, field);
-    const cost = r.costs?.totalCostOfDegreeInr ?? 1_200_000;
-    const paybackYears = Number((cost / baseSalary).toFixed(1));
+    const trajectory = baseSalary == null ? null : buildMockTrajectory(baseSalary, field);
+    const cost = finiteOrNull(r.costs?.totalCostOfDegreeInr);
+    const paybackYears =
+      cost != null && baseSalary != null && baseSalary > 0
+        ? Number((cost / baseSalary).toFixed(1))
+        : null;
 
     const vectors = {
       financial_upside: Math.round(92 - i * 6),
@@ -67,35 +74,42 @@ export async function POST(request: Request) {
       autonomy_wlb: Math.round(75 + i * 3),
     };
 
-    const rawPl = r.placement?.rate ?? 88;
-    const normPl = rawPl > 1 ? rawPl / 100 : rawPl;
+    const measuredPlacement = finiteOrNull(r.placement?.rate);
+    const normPl = measuredPlacement == null ? null : measuredPlacement > 1 ? measuredPlacement / 100 : measuredPlacement;
+    const scenarioSalary = (mult: number) =>
+      trajectory == null ? null : Math.round(trajectory.y1.p50 * mult);
+    const scenarioPlacement = (mult: number) =>
+      normPl == null ? null : Math.round(normPl * mult);
 
     const macroScenarios = {
       base_case: {
         name: "Base Case (Current Market)",
-        y1_salary: trajectory.y1.p50,
-        y5_salary: trajectory.y5.p50,
-        y10_salary: trajectory.y10.p50,
-        placement_rate: Math.round(normPl * 100),
+        y1_salary: trajectory?.y1.p50 ?? null,
+        y5_salary: trajectory?.y5.p50 ?? null,
+        y10_salary: trajectory?.y10.p50 ?? null,
+        placement_rate: normPl == null ? null : Math.round(normPl * 100),
         note: "Standard economic growth trajectory",
       },
       ai_acceleration: {
         name: "AI Shock (+40% Automation)",
-        y1_salary: Math.round(trajectory.y1.p50 * 0.88),
-        y5_salary: Math.round(trajectory.y5.p50 * 0.94),
-        y10_salary: Math.round(trajectory.y10.p50 * 1.15),
-        placement_rate: Math.round(normPl * 88),
+        y1_salary: scenarioSalary(0.88),
+        y5_salary: trajectory == null ? null : Math.round(trajectory.y5.p50 * 0.94),
+        y10_salary: trajectory == null ? null : Math.round(trajectory.y10.p50 * 1.15),
+        placement_rate: scenarioPlacement(88),
         note: "Simulates entry automation shift toward senior system architects",
       },
       macro_recession: {
         name: "Recession Contraction (-20% Hiring)",
-        y1_salary: Math.round(trajectory.y1.p50 * 0.82),
-        y5_salary: Math.round(trajectory.y5.p50 * 0.88),
-        y10_salary: Math.round(trajectory.y10.p50 * 0.95),
-        placement_rate: Math.round(normPl * 80),
+        y1_salary: scenarioSalary(0.82),
+        y5_salary: trajectory == null ? null : Math.round(trajectory.y5.p50 * 0.88),
+        y10_salary: trajectory == null ? null : Math.round(trajectory.y10.p50 * 0.95),
+        placement_rate: scenarioPlacement(80),
         note: "Hiring freeze safety buffer test",
       },
     };
+
+    const riskScore = finiteOrNull(r.roi.riskScore);
+    const normalizedRiskScore = riskScore == null ? null : riskScore <= 1 ? riskScore : riskScore / 100;
 
     return {
       id: r.id,
@@ -111,24 +125,33 @@ export async function POST(request: Request) {
       degreeName: r.degree.name,
       state: r.college.state,
       tier: r.college.tier,
-      compositeScore: r.roi.compositeScore,
+      compositeScore: finiteOrNull(r.roi.compositeScore),
       fitScore: Math.round(92 - i * 6),
       vectors,
       trajectory,
-      predictedSalaryY1: trajectory.y1.p50,
-      predictedSalaryY5: trajectory.y5.p50,
+      predictedSalaryY1: trajectory?.y1.p50 ?? null,
+      predictedSalaryY5: trajectory?.y5.p50 ?? null,
       paybackYears,
       totalCostInr: cost,
-      placementRate: r.placement?.rate ? (r.placement.rate > 1 ? r.placement.rate : r.placement.rate * 100) : 75,
+      placementRate:
+        measuredPlacement == null
+          ? null
+          : measuredPlacement > 1
+            ? measuredPlacement
+            : measuredPlacement * 100,
       macroScenarios,
       reasons: [
         `Multi-vector fit score based on your stated goals & CAT psychometric traits`,
         `Financial upside ${vectors.financial_upside}/100 — top tier career ceiling`,
-        `Payback horizon speed ~${paybackYears} years to recoup full degree cost`,
+        paybackYears != null
+          ? `Payback horizon speed ~${paybackYears} years to recoup full degree cost`
+          : "Payback horizon unavailable — this program has no verified cost-of-degree figure",
         "Resilient placement history across major employment hubs",
       ],
       topRisks: [
-        `AI automation risk: ${((r.roi.riskScore <= 1 ? r.roi.riskScore : r.roi.riskScore / 100) * 100).toFixed(0)}% — mitigated by specialization`,
+        normalizedRiskScore == null
+          ? "AI automation risk: not modelled for this program"
+          : `AI automation risk: ${(normalizedRiskScore * 100).toFixed(0)}% — mitigated by specialization`,
         "Credential inflation ~7% YoY in this cohort",
       ],
     };
@@ -176,7 +199,16 @@ export async function POST(request: Request) {
   }
 
   const topMatch = MOCK_DATA[0];
-  const hiddenGemMatch = MOCK_DATA.find((p, idx) => idx > 1 && (p.college.tier === 2 || p.roi.financialRoiPct > 1500)) || MOCK_DATA[4];
+  // Only consider programs whose financial ROI was actually measured — the
+  // comparison `> 1500` must not silently exclude null.
+  const hiddenGemMatch =
+    MOCK_DATA.find(
+      (p, idx) =>
+        idx > 1 &&
+        (p.college.tier === 2 || (finiteOrNull(p.roi.financialRoiPct) ?? -1) > 1500),
+    ) || MOCK_DATA[4];
+
+  const gemFinancialRoi = finiteOrNull(hiddenGemMatch.roi.financialRoiPct);
 
   const hiddenGem = {
     id: hiddenGemMatch.id,
@@ -184,7 +216,10 @@ export async function POST(request: Request) {
     degree: hiddenGemMatch.degree,
     roi: hiddenGemMatch.roi,
     modelConfidence: 89,
-    gemReason: `High-conviction value opportunity: ${hiddenGemMatch.college.shortName} delivers top-quartile financial ROI (${hiddenGemMatch.roi.financialRoiPct}%) at significantly lower capital outlay than premier private counterparts.`,
+    gemReason:
+      gemFinancialRoi != null
+        ? `High-conviction value opportunity: ${hiddenGemMatch.college.shortName} delivers top-quartile financial ROI (${gemFinancialRoi}%) at significantly lower capital outlay than premier private counterparts.`
+        : `Value opportunity: ${hiddenGemMatch.college.shortName} sits at a lower tier with a smaller capital outlay than premier private counterparts. Financial ROI is not yet measured for this program, so we are not quoting a figure.`,
   };
 
   const roadmap = {
@@ -224,8 +259,15 @@ export async function POST(request: Request) {
     title: "Alternative Path: Early Venture Fellowship vs Traditional Tier-1 Degree",
     description: "Given your high autonomy trait, entering a high-growth startup or venture fellowship early yields an immediate trajectory acceleration, though traditional degree credentialing provides higher downside safety.",
     roiComparison: {
-      recommended: topMatch.roi.compositeScore,
-      alternative: Math.max(60, topMatch.roi.compositeScore - 8),
+      // The alternative was `Math.max(60, score - 8)`, which both invented a
+      // floor of 60 and produced NaN when the recommended score was null.
+      // The 8-point haircut is a stated editorial delta, not a measurement, so
+      // it is only applied to a score that exists.
+      recommended: finiteOrNull(topMatch.roi.compositeScore),
+      alternative: (() => {
+        const base = finiteOrNull(topMatch.roi.compositeScore);
+        return base == null ? null : Math.max(0, base - 8);
+      })(),
       note: "Traditional path offers 22% higher safety margin during macroeconomic recessions.",
     },
   };
