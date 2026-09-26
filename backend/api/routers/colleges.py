@@ -5,6 +5,7 @@ All responses come from Postgres. Empty catalog is empty — never invented.
 from datetime import datetime
 import csv
 import io
+import math
 from typing import Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -75,6 +76,31 @@ def _program_filters(field, state, tier, ai_risk, q) -> Tuple[str, dict]:
     return " AND ".join(filters), params
 
 
+def _optional_float(value) -> Optional[float]:
+    """Coerce a NUMERIC column to float, preserving an absent value as None.
+
+    Replaces the `float(row.get(x) or 0)` idiom that `_build_program_item`
+    used. That conflated two different states: a genuine measurement of 0 and
+    "this program was never measured". `Decimal("0")`, `0`, and `"0"` are all
+    falsy in Python, so a real 0% placement rate and a missing placement_data
+    row both serialised as `0.0` — indistinguishable to the frontend, which
+    then rendered "0% placement" and "ROI 0" for the 19 of 73 programs that
+    have no placement_data row at all. Fabricating a measurement is worse
+    than reporting a gap, so absent stays None and renders as "not measured".
+
+    Non-finite values (NaN/Infinity) are treated as absent: they are not real
+    measurements, and `jsonable_encoder` would emit bare `NaN`, which is not
+    valid JSON and would break the parser on the other side.
+    """
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    return result if math.isfinite(result) else None
+
+
 def _build_program_item(row: dict) -> dict:
     return {
         "id": str(row.get("program_id", "")),
@@ -93,15 +119,18 @@ def _build_program_item(row: dict) -> dict:
             "shortName": row.get("degree_short_name", ""),
             "name": row.get("degree_full_name", ""),
             "field": row.get("degree_field", ""),
-            "durationYears": float(row.get("duration_years", 4)),
+            # Passes through as measured. Previously defaulted to 4 whenever
+            # the column was absent, which would publish a real-looking course
+            # length for a program whose duration nobody has recorded.
+            "durationYears": _optional_float(row.get("duration_years")),
             "level": row.get("degree_level", "UG"),
         },
         "roi": {
-            "compositeScore": float(row.get("composite_score") or 0),
-            "financialRoiPct": float(row.get("financial_roi_pct") or 0),
-            "riskScore": float(row.get("risk_score") or 0),
-            "confidenceIntervalLow": float(row.get("ci_low") or 0),
-            "confidenceIntervalHigh": float(row.get("ci_high") or 0),
+            "compositeScore": _optional_float(row.get("composite_score")),
+            "financialRoiPct": _optional_float(row.get("financial_roi_pct")),
+            "riskScore": _optional_float(row.get("risk_score")),
+            "confidenceIntervalLow": _optional_float(row.get("ci_low")),
+            "confidenceIntervalHigh": _optional_float(row.get("ci_high")),
             "confidenceLevel": row.get("confidence_level") or "Medium",
             "modelVersion": row.get("model_version") or settings.current_model_version,
         },
@@ -110,8 +139,21 @@ def _build_program_item(row: dict) -> dict:
             "dataFreshnessDays": 0,
         },
         "placement": {
-            "rate": float(row.get("placement_rate_pct") or 0),
+            "rate": _optional_float(row.get("placement_rate_pct")),
             "medianSalaryInr": row.get("median_salary_inr"),
+        },
+        # Same camelCase keys the detail endpoint already returns, so a list row
+        # carries the same cost evidence a detail fetch does. This block was
+        # missing entirely even though PROGRAM_SELECT has always projected the
+        # five cost columns — the list silently dropped every real figure.
+        # `totalCostOfDegreeInr` is tuition + hostel as stored in the DB; the
+        # other four are its measured components, not a decomposition of it.
+        "costs": {
+            "totalTuitionInr": _optional_float(row.get("total_tuition_inr")),
+            "hostelLivingInr": _optional_float(row.get("hostel_living_inr")),
+            "examPrepCostsInr": _optional_float(row.get("exam_prep_costs_inr")),
+            "opportunityCostInr": _optional_float(row.get("opportunity_cost_inr")),
+            "totalCostOfDegreeInr": _optional_float(row.get("total_cost_of_degree")),
         },
     }
 

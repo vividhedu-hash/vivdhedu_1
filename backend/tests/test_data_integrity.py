@@ -253,6 +253,148 @@ class TestDecimalSafety:
         assert "median_salary = float(" in src
 
 
+class TestListEndpointFabricatedZeros:
+    """`_build_program_item` must not invent a measurement for a missing one.
+
+    The list endpoint served the same rows as the detail endpoint but with two
+    defects: it dropped the entire `costs` block (even though PROGRAM_SELECT
+    has always projected the five cost columns), and it coerced absent
+    measurements to 0 via `float(row.get(x) or 0)`. 19 of 73 programs have no
+    placement_data row, so those were published as "0% placement" and
+    "ROI 0" — indistinguishable from a program that genuinely measured zero.
+    """
+
+    @staticmethod
+    def _row(**overrides) -> dict:
+        """A fully-measured row; override any column with None to un-measure it."""
+        base = {
+            "program_id": "p1", "college_id": "c1",
+            "college_short_name": "IIT Bombay",
+            "college_full_name": "Indian Institute of Technology Bombay",
+            "state": "Maharashtra", "city": "Mumbai", "tier": 1,
+            "college_type": "IIT", "nirf_rank": 3,
+            "degree_id": "d1", "degree_short_name": "B.Tech CSE",
+            "degree_full_name": "B.Tech Computer Science", "degree_field": "engineering-cs",
+            "degree_level": "UG", "duration_years": 4,
+            "composite_score": 94.0, "financial_roi_pct": 4820.0,
+            "risk_score": 0.22, "ci_low": 89.0, "ci_high": 97.0,
+            "confidence_level": "High", "model_version": "v1.0-live",
+            "ai_risk_label": "Medium",
+            "placement_rate_pct": 97.0, "median_salary_inr": 2_000_000,
+            "total_tuition_inr": 920_000.0, "hostel_living_inr": 322_000.0,
+            "exam_prep_costs_inr": 50_000.0, "opportunity_cost_inr": 1_200_000.0,
+            "total_cost_of_degree": 1_242_000.0,
+        }
+        base.update(overrides)
+        return base
+
+    def test_costs_block_is_present(self):
+        from api.routers.colleges import _build_program_item
+
+        item = _build_program_item(self._row())
+        assert item["costs"] == {
+            "totalTuitionInr": 920_000.0,
+            "hostelLivingInr": 322_000.0,
+            "examPrepCostsInr": 50_000.0,
+            "opportunityCostInr": 1_200_000.0,
+            "totalCostOfDegreeInr": 1_242_000.0,
+        }
+
+    def test_costs_are_per_program_not_a_constant(self):
+        """Regression guard: a single hardcoded host block looked plausible
+        but published one invented figure for all 73 programs."""
+        from api.routers.colleges import _build_program_item
+
+        cheap = _build_program_item(self._row(hostel_living_inr=3_133.0))["costs"]
+        dear = _build_program_item(self._row(hostel_living_inr=875_000.0))["costs"]
+        assert cheap["hostelLivingInr"] == 3_133.0
+        assert dear["hostelLivingInr"] == 875_000.0
+        assert cheap != dear
+
+    def test_costs_null_when_no_cost_data_row(self):
+        from api.routers.colleges import _build_program_item
+
+        costs = _build_program_item(self._row(
+            total_tuition_inr=None, hostel_living_inr=None,
+            exam_prep_costs_inr=None, opportunity_cost_inr=None,
+            total_cost_of_degree=None,
+        ))["costs"]
+        assert all(v is None for v in costs.values()), costs
+
+    def test_absent_placement_is_null_not_zero(self):
+        from api.routers.colleges import _build_program_item
+
+        item = _build_program_item(self._row(placement_rate_pct=None))
+        assert item["placement"]["rate"] is None
+        # A real 0 is still a real 0 — it must not be confused with "absent".
+        assert _build_program_item(self._row(placement_rate_pct=0))["placement"]["rate"] == 0.0
+        assert _build_program_item(self._row(placement_rate_pct="0"))["placement"]["rate"] == 0.0
+
+    def test_absent_roi_scores_are_null_not_zero(self):
+        from api.routers.colleges import _build_program_item
+
+        item = _build_program_item(self._row(
+            composite_score=None, financial_roi_pct=None, risk_score=None,
+            ci_low=None, ci_high=None,
+        ))["roi"]
+        for key in ("compositeScore", "financialRoiPct", "riskScore",
+                    "confidenceIntervalLow", "confidenceIntervalHigh"):
+            assert item[key] is None, key
+
+    def test_zero_is_preserved_for_real_roi_values(self):
+        from api.routers.colleges import _build_program_item
+
+        roi = _build_program_item(self._row(
+            composite_score=0, financial_roi_pct=0, risk_score=0,
+        ))["roi"]
+        assert roi["compositeScore"] == 0.0
+        assert roi["financialRoiPct"] == 0.0
+        assert roi["riskScore"] == 0.0
+
+    def test_duration_years_absent_is_null_not_default_four(self):
+        from api.routers.colleges import _build_program_item
+
+        assert _build_program_item(self._row(duration_years=None))["degree"]["durationYears"] is None
+        assert _build_program_item(self._row(duration_years=2))["degree"]["durationYears"] == 2.0
+
+    def test_decimal_columns_are_serialisable_as_float(self):
+        """NUMERIC → Decimal; bare `float()` on them is fine, but NaN/Infinity
+        would emit invalid JSON, so they must collapse to null."""
+        from decimal import Decimal
+        from api.routers.colleges import _build_program_item
+
+        item = _build_program_item(self._row(
+            composite_score=Decimal("76.3"), placement_rate_pct=Decimal("72.0"),
+        ))
+        assert item["roi"]["compositeScore"] == 76.3
+        assert item["placement"]["rate"] == 72.0
+        nonfinite = _build_program_item(self._row(composite_score=float("nan")))
+        assert nonfinite["roi"]["compositeScore"] is None
+
+    def test_non_null_column_fallbacks_are_preserved(self):
+        """tier / degree_level / model_version are NOT NULL upstream and the
+        existing response contract depends on the fallbacks staying."""
+        from api.routers.colleges import _build_program_item
+
+        row = self._row(model_version=None, ai_risk_label=None)
+        # `tier` and `degree_level` use `.get(key, default)`, so the fallback
+        # fires on an absent key. Left exactly as-is by this change.
+        del row["tier"]
+        del row["degree_level"]
+        item = _build_program_item(row)
+        assert item["college"]["tier"] == 2
+        assert item["degree"]["level"] == "UG"
+        # These two use `or`, so an explicit null also falls back.
+        assert item["meta"]["aiRiskLabel"] == "Medium"
+        assert item["roi"]["modelVersion"]
+
+    def test_no_or_zero_fabrication_left_in_builder(self):
+        src = (REPO_BACKEND / "api" / "routers" / "colleges.py").read_text()
+        builder = src.split("def _build_program_item")[1].split("\ndef ")[0]
+        assert " or 0" not in builder, builder
+        assert ", 4)" not in builder, "duration_years must not default to 4"
+
+
 class TestScrapeRouteShadowing:
     """`/{run_id}` must not swallow literal paths declared after it."""
 
