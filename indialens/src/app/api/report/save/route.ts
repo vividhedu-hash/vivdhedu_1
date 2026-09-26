@@ -17,6 +17,10 @@ export async function POST(request: NextRequest) {
     // Save directly to Supabase persistent table
     await fetchSupabaseRest("student_reports", {
       method: "POST",
+      // See the note in api/analyze/route.ts: the token-scoped SELECT policy
+      // must also match, because `Prefer: return=representation` makes
+      // PostgREST read the row back after inserting it.
+      reportToken: token,
       body: JSON.stringify({
         token,
         profile_data: profileData,

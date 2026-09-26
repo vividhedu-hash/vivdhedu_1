@@ -221,3 +221,81 @@ class TestNoFabricatedData:
         src = (REPO_ROOT / "indialens" / "src" / "components" / "ROIBreakdown.tsx").read_text()
         for bad in ("optionalityScore, 78", "mobilityScore, 82", "networkScore, 88"):
             assert bad not in src, f"'{bad}' substitutes a hardcoded score for a missing one"
+
+
+class TestStudentDataWriteScope:
+    """Guards the write path on student-owned tables.
+
+    Migration 0003 scoped SELECT to the report token but left anon with no
+    UPDATE, which silently broke the view counter. The obvious repair — a
+    token-scoped UPDATE policy — is unsafe on its own: RLS gates rows, never
+    columns, so a token holder could rewrite profile_data or results_data. That
+    mistake was made live and destroyed a real report before being caught.
+
+    These assertions encode the two halves of the correct fix so neither can be
+    dropped silently.
+    """
+
+    MIGRATION_0004 = REPO_ROOT / "backend" / "db" / "migrations" / "0004_student_reports_write_scope.sql"
+
+    def test_migration_0004_exists(self):
+        assert self.MIGRATION_0004.is_file(), (
+            "0004 scopes anon writes on student_reports; without it the counter "
+            "stays broken and the table keeps DELETE/TRUNCATE grants"
+        )
+
+    def test_update_grant_is_column_scoped(self):
+        sql = self.MIGRATION_0004.read_text()
+        assert "GRANT UPDATE (viewed_count)" in sql, (
+            "anon must be able to write only viewed_count, not the whole row"
+        )
+        assert "REVOKE UPDATE ON public.student_reports" in sql, (
+            "table-level UPDATE must be revoked before re-granting the column, "
+            "otherwise the column grant is meaningless"
+        )
+
+    def test_delete_and_truncate_are_revoked(self):
+        sql = self.MIGRATION_0004.read_text()
+        assert "REVOKE DELETE, TRUNCATE" in sql, (
+            "Supabase grants DELETE/TRUNCATE by default; no anon caller should "
+            "hold them on a table of student records"
+        )
+
+    def test_no_write_grants_on_other_student_tables(self):
+        sql = self.MIGRATION_0004.read_text()
+        assert "personal_intelligence" in sql and "portfolio_profiles" in sql, (
+            "the guard must assert anon holds no write grants on the other two "
+            "student-owned tables"
+        )
+
+    def test_report_routes_send_their_token_on_write(self):
+        """The wizard posts with the anon key and asks for the row back.
+
+        `Prefer: return=representation` makes PostgREST follow the INSERT with a
+        SELECT. Under the token-scoped SELECT policy that SELECT is denied
+        unless the request carries x-report-token, so omitting it fails the
+        whole save with 42501.
+        """
+        for rel in (
+            "src/app/api/analyze/route.ts",
+            "src/app/api/report/save/route.ts",
+        ):
+            src = (REPO_ROOT / "indialens" / rel).read_text()
+            # Anchor on the student_reports call itself — both files POST to
+            # other endpoints earlier, so searching for the first `method: "POST"`
+            # finds the wrong one.
+            call_idx = src.find('fetchSupabaseRest("student_reports"')
+            assert call_idx != -1, f"{rel} no longer writes to student_reports"
+            window = src[call_idx : call_idx + 500]
+            assert "reportToken" in window, (
+                f"{rel} inserts into a token-scoped table without sending "
+                "reportToken; the save will fail with 42501"
+            )
+
+    def test_view_counter_route_sends_its_token(self):
+        src = (REPO_ROOT / "indialens" / "src/app/api/report/[token]/route.ts").read_text()
+        patch_idx = src.find('method: "PATCH"')
+        assert patch_idx != -1, "view-count bump no longer PATCHes"
+        assert "reportToken" in src[patch_idx : patch_idx + 400], (
+            "the viewed_count bump needs reportToken to satisfy the UPDATE policy"
+        )

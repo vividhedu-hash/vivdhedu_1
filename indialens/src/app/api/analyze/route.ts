@@ -250,6 +250,12 @@ export async function POST(request: Request) {
   // Persist directly into Supabase student_reports table
   await fetchSupabaseRest("student_reports", {
     method: "POST",
+    // RLS scopes SELECT on student_reports to the matching token, and PostgREST
+    // issues a follow-up SELECT when the request sets
+    // `Prefer: return=representation` (which fetchSupabaseRest always does).
+    // Without this header that SELECT is denied and the insert fails with
+    // 42501 even though the INSERT policy itself is fine.
+    reportToken: token,
     body: JSON.stringify({
       token,
       profile_data: profile,
