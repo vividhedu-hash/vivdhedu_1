@@ -87,12 +87,21 @@ async def recompute():
             prog["placement_rate_pct"] = placement
             scores = compute_roi(prog, traj)
 
+            # Never persist a score built from invented inputs. When real fee or
+            # placement data is absent, compute_roi returns data_complete=False
+            # with None figures; writing those (or the old 0.0/0.35/0.70 defaults
+            # below) is how 19 unmeasured colleges ended up showing confident
+            # ROI numbers. Leave them unscored until a scraper supplies data.
+            if not scores.get("data_complete"):
+                skipped += 1
+                continue
+
+            sub = scores.get("sub_scores") or {}
+            comp = scores["composite_score"]
             await db.execute(text("""
                 UPDATE roi_scores SET is_current = FALSE
                 WHERE program_id = :pid AND is_current = TRUE
             """), {"pid": pid})
-            sub = scores.get("sub_scores", {})
-            comp = scores["composite_score"]
             await db.execute(text("""
                 INSERT INTO roi_scores
                     (program_id, model_version, composite_score, financial_roi_pct,
@@ -104,20 +113,20 @@ async def recompute():
             """), {
                 "pid": pid,
                 "comp": comp,
-                "fin": scores.get("financial_roi_pct", 0.0),
-                "risk": scores.get("risk_score", 0.35),
+                "fin": scores["financial_roi_pct"],
+                "risk": scores["risk_score"],
                 "opt": sub.get("optionality", 0.70),
                 "mob": sub.get("mobility", 0.70),
                 "sat": sub.get("satisfaction", 0.75),
                 "net": sub.get("network", 0.80),
-                "ci_l": scores.get("ci_low", max(0.0, round(comp * 0.92, 1))),
-                "ci_h": scores.get("ci_high", min(100.0, round(comp * 1.08, 1))),
+                "ci_l": scores.get("ci_low"),
+                "ci_h": scores.get("ci_high"),
                 "conf": scores.get("confidence_level", "High"),
             })
             written += 1
 
         await db.commit()
-        print(f"ROI recomputed for {written} programs ({skipped} skipped — no Y1 trajectory)")
+        print(f"ROI recomputed for {written} programs ({skipped} skipped — insufficient real data)")
 
     await engine.dispose()
 

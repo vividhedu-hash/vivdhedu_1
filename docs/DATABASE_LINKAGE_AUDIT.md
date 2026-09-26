@@ -153,3 +153,60 @@ Defects 4a/4b need new source data, not a working scraper — there is nowhere t
 scrape *into* for 7 of the 8 risk vectors. 4c/4d/4e are directly in scope for
 scraper work. Re-run this audit afterwards; the coverage table in §3 is the
 before-picture.
+
+---
+
+# Remediation log — 2026-09-26 (later)
+
+The three defects above were fixed, and four further defects were found while
+verifying the fixes. Production state after remediation is recorded here.
+
+## Fixed
+
+| # | Defect | Fix |
+|---|---|---|
+| 4c | `compute_roi` defaulted missing fee/placement to ₹10L / 65% | Fee and placement are now **required**. Returns `data_complete=False` with `None` figures and a `data_issues` list instead of a number. |
+| 4d | No scraper had ever completed | `BaseScraper.update_run_status` bound `:status` as both the `scrape_status` enum and a text comparison, so asyncpg raised `AmbiguousParameterError` and **every** run failed at its first status write. Now `CAST(:status AS scrape_status)`. |
+| — | 19 programs published fabricated ROI as `"verified"` | Scores nulled and `data_label` set to `pending_source_data`. Labels recomputed to `computed` / `pending_source_data` from actual source rows. |
+| — | `/colleges/roi-index` returned **503 for every caller** | `placement_rate_pct` is `NUMERIC` → `Decimal`; `Decimal / float` and `Decimal > int` both raise. Coerced to `float` at the boundary. |
+| — | `scripts/compute_roi.py` wrote `0.0/0.35/0.70/0.75/0.80` sub-scores when the model returned nothing | Skips programs where `data_complete` is false. |
+| — | Zero-record scrapes reported `success` | `ScrapeYieldedNothing` — a run that parses or persists 0 rows is recorded as `failed` with the reason. |
+| — | Six scrapers were unreachable via `POST /api/scrape/trigger/{name}` | `jina, crawl4ai, indeed, internshala, college_placement` added to `SCRAPER_REGISTRY`. |
+| — | `from ..pipeline...` in `BaseScraper.persist_results` failed on every run | Absolute import with a `backend.`-prefixed fallback. |
+| — | `pyjwt` was never declared in `requirements.txt`; `email-validator` was declared but unresolvable | `PyJWT==2.9.0` added. With both present the app serves **75 routes instead of 68** — all 7 `/api/auth/*` routes had been silently missing. |
+
+## Verified live
+
+Scrapers against the live database and the real upstream sources:
+
+| Source | Result | Records |
+|---|---|---|
+| `nirf` | ✅ success | 40 |
+| `plfs` | ✅ success | 24 |
+| `internshala` | ✅ success | 12 |
+| `worldbank` | ✅ success | 4 |
+| `ambitionbox` | ❌ failed (honest) | 0 — upstream markup changed |
+| `payscale` | ❌ failed (honest) | 21 parsed, 0 persisted — name matching drifted |
+| `naukri`, `indeed`, `tavily`, `college_placement` | ❌ failed (honest) | 0 |
+
+The failures are now **visible** rather than logged as healthy runs. They are
+extractor drift, not infrastructure faults.
+
+## ROI state after remediation
+
+- 54 programs recomputed from real `cost_data` + `placement_data`.
+- 19 remain unscored and labelled `pending_source_data` — they are no longer
+  ranked, and the API returns `roi_data_complete: false` so the UI can say
+  "not enough data" instead of rendering a number.
+- `scripts/compute_roi.py` reports: `ROI recomputed for 54 programs (19 skipped
+  — insufficient real data)`.
+
+## Still open (unchanged, not fixable by a scraper)
+
+- 7 of 8 risk vectors are hardcoded constants in `roi_computer.py` with no
+  per-program source column.
+- `model_versions` has one row (`v1.0-seed`) trained on 15 records with all
+  metrics NULL — no evidence the model performs.
+- 54 `placement_data` rows have NULL `highest_salary_inr`, `companies_visited`,
+  `ppo_count`.
+

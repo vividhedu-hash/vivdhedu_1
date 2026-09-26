@@ -460,15 +460,75 @@ def compute_roi(
     """
     Master Production ROI Computation Engine.
     Implements PRD Sections 04 and 05 end-to-end.
+
+    Data honesty
+    -------------
+    `total_cost_of_degree_inr` and `placement_rate_pct` are the two inputs the
+    whole ROI number rests on. They used to default to 1,000,000 and 0.65 when
+    absent, which meant every program with no scraped cost/placement data was
+    scored as if it cost ₹10L and placed 65% of students — a fabricated number
+    presented with full confidence, and it silently misranked the 19 top
+    colleges (IITs/IIMs/NITs) that have no scraped data yet.
+
+    They are now REQUIRED. When they are missing the returned dict is marked
+    ``data_complete=False`` and the cost-dependent figures (NPV, ROI, IRR,
+    composite) are ``None`` rather than invented. ``data_issues`` names exactly
+    what a scraper still needs to fill in.
     """
     field = program.get("degree_field", "engineering-cs")
     tier = str(program.get("tier", "2"))
     college_type = program.get("college_type", "private")
     state = program.get("state", "Maharashtra")
     nirf_rank = program.get("nirf_rank")
-    total_cost = float(program.get("total_cost_of_degree_inr") or 1_000_000.0)
+
+    # --- required, non-fabricated inputs ---
+    data_issues: List[str] = []
+    raw_cost = program.get("total_cost_of_degree_inr")
+    raw_placement = program.get("placement_rate_pct")
+    if raw_cost is None or float(raw_cost) <= 0:
+        data_issues.append("total_cost_of_degree_inr")
+    if raw_placement is None:
+        data_issues.append("placement_rate_pct")
+
+    if data_issues:
+        return {
+            "composite_score": None,
+            "ci_low": None,
+            "ci_high": None,
+            "financial_roi_pct": None,
+            "npv_net_inr": None,
+            "npv_lifetime_earnings_inr": None,
+            "total_investment_inr": None,
+            "irr_pct": None,
+            "risk_score": None,
+            "job_security_score": None,
+            "layoff_probability_5y_pct": None,
+            "layoff_probability_10y_pct": None,
+            "upskilling_reserve_inr": None,
+            "monthly_emi_inr": None,
+            "annual_emi_inr": None,
+            "loan_stress_default_risk_pct": None,
+            "benchmark_loan_stress_default_risk_pct": None,
+            "breakeven_months": None,
+            "sub_scores": None,
+            "risk_vectors": None,
+            "adaptive_weights": None,
+            "confidence_level": "Unavailable",
+            "monte_carlo_analytics": None,
+            "data_complete": False,
+            "data_issues": data_issues,
+            "missing_sources": ["cost_data", "placement_data"],
+            "nirf_rank": nirf_rank,
+            "program": program.get("name") or program.get("college_name"),
+            "note": (
+                "ROI not computed: real fee and placement data are required. "
+                "No estimate is shown rather than an invented one."
+            ),
+        }
+
+    total_cost = float(raw_cost)
     duration_years = float(program.get("duration_years") or 4.0)
-    placement_rate = float(program.get("placement_rate_pct") or 0.65)
+    placement_rate = float(raw_placement)
     salary_volatility = float(program.get("salary_volatility") or 0.20)
     base_disruption = float(program.get("ai_automation_prob") or 0.32)
     human_resilience = float(program.get("human_resilience_pct", 80.0) / 100.0 if "human_resilience_pct" in program else 0.78)
@@ -553,7 +613,7 @@ def compute_roi(
     composite_score = round(composite_raw * 100.0, 1)
 
     # 8. Monte Carlo Solvency Simulation (Equation 4.4)
-    from backend.ml.nextgen_engine import monte_carlo_engine
+    from ml.nextgen_engine import monte_carlo_engine
     mc_base_trajectory = {
         1: float(trajectory.get("y1", {}).get("p50", 600000.0)),
         5: float(trajectory.get("y5", {}).get("p50", 1200000.0)),
@@ -584,8 +644,7 @@ def compute_roi(
     return {
         "composite_score": composite_score,
         "ci_low": ci_low,
-        "ci_high": ci_high,
-        "financial_roi_pct": financial_roi_pct,
+        "ci_high": ci_high,        "financial_roi_pct": financial_roi_pct,
         "npv_net_inr": net_npv,
         "npv_lifetime_earnings_inr": npv_earnings,
         "total_investment_inr": total_investment,
@@ -612,4 +671,7 @@ def compute_roi(
         "adaptive_weights": adaptive_weights,
         "confidence_level": "High" if cf_factor >= 0.90 else "Medium",
         "monte_carlo_analytics": mc_results,
+        # Provenance: this figure used real scraped cost + placement data.
+        "data_complete": True,
+        "data_issues": [],
     }

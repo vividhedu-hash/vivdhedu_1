@@ -156,9 +156,15 @@ def _icri_entry(row: dict, traj: dict) -> dict:
         "nirf_rank": row.get("nirf_rank"),
         "total_cost_of_degree_inr": row.get("total_cost_of_degree") or row.get("annual_tuition_inr"),
         "duration_years": row.get("duration_years"),
-        "placement_rate_pct": (row.get("placement_rate_pct") or 0) / 100.0
-            if (row.get("placement_rate_pct") or 0) > 1
-            else (row.get("placement_rate_pct") or 0),
+        "placement_rate_pct": (
+            # NUMERIC → Decimal; `Decimal > int` and `Decimal / float` both
+            # raise TypeError, which made /colleges/roi-index 503 for every
+            # caller. Coerce to float first, and compute the comparison once.
+            float(row["placement_rate_pct"]) / 100.0
+            if row.get("placement_rate_pct") is not None
+            and float(row["placement_rate_pct"]) > 1
+            else float(row.get("placement_rate_pct") or 0)
+        ),
         "ai_automation_prob": row.get("ai_automation_prob"),
         "salary_volatility": row.get("salary_volatility"),
         "industry_cyclicality": row.get("industry_cyclicality"),
@@ -178,15 +184,18 @@ def _icri_entry(row: dict, traj: dict) -> dict:
     # figures arithmetically, so only build it from a complete result.
     roi_ready = bool(roi_data) and roi_data.get("data_complete") and roi_data.get("monte_carlo_analytics")
     if roi_ready:
+        # NUMERIC columns come back as Decimal; `Decimal / float` raises
+        # TypeError and took down the whole /roi-index response with a 503.
+        median_salary = float(row.get("median_salary_inr") or 0)
         icri_raw = (
-            0.35 * min(100.0, roi_data["financial_roi_pct"] / 3.5) +
-            0.25 * min(100.0, ((row.get("median_salary_inr") or 0) / 2_500_000.0) * 100.0) +
+            0.35 * min(100.0, float(roi_data["financial_roi_pct"]) / 3.5) +
+            0.25 * min(100.0, (median_salary / 2_500_000.0) * 100.0) +
             0.20 * ai_sec["job_security_score"] +
-            0.10 * (100.0 - roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"]) +
+            0.10 * (100.0 - float(roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"])) +
             0.10 * (100.0 if str(row.get("tier")) == "1" else 75.0)
         )
         icri_score = round(max(0.0, min(99.9, icri_raw)), 1)
-        financial_roi = roi_data["financial_roi_pct"]
+        financial_roi = float(roi_data["financial_roi_pct"])
         breakeven_months = roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_months"]
         breakeven_years = roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_years"]
         npv = roi_data["monte_carlo_analytics"]["npv_net_earnings_inr"]
@@ -204,8 +213,9 @@ def _icri_entry(row: dict, traj: dict) -> dict:
             "placement_rate_pct",
         ]
 
-    placement = row.get("placement_rate_pct") or 0
-    placement_pct = round(placement * 100, 1) if placement <= 1 else round(float(placement), 1)
+    # Outside the if/else: needed by the response body in both branches.
+    placement = float(row.get("placement_rate_pct") or 0)
+    placement_pct = round(placement * 100, 1) if placement <= 1 else round(placement, 1)
 
     return {
         "college_id": str(row["program_id"]),

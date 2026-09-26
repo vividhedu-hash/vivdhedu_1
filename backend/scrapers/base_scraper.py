@@ -20,6 +20,17 @@ from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
+
+class ScrapeYieldedNothing(RuntimeError):
+    """A run completed without error but ingested zero rows.
+
+    Raised instead of letting `run()` report `success`. Several sources
+    (ambitionbox, naukri, indeed, payscale, tavily) began returning 0 records
+    after upstream markup changed, and because nothing raised, every run was
+    logged as `success` — a silent pipeline failure that looked healthy on the
+    dashboard. A zero-row scrape is a failure and must be visible as one.
+    """
+
 USER_AGENTS = [
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -241,14 +252,21 @@ class BaseScraper(ABC):
 
     async def update_run_status(self, status: str, error: str = None):
         """Update scrape_runs table with current stats."""
+        # `:status` cannot be reused in the CASE expression: asyncpg binds the
+        # same named param as `text` in the comparison but as the `scrape_status`
+        # enum in the SET, raising AmbiguousParameterError ("inconsistent types
+        # deduced for parameter $1 — text versus scrape_status"). That killed
+        # every single scraper run at the very first status write. Bind it once
+        # as text and cast explicitly on assignment.
         await self.db.execute(text("""
             UPDATE scrape_runs SET
-                status = :status,
+                status = CAST(:status AS scrape_status),
                 records_scraped = :scraped,
                 records_updated = :updated,
                 records_flagged = :flagged,
                 error_message = :error,
-                completed_at = CASE WHEN :status != 'running' THEN NOW() ELSE completed_at END
+                completed_at = CASE WHEN CAST(:status AS text) != 'running'
+                                    THEN NOW() ELSE completed_at END
             WHERE id = :id
         """), {
             "id": self.run_id,
@@ -273,7 +291,23 @@ class BaseScraper(ABC):
         try:
             async with self:
                 results = await self.scrape()
+                if not results:
+                    raise ScrapeYieldedNothing(
+                        f"{self.SOURCE_NAME} returned 0 records — the page "
+                        f"structure likely changed, or the source is blocking. "
+                        f"Reporting this as success would look healthy while "
+                        f"silently ingesting nothing."
+                    )
                 await self.persist_results(results)
+
+            if self.stats.records_scraped == 0:
+                # Results came back but none of them matched a known program or
+                # a storable field, so persist_results wrote nothing. That is a
+                # broken extractor, not a successful scrape.
+                raise ScrapeYieldedNothing(
+                    f"{self.SOURCE_NAME} parsed {len(results)} results but "
+                    f"persisted 0 records — college/field matching has drifted."
+                )
 
             await self.update_run_status("success")
             logger.info(
