@@ -89,8 +89,14 @@ jobs:
         run: |
           set -euo pipefail
           fail=0
+          # Rollback scripts are excluded by design: their entire purpose is to
+          # recreate the pre-hardening policies, so they are necessarily full of
+          # USING (true). A rollback that fails this audit is not a rollback.
           for f in backend/db/migrations/*.sql backend/db/schema.sql; do
             [ -f "$f" ] || continue
+            case "$f" in
+              *_rollback.sql|*/rollback/*) continue ;;
+            esac
             # A SELECT/UPDATE policy whose USING/WITH CHECK is bare `true`
             # grants every row to the listed role. Match the bare boolean in
             # any position: `USING (true)`, `USING true`,
