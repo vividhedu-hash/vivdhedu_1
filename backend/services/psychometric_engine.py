@@ -25,7 +25,7 @@ import logging
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-from backend.ml.psychometric_bank import (
+from ml.psychometric_bank import (
     ITEM_BANK, ITEM_INDEX, ARCHETYPE_PROFILES,
     CLUSTER_ROUTING, GATEWAY_SEQUENCE,
 )

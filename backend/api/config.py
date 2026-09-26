@@ -83,8 +83,21 @@ class Settings(BaseSettings):
 
     # AI Services
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-3.7-flash"
+    gemini_model: str = "gemini-2.5-flash"
     hf_token: str = ""
+
+    # OpenRouter — fallback/complementary grounded engine.
+    # Gemini stays primary because gemini_grounded.generate() is built around
+    # Google Search grounding and refuses ungrounded answers. Sonar returns
+    # native citations, so it satisfies the same GroundedAnswer contract.
+    openrouter_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    # Cheap, fast, grounded models. Overridable per deployment.
+    openrouter_primary_model: str = "perplexity/sonar"
+    openrouter_fallback_model: str = "deepseek/deepseek-chat"
+    # "auto" = try Gemini, fall back to OpenRouter. "openrouter" = OpenRouter
+    # first. "gemini" = Gemini only, never fall back.
+    ai_engine: str = "auto"
 
     # Email
     resend_api_key: str = ""

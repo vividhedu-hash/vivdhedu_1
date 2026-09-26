@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from backend.api.config import settings
-from backend.api.integrations import require_configured
+from api.config import settings
+from api.integrations import require_configured
 
 logger = logging.getLogger(__name__)
 

@@ -107,7 +107,9 @@ async def health():
         db_status = "error"
 
     try:
-        from ..ml.salary_predictor import get_predictor
+        # `ml` is a top-level sibling package; `..ml` is not importable under
+        # `uvicorn api.main:app`, so this always fell to "unavailable".
+        from ml.salary_predictor import get_predictor
         predictor = get_predictor(settings.current_model_version)
         ml_status = "ready" if predictor.models else "untrained"
     except Exception:
@@ -122,6 +124,8 @@ async def health():
         "ml_status": ml_status,
         "db": db_status,
         "programs": program_count,
+        # Non-empty means whole feature groups are missing. Alert on this.
+        "mount_failures": MOUNT_FAILURES,
         "integrations": integrations,
         "timestamp": datetime.utcnow().isoformat(),
     }
@@ -137,6 +141,14 @@ app.include_router(ai_router.router,       prefix="/api/v1", tags=["ai"])
 app.include_router(analytics_router.router, prefix="/api/v1/analytics", tags=["analytics"])
 
 # New Production Routers: Marketplace, Global Degrees, Portfolio Spike Studio, Psychometric, Admissions
+#
+# These were wrapped in a bare `except Exception` that only logged a warning, so
+# a broken import (e.g. the `backend.*` vs top-level package mismatch) silently
+# dropped every route in the block. Production served a "healthy" app with whole
+# features missing and no error anywhere but one log line. Failures are
+# recorded in MOUNT_FAILURES and re-raised at the /health endpoint.
+MOUNT_FAILURES: dict[str, str] = {}
+
 try:
     from .routers import marketplace as marketplace_router
     from .routers import global_programs as global_programs_router
@@ -151,7 +163,8 @@ try:
     app.include_router(admissions_router.router, prefix="/api/v2", tags=["admissions"])
     logger.info("[Main] Production routers (Marketplace, Global, Portfolio, Psychometric, Admissions) mounted at /api/v2")
 except Exception as e:
-    logger.warning(f"[Main] Production routers not mounted: {e}")
+    MOUNT_FAILURES["production_routers"] = f"{type(e).__name__}: {e}"
+    logger.error("[Main] Production routers NOT mounted: %s", e, exc_info=True)
 
 # Week 3: ML management endpoints
 try:
@@ -159,7 +172,8 @@ try:
     app.include_router(ml_router.router, prefix="/api/ml", tags=["ml"])
     logger.info("[Main] ML router mounted at /api/ml")
 except Exception as e:
-    logger.warning(f"[Main] ML router not mounted: {e}")
+    MOUNT_FAILURES["ml_router"] = f"{type(e).__name__}: {e}"
+    logger.error("[Main] ML router NOT mounted: %s", e, exc_info=True)
 
 # Authentication & OAuth 2.0 Router
 try:
@@ -167,9 +181,14 @@ try:
     app.include_router(auth_router.router, prefix="/api/v1", tags=["auth"])
     logger.info("[Main] Auth & OAuth router mounted at /api/v1/auth")
 except Exception as e:
-    logger.warning(f"[Main] Auth router not mounted: {e}")
+    MOUNT_FAILURES["auth_router"] = f"{type(e).__name__}: {e}"
+    logger.error("[Main] Auth router NOT mounted: %s", e, exc_info=True)
 
 
 
 if __name__ == "__main__":
-    uvicorn.run("backend.api.main:app", host="0.0.0.0", port=8000, reload=True)
+    # Was "backend.api.main:app" — that form only resolves when the repo ROOT is
+    # on sys.path. Every deploy target runs `uvicorn api.main:app` from backend/
+    # (Procfile, render.yaml, railway.toml), where `backend` is not importable.
+    # Use the object directly so it works in both layouts.
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

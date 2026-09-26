@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel, Field
 
-from backend.ml.admissions_engine import admissions_portfolio_engine
+from ml.admissions_engine import admissions_portfolio_engine
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admissions", tags=["Admissions Portfolio"])

@@ -13,8 +13,8 @@ try:
     from ml.nextgen_engine import portfolio_spike_engine
     from services.gemini_grounded import gemini_grounded
 except ImportError:
-    from backend.ml.nextgen_engine import portfolio_spike_engine
-    from backend.services.gemini_grounded import gemini_grounded
+    from ml.nextgen_engine import portfolio_spike_engine
+    from services.gemini_grounded import gemini_grounded
 
 router = APIRouter(prefix="/portfolio", tags=["Global Admissions Portfolio Builder"])
 

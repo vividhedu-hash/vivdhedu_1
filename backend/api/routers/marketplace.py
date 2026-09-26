@@ -14,14 +14,14 @@ from sqlalchemy import text
 try:
     from ..db.database import get_db
 except ImportError:
-    from backend.api.db.database import get_db
+    from ..db.database import get_db
 
 try:
     from ml.nextgen_engine import marketplace_engine
     from scripts.seed_global_and_marketplace import COURSE_MARKETPLACE_SEED
 except ImportError:
-    from backend.ml.nextgen_engine import marketplace_engine
-    from backend.scripts.seed_global_and_marketplace import COURSE_MARKETPLACE_SEED
+    from ml.nextgen_engine import marketplace_engine
+    from scripts.seed_global_and_marketplace import COURSE_MARKETPLACE_SEED
 
 router = APIRouter(prefix="/marketplace", tags=["Course Marketplace"])
 

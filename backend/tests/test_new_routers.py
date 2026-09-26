@@ -54,9 +54,17 @@ def test_ai_status_reports_engine():
     response = client.get("/api/v1/ai/status")
     assert response.status_code == 200
     data = response.json()
-    assert data["engine"]
-    assert "configured" in data
-    assert data["grounding"] == "google_search"
+    assert "mode" in data
+    assert "engines" in data
+    # `engine` names a real model only when an engine is actually configured.
+    # With no keys it must be empty rather than a fabricated model name.
+    if not any(data["engines"].values()):
+        assert data["engine"] == ""
+        assert data["configured"] is False
+    else:
+        assert data["engine"]
+        assert data["configured"] is True
+        assert data["grounding"] == "google_search"
 
 
 def test_ai_mode_fail_closed():
@@ -64,8 +72,11 @@ def test_ai_mode_fail_closed():
     assert response.status_code in (200, 502, 503)
     if response.status_code != 200:
         detail = response.json().get("detail", {})
-        assert detail.get("integration") == "gemini"
-        assert "GEMINI_API_KEY" in str(detail.get("missing_env", [])) or "gemini" in str(detail).lower()
+        # Engine-agnostic now, so the integration is "ai" — but the operator
+        # must be told the exact env var to set.
+        assert detail.get("integration") in ("ai", "gemini", "openrouter")
+        missing = detail.get("missing_env") or []
+        assert any(m.endswith("_API_KEY") for m in missing), missing
     else:
         data = response.json()
         assert data.get("grounded") is True
@@ -83,7 +94,8 @@ def test_ai_advisor_fail_closed():
     assert response.status_code in (200, 502, 503)
     if response.status_code != 200:
         detail = response.json().get("detail", {})
-        assert "GEMINI_API_KEY" in str(detail.get("missing_env", [])) or detail.get("integration") == "gemini"
+        missing = str(detail.get("missing_env", []))
+        assert "_API_KEY" in missing or detail.get("integration") in ("ai", "gemini", "openrouter")
 
 
 def test_ai_psychometrics_fail_closed():

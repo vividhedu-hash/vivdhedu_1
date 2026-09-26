@@ -12,7 +12,7 @@ Endpoints:
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from typing import Dict, Any
-from backend.services.global_standards_analytics import global_analytics_service
+from services.global_standards_analytics import global_analytics_service
 
 router = APIRouter()
 

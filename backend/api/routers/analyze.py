@@ -20,12 +20,12 @@ from ..schemas import StudentProfile
 from ..config import settings
 
 try:
-    from ..services.email import send_report_email
+    from services.email import send_report_email
 except ImportError:
     async def send_report_email(*args, **kwargs): return False
 
-from backend.services.tavily_auto_service import tavily_auto_service
-from backend.ml.nextgen_engine import monte_carlo_engine, psychometric_match_engine
+from services.tavily_auto_service import tavily_auto_service
+from ml.nextgen_engine import monte_carlo_engine, psychometric_match_engine
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -247,7 +247,7 @@ def _score_program_multi_dimensional(
     )
 
     # ── Master Actuarial ROI & 8-Vector Risk (PRD Sections 04 & 05) ──
-    from backend.ml.roi_computer import compute_roi
+    from ml.roi_computer import compute_roi
     actuarial_roi = compute_roi(program, trajectory, student_traits=cat)
 
     return {
@@ -345,8 +345,8 @@ async def analyze(
 
     # Load ML models
     try:
-        from ...ml.salary_predictor import get_predictor
-        from ...ml.lstm_trajectory import get_lstm_model
+        from ml.salary_predictor import get_predictor
+        from ml.lstm_trajectory import get_lstm_model
         predictor = get_predictor(settings.current_model_version)
         lstm = get_lstm_model(settings.current_model_version)
         using_ml = True

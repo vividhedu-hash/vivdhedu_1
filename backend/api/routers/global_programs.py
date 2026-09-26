@@ -12,14 +12,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 try:
     from ..db.database import get_db
 except ImportError:
-    from backend.api.db.database import get_db
+    from ..db.database import get_db
 
 try:
     from ml.nextgen_engine import global_degree_engine
     from scripts.seed_global_and_marketplace import GLOBAL_PROGRAMS_SEED
 except ImportError:
-    from backend.ml.nextgen_engine import global_degree_engine
-    from backend.scripts.seed_global_and_marketplace import GLOBAL_PROGRAMS_SEED
+    from ml.nextgen_engine import global_degree_engine
+    from scripts.seed_global_and_marketplace import GLOBAL_PROGRAMS_SEED
 
 router = APIRouter(prefix="/global", tags=["Global Degrees & Cross-Border ROI"])
 

@@ -14,8 +14,8 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.api.config import settings
-from backend.services.gemini_grounded import gemini_grounded
+from api.config import settings
+from services.gemini_grounded import gemini_grounded
 
 logger = logging.getLogger(__name__)
 
@@ -122,8 +122,8 @@ async def build_personal_intelligence(
     catalog_ids = {row["program_id"] for row in catalog}
 
     # Enrich catalog programs with actuarial metrics
-    from backend.ml.admissions_engine import AdmissionsPortfolioEngine
-    from backend.ml.nextgen_engine import AIJobSecurityEngine
+    from ml.admissions_engine import AdmissionsPortfolioEngine
+    from ml.nextgen_engine import AIJobSecurityEngine
 
     student_rank = float(merged_profile.get("expected_rank") or merged_profile.get("jee_rank") or 12000.0)
     exam_name = merged_profile.get("exam") or "JEE Main"

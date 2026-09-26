@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from backend.services.psychometric_engine import psychometric_engine
+from services.psychometric_engine import psychometric_engine
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v2/psychometric", tags=["psychometric"])

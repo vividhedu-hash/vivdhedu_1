@@ -128,7 +128,18 @@ class BaseScraper(ABC):
         Persist scraped data points to DB.
         Runs anomaly detection on each field before committing.
         """
-        from ..pipeline.anomaly_detector import AnomalyDetector
+        # Import lazily (it pulls in SQLAlchemy) but absolutely, not relatively.
+        # This module lives in package `scrapers`, so `..pipeline` resolved to the
+        # top level and raised "attempted relative import with no known parent
+        # package" on every single run — after the HTTP work, right before the
+        # writes. run() swallowed it into status='failed', so scrapers looked
+        # healthy and silently produced zero data. The deployed layout is
+        # `uvicorn api.main:app` from backend/, so `pipeline` is top-level;
+        # under `backend.` imports (pytest, scripts) it is `backend.pipeline`.
+        try:
+            from pipeline.anomaly_detector import AnomalyDetector
+        except ImportError:  # pragma: no cover - exercised by the `backend.` layout
+            from backend.pipeline.anomaly_detector import AnomalyDetector
         detector = AnomalyDetector(db=self.db, run_id=self.run_id)
 
         for result in results:

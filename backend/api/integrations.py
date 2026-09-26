@@ -16,7 +16,12 @@ INTEGRATIONS: Dict[str, Dict[str, Any]] = {
     "gemini": {
         "required_env": ["GEMINI_API_KEY"],
         "optional": True,
-        "docs": "https://aistudio.google.com — Gemini 3.7 Flash + Google Search grounding",
+        "docs": "https://aistudio.google.com — Gemini flash + Google Search grounding",
+    },
+    "openrouter": {
+        "required_env": ["OPENROUTER_API_KEY"],
+        "optional": True,
+        "docs": "https://openrouter.ai/keys — perplexity/sonar (grounded) + deepseek/deepseek-chat (cheap)",
     },
     "huggingface": {
         "required_env": ["HF_TOKEN"],
@@ -65,6 +70,7 @@ def _env_value(name: str) -> str:
     mapping = {
         "DATABASE_URL": settings.database_url,
         "GEMINI_API_KEY": settings.gemini_api_key,
+        "OPENROUTER_API_KEY": getattr(settings, "openrouter_api_key", "") or "",
         "HF_TOKEN": settings.hf_token,
         "TAVILY_API_KEY": settings.tavily_api_key,
         "ADZUNA_APP_ID": settings.adzuna_app_id,
@@ -100,6 +106,10 @@ def integration_status() -> Dict[str, Any]:
         }
         if name == "gemini":
             out[name]["model"] = settings.gemini_model
+        if name == "openrouter":
+            out[name]["model"] = getattr(settings, "openrouter_primary_model", "")
+            out[name]["grounded_model"] = getattr(settings, "openrouter_primary_model", "")
+            out[name]["ungrounded_model"] = getattr(settings, "openrouter_fallback_model", "")
     return out
 
 

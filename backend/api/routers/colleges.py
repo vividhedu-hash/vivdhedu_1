@@ -19,8 +19,8 @@ try:
     from ml.nextgen_engine import AIJobSecurityEngine
     from ml.roi_computer import compute_roi
 except ImportError:
-    from backend.ml.nextgen_engine import AIJobSecurityEngine
-    from backend.ml.roi_computer import compute_roi
+    from ml.nextgen_engine import AIJobSecurityEngine
+    from ml.roi_computer import compute_roi
 
 router = APIRouter()
 
@@ -173,7 +173,11 @@ def _icri_entry(row: dict, traj: dict) -> dict:
     )
 
     stored = float(row.get("composite_score") or 0)
-    if roi_data:
+    # compute_roi returns data_complete=False (all figures None) when real fee
+    # or placement data is missing, rather than inventing them. ICRI mixes those
+    # figures arithmetically, so only build it from a complete result.
+    roi_ready = bool(roi_data) and roi_data.get("data_complete") and roi_data.get("monte_carlo_analytics")
+    if roi_ready:
         icri_raw = (
             0.35 * min(100.0, roi_data["financial_roi_pct"] / 3.5) +
             0.25 * min(100.0, ((row.get("median_salary_inr") or 0) / 2_500_000.0) * 100.0) +
@@ -187,6 +191,7 @@ def _icri_entry(row: dict, traj: dict) -> dict:
         breakeven_years = roi_data["monte_carlo_analytics"]["breakeven_timeline"]["median_years"]
         npv = roi_data["monte_carlo_analytics"]["npv_net_earnings_inr"]
         loan_risk = roi_data["monte_carlo_analytics"]["loan_analytics"]["loan_stress_default_risk_pct"]
+        roi_data_issues = []
     else:
         icri_score = round(stored, 1)
         financial_roi = float(row.get("financial_roi_pct") or 0)
@@ -194,6 +199,10 @@ def _icri_entry(row: dict, traj: dict) -> dict:
         breakeven_years = None
         npv = None
         loan_risk = None
+        roi_data_issues = (roi_data or {}).get("data_issues") or [
+            "total_cost_of_degree_inr",
+            "placement_rate_pct",
+        ]
 
     placement = row.get("placement_rate_pct") or 0
     placement_pct = round(placement * 100, 1) if placement <= 1 else round(float(placement), 1)
@@ -218,6 +227,10 @@ def _icri_entry(row: dict, traj: dict) -> dict:
         "ai_job_security_score": ai_sec["job_security_score"],
         "ai_risk_label": ai_sec["security_label"],
         "loan_default_risk_pct": loan_risk,
+        # Tells the UI this row's ROI figures are absent because real data is
+        # missing — not zero. Suppresses any "₹0 ROI" or "0% placement" render.
+        "roi_data_complete": not roi_data_issues,
+        "roi_data_issues": roi_data_issues,
     }
 
 

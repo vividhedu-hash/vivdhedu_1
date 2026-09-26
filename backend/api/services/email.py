@@ -3,7 +3,7 @@ Email notification service using Resend (free tier: 3,000 emails/month).
 https://resend.com/docs/api-reference/emails/send-email
 
 Usage:
-    from backend.services.email import send_report_email, send_admin_alert
+    from services.email import send_report_email, send_admin_alert
     await send_report_email(to="user@example.com", token="abc123", roi_score=87)
 """
 import os

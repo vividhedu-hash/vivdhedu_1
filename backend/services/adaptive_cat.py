@@ -300,7 +300,12 @@ class AdaptiveCATService:
     def __init__(self):
         self.item_bank = list(ITEM_BANK)
         try:
-            from backend.ml.psychometric_bank import ITEM_BANK as COMPREHENSIVE_BANK
+            # `ml` is a top-level sibling package (deployed as
+            # `uvicorn api.main:app` from backend/). `backend.ml...` raised
+            # ModuleNotFoundError in that layout, and the bare `except` below
+            # swallowed it — so production silently ran with a fraction of the
+            # calibrated item bank and logged only a warning at startup.
+            from ml.psychometric_bank import ITEM_BANK as COMPREHENSIVE_BANK
             for comp_item in COMPREHENSIVE_BANK:
                 mapped_id = comp_item.get("id")
                 if not any(it["id"] == mapped_id for it in self.item_bank):

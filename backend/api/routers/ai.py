@@ -6,17 +6,22 @@ from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.api.config import settings
+# Import style: the deployed entrypoint is `uvicorn api.main:app` from backend/,
+# where the repo root is NOT on sys.path — so `backend.api...` raises
+# ModuleNotFoundError and there is no `api.services` (the real services package
+# is a SIBLING of `api/`). Inside `api/` use `..config` / `..db`; for sibling
+# packages (services, ml) use the top-level name.
+from ..config import settings
 from ..db.database import get_db
-from backend.services.gemini_advisor import gemini_advisor_service
-from backend.services.gemini_grounded import gemini_grounded
-from backend.services.personal_intelligence import (
+from services.ai_engine import active_engine_name, available_engines, generate_grounded
+from services.gemini_advisor import gemini_advisor_service
+from services.personal_intelligence import (
     build_personal_intelligence,
     get_personal_intelligence,
 )
-from backend.services.adaptive_cat import adaptive_cat_service
-from backend.services.psychometrics import psychometrics_service
-from backend.services.external_apis import IntegrationUnavailable
+from services.adaptive_cat import adaptive_cat_service
+from services.psychometrics import psychometrics_service
+from services.external_apis import IntegrationUnavailable
 
 router = APIRouter(prefix="/ai", tags=["AI Advisor & Psychometrics"])
 
@@ -53,10 +58,14 @@ class CATItemRequest(BaseModel):
 
 @router.get("/status")
 async def ai_status():
+    engines = available_engines()
     return {
-        "engine": settings.gemini_model,
-        "grounding": "google_search",
-        "configured": bool(settings.gemini_api_key),
+        "engine": active_engine_name(),
+        "mode": settings.ai_engine,
+        "grounding": "google_search" if engines.get("gemini") else "web_search",
+        # Only true when at least one engine can actually answer.
+        "configured": bool(active_engine_name()),
+        "engines": engines,
     }
 
 
@@ -76,7 +85,7 @@ Structure:
 - What the student should do next (max 3 bullets)
 Cite sources. Do not invent ranks, fees, or CTC."""
     try:
-        answer = await gemini_grounded.generate(prompt, timeout=45.0, require_grounding=True)
+        answer = await generate_grounded(prompt, timeout=45.0, require_grounding=True)
         return answer.as_dict()
     except IntegrationUnavailable as e:
         raise HTTPException(status_code=e.status, detail=e.as_http_detail())
@@ -209,7 +218,7 @@ async def get_professions_safety_matrix():
     Returns comprehensive AI Safety Scores (0-100), 5y/10y displacement risk,
     vulnerable tasks, and resilient skills across all major career professions.
     """
-    from backend.ml.nextgen_engine import AIJobSecurityEngine
+    from ml.nextgen_engine import AIJobSecurityEngine
     return {
         "matrix": AIJobSecurityEngine.get_profession_safety_matrix(),
         "total_professions": len(AIJobSecurityEngine.get_profession_safety_matrix()),
@@ -224,7 +233,7 @@ async def evaluate_single_job_security(
     student_ai_adaptability: float = 0.0,
 ):
     """Evaluates AI Job Security index & displacement analytics for a specific field and tier."""
-    from backend.ml.nextgen_engine import AIJobSecurityEngine
+    from ml.nextgen_engine import AIJobSecurityEngine
     return AIJobSecurityEngine.evaluate_job_security(
         degree_field=degree_field,
         college_tier=college_tier,
@@ -242,7 +251,7 @@ async def evaluate_profession_on_the_spot(
     On-The-Spot Dynamic Decision Engine: Evaluates ANY arbitrary profession string
     in real-time using ML feature extraction & AI automation models.
     """
-    from backend.ml.nextgen_engine import AIJobSecurityEngine
+    from ml.nextgen_engine import AIJobSecurityEngine
     return AIJobSecurityEngine.evaluate_any_profession_on_the_spot(
         profession_name=profession_name,
         college_tier=college_tier,
@@ -262,7 +271,7 @@ async def tailor_coursework_strategy(
     Generates a tailored high-package coursework blueprint, elective roadmap,
     and lab capstone strategy for any domestic or global college and degree.
     """
-    from backend.ml.nextgen_engine import GlobalCourseworkTailorEngine
+    from ml.nextgen_engine import GlobalCourseworkTailorEngine
     return GlobalCourseworkTailorEngine.tailor_coursework_strategy(
         college_name=college_name,
         degree_name=degree_name,

@@ -24,8 +24,8 @@ try:
     from ..config import settings
     from ..db.database import get_db
 except ImportError:
-    from backend.api.config import settings
-    from backend.api.db.database import get_db
+    from ..config import settings
+    from ..db.database import get_db
 
 logger = logging.getLogger(__name__)
 

@@ -6,8 +6,8 @@ from typing import Any, Dict, List
 
 import httpx
 
-from backend.api.config import settings
-from backend.services.external_apis import IntegrationUnavailable
+from api.config import settings
+from services.external_apis import IntegrationUnavailable
 
 logger = logging.getLogger(__name__)
 

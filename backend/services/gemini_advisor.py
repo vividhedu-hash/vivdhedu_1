@@ -19,8 +19,8 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from backend.api.config import settings
-from backend.services.gemini_grounded import gemini_grounded
+from api.config import settings
+from services.gemini_grounded import gemini_grounded
 
 logger = logging.getLogger(__name__)
 
@@ -93,8 +93,8 @@ class GeminiAdvisorService:
         programs: List[Dict[str, Any]],
         traits: Dict[str, float],
     ) -> List[Dict[str, Any]]:
-        from backend.ml.admissions_engine import AdmissionsPortfolioEngine
-        from backend.ml.nextgen_engine import AIJobSecurityEngine
+        from ml.admissions_engine import AdmissionsPortfolioEngine
+        from ml.nextgen_engine import AIJobSecurityEngine
 
         student_rank = float(student_profile.get("expected_rank") or student_profile.get("jee_rank") or 14000.0)
         exam_name = student_profile.get("exam", "JEE Main")

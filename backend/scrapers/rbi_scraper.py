@@ -13,16 +13,30 @@ logger = logging.getLogger(__name__)
 
 
 class RBIScraper(BaseScraper):
+    """
+    NOT WIRED INTO SCRAPER_REGISTRY.
+
+    RBI DBIE (dbie.rbi.org.in) publishes only a JS-driven portal and per-series
+    CSV downloads; there is no public JSON API to parse. This class previously
+    raised RuntimeError unconditionally while still being registered, so
+    `POST /api/scrape/trigger/rbi` accepted the request, created a scrape_runs
+    row, and then failed 100% of the time — a route that looks healthy and can
+    never succeed.
+
+    It is unregistered on purpose. Macro series (CPI, wage index) come from
+    WorldBankScraper, which is a real open API. Re-add this only once a real
+    CSV/series parser is written.
+    """
+
     SOURCE_NAME = "rbi"
     REQUEST_DELAY = 1.0
 
     async def scrape(self) -> List[ScrapeResult]:
-        url = "https://dbie.rbi.org.in/DBIE/dbie.rbi?site=statistics"
-        response = await self.get(url)
-        # Live HTML is parsed by future MOSPI/DBIE extractors. Never invent wage series.
-        raise RuntimeError(
-            f"RBI DBIE has no public JSON API yet (HTTP {response.status_code}). "
-            "Use World Bank scraper for CPI / unemployment until a parser is wired."
+        raise NotImplementedError(
+            "RBIScraper has no working extractor: RBI DBIE exposes no public JSON "
+            "API, and no CSV series parser is implemented. Use the 'worldbank' "
+            "scraper for CPI/unemployment macro series. This source is "
+            "intentionally absent from SCRAPER_REGISTRY."
         )
 
 if __name__ == '__main__':

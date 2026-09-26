@@ -4,6 +4,13 @@ import { fetchBackend } from "../../../../lib/backend";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Must exceed the backend's own LLM ceiling (45s in gemini_grounded.generate).
+ * Previously 1200ms, which guaranteed every call fell through to the
+ * serverless handlers below.
+ */
+const AI_TIMEOUT_MS = Number(process.env.AI_PROXY_TIMEOUT_MS ?? 60_000);
+
 type TraitVector = {
   risk: number;
   value: number;
@@ -165,7 +172,9 @@ async function proxy(request: Request, path: string[], method: string) {
     method,
     headers,
     body: body || undefined,
-    timeoutMs: 1200,
+    // Was 1200ms — shorter than any real backend call, so this always aborted
+    // and always fell through to the handlers below.
+    timeoutMs: AI_TIMEOUT_MS,
   });
 
   if (resp) {
@@ -182,32 +191,28 @@ async function proxy(request: Request, path: string[], method: string) {
   // =========================================================================
 
   // 1. Portfolio Builder: Google X-Y-Z Transform
+  //
+  // REMOVED. This used to invent metrics for the student: any bullet became
+  // "achieving a 42% latency reduction and supporting 1,200+ concurrent active
+  // sessions", a research bullet became "14,000+ data points & 95% statistical
+  // significance", a club bullet became "35% engagement increase & 85+
+  // verified participants". Those numbers have no source — they were template
+  // literals. A student submitting them to an admissions or hiring reviewer
+  // would be asserting fabricated achievements, and the portfolio_profiles
+  // table is student-owned and persisted. Refuse instead of inventing.
   if (subpath === "portfolio/transform-xyz") {
-    let parsed: any = {};
-    try { if (body) parsed = JSON.parse(body); } catch {}
-    const raw = (parsed.raw_bullet || "").trim();
-    const major = parsed.target_major || "Computer Science";
-
-    let transformed_xyz = `Architected and deployed a production-grade ${major} system ("${raw}"), achieving a 42% latency reduction and supporting 1,200+ concurrent active sessions through automated load-balancing.`;
-    let metric_highlighted = "42% latency reduction & 1,200+ concurrent users";
-    let action_initiative = "System architecture & automated load-balancing deployment";
-
-    if (raw.toLowerCase().includes("research") || raw.toLowerCase().includes("study") || raw.toLowerCase().includes("paper")) {
-      transformed_xyz = `Formulated and executed an empirical ${major} evaluation study ("${raw}"), synthesizing 14,000+ data points with 95% statistical significance, accepted for presentation at a national student research symposium.`;
-      metric_highlighted = "14,000+ data points & 95% statistical significance";
-      action_initiative = "Empirical research methodology & quantitative data synthesis";
-    } else if (raw.toLowerCase().includes("club") || raw.toLowerCase().includes("lead") || raw.toLowerCase().includes("organize")) {
-      transformed_xyz = `Spearheaded an angular ${major} initiative ("${raw}"), driving a 35% improvement in member engagement and onboarding 85+ verified participants within 90 days.`;
-      metric_highlighted = "35% engagement increase & 85+ verified participants";
-      action_initiative = "Project lead execution & operational workflow optimization";
-    }
-
-    return NextResponse.json({
-      transformed_xyz,
-      metric_highlighted,
-      action_initiative,
-      critique: "Reframed passive task description into active, quantified Google X-Y-Z achievement standard with benchmark metrics.",
-    });
+    return NextResponse.json(
+      {
+        error: "unavailable",
+        _source: "unavailable",
+        reason:
+          "X-Y-Z portfolio rewriting is not available. This endpoint previously " +
+          "invented metrics (e.g. '42% latency reduction', '14,000+ data points') " +
+          "with no source, which would put fabricated claims in a student's " +
+          "portfolio. Metrics must come from the student.",
+      },
+      { status: 501 },
+    );
   }
 
   // 2. Course Marketplace Click Tracking
@@ -294,10 +299,27 @@ async function proxy(request: Request, path: string[], method: string) {
   if (subpath.startsWith("psychometric/result")) {
     const parts = subpath.split("/");
     const sessionId = parts[parts.length - 1] || "psy_default";
-    const state = sessionStates.get(sessionId) || {
-      traits: { risk: 0.8, value: 1.2, autonomy: 0.6, ai_adapt: 1.4, openness: 1.0, diligence: 1.1, social: 0.4, security: -0.2 },
-      completedIndex: PSYCH_ITEMS.length,
-    };
+    const state = sessionStates.get(sessionId);
+
+    // A session lives in this module's in-memory Map, so it is lost on any
+    // cold start and never shared across serverless instances. Previously an
+    // unknown session_id silently produced a confident-looking report from a
+    // hardcoded trait vector (risk 0.8, ai_adapt 1.4, ...) with
+    // `validity_ok: true`. That is a fabricated psychometric result, which is
+    // the single most misleading thing this codebase could invent: it tells a
+    // student who they are based on nothing.
+    if (!state) {
+      return NextResponse.json(
+        {
+          error: "session_not_found",
+          _source: "unavailable",
+          reason:
+            "No psychometric session in memory for this id. Sessions do not " +
+            "survive a serverless cold start — rerun the assessment.",
+        },
+        { status: 404 },
+      );
+    }
 
     const { scores, posterior, primaryKey, secondaryKey } = computeArchetypes(state.traits);
     const pa = PROFILES[primaryKey] ?? PROFILES.TECHNOLOGIST;
@@ -308,15 +330,23 @@ async function proxy(request: Request, path: string[], method: string) {
       traitPct[k] = Math.round(((v + 3) / 6) * 100);
     }
 
+    // Confidence must follow the evidence: how many items actually backed these
+    // trait estimates. Previously every trait was hardcoded "high".
+    const answered = state.completedIndex;
+    const conf = (n: number): string => {
+      if (answered >= 8) return "high";
+      if (answered >= 4) return n >= 2 ? "high" : "medium";
+      return "low";
+    };
     const traitConfidence: Record<string, string> = {
-      risk: "high", value: "high", autonomy: "high", ai_adapt: "high",
-      openness: "medium", diligence: "medium", social: "medium", security: "high",
+      risk: conf(2), value: conf(2), autonomy: conf(2), ai_adapt: conf(2),
+      openness: conf(1), diligence: conf(1), social: conf(1), security: conf(2),
     };
 
     return NextResponse.json({
       session_id: sessionId,
-      items_completed: state.completedIndex || PSYCH_ITEMS.length,
-      validity_ok: true,
+      items_completed: answered,
+      validity_ok: answered >= 4,
       primary_archetype: {
         key: primaryKey,
         ...pa,
@@ -344,11 +374,16 @@ async function proxy(request: Request, path: string[], method: string) {
     return NextResponse.json({ status: "healthy", runtime: "vercel-serverless", v2: true });
   }
 
-  return NextResponse.json({
-    status: "ok",
-    _source: "serverless",
-    message: `Serverless fallback active for /api/v2/${subpath}`,
-  });
+  // Previously any unmatched path returned 200 `{status: "ok"}`, so a frontend
+  // bug or a typo'd endpoint looked like a working backend. Fail explicitly.
+  return NextResponse.json(
+    {
+      error: "not_implemented",
+      _source: "unavailable",
+      reason: `No FastAPI route or local handler for /api/v2/${subpath}.`,
+    },
+    { status: 501 },
+  );
 }
 
 export async function GET(request: Request, { params }: { params: { path: string[] } }) {

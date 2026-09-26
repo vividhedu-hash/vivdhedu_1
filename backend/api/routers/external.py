@@ -3,8 +3,8 @@
 """
 from fastapi import APIRouter, HTTPException, Query
 
-from backend.services.external_apis import IntegrationUnavailable, external_api_service
-from backend.services.tavily_auto_service import tavily_auto_service
+from services.external_apis import IntegrationUnavailable, external_api_service
+from services.tavily_auto_service import tavily_auto_service
 
 router = APIRouter(prefix="/external", tags=["External APIs"])
 
