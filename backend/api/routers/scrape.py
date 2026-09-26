@@ -33,14 +33,22 @@ async def update_scrape_run(
     error_message: str = None,
     db: AsyncSession = Depends(get_db),
 ):
+    # `:status` cannot be reused in the CASE expression: asyncpg binds the
+    # same named param as `text` in the IN-list but as the `scrape_status`
+    # enum in the SET, so Postgres rejects the assignment (42804, "column
+    # status is of type scrape_status but expression is of type text") and
+    # every PATCH raised. Cast explicitly on both sides. `ELSE completed_at`
+    # rather than `ELSE NULL` so patching a run back to 'running' keeps the
+    # timestamp it already has instead of blanking it.
     await db.execute(text("""
         UPDATE scrape_runs SET
-            status = :status,
+            status = CAST(:status AS scrape_status),
             records_scraped = :scraped,
             records_updated = :updated,
             records_flagged = :flagged,
             error_message = :error,
-            completed_at = CASE WHEN :status IN ('success', 'failed', 'partial') THEN NOW() ELSE NULL END
+            completed_at = CASE WHEN CAST(:status AS text) IN ('success', 'failed', 'partial')
+                                THEN NOW() ELSE completed_at END
         WHERE id = :id
     """), {
         "id": run_id, "status": status,
