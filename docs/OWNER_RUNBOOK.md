@@ -4,43 +4,76 @@ Actions that need a human. Everything else is automated.
 
 ---
 
-## 1. Apply the RLS migration (do this when convenient — not yet done)
+## 1. Apply the RLS migration
 
-**Status:** `backend/db/migrations/0003_rls_harden_student_data.sql` is committed
-but has **never been run against the live database.**
+**Status:** ready to run. The frontend half (which sends `x-report-token`) is
+already merged and live, so the two are in sync.
 
-The live database still has the permissive policies. 8 real student reports are
+The live database still has the permissive policies — 7 real student reports are
 currently world-readable via the anon key, and any anonymous caller can overwrite
 `portfolio_profiles` and `personal_intelligence` rows.
 
-The frontend change that passes `x-report-token` ships in the same PR, so they
-must land together. **Merge PR #2 first**, then apply.
+**File:** `backend/db/migrations/0003_rls_harden_student_data.sql`
 
-### How to apply
+### Option A — Supabase dashboard (easiest)
 
-In the Supabase dashboard → **SQL Editor** → paste the file → **Run**.
+1. Open your project at **supabase.com/dashboard**
+2. Left sidebar → **SQL Editor** → **New query**
+3. Open the file above, select all, copy, paste
+4. Click **Run**
 
-Or from a machine with the connection string:
+The first statement is a preflight block. It may print a `NOTICE` about removing
+debug rows — that is expected and already accounted for. **If you instead see a
+red `EXCEPTION` error, stop.** That means a real row violates the shape check
+and nothing was changed; paste the error to me.
+
+### Option B — command line
 
 ```bash
-cd backend
+cd /Users/indian/Downloads/VividhEdu/VividhEdu/backend
 psql "$DATABASE_URL_SYNC" -f db/migrations/0003_rls_harden_student_data.sql
 ```
 
+`DATABASE_URL_SYNC` is the plain `postgresql://` URL (not the `+asyncpg` one)
+and is already in `backend/.env`. If `psql` is not installed: `brew install libpq`.
+
 ### Verify it worked
 
-Paste into SQL Editor — every result should be empty:
+Paste this into SQL Editor. **All three results should be empty / zero.**
 
 ```sql
-SELECT tablename, policyname, qual FROM pg_policies
-WHERE schemaname='public'
-  AND (qual = 'true' OR with_check = 'true');
+-- 1. The 5 bad policies, scoped to the 3 student-owned tables.
+--    Before: 5 rows.  After: 0 rows.
+--    (Only looks at these 3 tables on purpose — the public catalogue tables
+--     have qual='true' policies that are CORRECT, since they hold no PII.)
+SELECT tablename, policyname, COALESCE(qual,'-') AS using_expr,
+       COALESCE(with_check,'-') AS check_expr
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename IN ('student_reports','personal_intelligence','portfolio_profiles')
+  AND (qual = 'true' OR with_check = 'true')
+  AND policyname NOT LIKE 'Service role%'
+  AND policyname NOT LIKE 'Public insert%'
+ORDER BY tablename;
 
-SELECT count(*) FROM pg_views
-WHERE schemaname='public' AND schemaname='public'
-  AND viewname IN ('v_programs_full','v_anomaly_queue')
-  AND NOT options LIKE '%security_invoker=true%';
+-- 2. Both views should show is_hardened = true
+SELECT c.relname AS viewname,
+       'security_invoker=true' = ANY(coalesce(c.reloptions, '{}')) AS is_hardened
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND c.relname IN ('v_programs_full','v_anomaly_queue');
+
+-- 3. Should return false: anon can no longer read the internal view
+SELECT has_table_privilege('anon','public.v_anomaly_queue','SELECT') AS anon_can_read;
 ```
+
+### Confirm the public site still works
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://vivdhedu-1.vercel.app/compare
+```
+
+Should print `200`. Then open one real report link and confirm the charts render.
 
 ### If something breaks
 
@@ -48,6 +81,10 @@ Report pages use `GET /api/report/<token>`. They pass the token through
 `fetchSupabaseRest(..., { reportToken })`, which sets the `x-report-token`
 header the new policies match on. If a report shows "not found" after applying,
 that header is not reaching PostgREST — check `indialens/src/lib/supabase.ts`.
+
+Public catalogue pages (`/`, `/compare`, `/explore`, `/college/[id]`) read
+`colleges`/`degrees`/`programs`/`roi_scores`, which this migration does not
+touch. Those cannot break.
 
 ---
 
