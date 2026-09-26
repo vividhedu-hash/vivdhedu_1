@@ -481,6 +481,10 @@ SELECT
   pl.placement_rate_pct,
   pl.median_salary_inr,
   pl.highest_salary_inr,
+  cd.total_tuition_inr,
+  cd.hostel_living_inr,
+  cd.exam_prep_costs_inr,
+  cd.opportunity_cost_inr,
   cd.total_cost_of_degree
 FROM programs p
 JOIN colleges c ON c.id = p.college_id

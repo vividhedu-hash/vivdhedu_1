@@ -6,6 +6,7 @@
  */
 
 import type { CollegeDegreeRecord, CollegeTier, DegreeField } from "./mock-data";
+import { finiteOrNull } from "./mock-data";
 
 export function getSupabaseUrl(): string {
   return process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -91,27 +92,39 @@ export interface SupabaseProgramRow {
   placement_rate_pct: number | null;
   median_salary_inr: number | null;
   highest_salary_inr: number | null;
+  // Real per-component costs from `cost_data`. These are live scraped values,
+  // not derived: verified 54/54 current rows populated for source_year 2024,
+  // with hostel ranging 3,133–875,000 and opportunity cost 600,000–1,650,000.
+  // Exposed through the view by migration 0005_expose_cost_components.sql.
+  total_tuition_inr: number | null;
+  hostel_living_inr: number | null;
+  exam_prep_costs_inr: number | null;
+  opportunity_cost_inr: number | null;
   total_cost_of_degree: number | null;
 }
 
 export function mapSupabaseRowToRecord(row: SupabaseProgramRow): CollegeDegreeRecord {
   const tierNum = (parseInt(row.tier, 10) || 2) as CollegeTier;
   const field = (row.degree_field || "engineering-cs") as DegreeField;
-  const compositeScore = Number(row.composite_score ?? 70);
-  const financialRoiPct = Number(row.financial_roi_pct ?? 250);
-  const riskScore = Number(row.risk_score ?? 0.25);
 
-  // Data honesty: several active programs have no current placement_data row
-  // (19 of 73 at time of writing), so these arrive null. The old code
-  // substituted plausible constants (1_200_000 median, 88% placement), which
-  // meant fabricated numbers were rendered as if they were measurements.
-  // We now pass null through and let the UI show an explicit
-  // "insufficient data" state instead of an invented figure.
-  const medianSalary =
-    row.median_salary_inr != null ? Number(row.median_salary_inr) : null;
-  const totalCost = Number(row.total_cost_of_degree ?? 1_000_000);
-  const rawPlacement =
-    row.placement_rate_pct != null ? Number(row.placement_rate_pct) : null;
+  // Data honesty: the backend ROI pipeline refuses to emit a score when
+  // `total_cost_of_degree` or `placement_rate_pct` is missing, so composite_score,
+  // financial_roi_pct, risk_score and the CI bounds all arrive NULL for ~19 of
+  // 73 programs. The old code substituted plausible constants (70, 250%, 0.25,
+  // score±2), which meant every unmeasured program was published as if it had
+  // a real financial measurement. We now pass null through and let the UI show
+  // an explicit "no data" state instead of an invented figure.
+  const compositeScore = finiteOrNull(row.composite_score);
+  const financialRoiPct = finiteOrNull(row.financial_roi_pct);
+  const riskScore = finiteOrNull(row.risk_score);
+  // The CI bounds must come from the model or not at all. Deriving them as
+  // `compositeScore ± 2` both invented a confidence interval and produced NaN
+  // whenever compositeScore was null.
+  const ciLow = finiteOrNull(row.ci_low);
+  const ciHigh = finiteOrNull(row.ci_high);
+
+  const medianSalary = finiteOrNull(row.median_salary_inr);
+  const rawPlacement = finiteOrNull(row.placement_rate_pct);
   const placementRatePct =
     rawPlacement == null
       ? null
@@ -120,6 +133,46 @@ export function mapSupabaseRowToRecord(row: SupabaseProgramRow): CollegeDegreeRe
         : Math.round(rawPlacement * 100);
   const employmentRateFrac =
     rawPlacement == null ? null : rawPlacement > 1 ? rawPlacement / 100 : rawPlacement;
+
+  const annualTuition = finiteOrNull(row.annual_tuition_inr);
+  const durationYears = finiteOrNull(row.duration_years);
+
+  // Cost components come straight from `cost_data`. They used to be
+  // hardcoded to hostel 400k / exam 50k / opportunity 800k, which was wrong
+  // twice over: it published one invented figure for all 73 programs, and it
+  // added those constants on top of `total_cost_of_degree`, which already
+  // contains tuition + hostel — counting hostel twice and overstating every
+  // degree by 400k. Real values vary by up to 280x for hostel, so the flat
+  // constant was not even a defensible approximation.
+  const totalTuitionInr = finiteOrNull(row.total_tuition_inr);
+  const hostelLivingInr = finiteOrNull(row.hostel_living_inr);
+  const examPrepCostsInr = finiteOrNull(row.exam_prep_costs_inr);
+  const opportunityCostInr = finiteOrNull(row.opportunity_cost_inr);
+
+  // A measured annual fee is authoritative. Otherwise a per-year split of the
+  // total tuition is a real derivation (not a guess) — but only when both
+  // inputs exist. Guarding on null keeps `Math.round(null / 4)` = 0 from
+  // being published as "free tuition", and avoids NaN entirely.
+  //
+  // Derived from `totalTuitionInr`, not `totalCostOfDegree`: the stored total
+  // is tuition + hostel, so splitting it per year would silently bill living
+  // costs to the per-year tuition line.
+  const derivedAnnualTuition =
+    totalTuitionInr != null && durationYears != null && durationYears > 0
+      ? Math.round(totalTuitionInr / durationYears)
+      : null;
+  const annualTuitionInr = annualTuition ?? derivedAnnualTuition;
+
+  // The cost stack is additive: any unmeasured component must make the total
+  // unknown, not shrink it into a plausible-looking understatement. Note that
+  // the stored `total_cost_of_degree` is tuition + hostel only, so the full
+  // four-component total is a different (larger) figure and is derived here
+  // from the measured components rather than approximated.
+  const components = [totalTuitionInr, hostelLivingInr, examPrepCostsInr, opportunityCostInr];
+  const hasAllComponents = components.every((c) => c != null);
+  const derivedTotalCost = hasAllComponents
+    ? (components as number[]).reduce((sum, c) => sum + c, 0)
+    : null;
 
   return {
     id: row.program_id,
@@ -130,21 +183,23 @@ export function mapSupabaseRowToRecord(row: SupabaseProgramRow): CollegeDegreeRe
       state: row.state,
       city: row.city,
       tier: tierNum,
-      nirfRank: row.nirf_rank ?? 50,
+      // None of these three exist in the schema. They were previously pinned to
+      // 50 / "A++" / 1960 for every college, which reads as verified fact.
+      nirfRank: finiteOrNull(row.nirf_rank),
       type: (row.college_type as any) || "private",
-      naacGrade: "A++",
-      established: 1960,
+      naacGrade: null,
+      established: null,
     },
     degree: {
       id: row.degree_id,
       name: row.degree_full_name,
       shortName: row.degree_short_name,
       field,
-      durationYears: row.duration_years ?? 4,
+      durationYears,
       level: (row.degree_level as any) || "UG",
     },
     program: {
-      annualTuitionInr: row.annual_tuition_inr ?? Math.round(totalCost / (row.duration_years || 4)),
+      annualTuitionInr,
       // Not modelled in the schema — reported as null rather than a round
       // number that reads like real seat data.
       totalSeats: null,
@@ -161,9 +216,9 @@ export function mapSupabaseRowToRecord(row: SupabaseProgramRow): CollegeDegreeRe
       satisfactionScore: null,
       networkScore: null,
       compositeScore,
-      confidenceIntervalLow: Number(row.ci_low ?? compositeScore - 2),
-      confidenceIntervalHigh: Number(row.ci_high ?? compositeScore + 2),
-      modelVersion: row.model_version ?? "v2.0-live",
+      confidenceIntervalLow: ciLow,
+      confidenceIntervalHigh: ciHigh,
+      modelVersion: row.model_version ?? null,
     },
     // Trajectory bands are only meaningful once a real median exists; without
     // one we return nulls instead of scaling a fabricated base.
@@ -204,7 +259,7 @@ export function mapSupabaseRowToRecord(row: SupabaseProgramRow): CollegeDegreeRe
       year: 2024,
     },
     risk: {
-      aiAutomationProbability: Number(row.ai_automation_prob ?? 0.22),
+      aiAutomationProbability: finiteOrNull(row.ai_automation_prob),
       employmentRateAtGraduation: employmentRateFrac,
       salaryVolatility: 0.18,
       industryCyclicality: 0.25,
@@ -215,11 +270,11 @@ export function mapSupabaseRowToRecord(row: SupabaseProgramRow): CollegeDegreeRe
       workLifeQuality: 0.78,
     },
     costs: {
-      totalTuitionInr: totalCost,
-      hostelLivingInr: 400_000,
-      examPrepCostsInr: 50_000,
-      opportunityCostInr: 800_000,
-      totalCostOfDegreeInr: totalCost + 450_000,
+      totalTuitionInr,
+      hostelLivingInr,
+      examPrepCostsInr,
+      opportunityCostInr,
+      totalCostOfDegreeInr: derivedTotalCost,
     },
     meta: {
       lastUpdated: new Date().toISOString(),

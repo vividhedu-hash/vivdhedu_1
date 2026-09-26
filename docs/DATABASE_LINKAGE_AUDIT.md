@@ -174,6 +174,7 @@ verifying the fixes. Production state after remediation is recorded here.
 | — | Six scrapers were unreachable via `POST /api/scrape/trigger/{name}` | `jina, crawl4ai, indeed, internshala, college_placement` added to `SCRAPER_REGISTRY`. |
 | — | `from ..pipeline...` in `BaseScraper.persist_results` failed on every run | Absolute import with a `backend.`-prefixed fallback. |
 | — | `pyjwt` was never declared in `requirements.txt`; `email-validator` was declared but unresolvable | `PyJWT==2.9.0` added. With both present the app serves **75 routes instead of 68** — all 7 `/api/auth/*` routes had been silently missing. |
+| — | `PATCH /api/scrape/{run_id}` raised on every call | Same enum/text param clash as `base_scraper.py`, in the status router. Also `ELSE completed_at` instead of `ELSE NULL` so re-opening a run no longer blanks its timestamp. Verified live: `PATCH → 200 {"status":"updated"}`. |
 
 ## Verified live
 
