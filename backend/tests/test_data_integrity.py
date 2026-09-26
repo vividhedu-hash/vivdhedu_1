@@ -253,6 +253,22 @@ class TestDecimalSafety:
         assert "median_salary = float(" in src
 
 
+class TestScrapeRouteShadowing:
+    """`/{run_id}` must not swallow literal paths declared after it."""
+
+    def test_sources_route_precedes_parameterised_route(self):
+        src = (REPO_BACKEND / "api" / "routers" / "scrape.py").read_text()
+        assert src.index('@router.get("/sources")') < src.index(
+            '@router.get("/{run_id}")'
+        ), "declare /sources before /{run_id} or it is unreachable"
+
+    def test_run_id_is_uuid_typed(self):
+        src = (REPO_BACKEND / "api" / "routers" / "scrape.py").read_text()
+        # A str path param sent 'sources' to Postgres as a UUID and 500'd.
+        assert "async def get_scrape_run(run_id: UUID" in src
+        assert "async def update_scrape_run(\n    run_id: UUID" in src
+
+
 class TestDeclaredDependencies:
     """Undeclared imports made whole routers vanish at boot with only a warning."""
 

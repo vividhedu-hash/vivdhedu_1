@@ -4,18 +4,42 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+from uuid import UUID
 
 from ..db.database import get_db
-from ..scraper_jobs import VALID_SOURCES, run_scraper_job
+from ..scraper_jobs import VALID_SOURCES, missing_credentials, run_scraper_job
 
 router = APIRouter()
 
 
+@router.get("/sources")
+async def list_sources():
+    """Which scrapers are triggerable, and what each one still needs.
+
+    Declared above `/{run_id}` so the literal path wins: a `str` path param
+    matches anything, so `GET /api/scrape/sources` was being routed to
+    get_scrape_run and died in Postgres with
+    `invalid input for query argument $1: 'sources' (invalid UUID)`.
+    """
+    return {
+        "sources": [
+            {
+                "name": name,
+                "trigger_path": f"/api/scrape/trigger/{name}",
+                "missing_credentials": missing_credentials(name),
+            }
+            for name in VALID_SOURCES
+        ],
+    }
+
+
 @router.get("/{run_id}")
-async def get_scrape_run(run_id: str, db: AsyncSession = Depends(get_db)):
+async def get_scrape_run(run_id: UUID, db: AsyncSession = Depends(get_db)):
+    # UUID-typed so a non-UUID path returns a clean 422 from validation instead
+    # of a 500 from asyncpg.
     result = await db.execute(
         text("SELECT * FROM scrape_runs WHERE id = :id"),
-        {"id": run_id},
+        {"id": str(run_id)},
     )
     row = result.fetchone()
     if not row:
@@ -25,7 +49,7 @@ async def get_scrape_run(run_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.patch("/{run_id}")
 async def update_scrape_run(
-    run_id: str,
+    run_id: UUID,
     status: str,
     records_scraped: int = 0,
     records_updated: int = 0,
@@ -51,7 +75,7 @@ async def update_scrape_run(
                                 THEN NOW() ELSE completed_at END
         WHERE id = :id
     """), {
-        "id": run_id, "status": status,
+        "id": str(run_id), "status": status,
         "scraped": records_scraped, "updated": records_updated,
         "flagged": records_flagged, "error": error_message,
     })
