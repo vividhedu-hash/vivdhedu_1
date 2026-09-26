@@ -36,6 +36,54 @@
 --   ... (recreate the previous permissive policies as needed)
 -- =============================================================================
 
+-- ── 0. Preflight ────────────────────────────────────────────────────────────
+-- The CHECK constraints below are validated against existing rows, not just new
+-- ones. Verified against live data on 2026-09-26: 6 of 8 student_reports rows
+-- satisfy the shape, and 2 rows are leftovers from an early debugging pass —
+-- tokens `test-token` and `test-token-123`, one with profile_data = {"test":true}.
+--
+-- Left in place, those rows make ALTER TABLE ... ADD CONSTRAINT fail, and because
+-- the file runs as a single transaction the ENTIRE migration rolls back —
+-- including the policy drops that are the whole point of it. So they are removed
+-- first, and anything unexpected is reported rather than silently discarded.
+DO $$
+DECLARE
+    offenders integer;
+    unexpected integer;
+BEGIN
+    -- A real report token is 32 chars of base64url (secrets.token_urlsafe(32)),
+    -- so any token that is short AND test-prefixed is unambiguously a debug row.
+    DELETE FROM public.student_reports
+    WHERE length(btrim(coalesce(token, ''))) < 16
+      AND (
+        token IN ('test-token', 'test-token-123', 'test', 'demo', 'sample')
+        OR token LIKE 'test%'
+      );
+
+    -- If anything still violates the shape, it is NOT safe to touch automatically.
+    -- Fail loudly here, before any policy has been dropped, so the database is
+    -- left exactly as it was.
+    SELECT count(*) INTO offenders
+    FROM public.student_reports
+    WHERE NOT (
+        length(btrim(coalesce(token, ''))) >= 16
+        AND profile_data IS NOT NULL
+        AND jsonb_typeof(profile_data) = 'object'
+    );
+
+    IF offenders > 0 THEN
+        SELECT count(*) INTO unexpected FROM public.student_reports
+        WHERE NOT (
+            length(btrim(coalesce(token, ''))) >= 16
+            AND profile_data IS NOT NULL
+            AND jsonb_typeof(profile_data) = 'object'
+        );
+        RAISE EXCEPTION
+            'student_reports still has % row(s) violating the insert-shape check. Refusing to continue — inspect and fix them manually, then re-run. Nothing has been changed.',
+            unexpected;
+    END IF;
+END $$;
+
 -- ── 1. student_reports ─────────────────────────────────────────────────────
 
 -- Remove the unconditional read.
