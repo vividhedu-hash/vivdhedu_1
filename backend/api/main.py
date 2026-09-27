@@ -184,6 +184,17 @@ except Exception as e:
     MOUNT_FAILURES["auth_router"] = f"{type(e).__name__}: {e}"
     logger.error("[Main] Auth router NOT mounted: %s", e, exc_info=True)
 
+# Launch waitlist. The router declares the full "/api/waitlist" path on its
+# own decorator, so it is mounted with no prefix here — unlike every router
+# above, which owns a bare "/xxx" route and receives its prefix from this file.
+try:
+    from .routers import waitlist as waitlist_router
+    app.include_router(waitlist_router.router)
+    logger.info("[Main] Waitlist router mounted at /api/waitlist")
+except Exception as e:
+    MOUNT_FAILURES["waitlist_router"] = f"{type(e).__name__}: {e}"
+    logger.error("[Main] Waitlist router NOT mounted: %s", e, exc_info=True)
+
 
 
 if __name__ == "__main__":
