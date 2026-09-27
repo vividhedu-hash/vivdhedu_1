@@ -1,13 +1,17 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
+import { BRAND, APP_URL } from '@/lib/brand';
 
 export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get('title') || 'IndiaLens · Student OS — Sovereign Education & Career Intelligence';
+  const title = searchParams.get('title') || `${BRAND.name} — ${BRAND.tagline}`;
   const score = searchParams.get('score');
   const college = searchParams.get('college');
+
+  // Bare host for the card footer, so it never renders a raw env placeholder.
+  const host = APP_URL.replace(/^https?:\/\//, '').replace(/\/+$/, '');
 
   return new ImageResponse(
     (
@@ -55,7 +59,7 @@ export async function GET(request: NextRequest) {
           {!score && (
             <div style={{ display: 'flex', alignItems: 'center', marginTop: '20px' }}>
               <span style={{ fontSize: '32px', color: '#8B8BA7', fontStyle: 'italic' }}>
-                India's first quantitative education ROI platform
+                {BRAND.descriptor}
               </span>
             </div>
           )}
@@ -72,7 +76,7 @@ export async function GET(request: NextRequest) {
           justifyContent: 'center'
         }}>
           <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#0077C8' }}>
-            TheProject.edu.in
+            {host}
           </span>
         </div>
       </div>
