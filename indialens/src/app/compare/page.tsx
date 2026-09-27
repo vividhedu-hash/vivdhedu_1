@@ -1,4 +1,5 @@
 import CollegeCompareTable from "@/components/CollegeCompareTable";
+import { CsvExportButton } from "@/components/CsvExportButton";
 import { Scale, Plus, Sparkles } from "lucide-react";
 import { fetchCollegeList } from "../../lib/live-colleges";
 import { finiteOrNull } from "../../lib/mock-data";
@@ -75,10 +76,22 @@ export default async function ComparePage() {
             </p>
           </div>
 
-          <a href="/explore" className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-            <Plus className="w-4 h-4" /> Browse programs
-          </a>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Backend's own `GET /api/colleges/export/csv`, proxied through
+                /api/colleges/export/csv. The export covers the whole active
+                program index, not just the four rows above, so the two are
+                deliberately not presented as the same dataset. */}
+            <CsvExportButton />
+            <a href="/explore" className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+              <Plus className="w-4 h-4" /> Browse programs
+            </a>
+          </div>
         </div>
+
+        <p className="-mt-4 text-[11px] text-slate-400 font-mono">
+          The CSV export is the backend&apos;s projection of the full active program index
+          (73 programs), not a dump of the four rows in this table.
+        </p>
 
         <CollegeCompareTable programs={programs} />
 

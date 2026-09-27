@@ -19,11 +19,22 @@ from ..db.database import get_db
 from ..schemas import StudentProfile
 from ..config import settings
 
-try:
-    from services.email import send_report_email
-except ImportError:
-    async def send_report_email(*args, **kwargs): return False
+# `email` lives at api/services/email.py, i.e. package `api.services`. This
+# file is `api.routers.analyze`, so a relative `..services.email` is the correct
+# depth — but the code said `from services.email import ...` (absolute), which
+# resolves to the top-level `services` package at backend/services/. That
+# package has no `email.py`, so the ImportError was raised on every import,
+# swallowed by the `except ImportError`, and replaced with a no-op stub that
+# returned False. RESEND_API_KEY and FROM_EMAIL were both configured and both
+# had never been used: no report email had ever been sent.
+#
+# The import is relative here because `api.services` genuinely is a sibling
+# package under `api/`, unlike `ml/` which is a top-level sibling of `api/`
+# itself and must be imported absolutely. See api/routers/ml.py for that rule.
+from ..services.email import send_report_email
 
+# tavily_auto_service genuinely lives at the top-level backend/services/, so the
+# absolute form here is correct and is left as-is.
 from services.tavily_auto_service import tavily_auto_service
 from ml.nextgen_engine import monte_carlo_engine, psychometric_match_engine
 
@@ -511,7 +522,11 @@ async def analyze(
 
 
 @router.post("/analyze/save")
-async def save_report(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+async def save_report(
+    payload: Dict[str, Any],
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
     """Persist or refresh a student report by token."""
     token = payload.get("token")
     if not token or not isinstance(token, str):
@@ -552,9 +567,60 @@ async def save_report(payload: Dict[str, Any], db: AsyncSession = Depends(get_db
                 "model": model,
             })
         await db.commit()
-        return {"status": "ok", "token": token, "_source": "database"}
     except Exception as e:
         raise HTTPException(status_code=500, detail={"error": "report_persist_failed", "reason": str(e)})
+
+    # Send the shareable report link. `send_report_email` was imported here for
+    # the whole of the endpoint's life but never actually called, so fixing the
+    # import path alone would still have produced zero emails. It is wired now.
+    #
+    # Delivery is opt-in: neither StudentProfile nor student_reports carries an
+    # email address, so the only source is a `email` key in the request body.
+    # A student who did not supply one is not emailed, and a send that fails is
+    # a background task that logs and returns False — it cannot fail the save
+    # that already committed, and it cannot 500 the request.
+    recipient = payload.get("email")
+    if isinstance(recipient, str) and "@" in recipient:
+        top = results["recommendations"][0] if results["recommendations"] else {}
+        background_tasks.add_task(
+            _send_report_email_safe,
+            recipient.strip(),
+            token,
+            top.get("fitScore") or 0,
+            top.get("collegeName") or "",
+            top.get("degreeName") or "",
+            "; ".join(top.get("reasons") or [])[:400],
+        )
+
+    return {"status": "ok", "token": token, "_source": "database"}
+
+
+async def _send_report_email_safe(
+    to: str,
+    token: str,
+    roi_score: int,
+    college_name: str,
+    degree_name: str,
+    top_recommendation: str,
+) -> None:
+    """Background wrapper so a Resend outage never surfaces to the caller.
+
+    `send_report_email` already returns False when RESEND_API_KEY is unset
+    rather than raising, so an unconfigured deployment degrades quietly. This
+    wrapper covers the other case — an exception escaping the HTTP client — so
+    the BackgroundTasks machinery logs it instead of dropping it silently.
+    """
+    try:
+        await send_report_email(
+            to=to,
+            token=token,
+            roi_score=roi_score,
+            college_name=college_name,
+            degree_name=degree_name,
+            top_recommendation=top_recommendation,
+        )
+    except Exception as e:
+        logger.warning(f"[Analyze] Report email to {to} failed: {e}")
 
 
 @router.get("/analyze/report/{token}")

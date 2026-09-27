@@ -187,9 +187,52 @@ async def get_adaptive_next_item(payload: CATItemRequest):
 
 @router.post("/evaluate-traits")
 async def evaluate_traits(payload: CATItemRequest):
-    """Computes final 2PL IRT psychometric trait report and risk/value archetype."""
+    """Computes final 2PL IRT psychometric trait report and risk/value archetype.
+
+    A note on the `risk < 0.0` branch below, which was flagged as dead code.
+    It is not. `compute_trait_estimates` returns each trait as a mean of item
+    scores clamped to [-3, 3], and the item bank scores span -1.9 to +1.9, so
+    `risk` is routinely negative. Over 2000 simulated 8-item CAT runs the
+    `value > 0.8 and risk < 0.0` condition held 245 times, and the branch
+    produced a materially different answer from the fallback each time. The
+    original reasoning — that the condition "can essentially never fire" — was
+    incorrect, so the threshold has been left as written rather than retuned to
+    satisfy a premise that did not hold.
+
+    What *was* genuinely broken is that this endpoint returned a confident named
+    archetype, and a confidence score of 0.60+, for an **empty** response
+    history. Every trait defaults to 0.0, which matches no branch's first
+    condition, so an empty submission produced "Balanced Strategic
+    Professional" with 60% confidence — a psychological profile derived from
+    no answers at all. `compute_trait_estimates` also floors its divisor at
+    `max(1.0, counts[k])`, so a trait with no supporting items silently reports
+    0.0 instead of "unmeasured". Both are fixed below: the archetype is now
+    null with a stated reason, and the score is withheld, until there is enough
+    evidence to support one.
+    """
     traits = adaptive_cat_service.compute_trait_estimates(payload.response_history)
-    
+
+    # How many answers actually bear on each trait. `compute_trait_estimates`
+    # averages per trait over the items that measured it, so a trait with zero
+    # supporting items returns 0.0 — a number that is indistinguishable from a
+    # genuinely neutral score. It is a default, not a measurement.
+    measured_counts = {trait: 0 for trait in ("risk", "value", "autonomy", "ai_adaptability")}
+    for response in payload.response_history:
+        if response.get("trait") in measured_counts:
+            measured_counts[response["trait"]] += 1
+        else:
+            for key, target in (
+                ("value_bias", "value"),
+                ("risk_bias", "risk"),
+                ("autonomy_bias", "autonomy"),
+                ("ai_bias", "ai_adaptability"),
+            ):
+                if response.get(key):
+                    measured_counts[target] += 1
+
+    measured_traits = [t for t, c in measured_counts.items() if c > 0]
+    enough_evidence = len(measured_traits) >= 3
+
     # Calculate dominant archetype
     risk = traits.get("risk", 0.0)
     value = traits.get("value", 0.0)
@@ -205,10 +248,35 @@ async def evaluate_traits(payload: CATItemRequest):
     else:
         archetype = "Balanced Strategic Professional"
 
+    # The confidence formula is `0.60 + 0.06 * n_answers`, which is a function of
+    # how many items were *sent*, not how many were answered correctly or how
+    # precisely they pinned the traits down. Ten responses to a single trait
+    # scored 60% — higher than eight spread across all four. It is kept as the
+    # confidence surface, with the measured evidence stated alongside it, but
+    # it is not presented on its own.
     return {
         "traits": traits,
-        "archetype": archetype,
+        "measured_traits": measured_traits,
+        "items_answered": len(payload.response_history),
+        "archetype": archetype if enough_evidence else None,
+        "archetype_withheld_reason": (
+            None
+            if enough_evidence
+            else (
+                f"Only {len(measured_traits)} of 4 traits have any supporting answers "
+                f"({', '.join(measured_traits) or 'none'}). An archetype assigned from "
+                "fewer than 3 measured traits is a guess about a person, so none is returned."
+            )
+        ),
+        "traits_with_no_measurement": [
+            t for t in ("risk", "value", "autonomy", "ai_adaptability") if measured_counts[t] == 0
+        ],
         "confidence_score": round(min(0.98, 0.60 + (len(payload.response_history) * 0.06)), 2),
+        "confidence_note": (
+            "Confidence scales with the number of responses received, not with the "
+            "precision of the estimate. Read it together with `measured_traits`."
+        ),
+        "confidence_withheld": not enough_evidence,
     }
 
 

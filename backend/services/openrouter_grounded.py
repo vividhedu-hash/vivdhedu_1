@@ -96,9 +96,9 @@ class OpenRouterGroundedClient:
             ],
             "temperature": 0.2,
         }
-        if model in GROUNDED_MODELS:
-            # Ask Sonar to search; it returns a `citations` array on the message.
-            body["tools"] = [{"type": "web_search"}]
+        # perplexity/sonar searches on its own and returns citations on the
+        # response. A synthetic web_search tool is not part of that contract
+        # and OpenRouter rejects it.
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -143,9 +143,16 @@ class OpenRouterGroundedClient:
         if not text:
             raise IntegrationUnavailable("openrouter", "OpenRouter returned empty text", status=502)
 
-        # Sonar puts citations on message.citations: [{url, title, ...}]
+        # Sonar's native field is a top-level list of URLs. Some gateways
+        # also attach {url, title} objects on the message. Accept both.
+        raw_citations = []
+        if isinstance(message.get("citations"), list):
+            raw_citations.extend(message["citations"])
+        if isinstance(data.get("citations"), list):
+            raw_citations.extend(data["citations"])
+
         citations: List[Citation] = []
-        for c in message.get("citations") or []:
+        for c in raw_citations:
             if isinstance(c, dict):
                 url = c.get("url") or ""
                 if url:

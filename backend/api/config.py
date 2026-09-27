@@ -42,10 +42,19 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = True
 
-    # Google OAuth
+    # Google OAuth — used by the backend OAuth routes (authorization code
+    # exchange + ID token verification). The browser normally signs in through
+    # Supabase Auth and never reaches these routes; see docs/AUTH.md.
     google_client_id: str = ""
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:3000/api/auth/callback/google"
+
+    # GitHub OAuth — same split as Google. The browser uses Supabase's GitHub
+    # provider; these credentials are for non-browser callers of the backend
+    # OAuth routes and for a Supabase-independent sign-in path.
+    github_client_id: str = ""
+    github_client_secret: str = ""
+    github_redirect_uri: str = "http://localhost:3000/api/auth/callback/github"
 
     # Payment Gateways (Razorpay / Stripe)
     razorpay_key_id: str = ""

@@ -15,6 +15,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.config import settings
+from api.services.student_state import load_engine_profile
 from services.gemini_grounded import gemini_grounded
 
 logger = logging.getLogger(__name__)
@@ -116,7 +117,12 @@ async def build_personal_intelligence(
     question: Optional[str] = None,
 ) -> Dict[str, Any]:
     stored = await load_report_profile(db, token)
-    merged_profile = {**(stored.get("profile") or {}), **(profile or {})}
+    # The durable profile (student_profiles, via the report's owner) fills keys
+    # the wizard JSON never had — category and home_state in particular, which
+    # otherwise silently become General / Maharashtra below. The request body
+    # is merged last so an explicit answer on this call still wins.
+    durable = await load_engine_profile(db, token)
+    merged_profile = {**(stored.get("profile") or {}), **durable, **(profile or {})}
     field = merged_profile.get("target_field") or merged_profile.get("twelfth_stream")
     catalog = await load_catalog_slice(db, field)
     catalog_ids = {row["program_id"] for row in catalog}

@@ -148,9 +148,18 @@ class TestGoogleTokenVerification:
             )
 
     def test_source_checks_aud_and_email_verified(self):
-        src = (REPO_BACKEND / "api" / "routers" / "auth.py").read_text()
-        assert "email_verified" in src, "auth callback must verify email_verified"
-        assert "audience mismatch" in src, "auth callback must check aud"
+        """
+        The claim checks now live in api/oauth.py rather than inline in the
+        router, so this asserts against the module that actually enforces them
+        instead of grepping a string literal in the router. Behavioural
+        coverage for both rules is in tests/test_auth_security.py.
+        """
+        oauth_src = (REPO_BACKEND / "api" / "oauth.py").read_text()
+        assert "email_verified" in oauth_src, "verifier must check email_verified"
+        assert "audience" in oauth_src, "verifier must check aud"
+        # The router must delegate rather than re-implement an inline check.
+        router_src = (REPO_BACKEND / "api" / "routers" / "auth.py").read_text()
+        assert "verify_google_id_token" in router_src, "router must use the shared verifier"
 
 
 # ── 4. RLS migration content ─────────────────────────────────────────────────

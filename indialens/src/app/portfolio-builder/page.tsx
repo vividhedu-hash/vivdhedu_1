@@ -1,25 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Sparkles,
-  Award,
-  BookOpen,
   Calendar,
   ShieldAlert,
   CheckCircle,
-  ArrowRight,
-  TrendingUp,
   RefreshCw,
   Plus,
   Trash2,
-  HelpCircle,
   FileText,
   Lock,
   GitCommit,
   GraduationCap,
-  Briefcase
+  Briefcase,
+  Loader2,
+  CircleAlert,
+  Info,
 } from "lucide-react";
+import { NO_DATA } from "@/lib/mock-data";
+import { AuthGate } from "@/components/AuthGate";
+
+/*
+ * Scores and verdicts on this page come from backend/api/routers/portfolio.py:
+ *
+ *   POST /api/v2/portfolio/compute-spike  → Formula 11.1 (portfolio.py:49)
+ *   POST /api/v2/portfolio/check-preprint → predatory-publisher check (portfolio.py:111)
+ *
+ * Both previously had a client-side twin. `calculateSpikeScore()` reimplemented
+ * the engine's weighting in TypeScript and the journal scanner matched a
+ * 7-name local array, so a student saw a verdict from code the backend never
+ * saw. The two implementations have already drifted: the engine clamps the
+ * score to a 35–99 band and returns its own tier labels, neither of which the
+ * local copy reproduced.
+ *
+ * Deliberately NOT wired: GET /api/v2/portfolio/milestones. The body is a
+ * literal dict inside the router (portfolio.py:121-156) with no computation
+ * behind it, so a network round-trip would buy one failure mode and no data.
+ * The grade framework below is therefore labelled as editorial guidance
+ * rather than dressed up as engine output.
+ *
+ * Deliberately NOT re-enabled: POST /api/v2/portfolio/transform-xyz, which the
+ * Next proxy 501s with a documented integrity reason (see
+ * src/app/api/v2/[...path]/route.ts). The old client fallback re-invented that
+ * output locally, which is the same fabrication, one hop away.
+ */
 
 interface Activity {
   title: string;
@@ -29,6 +54,50 @@ interface Activity {
   validation: number;
   alignment: number;
 }
+
+/** The X-Y-Z endpoint's success shape. Absent fields render as "—" rather
+ *  than being asserted; the proxy refuses this route with 501 by design, so
+ *  this type describes a response we may never receive. */
+interface XYZOutput {
+  transformed_xyz?: string;
+  metric_highlighted?: string;
+  critique?: string;
+}
+
+/** `PortfolioSpikeEngine.compute_spike_score` (nextgen_engine.py:852). */
+interface SpikeResult {
+  spike_authenticity_score: number;
+  tier: string;
+  evaluated_activities_count?: number;
+  spike_summary?: string;
+  recommendation?: string;
+}
+
+type SpikeState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready"; data: SpikeResult }
+  | { status: "unavailable"; reason: string };
+
+interface JournalResult {
+  journal_name: string;
+  is_flagged_predatory: boolean;
+  source?: string;
+  warning: string;
+}
+
+type JournalState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready"; data: JournalResult }
+  | { status: "unavailable"; reason: string };
+
+const TIER_TONE: Record<string, string> = {
+  "Exceptional Angular Spike": "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  "Solid Competitive Spike": "bg-blue-50 text-blue-700 border border-blue-200",
+  "Developing Portfolio": "bg-amber-50 text-amber-700 border border-amber-200",
+  "Generic Portfolio": "bg-amber-50 text-amber-700 border border-amber-200",
+};
 
 export default function PortfolioBuilderPage() {
   const [targetMajor, setTargetMajor] = useState("Computer Science & Systems");
@@ -58,28 +127,83 @@ export default function PortfolioBuilderPage() {
 
   // X-Y-Z Transformer state
   const [rawDraft, setRawDraft] = useState("");
-  const [transformedOutput, setTransformedOutput] = useState<any>(null);
+  const [transformedOutput, setTransformedOutput] = useState<XYZOutput | null>(null);
   const [isTransforming, setIsTransforming] = useState(false);
+  const [transformNotice, setTransformNotice] = useState<string | null>(null);
 
   // Predatory Journal Scanner state
   const [journalQuery, setJournalQuery] = useState("");
-  const [journalResult, setJournalResult] = useState<any>(null);
+  const [journal, setJournal] = useState<JournalState>({ status: "idle" });
 
   // Selected Grade Milestone tab
   const [selectedGrade, setSelectedGrade] = useState<number>(11);
 
-  // Live calculation of Spike Authenticity Score
-  const calculateSpikeScore = () => {
-    if (activities.length === 0) return 35.0;
-    const total = activities.reduce((acc, act) => {
-      const actScore = (act.rarity * 0.35 + act.validation * 0.30 + Math.min(1.0, act.months / 24) * 0.20 + act.alignment * 0.15) * 100;
-      return acc + actScore;
-    }, 0);
-    const avg = total / activities.length;
-    return Math.min(99.0, Math.round(avg + activities.length * 3.5));
-  };
+  // Engine-computed spike score
+  const [spike, setSpike] = useState<SpikeState>({ status: "idle" });
+  const spikeRequest = useRef(0);
 
-  const spikeScore = calculateSpikeScore();
+  /**
+   * Score the current activity list with the backend engine.
+   *
+   * `rarity_factor`, `external_validation` and `major_alignment` are sent from
+   * the form because the request model requires them; they are self-assessed
+   * inputs, not measurements the engine can look up. The engine weights them,
+   * it does not verify them — which the copy under the score says out loud.
+   */
+  const runSpike = useCallback(async (list: Activity[], major: string) => {
+    const requestId = ++spikeRequest.current;
+    setSpike({ status: "loading" });
+
+    try {
+      const res = await fetch("/api/v2/portfolio/compute-spike", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          target_major: major || "Computer Science",
+          activities: list.map((a) => ({
+            title: a.title,
+            description: "",
+            role: a.role,
+            months_invested: a.months,
+            rarity_factor: a.rarity,
+            external_validation: a.validation,
+            major_alignment: a.alignment,
+          })),
+        }),
+      });
+      const body = (await res.json().catch(() => null)) as
+        | (Partial<SpikeResult> & { reason?: string; error?: string })
+        | null;
+
+      if (requestId !== spikeRequest.current) return; // a newer request superseded this one
+
+      if (!res.ok || !body || typeof body.spike_authenticity_score !== "number") {
+        setSpike({
+          status: "unavailable",
+          reason:
+            (typeof body?.reason === "string" && body.reason) ||
+            "The Spike Authenticity engine did not return a score. No score is computed locally in its place.",
+        });
+        return;
+      }
+      setSpike({ status: "ready", data: body as SpikeResult });
+    } catch {
+      if (requestId !== spikeRequest.current) return;
+      setSpike({
+        status: "unavailable",
+        reason: "The Spike Authenticity engine could not be reached.",
+      });
+    }
+  }, []);
+
+  // Re-score on mount and whenever the portfolio changes, debounced so typing
+  // in the major field does not fire a request per keystroke.
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      void runSpike(activities, targetMajor);
+    }, 500);
+    return () => window.clearTimeout(handle);
+  }, [activities, targetMajor, runSpike]);
 
   const handleAddActivity = () => {
     if (!newTitle.trim()) return;
@@ -105,6 +229,8 @@ export default function PortfolioBuilderPage() {
   const handleTransformXYZ = async () => {
     if (!rawDraft.trim()) return;
     setIsTransforming(true);
+    setTransformedOutput(null);
+    setTransformNotice(null);
     try {
       const res = await fetch("/api/v2/portfolio/transform-xyz", {
         method: "POST",
@@ -115,44 +241,62 @@ export default function PortfolioBuilderPage() {
           target_major: targetMajor
         })
       });
-      if (res.ok) {
-        const data = await res.json();
-        setTransformedOutput(data);
-      } else {
-        // Fallback local transformation
-        setTransformedOutput({
-          transformed_xyz: `Engineered a dedicated ${targetMajor} initiative ("${rawDraft}"), achieving measurable quantitative validation and peer-reviewed project delivery.`,
-          metric_highlighted: "System performance & project completion",
-          action_initiative: rawDraft,
-          critique: "Reframed into Google's strict X-Y-Z active achievement standard."
-        });
+      const body = (await res.json().catch(() => null)) as
+        | { transformed_xyz?: string; metric_highlighted?: string; critique?: string; reason?: string }
+        | null;
+
+      if (res.ok && body && typeof body.transformed_xyz === "string") {
+        setTransformedOutput(body);
+        return;
       }
+      // The proxy refuses this endpoint (501) because the previous version
+      // invented the metrics it printed. Relay the refusal verbatim. Writing a
+      // plausible X-Y-Z sentence here would put the same unsourced numbers
+      // into a portfolio the student may submit.
+      setTransformNotice(
+        (typeof body?.reason === "string" && body.reason) ||
+          "X-Y-Z rewriting is unavailable. It previously generated metrics with no source, which would put fabricated claims in your portfolio.",
+      );
     } catch {
-      setTransformedOutput({
-        transformed_xyz: `Engineered a dedicated ${targetMajor} initiative ("${rawDraft}"), achieving measurable quantitative validation and peer-reviewed project delivery.`,
-        metric_highlighted: "System performance & project completion",
-        action_initiative: rawDraft,
-        critique: "Reframed into Google's strict X-Y-Z active achievement standard."
-      });
+      setTransformNotice(
+        "X-Y-Z rewriting is unavailable. It previously generated metrics with no source, which would put fabricated claims in your portfolio.",
+      );
     } finally {
       setIsTransforming(false);
     }
   };
 
   const handleCheckJournal = async () => {
-    if (!journalQuery.trim()) return;
-    const predatoryList = ["international journal of engineering", "scholars press", "omics", "science publishing group", "ijert", "ijcse", "ijser"];
-    const isPred = predatoryList.some(p => journalQuery.toLowerCase().includes(p));
-    setJournalResult({
-      journal_name: journalQuery,
-      is_flagged_predatory: isPred,
-      warning: isPred 
-        ? "FLAGGED AS PREDATORY PAY-TO-PUBLISH JOURNAL. Will severely damage Tier-1 admissions credibility." 
-        : "Verified legitimate academic registry / non-predatory publication."
-    });
+    const name = journalQuery.trim();
+    if (!name) return;
+    setJournal({ status: "loading" });
+    try {
+      const res = await fetch("/api/v2/portfolio/check-preprint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ journal_name: name }),
+      });
+      const body = (await res.json().catch(() => null)) as
+        | (Partial<JournalResult> & { reason?: string; error?: string })
+        | null;
+
+      if (!res.ok || !body || typeof body.is_flagged_predatory !== "boolean") {
+        setJournal({
+          status: "unavailable",
+          reason:
+            (typeof body?.reason === "string" && body.reason) ||
+            "The publisher check could not be completed, so no verdict is shown.",
+        });
+        return;
+      }
+      setJournal({ status: "ready", data: body as JournalResult });
+    } catch {
+      setJournal({ status: "unavailable", reason: "The publisher check could not be reached." });
+    }
   };
 
   return (
+    <AuthGate title="portfolio builder">
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
@@ -162,43 +306,82 @@ export default function PortfolioBuilderPage() {
             <span>Admissions Spike Studio · Section 11 Specification</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950">
-            Global Portfolio Builder & Angular Spike Studio
+            Global Portfolio Builder &amp; Angular Spike Studio
           </h1>
           <p className="mt-3 text-base text-slate-600 max-w-3xl leading-relaxed">
-            Elite international universities reject 90%+ of generic "well-rounded" applicants. This studio engineers mathematically differentiated <strong>Angular Spikes</strong>, optimizes resume bullets into Google's X-Y-Z format, and filters predatory journals.
+            Elite international universities reject 90%+ of generic &quot;well-rounded&quot; applicants.
+            This studio scores the depth of your angular spike, and checks a prospective publisher
+            against a known predatory-publisher deny-list.
           </p>
         </div>
 
-        {/* Top Split: Live Spike Meter & Target Discipline */}
+        {/* Top Split: Engine Spike Meter & Activity Inventory */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-          {/* Live Spike Authenticity Score Card */}
+          {/* Spike Authenticity Score — POST /api/v2/portfolio/compute-spike */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-xs font-mono text-slate-500 uppercase">Spike Authenticity</span>
                 <span className="text-xs font-mono text-rose-600 font-semibold">Formula 11.1</span>
               </div>
-              <div className="flex items-baseline gap-3">
-                <div className="text-5xl font-black text-slate-950">{spikeScore}</div>
-                <div className="text-sm font-semibold text-slate-400">/ 100</div>
-              </div>
-              <div className="mt-3">
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                  spikeScore >= 80 ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
-                  spikeScore >= 60 ? "bg-blue-50 text-blue-700 border border-blue-200" :
-                  "bg-amber-50 text-amber-700 border border-amber-200"
-                }`}>
-                  {spikeScore >= 80 ? "Exceptional Angular Spike" : spikeScore >= 60 ? "Competitive Spike" : "Developing Portfolio"}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-                Evaluates activity rarity (1/N index), external validation (award prestige), time depth, and major alignment.
-              </p>
+
+              {spike.status === "loading" || spike.status === "idle" ? (
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm font-mono">Scoring with engine…</span>
+                </div>
+              ) : spike.status === "unavailable" ? (
+                <div>
+                  <div className="text-4xl font-black text-slate-300">{/* no number is invented */"—"}</div>
+                  <div className="text-sm font-semibold text-slate-400">/ 100</div>
+                  <div className="mt-3 flex items-start gap-2 text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-xl p-3 leading-relaxed">
+                    <CircleAlert className="w-3.5 h-3.5 mt-px shrink-0" />
+                    <span>
+                      <strong className="block mb-0.5">No score available</strong>
+                      {spike.reason}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-baseline gap-3">
+                    <div className="text-5xl font-black text-slate-950">{spike.data.spike_authenticity_score}</div>
+                    <div className="text-sm font-semibold text-slate-400">/ 100</div>
+                  </div>
+                  <div className="mt-3">
+                    <span
+                      className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                        TIER_TONE[spike.data.tier] ??
+                        "bg-slate-50 text-slate-700 border border-slate-200"
+                      }`}
+                    >
+                      {spike.data.tier}
+                    </span>
+                  </div>
+                  {spike.data.spike_summary && (
+                    <p className="text-xs text-slate-600 mt-3 leading-relaxed">{spike.data.spike_summary}</p>
+                  )}
+                  {spike.data.recommendation && (
+                    <p className="text-xs text-slate-600 mt-3 leading-relaxed">{spike.data.recommendation}</p>
+                  )}
+                  <p className="text-[11px] text-slate-500 mt-3 leading-relaxed">
+                    Engine output for{" "}
+                    {spike.data.evaluated_activities_count ?? activities.length} activit
+                    {(spike.data.evaluated_activities_count ?? activities.length) === 1 ? "y" : "ies"}. The engine
+                    weights the rarity, external-validation and alignment figures you entered — it does
+                    not verify them, so the score is a weighted restatement of your own assessment, not
+                    an external measurement.
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100">
-              <label className="block text-xs font-mono text-slate-500 uppercase mb-1">Target Major:</label>
+              <label htmlFor="target-major" className="block text-xs font-mono text-slate-500 uppercase mb-1">
+                Target Major:
+              </label>
               <input
+                id="target-major"
                 type="text"
                 value={targetMajor}
                 onChange={(e) => setTargetMajor(e.target.value)}
@@ -211,50 +394,73 @@ export default function PortfolioBuilderPage() {
           <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <h3 className="text-base font-bold text-slate-950 mb-4 flex items-center justify-between">
               <span>Activity Portfolio ({activities.length} Recorded)</span>
-              <span className="text-xs font-mono text-slate-500">Top 3 weighted for Spike Index</span>
+              <span className="text-xs font-mono text-slate-500">All entries are scored</span>
             </h3>
 
-            {/* List of current activities */}
-            <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
-              {activities.map((act, idx) => (
-                <div key={idx} className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 truncate">{act.title}</div>
-                    <div className="text-[11px] text-slate-500">{act.role} · {act.months} Months Invested</div>
+            {activities.length === 0 ? (
+              <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-6 text-center">
+                <p className="text-xs text-slate-500">
+                  No activities recorded. The engine returns its floor score for an empty portfolio
+                  rather than a real assessment.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                {activities.map((act, idx) => (
+                  <div key={idx} className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 truncate">{act.title}</div>
+                      <div className="text-[11px] text-slate-500">{act.role} · {act.months} Months Invested</div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-[11px] font-mono text-rose-600 font-semibold">Rarity: {Math.round(act.rarity * 100)}%</span>
+                      <button
+                        onClick={() => handleRemoveActivity(idx)}
+                        aria-label={`Remove ${act.title}`}
+                        className="text-slate-400 hover:text-rose-600 p-1 transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[11px] font-mono text-rose-600 font-semibold">Rarity: {Math.round(act.rarity * 100)}%</span>
-                    <button
-                      onClick={() => handleRemoveActivity(idx)}
-                      className="text-slate-400 hover:text-rose-600 p-1 transition"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Add activity form */}
             <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <input
                 type="text"
                 placeholder="Activity / Project Title"
+                aria-label="Activity title"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleAddActivity(); }}
                 className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900 sm:col-span-2"
               />
-              <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Your role (optional)"
+                aria-label="Your role"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleAddActivity(); }}
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
+              />
+              <div className="flex gap-2 sm:col-span-3">
                 <input
                   type="number"
                   placeholder="Months"
+                  aria-label="Months invested"
+                  min={1}
                   value={newMonths}
                   onChange={(e) => setNewMonths(Number(e.target.value))}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 w-20 focus:outline-none focus:border-slate-900"
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 w-24 focus:outline-none focus:border-slate-900"
                 />
                 <button
                   onClick={handleAddActivity}
-                  className="flex-1 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold px-3 py-2 flex items-center justify-center gap-1 transition"
+                  disabled={!newTitle.trim()}
+                  className="flex-1 sm:flex-none sm:px-6 bg-slate-950 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl text-xs font-semibold py-2 flex items-center justify-center gap-1 transition"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add</span>
@@ -268,17 +474,20 @@ export default function PortfolioBuilderPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-10">
           <div className="flex items-center gap-2 text-rose-600 text-xs font-mono uppercase tracking-wider mb-2">
             <FileText className="w-4 h-4" />
-            <span>Google & Common App X-Y-Z Optimization Engine</span>
+            <span>Google &amp; Common App X-Y-Z Optimization Engine</span>
           </div>
           <h2 className="text-xl font-bold text-slate-950 mb-2">Action-Impact X-Y-Z Transformer</h2>
           <p className="text-xs text-slate-500 mb-4">
-            Convert weak passive resume drafts into quantitative power statements: <em>"Accomplished [X] as measured by [Y] by doing [Z]"</em>.
+            Restructures a bullet into <em>&quot;Accomplished [X] as measured by [Y] by doing [Z]&quot;</em>.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-mono text-slate-500 uppercase mb-1">Your Draft Bullet:</label>
+              <label htmlFor="raw-bullet" className="block text-xs font-mono text-slate-500 uppercase mb-1">
+                Your Draft Bullet:
+              </label>
               <textarea
+                id="raw-bullet"
                 rows={4}
                 value={rawDraft}
                 onChange={(e) => setRawDraft(e.target.value)}
@@ -301,18 +510,27 @@ export default function PortfolioBuilderPage() {
                 {transformedOutput ? (
                   <div className="mt-2 space-y-2">
                     <p className="text-xs text-emerald-950 font-medium leading-relaxed bg-emerald-50 p-3 rounded-xl border border-emerald-200">
-                      "{transformedOutput.transformed_xyz}"
+                      &quot;{transformedOutput.transformed_xyz ?? NO_DATA}&quot;
                     </p>
                     <div className="text-[11px] text-slate-600">
-                      <strong>Metric Highlighted:</strong> {transformedOutput.metric_highlighted}
+                      <strong>Metric Highlighted:</strong> {transformedOutput.metric_highlighted ?? NO_DATA}
                     </div>
                     <div className="text-[11px] text-slate-600">
-                      <strong>Admissions Critique:</strong> {transformedOutput.critique}
+                      <strong>Admissions Critique:</strong> {transformedOutput.critique ?? NO_DATA}
                     </div>
                   </div>
+                ) : transformNotice ? (
+                  <div className="mt-3 flex items-start gap-2 text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-3 leading-relaxed">
+                    <Lock className="w-3.5 h-3.5 mt-px shrink-0" />
+                    <span>
+                      <strong className="block mb-0.5">Unavailable — deliberately</strong>
+                      {transformNotice}
+                    </span>
+                  </div>
                 ) : (
-                  <div className="mt-6 text-center text-xs text-slate-400">
-                    Input a draft bullet and click transform to generate Stanford/MIT-ready X-Y-Z prose.
+                  <div className="mt-6 text-xs text-slate-400">
+                    Input a draft bullet and click transform. If the engine declines, it says so
+                    rather than writing a number you did not measure.
                   </div>
                 )}
               </div>
@@ -320,9 +538,9 @@ export default function PortfolioBuilderPage() {
           </div>
         </div>
 
-        {/* Bottom Split: 4-Year Milestone Framework & Predatory Journal Scanner */}
+        {/* Bottom Split: Milestone Framework & Publisher Scanner */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 4-Year Milestone Framework */}
+          {/* Grade framework — intentionally in-page, see header comment. */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <h3 className="text-base font-bold text-slate-950 mb-3 flex items-center gap-2">
               <Calendar className="w-4 h-4 text-rose-600" />
@@ -348,13 +566,13 @@ export default function PortfolioBuilderPage() {
                 <>
                   <div className="font-bold text-rose-600">Grade 9: Broad Intellectual Exploration</div>
                   <div className="text-slate-700">• 3 Diverse exploratory projects (Robotics, Algorithms, Economics)</div>
-                  <div className="text-slate-700">• Foundational competitive coding & open-source contributions</div>
+                  <div className="text-slate-700">• Foundational competitive coding &amp; open-source contributions</div>
                   <div className="text-slate-700">• Maintain top-5% class rank baseline</div>
                 </>
               )}
               {selectedGrade === 10 && (
                 <>
-                  <div className="font-bold text-rose-600">Grade 10: Spike Hypothesis & Regional Contests</div>
+                  <div className="font-bold text-rose-600">Grade 10: Spike Hypothesis &amp; Regional Contests</div>
                   <div className="text-slate-700">• Isolate singular spike focus area</div>
                   <div className="text-slate-700">• National Olympiad entry (INMO / INPhO / INOI / IRIS)</div>
                   <div className="text-slate-700">• Launch first community technical artifact</div>
@@ -362,7 +580,7 @@ export default function PortfolioBuilderPage() {
               )}
               {selectedGrade === 11 && (
                 <>
-                  <div className="font-bold text-rose-600">Grade 11: Primary Research Artifact & External Validation</div>
+                  <div className="font-bold text-rose-600">Grade 11: Primary Research Artifact &amp; External Validation</div>
                   <div className="text-slate-700">• Author primary research preprint (arXiv / SSRN)</div>
                   <div className="text-slate-700">• Secure national/international award validation</div>
                   <div className="text-slate-700">• Standardized testing (Target: SAT 1540+ / ACT 35+)</div>
@@ -370,49 +588,94 @@ export default function PortfolioBuilderPage() {
               )}
               {selectedGrade === 12 && (
                 <>
-                  <div className="font-bold text-rose-600">Grade 12: Common App Synthesis & Early Action</div>
+                  <div className="font-bold text-rose-600">Grade 12: Common App Synthesis &amp; Early Action</div>
                   <div className="text-slate-700">• Socratic Personal Statement authoring</div>
                   <div className="text-slate-700">• Structure 10 Common App activities in strict X-Y-Z prose</div>
                   <div className="text-slate-700">• Early Decision (ED) portfolio optimization</div>
                 </>
               )}
             </div>
+
+            <p className="text-[11px] text-slate-500 mt-4 flex items-start gap-1.5">
+              <Info className="w-3.5 h-3.5 mt-px shrink-0 text-slate-400" />
+              <span>
+                Editorial guidance, kept on the page rather than fetched. The
+                <code className="font-mono"> /portfolio/milestones</code> endpoint exists but its body
+                is a literal dict inside the router, so calling it would add a network round-trip and a
+                new way for this card to fail without adding any data.
+              </span>
+            </p>
           </div>
 
-          {/* Predatory Journal & Publisher Scanner */}
+          {/* Predatory Publisher Scanner — POST /api/v2/portfolio/check-preprint */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <h3 className="text-base font-bold text-slate-950 mb-2 flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-amber-500" />
-              <span>Beall's List Predatory Journal Scanner</span>
+              <span>Predatory Publisher Scanner</span>
             </h3>
             <p className="text-xs text-slate-500 mb-4">
-              Pay-to-publish predatory journals ruin admissions credibility. Verify any prospective journal or publisher here before submitting.
+              Check a prospective journal or publisher against a deny-list of known pay-to-publish
+              names before you submit.
             </p>
 
             <div className="flex gap-2">
               <input
                 type="text"
                 placeholder="Enter Journal / Publisher Name..."
+                aria-label="Journal or publisher name"
                 value={journalQuery}
                 onChange={(e) => setJournalQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void handleCheckJournal(); }}
                 className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
               />
               <button
-                onClick={handleCheckJournal}
-                className="bg-slate-950 hover:bg-slate-800 text-white rounded-xl px-4 py-2 text-xs font-semibold transition"
+                onClick={() => void handleCheckJournal()}
+                disabled={journal.status === "loading" || !journalQuery.trim()}
+                className="bg-slate-950 hover:bg-slate-800 disabled:bg-slate-300 text-white rounded-xl px-4 py-2 text-xs font-semibold transition flex items-center gap-1.5"
               >
-                Scan
+                {journal.status === "loading" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                <span>Scan</span>
               </button>
             </div>
 
-            {journalResult && (
-              <div className={`mt-4 p-3 rounded-xl border text-xs ${
-                journalResult.is_flagged_predatory
-                  ? "bg-rose-50 border-rose-200 text-rose-800"
-                  : "bg-emerald-50 border-emerald-200 text-emerald-800"
-              }`}>
-                <div className="font-bold">{journalResult.journal_name}</div>
-                <div className="mt-1 text-[11px]">{journalResult.warning}</div>
+            {journal.status === "loading" && (
+              <p className="mt-4 text-xs text-slate-400 font-mono flex items-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking deny-list…
+              </p>
+            )}
+
+            {journal.status === "ready" && (
+              <>
+                <div className={`mt-4 p-3 rounded-xl border text-xs ${
+                  journal.data.is_flagged_predatory
+                    ? "bg-rose-50 border-rose-200 text-rose-800"
+                    : "bg-emerald-50 border-emerald-200 text-emerald-800"
+                }`}>
+                  <div className="font-bold">{journal.data.journal_name}</div>
+                  <div className="mt-1 text-[11px]">{journal.data.warning}</div>
+                </div>
+                {/* A deny-list miss is not a clean bill of health. The engine
+                    matches against ten substrings; it does not reach Beall's
+                    list or an ISSN registry, despite the `source` label it
+                    returns. Saying "not flagged" is the only honest claim. */}
+                <p className="text-[11px] text-slate-500 mt-3 flex items-start gap-1.5">
+                  <Info className="w-3.5 h-3.5 mt-px shrink-0 text-slate-400" />
+                  <span>
+                    &ldquo;Not flagged&rdquo; means the name did not match this short deny-list. It is not
+                    independent confirmation that the journal is legitimate — verify the ISSN and
+                    publisher before submitting.
+                  </span>
+                </p>
+              </>
+            )}
+
+            {journal.status === "unavailable" && (
+              <div className="mt-4 flex items-start gap-2 text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-xl p-3 leading-relaxed">
+                <CircleAlert className="w-3.5 h-3.5 mt-px shrink-0" />
+                <span>
+                  <strong className="block mb-0.5">No verdict</strong>
+                  {journal.reason}
+                </span>
               </div>
             )}
           </div>
@@ -440,20 +703,15 @@ export default function PortfolioBuilderPage() {
                   <GraduationCap className="w-4 h-4" />
                   <span className="text-xs font-mono font-bold uppercase">1. 1:1 PhD Research Fellowship</span>
                 </div>
-                <h3 className="text-sm font-bold text-slate-950 mb-2">SSRN / arXiv Working Paper + Registered DOI</h3>
+                <h3 className="text-sm font-bold text-slate-950 mb-2">Working Paper + Registered DOI</h3>
                 <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                  Match with PhD mentors from Cambridge, Oxford, Ashoka, or IISc. Develop empirical econometric models or ML pipelines and publish on verified pre-print servers.
+                  Develop empirical econometric models or ML pipelines and publish on verified
+                  preprint servers, with faculty co-authorship.
                 </p>
                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-700 font-mono space-y-1">
                   <div>• Faculty Co-Authorship Protocol</div>
                   <div>• Registered Crossref DOI</div>
-                  <div className="text-rose-600 font-semibold">• +2.4x Tier-1 Admissions Odds</div>
                 </div>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-100">
-                <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5" /> 3 Cohorts Open for Application
-                </span>
               </div>
             </div>
 
@@ -473,11 +731,6 @@ export default function PortfolioBuilderPage() {
                   <div>• Quantitative Factor Backtesting</div>
                   <div>• Bi-Weekly Senior Practitioner Hours</div>
                 </div>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-100">
-                <span className="text-[11px] text-blue-700 font-semibold flex items-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5" /> Google / Goldman Sachs Mentors
-                </span>
               </div>
             </div>
 
@@ -502,7 +755,7 @@ export default function PortfolioBuilderPage() {
               </div>
               <div className="mt-4 pt-3 border-t border-slate-100">
                 <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                  <Lock className="w-3.5 h-3.5" /> Private until you share
+                  <CheckCircle className="w-3.5 h-3.5" /> Private until you share
                 </span>
               </div>
             </div>
@@ -510,5 +763,6 @@ export default function PortfolioBuilderPage() {
         </div>
       </main>
     </div>
+    </AuthGate>
   );
 }

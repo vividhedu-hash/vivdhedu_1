@@ -54,7 +54,12 @@ CATEGORY_MULTIPLIERS: Dict[str, float] = {
     "PwD":     5.20,
 }
 
-# Historical Closing Rank registry for representative engineering, medical, management, law benchmarks
+# Historical closing-rank list. This is a reference seed, not a data source.
+#
+# Migration 0006 copied these 43 rows into `cutoffs` (vintage 2024, is_verified
+# FALSE, no source URL). `generate_admissions_portfolio` does not read this
+# list. Passing nothing does not silently resurrect it. The constant remains so
+# the seed and a reconciliation script can name the rows that were migrated.
 COLLEGE_BENCHMARK_RANKS: List[Dict[str, Any]] = [
     # ── IITs & Tier-1 Engineering (JEE Advanced) ──────────────────────────
     {"college": "IIT Bombay", "degree": "B.Tech Computer Science", "field": "engineering-cs", "tier": "1", "exam": "JEE Advanced", "base_closing_rank": 67, "state": "Maharashtra", "total_cost_inr": 1200000.0, "roi_score": 94.5},
@@ -140,6 +145,7 @@ class AdmissionsPortfolioEngine:
         category: str = "General",
         is_home_state: bool = False,
         exam_name: str = "JEE Main",
+        rank_variability: Optional[Dict[str, float]] = None,
     ) -> Tuple[float, float]:
         """
         Calculates Cutoff Delta Z-Score and Normal CDF Admission Probability (Equation 9.1).
@@ -147,10 +153,14 @@ class AdmissionsPortfolioEngine:
         """
         cat_mult = CATEGORY_MULTIPLIERS.get(category, 1.0)
         hs_mult = 1.35 if is_home_state else 1.00
-        
-        # Calibrated closing rank under student's category and quota
+
+        # Calibrated closing rank under student's category and quota.
+        # Sigma comes from the caller when the database supplied it. The
+        # in-module dict is only the library default for a direct call that
+        # did not pass a table — the HTTP route does not use that path.
         calibrated_cutoff = base_closing_rank * cat_mult * hs_mult
-        sigma = EXAM_RANK_VARIABILITY.get(exam_name, EXAM_RANK_VARIABILITY["Default"])
+        sigma_table = rank_variability if rank_variability is not None else EXAM_RANK_VARIABILITY
+        sigma = sigma_table.get(exam_name) or sigma_table.get("Default") or EXAM_RANK_VARIABILITY["Default"]
 
         # Z = (ClosingRank - StudentRank) / sigma
         # If StudentRank < ClosingRank, Z is positive -> higher chance
@@ -169,19 +179,55 @@ class AdmissionsPortfolioEngine:
         max_budget_inr: float = 2000000.0,
         preferred_field: Optional[str] = None,
         programs: Optional[List[Dict[str, Any]]] = None,
+        rank_variability: Optional[Dict[str, float]] = None,
     ) -> Dict[str, Any]:
         """
         Constructs the 4-Tier Caliber-Calibrated Admissions Application Matrix.
         Tiers: Reach, Target, Safety, Hidden Gem, Pruned.
-        Supports custom or live database program catalogs.
+
+        `programs` is the cutoff catalogue. None means the caller did not supply
+        one. That returns an explicit unavailable portfolio. It does not fall
+        back to COLLEGE_BENCHMARK_RANKS.
         """
+        profile = {
+            "expected_rank": student_rank,
+            "exam": exam_name,
+            "category": category,
+            "home_state": home_state,
+            "budget_inr": max_budget_inr,
+        }
+        empty_tiers = {
+            "reach": [],
+            "target": [],
+            "safety": [],
+            "hidden_gems": [],
+            "pruned": [],
+        }
+        if programs is None:
+            return {
+                "cutoff_data": "unavailable",
+                "cutoff_reason": (
+                    "No cutoff rows were supplied. The in-source benchmark list "
+                    "is not used as a fallback."
+                ),
+                "student_profile": profile,
+                "portfolio_summary": {
+                    "reach_count": 0,
+                    "target_count": 0,
+                    "safety_count": 0,
+                    "hidden_gem_count": 0,
+                    "pruned_count": 0,
+                },
+                "tiers": empty_tiers,
+            }
+
         reach_list = []
         target_list = []
         safety_list = []
         hidden_gems = []
         pruned_list = []
 
-        pool = programs if programs is not None and len(programs) > 0 else COLLEGE_BENCHMARK_RANKS
+        pool = programs
 
         for p in pool:
             field = p.get("field") or p.get("degree_field")
@@ -189,13 +235,18 @@ class AdmissionsPortfolioEngine:
                 continue
 
             exam = p.get("exam", exam_name)
-            base_closing = float(p.get("base_closing_rank") or p.get("closing_rank", 10000))
-            cost = float(p.get("total_cost_inr") or p.get("total_cost_of_degree") or 1000000.0)
-            roi_score = float(p.get("roi_score") or p.get("composite_score") or 75.0)
-            college_name = p.get("college") or p.get("college_name", "Target Institution")
-            degree_name = p.get("degree") or p.get("degree_name", "Degree Program")
+            closing_raw = p.get("base_closing_rank") if p.get("base_closing_rank") is not None else p.get("closing_rank")
+            if closing_raw is None:
+                continue
+            base_closing = float(closing_raw)
+            cost_raw = p.get("total_cost_inr") if p.get("total_cost_inr") is not None else p.get("total_cost_of_degree")
+            cost = float(cost_raw) if cost_raw is not None else None
+            roi_raw = p.get("roi_score") if p.get("roi_score") is not None else p.get("composite_score")
+            roi_score = float(roi_raw) if roi_raw is not None else None
+            college_name = p.get("college") or p.get("college_name") or "Unnamed college"
+            degree_name = p.get("degree") or p.get("degree_name") or "Unnamed program"
             tier = str(p.get("tier", "2"))
-            state = p.get("state", "All India")
+            state = p.get("state") or "All India"
 
             is_hs = (state.lower() == home_state.lower())
             z, prob = cls.calculate_admission_probability(
@@ -204,11 +255,11 @@ class AdmissionsPortfolioEngine:
                 category=category,
                 is_home_state=is_hs,
                 exam_name=exam,
+                rank_variability=rank_variability,
             )
 
-            # Financial pruning check
-            is_financially_pruned = cost > (max_budget_inr * 1.30)
-            
+            is_financially_pruned = cost is not None and cost > (max_budget_inr * 1.30)
+
             entry = {
                 "college": college_name,
                 "degree": degree_name,
@@ -220,16 +271,32 @@ class AdmissionsPortfolioEngine:
                 "z_score": z,
                 "admission_probability_pct": round(prob * 100.0, 1),
                 "is_home_state_quota": is_hs,
-                "financial_fit": "Within Budget" if cost <= max_budget_inr else "Budget Stretch",
+                "financial_fit": (
+                    "Cost not recorded" if cost is None
+                    else "Within Budget" if cost <= max_budget_inr
+                    else "Budget Stretch"
+                ),
+                "vintage_year": p.get("vintage_year"),
+                "source_url": p.get("source_url"),
+                "is_verified": bool(p.get("is_verified")),
             }
 
-            if is_financially_pruned:
-                entry["pruning_reason"] = f"Total Cost (₹{p['total_cost_inr']:,.0f}) exceeds 130% of budget (₹{max_budget_inr:,.0f})"
+            if is_financially_pruned and cost is not None:
+                entry["pruning_reason"] = (
+                    f"Total cost (₹{cost:,.0f}) exceeds 130% of budget (₹{max_budget_inr:,.0f})"
+                )
                 pruned_list.append(entry)
                 continue
 
-            # Hidden Gem check: ROI >= 82.0, Fees < ₹6,00,000, Prob >= 60%
-            if p["roi_score"] >= 82.0 and p["total_cost_inr"] <= 600000.0 and prob >= 0.60:
+            # Hidden Gem: ROI >= 82, fees under ₹6,00,000, probability >= 60%.
+            # Missing ROI or cost cannot qualify — an absent number is not a gem.
+            if (
+                roi_score is not None
+                and cost is not None
+                and roi_score >= 82.0
+                and cost <= 600000.0
+                and prob >= 0.60
+            ):
                 hidden_gems.append(entry)
 
             if z > 1.5:
@@ -246,19 +313,19 @@ class AdmissionsPortfolioEngine:
                 pruned_list.append(entry)
 
         # Sort within each tier by ROI score descending
-        safety_list.sort(key=lambda x: x["composite_roi"], reverse=True)
-        target_list.sort(key=lambda x: x["composite_roi"], reverse=True)
-        reach_list.sort(key=lambda x: x["composite_roi"], reverse=True)
-        hidden_gems.sort(key=lambda x: x["composite_roi"], reverse=True)
+        def _roi_key(item: Dict[str, Any]) -> float:
+            value = item.get("composite_roi")
+            return float(value) if value is not None else -1.0
+
+        safety_list.sort(key=_roi_key, reverse=True)
+        target_list.sort(key=_roi_key, reverse=True)
+        reach_list.sort(key=_roi_key, reverse=True)
+        hidden_gems.sort(key=_roi_key, reverse=True)
 
         return {
-            "student_profile": {
-                "expected_rank": student_rank,
-                "exam": exam_name,
-                "category": category,
-                "home_state": home_state,
-                "budget_inr": max_budget_inr,
-            },
+            "cutoff_data": "supplied",
+            "cutoff_count": len(pool),
+            "student_profile": profile,
             "portfolio_summary": {
                 "reach_count": len(reach_list),
                 "target_count": len(target_list),

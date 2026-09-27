@@ -3,7 +3,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase-client";
+import { consumeReturnTo } from "@/lib/auth-context";
 import { Loader2, AlertCircle, ShieldCheck } from "lucide-react";
+
+/**
+ * Only same-origin, absolute-path destinations are honoured. Accepting an
+ * arbitrary `?next=` would make this page an open redirect on a URL reached
+ * immediately after a credential exchange.
+ */
+function safeNext(raw: string | null): string {
+  if (!raw) return "/";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+  return raw;
+}
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -15,7 +27,10 @@ export default function AuthCallbackPage() {
         const supabase = getSupabaseClient();
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
-        const next = urlParams.get("next") || "/";
+        // Precedence: an explicit `?next=` wins, otherwise fall back to the
+        // destination the user was on when they hit "Sign in", so a gated
+        // route is returned to rather than dropped on the landing page.
+        const next = safeNext(urlParams.get("next") ?? consumeReturnTo() ?? "/");
 
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
@@ -24,7 +39,7 @@ export default function AuthCallbackPage() {
           }
         } else {
           // If hash tokens were delivered (implicit flow)
-          const { data, error: sessionError } = await supabase.auth.getSession();
+          const { error: sessionError } = await supabase.auth.getSession();
           if (sessionError) throw sessionError;
         }
 

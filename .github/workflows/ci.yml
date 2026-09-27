@@ -113,3 +113,91 @@ jobs:
             fail=1
           fi
           exit $fail
+
+  import-depth-guard:
+    name: import-depth-guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert no relative import escapes the api package
+        run: |
+          set -euo pipefail
+          fail=0
+          # Every deploy target starts the app as `uvicorn api.main:app` from
+          # backend/ (Procfile, render.yaml startCommand, Dockerfile.api CMD).
+          # Under that entrypoint the import root is backend/, so the top-level
+          # package is `api` — NOT `backend`. `api.routers` is therefore two
+          # levels deep and `api.main` is one level deep.
+          #
+          # A relative import that climbs above `api` resolves outside the
+          # import root and raises
+          #     ImportError: attempted relative import beyond top-level package
+          # at runtime. Six of these shipped in api/routers/ml.py as
+          # `from ...ml.x import y`, each wrapped in an `except Exception` that
+          # returned a hardcoded fake response — so /api/ml/feature-importance
+          # served invented importance numbers indefinitely while looking
+          # healthy, and /api/ml/retrain was a no-op. The same 2-dot form in
+          # api/main.py's startup hook meant the models never warmed. Nothing
+          # failed at boot; the app was just quietly wrong.
+          #
+          # Fix for the 2-level case (api/routers/*.py): use an absolute
+          # `from ml.x import y`. Fix for the 1-level case (api/*.py): same,
+          # absolute. The sibling packages `ml/` and `services/` are top-level;
+          # `api/config.py`, `api/db/`, `api/schemas.py`, `api/services/` are
+          # inside `api` and are correctly reached with a single dot.
+          #
+          # Rule enforced here: no `from ...` (3+ dots) anywhere under backend/,
+          # and no `from ..x` inside a file that sits at depth 1 (api/*.py).
+
+          # Tracked files only, via git ls-files. A recursive `grep -r backend/`
+          # also walks backend/.venv/ when one exists locally, and torch and
+          # sqlalchemy are full of legitimate 3-dot relative imports — the
+          # guard would fire on third-party code it does not own. This is the
+          # same approach secret-scan uses (git grep).
+          #
+          # A while-read loop rather than `mapfile`, which is bash 4+ and absent
+          # from the bash 3.2 that ships with macOS, so the check can be run and
+          # debugged locally against the same code CI runs.
+          pyfiles=""
+          n_pyfiles=0
+          while IFS= read -r f; do
+            pyfiles="$pyfiles $f"
+            n_pyfiles=$((n_pyfiles + 1))
+          done < <(git ls-files 'backend/**/*.py' 'backend/*.py')
+
+          if [ "$n_pyfiles" -eq 0 ]; then
+            echo "::error::No Python files found under backend/ — the guard is not testing anything"
+            exit 1
+          fi
+          # shellcheck disable=SC2086
+          set -- $pyfiles
+
+          # ── 1. Three-or-more-dot relative imports, anywhere under backend/ ──
+          # Matches `from ...x import y`, `from ....x import y`, and
+          # `import ...x` via the same leading-dot prefix.
+          deep=$(grep -nE '^[[:space:]]*(from|import)[[:space:]]+\.{3,}' -- "$@" || true)
+          if [ -n "$deep" ]; then
+            echo "$deep"
+            echo "::error::Relative import of 3+ dots found. 'api' is the top-level package under 'uvicorn api.main:app', so anything above depth 2 (or depth 1 in api/*.py) cannot resolve. Use an absolute import instead — see the comment at the top of api/routers/ml.py."
+            fail=1
+          fi
+
+          # ── 2. Two-dot relative imports in a depth-1 file (backend/api/*.py) ──
+          # A file directly in api/ is package depth 1, so a 2-dot import is
+          # already one level too high. Files under api/routers/ and api/db/
+          # are depth 2 and may legitimately use one dot, so they are excluded.
+          twodot=$(grep -nE '^[[:space:]]*(from|import)[[:space:]]+\.\.[A-Za-z_]' -- "$@" \
+                   | grep -E '(^|/)backend/api/[^/]+\.py:' || true)
+          if [ -n "$twodot" ]; then
+            echo "$twodot"
+            echo "::error::Two-dot relative import found in a depth-1 file under backend/api/. Use a single dot (for api.config, api.db, api.schemas, api.services) or an absolute import (for top-level ml/ and services/)."
+            fail=1
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "--- Import depth guard FAILED ---"
+            echo "Reproduce:  cd backend && python -c \"import api.main\""
+          else
+            echo "Import depth guard passed across $n_pyfiles files — no relative import escapes the 'api' package."
+          fi
+          exit $fail

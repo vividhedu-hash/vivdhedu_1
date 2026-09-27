@@ -63,6 +63,16 @@ INTEGRATIONS: Dict[str, Dict[str, Any]] = {
         "optional": True,
         "docs": "https://resend.com — report emails",
     },
+    "google_oauth": {
+        "required_env": ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
+        "optional": True,
+        "docs": "https://console.cloud.google.com/apis/credentials — backend OAuth routes. The browser signs in via Supabase, so an empty pair here does not break the web sign-in button.",
+    },
+    "github_oauth": {
+        "required_env": ["GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"],
+        "optional": True,
+        "docs": "https://github.com/settings/developers — backend OAuth routes. The browser signs in via Supabase, so an empty pair here does not break the web sign-in button.",
+    },
 }
 
 
@@ -81,6 +91,10 @@ def _env_value(name: str) -> str:
         "REDDIT_CLIENT_ID": settings.reddit_client_id,
         "REDDIT_CLIENT_SECRET": settings.reddit_client_secret,
         "RESEND_API_KEY": getattr(settings, "resend_api_key", "") or "",
+        "GOOGLE_CLIENT_ID": getattr(settings, "google_client_id", "") or "",
+        "GOOGLE_CLIENT_SECRET": getattr(settings, "google_client_secret", "") or "",
+        "GITHUB_CLIENT_ID": getattr(settings, "github_client_id", "") or "",
+        "GITHUB_CLIENT_SECRET": getattr(settings, "github_client_secret", "") or "",
     }
     return (mapping.get(name) or "").strip()
 

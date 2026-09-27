@@ -47,7 +47,21 @@ class ModelRegistry:
         changelog: str = "",
         is_live: bool = False,
     ) -> str:
-        """Register a newly trained model version. Returns version_tag."""
+        """Register a newly trained model version. Returns version_tag.
+
+        Column contract
+        ---------------
+        This writes `validation_mae` / `validation_r2`, and so do
+        `compare()` below, the promotion gate in `ml/training_pipeline.py`, and
+        `api/routers/ml.py`. `db/schema.sql` declared `mse` / `r2_score` /
+        `mape_salary` / `recall_at_5` instead, none of which had a single
+        reader anywhere in the repo — so on a database built from that schema
+        this INSERT raised `UndefinedColumnError` and every retrain died after
+        the expensive part. The schema was corrected to declare the names the
+        code actually uses, with the old pair kept declared-but-unwritten for
+        outside consumers. See the header comment on the table in
+        `db/schema.sql` and alembic revision 0004_model_versions_metrics.
+        """
         await self.db.execute(text("""
             INSERT INTO model_versions
                 (version_tag, is_live, trigger_type, training_records,
@@ -133,7 +147,17 @@ class ModelRegistry:
         return [dict(r._mapping) for r in result]
 
     async def compare(self, version_a: str, version_b: str) -> Dict:
-        """Compare two model versions on all stored metrics."""
+        """Compare two model versions on all stored metrics.
+
+        Note the metric is actually MAPE, not MAE: the training pipeline feeds
+        `challenger_metrics["mape_y5"]` into `register()` as `mae`, and the
+        promotion gate in `training_pipeline.py` labels it MAPE in its log line.
+        The column is named `validation_mae` because that is what it has always
+        been called, but the value is a percentage error (~14.0), not a rupee
+        figure. Renaming it is a separate decision and is not made here; the
+        naming is flagged in `db/schema.sql` so the next reader is not misled by
+        it.
+        """
         result = await self.db.execute(text("""
             SELECT version_tag, validation_mae, validation_r2, training_records,
                    trained_at, is_live

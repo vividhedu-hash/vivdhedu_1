@@ -67,11 +67,25 @@ export async function POST(request: Request) {
         ? Number((cost / baseSalary).toFixed(1))
         : null;
 
+    // `vectors` and `fitScore` were `Math.round(92 - i * 6)`,
+    // `Math.round(85 - i * 4)`, `Math.round(88 - i * 5)` and
+    // `Math.round(75 + i * 3)` — arithmetic on the array index, not on the
+    // student. Every student, whatever they answered, got the same four
+    // numbers in the same descending order, and `fitScore` was literally
+    // `fitScore = 92 - 6 × rank`. A "multi-vector fit score based on your
+    // stated goals & CAT psychometric traits" is a description of a
+    // calculation that does not consult those goals or traits.
+    //
+    // There is no fit engine on this path to call: this branch is the
+    // "FastAPI was unreachable" fallback, and the real fit vectors live in
+    // `ml/nextgen_engine.py`. So the fields are emitted as null and the
+    // downstream components render "—". Populating them properly requires
+    // the backend engine to be reachable — see the follow-up in the PR notes.
     const vectors = {
-      financial_upside: Math.round(92 - i * 6),
-      stability_resilience: Math.round(85 - i * 4),
-      value_efficiency: Math.round(88 - i * 5),
-      autonomy_wlb: Math.round(75 + i * 3),
+      financial_upside: null,
+      stability_resilience: null,
+      value_efficiency: null,
+      autonomy_wlb: null,
     };
 
     const measuredPlacement = finiteOrNull(r.placement?.rate);
@@ -110,6 +124,7 @@ export async function POST(request: Request) {
 
     const riskScore = finiteOrNull(r.roi.riskScore);
     const normalizedRiskScore = riskScore == null ? null : riskScore <= 1 ? riskScore : riskScore / 100;
+    const financialRoi = finiteOrNull(r.roi.financialRoiPct);
 
     return {
       id: r.id,
@@ -126,7 +141,9 @@ export async function POST(request: Request) {
       state: r.college.state,
       tier: r.college.tier,
       compositeScore: finiteOrNull(r.roi.compositeScore),
-      fitScore: Math.round(92 - i * 6),
+      // Was `Math.round(92 - i * 6)` — a function of list position alone, so
+      // the "fit" of the top-ranked program was 92 for everybody.
+      fitScore: null,
       vectors,
       trajectory,
       predictedSalaryY1: trajectory?.y1.p50 ?? null,
@@ -141,12 +158,16 @@ export async function POST(request: Request) {
             : measuredPlacement * 100,
       macroScenarios,
       reasons: [
-        `Multi-vector fit score based on your stated goals & CAT psychometric traits`,
-        `Financial upside ${vectors.financial_upside}/100 — top tier career ceiling`,
+        "Fit score unavailable — no fit engine ran for this response, so this program is not ranked against your profile.",
+        financialRoi != null
+          ? `Financial ROI ${financialRoi}% against total degree cost`
+          : "Financial ROI not measured for this program",
         paybackYears != null
           ? `Payback horizon speed ~${paybackYears} years to recoup full degree cost`
           : "Payback horizon unavailable — this program has no verified cost-of-degree figure",
-        "Resilient placement history across major employment hubs",
+        measuredPlacement != null
+          ? `Measured placement rate ${measuredPlacement}%`
+          : "Placement rate not measured for this program",
       ],
       topRisks: [
         normalizedRiskScore == null
@@ -157,27 +178,35 @@ export async function POST(request: Request) {
     };
   });
 
-  const pathways = {
-    wealth_builder: [
-      { collegeName: MOCK_DATA[0].college.name, degreeName: MOCK_DATA[0].degree.name, score: 96, y10_salary: 4_500_000 },
-      { collegeName: MOCK_DATA[2].college.name, degreeName: MOCK_DATA[2].degree.name, score: 92, y10_salary: 3_800_000 },
-      { collegeName: MOCK_DATA[3].college.name, degreeName: MOCK_DATA[3].degree.name, score: 89, y10_salary: 3_500_000 },
-    ],
-    stability_fortress: [
-      { collegeName: MOCK_DATA[8].college.name, degreeName: MOCK_DATA[8].degree.name, score: 95, placement_rate: 0.99 },
-      { collegeName: MOCK_DATA[0].college.name, degreeName: MOCK_DATA[0].degree.name, score: 92, placement_rate: 0.95 },
-      { collegeName: MOCK_DATA[1].college.name, degreeName: MOCK_DATA[1].degree.name, score: 88, placement_rate: 0.91 },
-    ],
-    value_optimizer: [
-      { collegeName: MOCK_DATA[5].college.name, degreeName: MOCK_DATA[5].degree.name, score: 94, payback_years: 1.1 },
-      { collegeName: MOCK_DATA[0].college.name, degreeName: MOCK_DATA[0].degree.name, score: 90, payback_years: 1.4 },
-      { collegeName: MOCK_DATA[3].college.name, degreeName: MOCK_DATA[3].degree.name, score: 86, payback_years: 1.7 },
-    ],
-    balanced_lifestyle: [
-      { collegeName: MOCK_DATA[4].college.name, degreeName: MOCK_DATA[4].degree.name, score: 88 },
-      { collegeName: MOCK_DATA[7].college.name, degreeName: MOCK_DATA[7].degree.name, score: 85 },
-      { collegeName: MOCK_DATA[6].college.name, degreeName: MOCK_DATA[6].degree.name, score: 82 },
-    ],
+  /**
+   * `pathways` — the field is retained for shape compatibility with
+   * `MultiDirectionalAnalysis`, but it is emitted EMPTY.
+   *
+   * It used to be a constant: four hardcoded lists indexing `MOCK_DATA[0..8]`
+   * by literal position, with hand-typed `score: 96 / 92 / 89`,
+   * `y10_salary: 4_500_000`, `placement_rate: 0.99` and
+   * `payback_years: 1.1`. The same colleges appeared in the same order for
+   * every student who ever ran an analysis, and none of the figures were
+   * derived from the profile that was posted in. The "AI Shock" and
+   * "Recession" multipliers elsewhere on this page at least scaled a measured
+   * salary; these did not scale anything.
+   *
+   * There is no correct local implementation to substitute. A pathway is a
+   * re-ranking of programs under a different objective function, and the only
+   * code that does that re-ranking is the backend's `recommendations`
+   * generation. This branch is reached precisely when the backend is not
+   * reachable. So rather than emit a confident second answer, it emits
+   * nothing, and the consumer falls back to the recommendations it already has.
+   *
+   * FOLLOW-UP (high priority, backend): make `/api/analyze` return real
+   * pathway lists derived from the posted profile, or drop the field and the
+   * four-way lens UI. It should not be reconstructed on the frontend.
+   */
+  const pathways: Record<string, unknown[]> = {
+    wealth_builder: [],
+    stability_fortress: [],
+    value_optimizer: [],
+    balanced_lifestyle: [],
   };
 
   const flags: object[] = [];

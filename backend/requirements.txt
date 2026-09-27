@@ -22,6 +22,18 @@ aiohttp==3.10.5
 # the app at boot, and the failure was swallowed by a bare `except` in main.py
 # that only logged a warning. Declare it so the router can never vanish again.
 PyJWT>=2.9.0
+# Verifies Google ID token signatures against Google's published JWKS.
+#
+# api/routers/auth.py used to ask the unauthenticated /tokeninfo endpoint what a
+# token contained and believe it. That endpoint reports a token's claims; it does
+# not prove the token is authentic, so a forged token describing any email passed.
+# google-auth validates the RS256 signature against Google's certificates and
+# checks exp/iat/aud locally — no network round trip per login.
+#
+# Pinned exactly like every other dependency here. It pulls in rsa, pyasn1 and
+# cachetools, all small and pure-ish; it does NOT pull in `requests`, because
+# api/oauth.py supplies its own urllib-based transport.
+google-auth==2.36.0
 
 # ── HTML parsing ─────────────────────────────────────────────────
 beautifulsoup4==4.12.3

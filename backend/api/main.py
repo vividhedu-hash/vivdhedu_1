@@ -57,12 +57,20 @@ async def startup():
     Startup sequence:
     1. Init DB connection pool
     2. Warm-up ML models (lazy-loaded but cached on first call)
+
+    Every `ml.*` import below is ABSOLUTE. This file is module `api.main`, i.e.
+    package depth 1, so `..ml.salary_predictor` resolves to a sibling *of* `api`
+    and raises `ImportError: attempted relative import beyond top-level
+    package`. The warmups were therefore no-ops in every deployed environment:
+    each `except` logged "warmup skipped" at WARNING and startup carried on as
+    if the models had loaded. The health endpoint at line ~112 already used the
+    correct absolute form; this now matches it.
     """
     await init_db()
 
     # Warm up XGBoost predictor (trains from seed if no artifact exists)
     try:
-        from ..ml.salary_predictor import get_predictor
+        from ml.salary_predictor import get_predictor
         predictor = get_predictor(settings.current_model_version)
         logger.info(f"[Startup] XGBoost loaded — {len(predictor.models)} horizon models")
     except Exception as e:
@@ -70,7 +78,7 @@ async def startup():
 
     # Warm up LSTM (may use compound growth fallback)
     try:
-        from ..ml.lstm_trajectory import get_lstm_model
+        from ml.lstm_trajectory import get_lstm_model
         lstm = get_lstm_model(settings.current_model_version)
         logger.info(f"[Startup] LSTM loaded — torch_available={lstm._torch_available}")
     except Exception as e:
@@ -78,7 +86,7 @@ async def startup():
 
     # Warm up BERT NER extractor
     try:
-        from ..ml.salary_ner import get_ner_extractor
+        from ml.salary_ner import get_ner_extractor
         ner = get_ner_extractor()
         logger.info(f"[Startup] NER extractor — bert={ner._bert_available}")
     except Exception as e:
@@ -140,6 +148,16 @@ app.include_router(external_router.router, prefix="/api/v1", tags=["external"])
 app.include_router(ai_router.router,       prefix="/api/v1", tags=["ai"])
 app.include_router(analytics_router.router, prefix="/api/v1/analytics", tags=["analytics"])
 
+# The admin router is ALSO mounted under /api/v1/admin. The only caller of
+# POST /api/v1/admin/recompute-roi is .github/workflows/weekly_scrape.yml, and
+# that path resolved to nothing — the scrape job's final step has been 404ing on
+# a `--fail` curl every week, so roi_scores were never recomputed after a scrape.
+# Rather than change the workflow (which is not backend code), the router is
+# mounted at both prefixes. FastAPI allows one APIRouter at multiple prefixes,
+# and both mounts resolve to the same handler object, so there is still exactly
+# one implementation and one set of admin checks behind each path.
+app.include_router(admin.router,    prefix="/api/v1/admin", tags=["admin"])
+
 # New Production Routers: Marketplace, Global Degrees, Portfolio Spike Studio, Psychometric, Admissions
 #
 # These were wrapped in a bare `except Exception` that only logged a warning, so
@@ -165,6 +183,36 @@ try:
 except Exception as e:
     MOUNT_FAILURES["production_routers"] = f"{type(e).__name__}: {e}"
     logger.error("[Main] Production routers NOT mounted: %s", e, exc_info=True)
+
+# Markov career-trajectory endpoints.
+#
+# `ml/markov_career.py` was written, calibrated and unit-tested as a complete
+# 8-state chain with an exact matrix-power solution, and it was never reachable:
+# no router included it and `training_pipeline.py` imports the class without
+# ever instantiating it. Its own `to_api_dict()` was already in API shape and
+# called by nothing. This mount is what makes the model a first-class
+# capability rather than dead code.
+#
+# Mounted in its own try/except rather than inside the block above, so a failure
+# here is attributed to "career_router" in MOUNT_FAILURES and does not take the
+# four working production routers down with it.
+try:
+    from .routers import career as career_router
+    app.include_router(career_router.router, prefix="/api/v2", tags=["career"])
+    logger.info("[Main] Career trajectory router mounted at /api/v2/career")
+except Exception as e:
+    MOUNT_FAILURES["career_router"] = f"{type(e).__name__}: {e}"
+    logger.error("[Main] Career router NOT mounted: %s", e, exc_info=True)
+
+# Durable student record: profile, shortlist, applications.
+# Mounted on its own so a failure here does not take career or admissions down.
+try:
+    from .routers import student_state as student_state_router
+    app.include_router(student_state_router.router, prefix="/api/v2", tags=["student_state"])
+    logger.info("[Main] Student-state router mounted at /api/v2/me")
+except Exception as e:
+    MOUNT_FAILURES["student_state_router"] = f"{type(e).__name__}: {e}"
+    logger.error("[Main] Student-state router NOT mounted: %s", e, exc_info=True)
 
 # Week 3: ML management endpoints
 try:

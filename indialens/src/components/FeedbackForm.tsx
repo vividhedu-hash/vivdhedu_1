@@ -38,6 +38,7 @@ interface FeedbackFormProps {
 
 export function FeedbackForm({ defaultCollegeDegreeId, onSuccess }: FeedbackFormProps) {
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
@@ -53,17 +54,29 @@ export function FeedbackForm({ defaultCollegeDegreeId, onSuccess }: FeedbackForm
   });
 
   const onSubmit = async (data: FeedbackData) => {
-    // [AI-CoLab: Cursor] Previously only console.logged after a fake delay —
-    // corrections were silently discarded. Now records via the analytics sink.
+    setSubmitError(null);
     try {
-      await fetch("/api/analytics", {
+      const response = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "data_correction", ...data }),
-        signal: AbortSignal.timeout(6_000),
+        body: JSON.stringify({
+          college_degree_id: data.collegeDegreeId,
+          field_name: data.fieldName,
+          old_value: data.oldValue,
+          new_value: data.newValue,
+          source_url: data.sourceUrl,
+          confidence: data.confidence,
+          notes: data.notes,
+        }),
+        signal: AbortSignal.timeout(8_000),
       });
-    } catch (err) {
-      console.error("Feedback submission failed:", err);
+      if (!response.ok) {
+        setSubmitError("The correction was not saved. Nothing was recorded.");
+        return;
+      }
+    } catch {
+      setSubmitError("The correction was not saved. Nothing was recorded.");
+      return;
     }
     setSubmitted(true);
     reset();
@@ -212,6 +225,12 @@ export function FeedbackForm({ defaultCollegeDegreeId, onSuccess }: FeedbackForm
           style={{ resize: "vertical" }}
         />
       </div>
+
+      {submitError && (
+        <p className="text-sm" style={{ color: "#B91C1C" }} role="alert">
+          {submitError}
+        </p>
+      )}
 
       <button
         type="submit"

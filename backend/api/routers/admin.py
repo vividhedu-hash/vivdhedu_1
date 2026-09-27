@@ -8,7 +8,10 @@
 - POST /admin/scrapes/trigger      — manually trigger a scrape
 - GET  /admin/models               — model version history
 - POST /admin/stats                — dashboard summary stats
+- POST /admin/recompute-roi        — recompute roi_scores from live trajectories
 """
+import logging
+import uuid
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
@@ -19,7 +22,24 @@ from ..db.database import get_db
 from ..schemas import AnomalyReviewRequest, FeedbackCreateRequest
 from ..config import settings
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+
+def _program_id_or_none(value: Optional[str]) -> Optional[str]:
+    """Keep a correction even when the form's id is not a program UUID.
+
+    A non-UUID is stored as NULL rather than failing the insert. A UUID that
+    is not in `programs` still fails the foreign key — that is a real miss,
+    and the caller sees an error instead of a saved row pointing nowhere.
+    """
+    if not value:
+        return None
+    try:
+        return str(uuid.UUID(str(value)))
+    except (ValueError, AttributeError, TypeError):
+        return None
 
 
 def _require_admin(x_api_key: Optional[str] = Header(None)):
@@ -169,9 +189,10 @@ async def submit_feedback(
     try:
         await db.execute(text("""
             INSERT INTO educator_feedback
-            (field_name, old_value, new_value, source_url, submitter_confidence, notes, submitter_email)
-            VALUES (:field, :old, :new, :url, :conf, :notes, :email)
+            (program_id, field_name, old_value, new_value, source_url, submitter_confidence, notes, submitter_email)
+            VALUES (CAST(:program_id AS uuid), :field, :old, :new, :url, :conf, :notes, :email)
         """), {
+            "program_id": _program_id_or_none(body.college_degree_id),
             "field": body.field_name,
             "old": body.old_value,
             "new": body.new_value,
@@ -286,3 +307,162 @@ async def dashboard_stats(
         return stats
     except Exception as e:
         raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
+
+
+# ── ROI recompute ─────────────────────────────────────────────────────
+# This route existed only as a caller: .github/workflows/weekly_scrape.yml
+# POSTs to it at the end of every weekly run. No server-side handler had ever
+# implemented it, so the job's last step 404'd on a `--fail` curl every week and
+# fresh scrape data was never re-scored. Scraper output lands in cost_data /
+# placement_data / salary_trajectories; nothing downstream runs unless something
+# recomputes roi_scores, and the only thing that did was the manual
+# `python -m scripts.compute_roi`. So the scrape pipeline's whole point —
+# fresher ROI numbers — was not happening.
+#
+# The computation below is the same one scripts/compute_roi.py performs:
+# `ml.roi_computer.compute_roi()` over the same current trajectory rows, writing
+# the same columns, and applying the same rule that `data_complete=False` scores
+# are never persisted (a program missing real fee or placement data is left
+# unscored rather than given an invented composite). It is idempotent: each run
+# retires the prior is_current row and inserts exactly one fresh one, so running
+# it weekly converges on the same state as running it twice.
+#
+# The admin router is mounted twice by api/main.py (see the MOUNT table there) —
+# once at /api/admin and once at /api/v1/admin, because two callers in the repo
+# used two different prefixes. Both mounts resolve to this one handler, so
+# /api/v1/admin/recompute-roi and /api/admin/recompute-roi are the same code.
+
+
+@router.post("/recompute-roi")
+async def recompute_roi(
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(_require_admin),
+):
+    """Recompute roi_scores for every active program. Admin only.
+
+    Synchronous on purpose: the weekly scrape job calls this with `curl --fail`
+    and then exits, so returning before the work finished would report success
+    for a recompute that had not happened. At the current data size (tens of
+    programs) this is well under a second.
+    """
+    from ml.roi_computer import compute_roi
+
+    try:
+        result = await db.execute(text("""
+            SELECT
+                p.id AS program_id,
+                c.tier, c.college_type, c.state, c.nirf_rank,
+                d.field AS degree_field, d.duration_years,
+                cd.total_cost_of_degree AS total_cost_of_degree_inr,
+                pl.placement_rate_pct,
+                ri.ai_automation_prob, ri.salary_volatility, ri.industry_cyclicality,
+                ri.credential_inflation, ri.geographic_concentration, ri.work_life_quality
+            FROM programs p
+            JOIN colleges c ON c.id = p.college_id
+            JOIN degrees d ON d.id = p.degree_id
+            LEFT JOIN cost_data cd ON cd.program_id = p.id AND cd.is_current = TRUE
+            LEFT JOIN placement_data pl ON pl.program_id = p.id AND pl.is_current = TRUE
+            LEFT JOIN risk_indicators ri ON ri.program_id = p.id AND ri.is_current = TRUE
+            WHERE p.is_active = TRUE
+        """))
+        programs = [dict(r._mapping) for r in result]
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
+
+    model_version = settings.current_model_version
+    written = 0
+    skipped_no_trajectory = 0
+    skipped_incomplete_data = 0
+    failures: list[dict] = []
+
+    for prog in programs:
+        pid = str(prog["program_id"])
+        try:
+            traj_rows = await db.execute(text("""
+                SELECT year_number, p25_inr, p50_inr, p75_inr
+                FROM salary_trajectories
+                WHERE program_id = :pid AND is_current = TRUE
+            """), {"pid": pid})
+            traj = {
+                f"y{row.year_number}": {
+                    "p25": row.p25_inr,
+                    "p50": row.p50_inr,
+                    "p75": row.p75_inr,
+                }
+                for row in traj_rows
+            }
+
+            # No y1 band means no trajectory was ever computed for this program,
+            # so there is nothing to score against. Not an error.
+            if "y1" not in traj:
+                skipped_no_trajectory += 1
+                continue
+
+            placement = float(prog.get("placement_rate_pct") or 0)
+            if placement > 1:
+                placement = placement / 100.0
+            prog["placement_rate_pct"] = placement
+
+            scores = compute_roi(prog, traj)
+
+            # compute_roi returns data_complete=False with None figures when real
+            # fee or placement data is missing. Persisting those — or the
+            # 0.35/0.70/0.75 defaults this code used to hardcode — is how
+            # unmeasured colleges ended up showing confident ROI numbers. Leave
+            # them unscored until a scraper supplies the missing inputs.
+            if not scores.get("data_complete"):
+                skipped_incomplete_data += 1
+                continue
+
+            sub = scores.get("sub_scores") or {}
+            await db.execute(text("""
+                UPDATE roi_scores SET is_current = FALSE
+                WHERE program_id = :pid AND is_current = TRUE
+            """), {"pid": pid})
+            await db.execute(text("""
+                INSERT INTO roi_scores
+                    (program_id, model_version, composite_score, financial_roi_pct,
+                     risk_score, optionality_score, mobility_score, satisfaction_score,
+                     network_score, ci_low, ci_high, confidence_level, is_current)
+                VALUES
+                    (:pid, :mv, :comp, :fin, :risk, :opt, :mob, :sat, :net,
+                     :ci_l, :ci_h, :conf, TRUE)
+            """), {
+                "pid": pid,
+                "mv": model_version,
+                "comp": scores["composite_score"],
+                "fin": scores["financial_roi_pct"],
+                "risk": scores["risk_score"],
+                "opt": sub.get("optionality", 0.70),
+                "mob": sub.get("mobility", 0.70),
+                "sat": sub.get("satisfaction", 0.75),
+                "net": sub.get("network", 0.80),
+                "ci_l": scores.get("ci_low"),
+                "ci_h": scores.get("ci_high"),
+                "conf": scores.get("confidence_level", "High"),
+            })
+            written += 1
+        except Exception as e:
+            # One malformed program must not abandon the rest of the catalog, and
+            # the CI log needs to name which ones failed. Recorded and reported.
+            logger.error("[Admin] ROI recompute failed for program %s: %s", pid, e, exc_info=True)
+            failures.append({"program_id": pid, "error": str(e)})
+
+    await db.commit()
+
+    summary = {
+        "status": "ok" if not failures else "completed_with_errors",
+        "programs_seen": len(programs),
+        "programs_recomputed": written,
+        "skipped_no_trajectory": skipped_no_trajectory,
+        "skipped_incomplete_data": skipped_incomplete_data,
+        "failures": failures,
+        "failure_count": len(failures),
+        "model_version": model_version,
+    }
+    if failures:
+        # The scrape job runs with --fail, so a partial failure should not read as
+        # a clean green post-scrape step. The work that did succeed is committed
+        # either way and re-running is safe.
+        summary["detail"] = f"{len(failures)} of {len(programs)} programs failed; see failures[]"
+    return summary

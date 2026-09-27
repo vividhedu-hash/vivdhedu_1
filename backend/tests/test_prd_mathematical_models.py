@@ -145,17 +145,42 @@ def test_admissions_cutoff_delta_z_score():
     assert z == 0.0
     assert prob == 0.50  # Exactly at cutoff = 50% probability
 
-    # Full portfolio test
-    portfolio = admissions_portfolio_engine.generate_admissions_portfolio(
+    # Omitting the catalogue must not resurrect the in-source benchmark list.
+    withheld = admissions_portfolio_engine.generate_admissions_portfolio(
         student_rank=3500,
         exam_name="JEE Main",
         category="General",
         home_state="Maharashtra",
         max_budget_inr=2000000.0,
     )
-    assert portfolio["portfolio_summary"]["reach_count"] >= 0
-    assert portfolio["portfolio_summary"]["target_count"] >= 0
-    assert portfolio["portfolio_summary"]["safety_count"] >= 0
+    assert withheld["cutoff_data"] == "unavailable"
+    assert withheld["portfolio_summary"]["target_count"] == 0
+
+    # Rank 3500 against a closing rank of 3000 on JEE Main (sigma 2200) is a Target.
+    portfolio = admissions_portfolio_engine.generate_admissions_portfolio(
+        student_rank=3500,
+        exam_name="JEE Main",
+        category="General",
+        home_state="Maharashtra",
+        max_budget_inr=2000000.0,
+        programs=[{
+            "college": "Example Institute",
+            "degree": "B.Tech Computer Science",
+            "field": "engineering-cs",
+            "tier": "1",
+            "exam": "JEE Main",
+            "base_closing_rank": 3000,
+            "state": "Karnataka",
+            "total_cost_inr": 800000,
+            "roi_score": 88,
+            "is_verified": False,
+            "vintage_year": 2024,
+            "source_url": None,
+        }],
+    )
+    assert portfolio["cutoff_data"] == "supplied"
+    assert portfolio["portfolio_summary"]["target_count"] == 1
+    assert portfolio["tiers"]["target"][0]["is_verified"] is False
 
 
 def test_global_degree_h1b_survival_odds():

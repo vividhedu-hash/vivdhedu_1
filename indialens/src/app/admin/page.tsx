@@ -8,22 +8,52 @@ import {
 } from "lucide-react";
 import { AnomalyFlag } from "@/components/AnomalyFlag";
 import { FeedbackForm } from "@/components/FeedbackForm";
+import { AuthGate } from "@/components/AuthGate";
 import { useAdminQueue } from "@/hooks/useData";
 import { useModelStatus } from "@/hooks/useModelStatus";
 
 
-// Auth gate — captures API key
-function LoginGate({ onLogin }: { onLogin: (key: string) => void }) {
+/**
+ * Admin key gate.
+ *
+ * ── KNOWN WEAKNESS, documented deliberately ─────────────────────────────────
+ * This second gate is a single static secret typed into a text field and
+ * compared with `secrets.compare_digest` on the backend
+ * (api/routers/admin.py:25) and again against `ADMIN_API_KEY` in the Next proxy
+ * (src/app/api/admin/[...path]/route.ts). It is a shared bearer secret:
+ *   - it cannot express *who* an admin is, only that they hold the key;
+ *   - it is not revocable per person, only globally;
+ *   - it is stored in browser memory and in whatever shell history an operator
+ *     pastes it into.
+ * The constant-time comparison prevents a timing leak, and the session gate
+ * wrapped around this component (see `AuthGate` below) raises the bar from
+ * "anyone on the internet" to "anyone with an account", but neither is
+ * role-based auth. The real fix is a `role`/`is_admin` claim on the Supabase
+ * user, checked in the Next route handler and mapped to scoped backend
+ * permissions — at which point this form and the static key both go away.
+ *
+ * Kept functional for now because the backend still requires the header.
+ * ───────────────────────────────────────────────────────────────────────────
+ *
+ * `autoFocus` was removed from the key input: a password field that grabs focus
+ * on a page render is a nuisance on mobile, where it pops the keyboard over the
+ * explanation text.
+ */
+function AdminKeyGate({ onLogin }: { onLogin: (key: string) => void }) {
   const [key, setKey] = useState("");
   const [error, setError] = useState("");
+  const [isChecking, setIsChecking] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!key.trim()) { setError("API key required"); return; }
+    setIsChecking(true);
+    setError("");
     // Quick validation against admin endpoint
     const resp = await fetch("/api/admin/health", {
       headers: { "X-API-KEY": key },
     }).catch(() => null);
+    setIsChecking(false);
     if (!resp || !resp.ok) {
       setError(resp?.status === 401 ? "Invalid API key" : "Admin service unavailable");
       return;
@@ -41,56 +71,55 @@ function LoginGate({ onLogin }: { onLogin: (key: string) => void }) {
         padding: 24,
       }}
     >
-      <div className="glass-card p-8" style={{ width: "100%", maxWidth: 400 }}>
-        <div className="flex items-center gap-3 mb-6">
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              background: "rgba(79,110,247,0.12)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#4F6EF7",
-            }}
-          >
-            <Lock size={18} />
+        <div className="glass-card p-8" style={{ width: "100%", maxWidth: 400 }}>
+          <div className="flex items-center gap-3 mb-6">
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                background: "rgba(79,110,247,0.12)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#4F6EF7",
+              }}
+            >
+              <Lock size={18} />
+            </div>
+            <div>
+              <h1 className="font-display font-bold" style={{ fontSize: 20, color: "#F0F0F5" }}>
+                Admin Panel
+              </h1>
+              <p style={{ fontSize: 12, color: "#4A4A6A" }}>Educator & Researcher Access</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-display font-bold" style={{ fontSize: 20, color: "#F0F0F5" }}>
-              Admin Panel
-            </h1>
-            <p style={{ fontSize: 12, color: "#4A4A6A" }}>Educator & Researcher Access</p>
-          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="form-label">Admin API Key</label>
+              <input
+                type="password"
+                className="form-input"
+                placeholder="Enter X-API-KEY…"
+                value={key}
+                onChange={(e) => { setKey(e.target.value); setError(""); }}
+              />
+              {error && <p style={{ fontSize: 12, color: "#EF4444", marginTop: 4 }}>{error}</p>}
+              <p style={{ fontSize: 11, color: "#4A4A6A", marginTop: 6 }}>
+                Set via <code style={{ color: "#8B8BA7" }}>API_KEY_ADMIN</code> in backend .env
+              </p>
+            </div>
+            <button type="submit" disabled={isChecking} className="btn-primary w-full justify-center">
+              <Shield size={14} />
+              {isChecking ? "Verifying…" : "Access Admin Panel"}
+            </button>
+          </form>
+
+          <p style={{ fontSize: 11, color: "#4A4A6A", textAlign: "center", marginTop: 16 }}>
+            Access restricted to verified educators, researchers, and platform administrators.
+          </p>
         </div>
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="form-label">Admin API Key</label>
-            <input
-              type="password"
-              className="form-input"
-              placeholder="Enter X-API-KEY…"
-              value={key}
-              onChange={(e) => { setKey(e.target.value); setError(""); }}
-              autoFocus
-            />
-            {error && <p style={{ fontSize: 12, color: "#EF4444", marginTop: 4 }}>{error}</p>}
-            <p style={{ fontSize: 11, color: "#4A4A6A", marginTop: 6 }}>
-              Set via <code style={{ color: "#8B8BA7" }}>API_KEY_ADMIN</code> in backend .env
-            </p>
-          </div>
-          <button type="submit" className="btn-primary w-full justify-center">
-            <Shield size={14} />
-            Access Admin Panel
-          </button>
-        </form>
-
-        <p style={{ fontSize: 11, color: "#4A4A6A", textAlign: "center", marginTop: 16 }}>
-          Access restricted to verified educators, researchers, and platform administrators.
-        </p>
-      </div>
     </div>
   );
 }
@@ -144,7 +173,12 @@ const MODEL_VERSIONS = [
 
 type AdminTab = "dashboard" | "anomalies" | "feedback" | "scrapes" | "models";
 
-export default function AdminPage() {
+/**
+ * The panel body. Split out so the session gate can wrap it without the gate
+ * also covering the API-key form below it — both gates apply, in order:
+ * session first, then the static admin key.
+ */
+function AdminPanel() {
   const [authed, setAuthed]       = useState(false);
   const [apiKey, setApiKey]       = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
@@ -157,7 +191,9 @@ export default function AdminPage() {
   const { status: modelStatus } = useModelStatus();
 
   if (!authed) {
-    return <LoginGate onLogin={(key) => { setApiKey(key); setAuthed(true); }} />;
+    return (
+      <AdminKeyGate onLogin={(key) => { setApiKey(key); setAuthed(true); }} />
+    );
   }
 
 
@@ -560,5 +596,23 @@ export default function AdminPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * /admin now requires a real signed-in session before the API-key form is
+ * reachable at all. The key alone is no longer sufficient, which is what
+ * stopped this route from being a publicly-reachable admin console — anyone who
+ * found or guessed the static key could previously drive retrain and scrape
+ * triggers from an anonymous browser.
+ */
+export default function AdminPage() {
+  return (
+    <AuthGate
+      title="Admin"
+      description="The admin console requires a signed-in session in addition to the admin API key. Both gates are enforced before any retrain, scrape, or data-correction action is reachable."
+    >
+      <AdminPanel />
+    </AuthGate>
   );
 }

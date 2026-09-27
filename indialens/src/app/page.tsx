@@ -13,7 +13,7 @@ import { APP_URL, BRAND } from "@/lib/brand";
 export const metadata: Metadata = {
   title: `${BRAND.name} — ${BRAND.tagline}`,
   description:
-    "Price the degree as an asset. 20-year NPV, Monte Carlo debt stress testing, AI resilience scoring, and a ranked shortlist built around your exact goals. Free during launch.",
+    "Price the degree as an asset. 20-year NPV against verified costs, P10 downside, an automation-exposure component inside the composite, and a ranked shortlist built around your exact goals. Free during launch.",
   alternates: { canonical: APP_URL },
 };
 
@@ -77,11 +77,27 @@ function OrganizationJsonLd() {
  * visitor comparing the claim against /explore would have caught it. If the
  * database is unreachable, `count` is null and the strip says so rather than
  * falling back to an invented number.
+ *
+ * Two claims were removed here rather than restated:
+ *
+ *  - "10,000 Monte Carlo paths / degree". The backend simulator runs
+ *    `num_trials = 1000` (backend/api/routers/analytics.py:35) and
+ *    `global_standards_analytics.py` labels its own output "1,000 Monte Carlo
+ *    Iterations". The landing page was claiming a 10x larger run than the
+ *    engine performs, and the workspace's "10,000 Paths" heading and the ROI
+ *    tab's "₹8.4L → ₹1.1 Cr" P10/P50/P90 distribution were the same fiction
+ *    repeated.
+ *  - "3PL IRT" as a headline capability. The engine is real —
+ *    `backend/services/adaptive_cat.py` implements the 3PL probability
+ *    function, Fisher information and max-information item selection. It is
+ *    stated here as a description of the method, and the psychometric page
+ *    documents it, because the ability to *report* an SE from a session is
+ *    currently not wired into the result view.
  */
 const PROOF_POINTS: Array<{ key: string; value: string; label: string }> = [
   { key: "count", value: "", label: "Programmes indexed" },
-  { key: "sim", value: "10,000", label: "Monte Carlo paths / degree" },
-  { key: "irt", value: "3PL IRT", label: "Adaptive psychometric engine" },
+  { key: "sim", value: "1,000", label: "Monte Carlo paths per run" },
+  { key: "irt", value: "3PL IRT", label: "Adaptive item selection" },
   { key: "years", value: "20-year", label: "Discounted NPV horizon" },
 ];
 
@@ -91,7 +107,7 @@ const TRUST_ITEMS = [
   "Unmeasured figures are labelled unmeasured, never filled in",
   "No college can pay to change its rank",
   "Every score links to a published formula",
-  "IRT standard error reported on every result",
+  "The mobility index and skill-velocity scores are not published, because neither is measured yet",
 ];
 
 /**

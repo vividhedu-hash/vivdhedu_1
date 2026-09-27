@@ -362,6 +362,32 @@ CREATE UNIQUE INDEX idx_macro_current ON macro_indicators(field_name) WHERE is_c
 -- MODEL VERSIONS
 -- ============================================================
 
+-- Canonical column set for model_versions
+-- ----------------------------------------
+-- `validation_mae` / `validation_r2` are the canonical metric names, and the
+-- older `mse` / `r2_score` pair is kept declared-but-unwritten for backwards
+-- compatibility. The choice is driven by the code, not by taste: five call
+-- sites read or write the `validation_*` pair and not one of them references
+-- `mse` or `r2_score` —
+--
+--   ml/model_registry.py       register() INSERT, compare() SELECT
+--   ml/training_pipeline.py    promotion gate reads them off get_champion()
+--   api/routers/ml.py          /status and /compare both SELECT them
+--
+-- `mse` and `r2_score` had no readers at all. Renaming the Python to match
+-- them would have meant rewriting the promotion gate in the training pipeline —
+-- the most correctness-sensitive code in the ML lifecycle, where the decision
+-- to ship a new champion is made — for the sake of two unused columns. The
+-- schema grew to meet the code instead.
+--
+-- `promoted_at` was also missing here. model_registry.promote() writes it and
+-- rollback() reads it to find the previous champion, so on a schema.sql-built
+-- database both the promote and rollback endpoints failed on an undefined
+-- column — the entire champion/challenger lifecycle was inert.
+--
+-- Metric magnitudes: MAE is a rupee-scale error and R² is unbounded below when
+-- a model is worse than the mean, so both need more headroom than the
+-- DECIMAL(6,4)/DECIMAL(8,4) the retired columns used.
 CREATE TABLE model_versions (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   version_tag     VARCHAR(32) UNIQUE NOT NULL,
@@ -369,15 +395,25 @@ CREATE TABLE model_versions (
   trained_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   trigger_type    VARCHAR(64),   -- 'weekly_scrape' | 'manual' | 'feedback_threshold'
   training_records INTEGER,
-  mse             DECIMAL(8,4),
-  r2_score        DECIMAL(6,4),
+
+  -- ── Validation metrics. Canonical; the only names the code writes. ──
+  validation_mae  DECIMAL(12,4),  -- mean absolute error on the y5 salary holdout
+  validation_r2   DECIMAL(8,6),   -- R² on the same holdout; may be negative
+  promoted_at     TIMESTAMPTZ,    -- set by promote(), read by rollback()
+
+  -- ── Legacy columns, retained so any consumer written against the original
+  --    schema keeps compiling. Not written by current code. ──
+  mse             DECIMAL(12,4),
+  r2_score        DECIMAL(8,6),
   mape_salary     DECIMAL(6,4),
   recall_at_5     DECIMAL(6,4),
+
   changelog       TEXT,
   model_artifact_path VARCHAR(512)
 );
 
 CREATE INDEX idx_model_versions_live ON model_versions(is_live);
+CREATE INDEX idx_model_versions_promoted ON model_versions(promoted_at DESC);
 
 -- ============================================================
 -- JOB POSTINGS (Naukri scrape)

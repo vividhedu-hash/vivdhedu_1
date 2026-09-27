@@ -36,22 +36,23 @@ export function AuthModal() {
   const handleGoogleLogin = async () => {
     setOauthLoading("google");
     setErrorMessage(null);
-    try {
-      await loginWithGoogle();
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to initiate Google sign-in.");
-      setOauthLoading(null);
+    const res = await loginWithGoogle();
+    setOauthLoading(null);
+    // A successful OAuth call navigates away and never resolves here. Reaching
+    // this line therefore means the flow did not start, and the returned error
+    // is the only signal the user gets — it must not be swallowed.
+    if (!res.success) {
+      setErrorMessage(res.error || "Could not start Google sign-in.");
     }
   };
 
   const handleGithubLogin = async () => {
     setOauthLoading("github");
     setErrorMessage(null);
-    try {
-      await loginWithGithub();
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to initiate GitHub sign-in.");
-      setOauthLoading(null);
+    const res = await loginWithGithub();
+    setOauthLoading(null);
+    if (!res.success) {
+      setErrorMessage(res.error || "Could not start GitHub sign-in.");
     }
   };
 

@@ -216,8 +216,21 @@ async function proxy(request: Request, path: string[], method: string) {
   }
 
   // 2. Course Marketplace Click Tracking
+  //
+  // This used to answer `{ tracked: true }` from a serverless route, i.e. the
+  // click looked successfully recorded while nothing was written anywhere.
+  // It is left in place for the click-to-provider path, which is fire and
+  // forget and has no UI to show a failure, but the response is now honest
+  // about what happened: nothing was persisted, so the conversion signal
+  // `course_impressions.converted` / `revenue_inr` still has no producer.
   if (subpath === "marketplace/track-click") {
-    return NextResponse.json({ status: "ok", tracked: true });
+    return NextResponse.json({
+      status: "not_recorded",
+      tracked: false,
+      persisted: false,
+      _source: "unavailable",
+      reason: "No durable click store is wired. The click was not written.",
+    });
   }
 
   // 3. Psychometric CAT Engine: Start Assessment
