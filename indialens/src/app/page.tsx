@@ -6,64 +6,145 @@ import {
   Sparkles, Compass, ChevronRight, Sliders,
 } from "lucide-react";
 import { CollegeCard } from "@/components/CollegeCard";
+import { WaitlistForm } from "@/components/WaitlistForm";
 import { fetchCollegeList } from "../lib/live-colleges";
+import { APP_URL, BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "IndiaLens · Your Student OS — Education Intelligence Platform",
+  title: `${BRAND.name} — ${BRAND.tagline}`,
   description:
-    "India's sovereign student operating system. 20-year NPV, IRT psychometrics, AI resilience scoring, and real-time admissions simulations.",
+    "Price the degree as an asset. 20-year NPV, Monte Carlo debt stress testing, AI resilience scoring, and a ranked shortlist built around your exact goals. Free during launch.",
+  alternates: { canonical: APP_URL },
 };
 
-const PROOF_POINTS = [
-  { value: "1,420+", label: "Institutional cohorts" },
-  { value: "10,000", label: "Monte Carlo paths / degree" },
-  { value: "3PL IRT", label: "Adaptive psychometric engine" },
-  { value: "<50ms",  label: "Simulation latency" },
+/**
+ * Organization + WebSite structured data.
+ *
+ * Kept to facts that are true and checkable: the name, the canonical origin,
+ * the free-during-launch offer, and the pages a reader would want to find from
+ * a search result. No aggregateRating, no invented review counts, no fake
+ * founding date — structured data that overstates a product is the same class
+ * of error the product itself is built to avoid.
+ */
+function OrganizationJsonLd() {
+  const data = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${APP_URL}/#organization`,
+        name: BRAND.name,
+        url: APP_URL,
+        description: BRAND.descriptor,
+        email: BRAND.supportEmail,
+        areaServed: "IN",
+        knowsLanguage: "en-IN",
+        contactPoint: [
+          {
+            "@type": "ContactPoint",
+            contactType: "customer support",
+            email: BRAND.supportEmail,
+            areaServed: "IN",
+            availableLanguage: ["en"],
+          },
+        ],
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${APP_URL}/#website`,
+        url: APP_URL,
+        name: BRAND.name,
+        description: BRAND.tagline,
+        publisher: { "@id": `${APP_URL}/#organization` },
+        inLanguage: "en-IN",
+      },
+    ],
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
+
+/**
+ * Proof points.
+ *
+ * `count` is rendered from the live database row count, never hardcoded. The
+ * previous "1,420+ institutional cohorts" was a constant that the real
+ * Postgres has never contained — the live view returns 73 programs — so a
+ * visitor comparing the claim against /explore would have caught it. If the
+ * database is unreachable, `count` is null and the strip says so rather than
+ * falling back to an invented number.
+ */
+const PROOF_POINTS: Array<{ key: string; value: string; label: string }> = [
+  { key: "count", value: "", label: "Programmes indexed" },
+  { key: "sim", value: "10,000", label: "Monte Carlo paths / degree" },
+  { key: "irt", value: "3PL IRT", label: "Adaptive psychometric engine" },
+  { key: "years", value: "20-year", label: "Discounted NPV horizon" },
 ];
 
 const TRUST_ITEMS = [
-  "Six composite factors — all publicly weighted",
-  "Salaries shown as P10–P75 distributions, not averages",
-  "NIRF audit hash on every college profile",
-  "Zero agency commissions or kickbacks",
-  "Faculty and alumni can flag anomalies directly",
-  "IRT posterior standard error shown on every result",
+  "Six composite factors, weighted adaptively to your profile",
+  "Salaries shown as P10–P90 distributions, not averages",
+  "Unmeasured figures are labelled unmeasured, never filled in",
+  "No college can pay to change its rank",
+  "Every score links to a published formula",
+  "IRT standard error reported on every result",
 ];
 
-const SOCIAL_PROOF = [
+/**
+ * Illustrative scenarios.
+ *
+ * These are NOT testimonials. The previous version of this section presented
+ * invented people ("Alex M.", "Priya M.", "Rahul K."), invented quotes, and
+ * invented outcome deltas ("+35% admittance odds", "₹4.2L annual savings")
+ * as social proof from real users, which is a fabricated claim about real
+ * people's financial decisions.
+ *
+ * What replaces them are worked examples: what the product shows and why the
+ * number looks the way it does. The figures inside them are illustrative
+ * outputs, explicitly labelled as such.
+ */
+const SCENARIOS = [
   {
-    name: "Alex M.",
-    class: "Class 11–12 · Quantitative",
-    quote: "The Decision Engine flagged my co-authorship gap and shifted my focus to SAT Math 720+ gating. Admittance probability jumped from 54% to 89%.",
-    delta: "+35% admittance odds",
-    badge: "Tier-1 Economics",
-    color: "#E11D48",
+    name: "Engineering, Tier 1",
+    body: "Fees and salary both look strong in isolation, so the brochure case looks obvious. The model prices the full cost of the degree against a P10 downside, because the median case is the case the brochure was written for.",
+    label: "Shows: cost breakdown, P10–P90 salary band, debt stress",
+    color: "#2563EB",
   },
   {
-    name: "Priya M.",
-    class: "B.Com → CA / Quant route",
-    quote: "IndiaLens calculated the 20-year NPV delta between CA and CFA+MBA, plus debt stress at realistic placement. The numbers made the decision for me.",
-    delta: "₹4.2L annual savings",
-    badge: "Finance & Advisory",
+    name: "Tier 2, same field",
+    body: "A cheaper fee and a smaller absolute salary can still produce a better risk-adjusted return. The spread matters more than the headline, and the composite reflects that the marginal return depends on how much loan you carry.",
+    label: "Shows: counterfactual — what the other option costs you",
     color: "#16A34A",
   },
   {
-    name: "Rahul K.",
-    class: "Engineering → Policy pivot",
-    quote: "The Curiosity Domain picker revealed a 94% match with Computational Economics. The Research Matcher placed me in Ashoka's pre-uni fellowship.",
-    delta: "+18 pts AI resilience",
-    badge: "Comp. Economics",
+    name: "Field with high AI exposure",
+    body: "A field can be strong on salary and weak on durability. The automation surface sits inside the composite, so a risk-adjusted view of the same programme is available next to the optimistic one.",
+    label: "Shows: AI displacement surface, 20-year resilience",
     color: "#9333EA",
   },
 ];
 
+/**
+ * The six composite factors, with their BASE weights from
+ * `compute_student_adaptive_weights` in backend/ml/roi_computer.py.
+ *
+ * These are the un-adapted starting values (θ = 0). At runtime the financial,
+ * optionality, mobility and safety weights move with the student's own IRT
+ * trait estimates, then the set is renormalised — so the percentages below are
+ * the shape of the formula, not a fixed published table. Showing fixed
+ * percentages as if they never moved would misdescribe the model.
+ */
 const SCORE_FACTORS = [
-  { label: "Salary vs. fee paid (PPP-adjusted)",   weight: "35%", color: "#2563EB" },
-  { label: "Job security & placement consistency",  weight: "20%", color: "#16A34A" },
-  { label: "Career ceiling at year 10",             weight: "15%", color: "#D97706" },
-  { label: "Location & remote flexibility",         weight: "15%", color: "#9333EA" },
-  { label: "Reported satisfaction & burnout rates", weight: "10%", color: "#EA580C" },
-  { label: "Alumni network & lateral opportunities",weight: "5%",  color: "#E11D48" },
+  { label: "Financial ROI — salary vs. fee paid",      base: "25%", color: "#2563EB", shifts: true },
+  { label: "Job security & placement consistency",     base: "20%", color: "#16A34A", shifts: true },
+  { label: "Optionality — career ceiling at year 10",  base: "18%", color: "#9333EA", shifts: true },
+  { label: "Mobility — access & lateral moves",        base: "12%", color: "#0891B2", shifts: true },
+  { label: "Satisfaction & burnout",                   base: "12%", color: "#EA580C", shifts: false },
+  { label: "Alumni network",                          base: "13%", color: "#E11D48", shifts: false },
 ];
 
 export default async function LandingPage() {
@@ -82,6 +163,7 @@ export default async function LandingPage() {
 
   return (
     <div className="bg-[#F8FAFC] text-zinc-950 min-h-screen">
+      <OrganizationJsonLd />
 
       {/* ── SYSTEM STATUS BAR ─────────────────────────────────── */}
       <div className="border-b border-slate-200/80 bg-white/70 backdrop-blur-md py-2 px-6">
@@ -89,15 +171,16 @@ export default async function LandingPage() {
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
             <span className="font-mono text-[11px] text-zinc-500">
-              System Online · {isLive ? "Supabase Connected" : "Calibrated Engine"} · {totalCount ? `${totalCount}` : "1,420+"} Cohorts Mapped
+              System Online · {isLive ? "Supabase Connected" : "Calibrated Engine"} ·{" "}
+              {totalCount ? `${totalCount} programmes indexed` : "Index loading"}
             </span>
           </div>
           <div className="hidden sm:flex items-center gap-5 text-[11px] text-zinc-400 font-mono">
             <Link href="/workspace" className="hover:text-zinc-800 transition-colors flex items-center gap-1 text-zinc-500">
               <Zap size={11} className="text-amber-500" /> Workspace Demo
             </Link>
-            <span>Privacy Sovereign</span>
-            <span>No Kickbacks</span>
+            <span>Free during launch</span>
+            <span>No pay-to-rank</span>
           </div>
         </div>
       </div>
@@ -146,11 +229,17 @@ export default async function LandingPage() {
             </Link>
           </div>
 
-          {/* Social proof strip */}
+          {/* Proof strip — count comes from the live database */}
           <div className="flex flex-wrap justify-center gap-6 text-[12px] text-zinc-500 font-mono">
             {PROOF_POINTS.map((p) => (
-              <div key={p.value} className="flex items-center gap-2">
-                <span className="text-zinc-950 font-bold">{p.value}</span>
+              <div key={p.key} className="flex items-center gap-2">
+                <span className="text-zinc-950 font-bold">
+                  {p.key === "count"
+                    ? totalCount
+                      ? String(totalCount)
+                      : "—"
+                    : p.value}
+                </span>
                 <span>{p.label}</span>
               </div>
             ))}
@@ -331,7 +420,11 @@ export default async function LandingPage() {
 
           {SAMPLE.length === 0 ? (
             <div className="bg-white border border-slate-200/90 rounded-xl text-center p-10 shadow-xs">
-              <p className="text-zinc-600 text-sm mb-3">Explore all 1,420+ institutional programs in our live database.</p>
+              <p className="text-zinc-600 text-sm mb-3">
+                {totalCount
+                  ? `Browse ${totalCount} programmes in the live index.`
+                  : "Browse the programme index."}
+              </p>
               <Link href="/explore" className="text-[13px] font-semibold text-rose-600 hover:text-rose-700 transition-colors">
                 Open College Index →
               </Link>
@@ -361,8 +454,10 @@ export default async function LandingPage() {
                 Push back if it&apos;s wrong.
               </h2>
               <p className="text-zinc-600 text-sm leading-relaxed mb-8">
-                Every composite score breaks down into six components with public weights. Every placement
-                statistic links to government audit filings. Zero dark patterns, zero agency commissions.
+                Every composite score breaks down into six components whose
+                weights are recomputed from your own trait estimates. Every
+                figure links to the source it came from. Where something has not
+                been measured, it says so instead of filling the gap.
               </p>
               <div className="space-y-3">
                 {TRUST_ITEMS.map((item) => (
@@ -390,53 +485,62 @@ export default async function LandingPage() {
                   <div key={item.label} className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
                     <span className="text-[13px] text-zinc-600 flex-1">{item.label}</span>
-                    <span className="font-mono font-bold text-[13px] text-zinc-950">{item.weight}</span>
+                    <span
+                      className={`font-mono font-bold text-[13px] ${item.shifts ? "text-zinc-400" : "text-zinc-950"}`}
+                      title={item.shifts ? "Adjusted to your profile at runtime" : "Fixed weight"}
+                    >
+                      {item.base}
+                    </span>
                   </div>
                 ))}
               </div>
-              <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between">
+              <div className="mt-5 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <span className="mt-0.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-zinc-400" />
+                <p className="text-[11px] leading-relaxed text-zinc-500">
+                  Base weights at a neutral profile. The four greyed figures are
+                  re-derived from your own trait estimates and renormalised on
+                  every run — your composite is not this table with different
+                  labels.
+                </p>
+              </div>
+              <div className="mt-5 pt-5 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-[12px] text-zinc-400 font-mono">Composite score (0–100)</span>
-                <span className="font-mono text-[12px] font-bold text-zinc-950">= weighted sum</span>
+                <span className="font-mono text-[12px] font-bold text-zinc-950">= weighted sum × confidence</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── STUDENT OUTCOMES ─────────────────────────────────── */}
+      {/* ── WHAT THE MODEL ADDS ─────────────────────────────── */}
       <section className="py-20 px-5 border-t border-slate-200/80">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <p className="inline-flex items-center justify-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-rose-600 mb-3">
               <span className="w-2.5 h-[1.5px] bg-rose-600" />
-              Student Outcomes
+              What the model adds
             </p>
             <h2 className="text-[clamp(1.8rem,3.5vw,2.4rem)] font-bold tracking-tight text-zinc-950">
-              Numbers changed the decision.
+              Three cases the brochure cannot show you.
             </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-[13px] leading-relaxed text-zinc-600">
+              Illustrative worked cases, not customer results. Run your own
+              numbers in the tool rather than reading ours.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {SOCIAL_PROOF.map((s) => (
+            {SCENARIOS.map((s) => (
               <div key={s.name} className="bg-white border border-slate-200/90 rounded-xl p-5 hover:border-slate-300 hover:shadow-md transition-all shadow-xs">
                 <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <div className="text-[13px] font-bold text-zinc-950">{s.name}</div>
-                    <div className="text-[11px] text-zinc-500 font-mono">{s.class}</div>
-                  </div>
-                  <span className="text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-zinc-700 border border-slate-200">
-                    {s.badge}
-                  </span>
+                  <div className="text-[13px] font-bold text-zinc-950">{s.name}</div>
                 </div>
-                <p className="text-[13px] text-zinc-600 italic leading-relaxed mb-5">
-                  &quot;{s.quote}&quot;
+                <p className="text-[13px] text-zinc-600 leading-relaxed mb-5">
+                  {s.body}
                 </p>
                 <div className="pt-4 border-t border-slate-100">
-                  <span
-                    className="text-[13px] font-mono font-bold"
-                    style={{ color: s.color }}
-                  >
-                    {s.delta}
+                  <span className="text-[12px] font-mono font-semibold" style={{ color: s.color }}>
+                    {s.label}
                   </span>
                 </div>
               </div>
@@ -453,27 +557,68 @@ export default async function LandingPage() {
         </div>
         <div className="relative max-w-xl mx-auto">
           <p className="font-mono text-[11px] text-zinc-500 uppercase tracking-wider mb-4">
-            Free · No login required · Starts in 90 seconds
+            Free during launch · No card · No usage cap
           </p>
           <h2 className="text-[clamp(2.2rem,5vw,3.6rem)] font-extrabold tracking-[-0.04em] text-zinc-950 mb-4 leading-tight">
             Stop guessing.
             <br />
-            Build your Student OS.
+            Price the degree properly.
           </h2>
           <p className="text-zinc-600 text-[15px] mb-10 leading-relaxed">
-            Salary projections, AI resilience score, ranked shortlist, and a decision workspace —
-            calibrated to your exact profile.
+            Salary distributions, AI resilience, a ranked shortlist, and a
+            decision workspace — calibrated to your profile, not the brochure.
           </p>
-          <Link
-            href="/onboard"
-            className="inline-flex items-center gap-2 px-9 py-4 bg-black hover:bg-zinc-800 active:scale-[0.98] text-white font-bold text-[15px] rounded-full shadow-md hover:shadow-lg transition-all"
-          >
-            Start free — Build my OS
-            <ArrowRight size={15} />
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/onboard"
+              className="inline-flex items-center gap-2 px-9 py-4 bg-black hover:bg-zinc-800 active:scale-[0.98] text-white font-bold text-[15px] rounded-full shadow-md hover:shadow-lg transition-all"
+            >
+              Start free — run my analysis
+              <ArrowRight size={15} />
+            </Link>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center gap-2 px-7 py-4 bg-white hover:bg-slate-50 active:scale-[0.98] border border-slate-200 text-zinc-800 font-medium text-[15px] rounded-full shadow-xs transition-all"
+            >
+              What it costs
+            </Link>
+          </div>
           <p className="text-[11px] text-zinc-400 mt-5 font-mono">
-            Direct calibration · Complete sovereign privacy
+            Decision support, not financial advice
           </p>
+        </div>
+      </section>
+
+      {/* ── WAITLIST ──────────────────────────────────────────── */}
+      <section className="border-t border-slate-200/80 px-5 py-16">
+        <div className="mx-auto grid max-w-4xl gap-8 lg:grid-cols-[1fr_400px] lg:items-start">
+          <div>
+            <p className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-rose-600">
+              <span className="w-2.5 h-[1.5px] bg-rose-600" />
+              Coming next
+            </p>
+            <h2 className="mt-3 text-[clamp(1.7rem,3.5vw,2.3rem)] font-bold tracking-tight text-zinc-950">
+              Be told the price before it exists
+            </h2>
+            <p className="mt-3 text-[14px] leading-relaxed text-zinc-600">
+              {BRAND.name} is free right now, and the plan is to keep the core
+              analysis free. When paid tiers open, waitlist members get the real
+              launch prices first — not a teaser. One email, nothing else.
+            </p>
+            <ul className="mt-6 space-y-2.5">
+              {[
+                "Launch prices, sent before the tiers go live",
+                "No drip campaign, no resold address",
+                "One email, then silence unless there is pricing news",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2.5">
+                  <CheckCircle2 size={15} className="mt-0.5 flex-shrink-0 text-emerald-600" />
+                  <span className="text-[13px] text-zinc-700">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <WaitlistForm source="home" />
         </div>
       </section>
 

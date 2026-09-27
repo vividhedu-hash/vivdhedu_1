@@ -3,15 +3,16 @@ import "./globals.css";
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { AuthProvider } from "@/lib/auth-context";
 import { AuthModal } from "@/components/AuthModal";
+import { APP_URL, BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://indialens.in"),
+  metadataBase: new URL(APP_URL),
   title: {
-    default: "IndiaLens · Student OS — India's Education & Career Intelligence System",
-    template: "%s | IndiaLens · Student OS",
+    default: `${BRAND.name} — ${BRAND.descriptor}`,
+    template: `%s | ${BRAND.name}`,
   },
   description:
-    "India's first student operating system. Treats degrees as multi-decade capital assets: 20-year NPV, Monte Carlo debt stress testing, 3PL IRT psychometrics, and AI displacement surfaces. Priced per student, not per institution.",
+    "India's student decision operating system. Treats a degree as a multi-decade capital asset: 20-year NPV, Monte Carlo debt stress testing, 3PL IRT psychometrics, and AI displacement surfaces. Priced per student, not per institution.",
   keywords: [
     "education ROI India",
     "college NPV calculator",
@@ -24,16 +25,19 @@ export const metadata: Metadata = {
     "AI job automation risk",
     "college admissions intelligence India",
   ],
+  applicationName: BRAND.name,
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://indialens.in",
-    siteName: "IndiaLens · Student OS",
-    images: [{ url: "/api/og", width: 1200, height: 630 }],
+    url: APP_URL,
+    siteName: BRAND.name,
+    images: [{ url: "/api/og", width: 1200, height: 630, alt: `${BRAND.name} — ${BRAND.tagline}` }],
   },
   twitter: {
     card: "summary_large_image",
-    site: "@indialens_in",
+    title: `${BRAND.name} — ${BRAND.tagline}`,
+    description:
+      "Price the degree as an asset. 20-year NPV, Monte Carlo debt stress testing, and AI displacement scoring for Indian students.",
   },
   robots: {
     index: true,

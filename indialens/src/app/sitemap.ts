@@ -1,8 +1,9 @@
 import { MetadataRoute } from "next";
 import { fetchCollegeList } from "../lib/live-colleges";
+import { APP_URL } from "@/lib/brand";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://theproject.edu.in";
+  const baseUrl = APP_URL;
   const listed = await fetchCollegeList({ per_page: 100, sort_by: "compositeScore" });
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -16,6 +17,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/advisor`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/compare`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/methodology`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    // ── Commercial surface ─────────────────────────────────────────
+    // /pricing is the conversion destination for every marketing push, so it
+    // sits just below the product pages. The trust pages are indexed
+    // deliberately: a privacy policy and a published methodology are what make
+    // the pricing page credible, and search engines weigh them accordingly.
+    { url: `${baseUrl}/pricing`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
+    { url: `${baseUrl}/about`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${baseUrl}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
+    { url: `${baseUrl}/privacy`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.5 },
+    { url: `${baseUrl}/terms`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.5 },
   ];
 
   const collegeRoutes = listed.data.map((record) => ({

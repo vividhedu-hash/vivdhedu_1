@@ -9,9 +9,9 @@
  */
 
 export const POSITIONING = {
-  product: "The Project",
+  product: "VividhEdu",
   uspName: "Student-Priced ROI",
-  tagline: "Rankings measure institutions. The Project measures the student.",
+  tagline: "Rankings measure institutions. VividhEdu measures the student.",
   headlineLead: "Stop buying a rank.",
   headlineAccent: "Price the degree as an asset.",
   dek: "The same IIT CSE is a different investment for a ₹4L budget and a high-autonomy temperament than for a ₹25L loan and a stability-first family. We score the student–program pair: 20-year NPV, P10 downside, AI-occupation risk, and psychometric fit.",

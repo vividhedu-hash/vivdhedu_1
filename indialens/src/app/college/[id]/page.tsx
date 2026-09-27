@@ -23,6 +23,7 @@ import { CollegeCard } from "@/components/CollegeCard";
 import JobMarketCard from "@/components/JobMarketCard";
 import EcosystemBadge from "@/components/EcosystemBadge";
 import PsychometricsRadar from "@/components/PsychometricsRadar";
+import { APP_URL } from "@/lib/brand";
 import AIAdvisorWidget from "@/components/AIAdvisorWidget";
 import { formatInr, finiteOrNull, NO_DATA } from "../../../lib/mock-data";
 import { useCollege, useColleges } from "@/hooks/useData";
@@ -72,7 +73,7 @@ export default function CollegeDetailPage() {
         ? `Median salary ₹${(medianY1 / 100000).toFixed(1)}L at graduation.`
         : "Median salary not yet available.",
     ].join(" "),
-    "url": `${process.env.NEXT_PUBLIC_APP_URL || "https://theproject.edu.in"}/college/${id}`,
+    "url": `${APP_URL}/college/${id}`,
     ...(costOfDegree != null
       ? { offers: { "@type": "Offer", price: `${costOfDegree}`, priceCurrency: "INR" } }
       : {}),

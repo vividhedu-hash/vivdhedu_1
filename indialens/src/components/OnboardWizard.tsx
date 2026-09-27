@@ -144,7 +144,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
             <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center text-white font-bold text-[10px]">
               OS
             </div>
-            <span className="font-bold text-sm text-zinc-900 tracking-tight">Your Student OS</span>
+            <span className="font-bold text-sm text-zinc-900 tracking-tight">VividhEdu</span>
             <span className="w-1.5 h-1.5 rounded-full bg-rose-600 inline-block ml-0.5" />
           </div>
           <div className="flex items-center gap-3 text-xs text-zinc-500">
@@ -235,7 +235,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
     { title: "Where are you in your journey?", sub: "This helps us calibrate opportunities, college timelines, and decision frameworks.", badge: "STAGE", pct: 15 },
     { title: "What brought you here?", sub: "Select everything that applies to your goals today. We will calibrate your workspace accordingly.", badge: "WORKSPACE CALIBRATION", pct: 30 },
     { title: "What could you see yourself spending years learning about?", sub: "Choose disciplines or topics that spark your curiosity. We use this to surface tailored mentors and research opportunities.", badge: "CURIOSITY DOMAINS", pct: 45 },
-    { title: "When you make a big decision, what matters most?", sub: "Drag to order or adjust relative importance. Your Student OS uses this to calculate personalized ROI.", badge: "DECISION WEIGHTS", pct: 65 },
+    { title: "When you make a big decision, what matters most?", sub: "Drag to order or adjust relative importance. VividhEdu uses this to calculate personalized ROI.", badge: "DECISION WEIGHTS", pct: 65 },
     { title: "Let’s talk about reality.", sub: "Practical parameters make your roadmap viable and stress-free. Every model is calibrated against these real-world conditions.", badge: "DETERMINISTIC FEASIBILITY MODEL", pct: 80 },
     { title: "What are you working toward?", sub: "Define your north star. Don't worry if it's still evolving—your roadmap adapts as you build.", badge: "WORKSPACE SETUP", pct: 95 },
   ];
@@ -250,7 +250,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
           <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center text-white font-bold text-[10px]">
             OS
           </div>
-          <span className="font-bold text-sm text-zinc-900 tracking-tight">Your Student OS</span>
+          <span className="font-bold text-sm text-zinc-900 tracking-tight">VividhEdu</span>
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 font-semibold ml-1">
             v2.4
           </span>

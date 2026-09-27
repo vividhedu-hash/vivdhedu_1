@@ -4,10 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Compass, Brain, Zap, ShoppingBag, Sparkles,
-  Menu, X, UserRound, LogOut,
+  Menu, X, UserRound, LogOut, Tag,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { BRAND } from "@/lib/brand";
 
 const NAV_LINKS = [
   { href: "/explore",      label: "Explore",      icon: <Compass size={13} />,     desc: "College & program index"   },
@@ -15,6 +16,7 @@ const NAV_LINKS = [
   { href: "/psychometric", label: "Psychometric", icon: <Brain size={13} />,       desc: "IRT adaptive diagnostic"   },
   { href: "/marketplace",  label: "Marketplace",  icon: <ShoppingBag size={13} />, desc: "Matched courses & programs" },
   { href: "/advisor",      label: "AI Mode",      icon: <Sparkles size={13} />,    desc: "Gemini + Search grounding" },
+  { href: "/pricing",      label: "Pricing",      icon: <Tag size={13} />,         desc: "Free during launch"        },
 ];
 
 export function Navbar() {
@@ -57,10 +59,10 @@ export function Navbar() {
           {/* ── Logo */}
           <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
             <div className="w-7 h-7 rounded-lg bg-black flex items-center justify-center shadow-xs">
-              <span className="font-bold text-white text-[11px] tracking-tight">OS</span>
+              <span className="font-bold text-white text-[11px] tracking-tight">VE</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-[14px] text-zinc-900 tracking-tight">Your Student OS</span>
+              <span className="font-bold text-[14px] text-zinc-900 tracking-tight">{BRAND.name}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
             </div>
           </Link>
@@ -176,7 +178,7 @@ export function Navbar() {
               onClick={() => setMobileOpen(false)}
               className="w-full py-2.5 text-center text-sm font-bold text-white bg-black rounded-xl block hover:bg-zinc-800 transition"
             >
-              Start free — Build my OS
+              Start free — run my analysis
             </Link>
           </div>
         </div>

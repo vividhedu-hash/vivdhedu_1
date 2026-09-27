@@ -26,7 +26,7 @@ export default function MethodologyPage() {
             How We Score. Why It Matters.
           </h1>
           <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-3xl leading-relaxed">
-            The complete mathematical and epistemic architecture powering IndiaLens. Every metric is computed through peer-reviewed economic frameworks, item response theory, and empirical workforce microdata.
+            The complete mathematical and epistemic architecture powering VividhEdu. Every metric is computed through peer-reviewed economic frameworks, item response theory, and empirical workforce microdata.
           </p>
         </div>
       </div>
@@ -239,7 +239,7 @@ export default function MethodologyPage() {
             </div>
             <h2 className="text-2xl font-bold text-slate-950 mb-3 font-serif">5. Fiduciary Constraints & Audit Proofs</h2>
             <p className="text-slate-600 leading-relaxed mb-6">
-              IndiaLens operates under a zero-conflict covenant. We do not accept lead-generation bounties, sponsored placement fees, or promotional agency retainers from any higher-education institution.
+              VividhEdu operates under a zero-conflict covenant. We do not accept lead-generation bounties, sponsored placement fees, or promotional agency retainers from any higher-education institution.
             </p>
 
             <div className="grid sm:grid-cols-2 gap-4">

@@ -82,7 +82,7 @@ export const SynthesisLoader: React.FC<SynthesisLoaderProps> = ({
           <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center text-white font-bold text-[10px]">
             OS
           </div>
-          <span className="font-bold text-sm text-zinc-900 tracking-tight">Your Student OS</span>
+          <span className="font-bold text-sm text-zinc-900 tracking-tight">VividhEdu</span>
           <span className="w-1.5 h-1.5 rounded-full bg-rose-600 inline-block ml-0.5" />
         </div>
 

@@ -5,7 +5,7 @@ import { finiteOrNull } from "../../lib/mock-data";
 import type { CollegeDegreeRecord } from "../../lib/mock-data";
 
 export const metadata = {
-  title: "Compare Colleges & Programs | IndiaLens · Student OS",
+  title: `Compare Colleges & Programs | VividhEdu`,
   description: "Compare up to 4 Indian college programs side-by-side on 20-Year NPV, placement consistency, fees, and AI risk exposure.",
 };
 
@@ -70,7 +70,7 @@ export default async function ComparePage() {
             </h1>
             <p className="text-slate-500 text-sm mt-1">
               {isLive
-                ? "Live programs from IndiaLens sovereign quantitative index."
+                ? "Live programs from the VividhEdu quantitative index."
                 : "Actuarial benchmark comparison — 20-year NPV, debt recovery, and AI risk."}
             </p>
           </div>

@@ -290,7 +290,7 @@ function WorkspaceView() {
                 OS
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm tracking-tight text-slate-900">Your Student OS</span>
+                <span className="font-bold text-sm tracking-tight text-slate-900">VividhEdu</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[#E11D48]" />
               </div>
             </Link>
