@@ -551,10 +551,11 @@ export function AdaptiveDiagnosticEngine() {
             <>
               <Loader2 className="w-10 h-10 animate-spin text-rose-600 mx-auto mb-4" />
               <h2 className="text-xl font-bold text-slate-950 mb-2 font-serif">
-                Building Your Sovereign Report...
+                Building Your Report...
               </h2>
               <p className="text-sm text-slate-500 max-w-md mx-auto">
-                Synthesizing psychometrics, 1,420+ college datasets, and 20-year net career projections.
+                Synthesizing your psychometrics, the live programme dataset, and 20-year net
+                career projections.
               </p>
             </>
           )}

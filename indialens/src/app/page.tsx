@@ -196,7 +196,7 @@ export default async function LandingPage() {
           {/* Eyebrow */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-50 border border-rose-200/80 text-[11px] text-rose-700 font-mono font-medium mb-8 shadow-xs">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-600 inline-block animate-pulse" />
-            Student Intelligence Platform · India&apos;s Sovereign Student OS
+            Student Intelligence Platform · India&apos;s Decision Platform
           </div>
 
           {/* Headline */}

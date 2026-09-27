@@ -114,7 +114,7 @@ export default function WorkspacePage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-          <span className="font-mono text-xs text-slate-500">Loading Student OS Workspace…</span>
+          <span className="font-mono text-xs text-slate-500">Loading your workspace…</span>
         </div>
       }
     >

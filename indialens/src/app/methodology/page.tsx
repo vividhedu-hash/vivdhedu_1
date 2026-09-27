@@ -237,22 +237,29 @@ export default function MethodologyPage() {
                 Transparency Charter
               </span>
             </div>
-            <h2 className="text-2xl font-bold text-slate-950 mb-3 font-serif">5. Fiduciary Constraints & Audit Proofs</h2>
+            <h2 className="text-2xl font-bold text-slate-950 mb-3 font-serif">5. Fiduciary Constraints &amp; Provenance</h2>
             <p className="text-slate-600 leading-relaxed mb-6">
-              VividhEdu operates under a zero-conflict covenant. We do not accept lead-generation bounties, sponsored placement fees, or promotional agency retainers from any higher-education institution.
+              Every figure VividhEdu shows is traceable to a named public source and a recorded
+              scrape time. Where a source has nothing to report, the interface says so instead of
+              substituting an estimate — a missing placement figure renders as unavailable, never
+              as a plausible-looking number.
             </p>
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="p-5 rounded-xl bg-slate-50 border border-slate-200">
-                <h4 className="font-bold text-slate-950 mb-1 text-sm">Cryptographic Data Audit</h4>
+                <h4 className="font-bold text-slate-950 mb-1 text-sm">Source Attribution</h4>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Every college NIRF/NAAC/placement snapshot is SHA-256 hashed to an immutable log to eliminate retrofitted outcomes.
+                  Each data point carries its originating source and a scraped-at timestamp, and
+                  superseded values are retained rather than overwritten, so a corrected figure is
+                  visible as a correction instead of disappearing.
                 </p>
               </div>
               <div className="p-5 rounded-xl bg-slate-50 border border-slate-200">
-                <h4 className="font-bold text-slate-950 mb-1 text-sm">Open Credentials Standard</h4>
+                <h4 className="font-bold text-slate-950 mb-1 text-sm">What We Decline to Claim</h4>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Exportable audit certificates and skill badges adhere to the W3C Verifiable Credentials and OpenBadges v3 specifications.
+                  We publish no cryptographic audit trail, no externally verifiable credentials,
+                  and no third-party attestation. Until those exist as working systems they are
+                  absent here rather than described.
                 </p>
               </div>
             </div>

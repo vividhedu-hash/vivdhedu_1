@@ -424,10 +424,12 @@ export default function PortfolioBuilderPage() {
             <span>Opportunity Architecture · Flagship Program</span>
           </div>
           <h2 className="text-2xl font-bold text-slate-950 mb-2">
-            Research Fellowships, Corporate Sprints & Verified Credentials
+            Research, Practical Experience &amp; Structured Evidence
           </h2>
           <p className="text-sm text-slate-600 max-w-3xl mb-8 leading-relaxed">
-            Over 80% of Indian applicants submit unverified resume claims. Student OS integrates direct 1:1 PhD faculty mentorship, corporate micro-internships, and tamper-proof OpenBadges v3.0 cryptographic verification.
+            A claim on a resume is only as good as the artefact behind it. VividhEdu helps you
+            document real research and practical work, then export it in a form a reviewer can
+            actually verify instead of taking on faith.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -479,26 +481,28 @@ export default function PortfolioBuilderPage() {
               </div>
             </div>
 
-            {/* Pillar 3: OpenBadges */}
+            {/* Pillar 3: Verifiable artifacts */}
             <div className="bg-white border border-slate-200 border-t-2 border-t-emerald-500 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-2 text-emerald-600 mb-2">
                   <GitCommit className="w-4 h-4" />
-                  <span className="text-xs font-mono font-bold uppercase">3. OpenBadges v3.0 Verification</span>
+                  <span className="text-xs font-mono font-bold uppercase">3. Structured Verification</span>
                 </div>
-                <h3 className="text-sm font-bold text-slate-950 mb-2">Cryptographic Commit Ledger</h3>
+                <h3 className="text-sm font-bold text-slate-950 mb-2">Structured, Verifiable Artifacts</h3>
                 <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                  Tamper-proof verifiable credentials signed with Ed25519 keys, embedding your GitHub SHA-256 commit hashes directly into the admissions metadata.
+                  Your portfolio exports as structured, readable documents that a reviewer or an
+                  admissions system can parse directly — so a claim is easy to check against the
+                  underlying artefact rather than taken on trust.
                 </p>
                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-700 font-mono space-y-1">
-                  <div>• Zero Resume Fraud Guarantee</div>
-                  <div>• Ed25519 Cryptographic Proof</div>
-                  <div>• ATS & LinkedIn JSON-LD Embeds</div>
+                  <div>• Exportable written record</div>
+                  <div>• Machine-readable formatting</div>
+                  <div>• ATS-parsable structure</div>
                 </div>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-100">
                 <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                  <Lock className="w-3.5 h-3.5" /> Institutional Proof-of-Work
+                  <Lock className="w-3.5 h-3.5" /> Private until you share
                 </span>
               </div>
             </div>

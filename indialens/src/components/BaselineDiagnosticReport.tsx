@@ -32,7 +32,7 @@ export const BaselineDiagnosticReport: React.FC<BaselineDiagnosticProps> = ({
           <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center text-white font-bold text-[10px]">
             OS
           </div>
-          <span className="font-bold text-sm text-zinc-900 tracking-tight">Student OS</span>
+          <span className="font-bold text-sm text-zinc-900 tracking-tight">VividhEdu</span>
           <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-zinc-600 font-semibold">
             Stage 09 / 10
           </span>

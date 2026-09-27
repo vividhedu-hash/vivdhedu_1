@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Search, Lock, RefreshCw, SlidersHorizontal } from "lucide-react";
+import { Search, Lock, RefreshCw } from "lucide-react";
 import type { CollegeDegreeRecord, DegreeField } from "@/lib/mock-data";
 import { finiteOrNull, compareNullableAsc, compareNullableDesc, NO_DATA } from "@/lib/mock-data";
+import { GroundedAnswer } from "@/components/GroundedAnswer";
+import type { GroundedPayload } from "@/lib/grounded";
 
 const FIELD_LABELS: Record<DegreeField, string> = {
   "engineering-cs":     "Engineering — CS",
@@ -61,6 +63,9 @@ export default function ExplorePage() {
   const [search,      setSearch]      = useState("");
   const [fieldFilter, setFieldFilter] = useState("");
   const [sortBy,      setSortBy]      = useState("score-desc");
+  const [live, setLive] = useState<GroundedPayload | null>(null);
+  const [liveState, setLiveState] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
+  const [liveNote, setLiveNote] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -83,19 +88,75 @@ export default function ExplorePage() {
     return () => { cancelled = true; };
   }, [reloadKey]);
 
+  useEffect(() => {
+    const query = search.trim();
+    if (query.length < 3) {
+      setLive(null);
+      setLiveNote("");
+      setLiveState("idle");
+      return;
+    }
+
+    let cancelled = false;
+    const handle = window.setTimeout(async () => {
+      setLiveState("loading");
+      setLive(null);
+      try {
+        const res = await fetch("/api/search/ground", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!res.ok || !json?.grounded || !Array.isArray(json.citations) || json.citations.length === 0) {
+          setLive(null);
+          setLiveNote(typeof json?.reason === "string" ? json.reason : "Live sources could not be retrieved for this search.");
+          setLiveState("unavailable");
+          return;
+        }
+        setLive({
+          text: json.text,
+          citations: json.citations,
+          engine: json.engine,
+          grounded: true,
+          api: json.api,
+        });
+        setLiveNote(
+          json.retrieved_at
+            ? `Retrieved ${new Date(json.retrieved_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}.`
+            : "Retrieved just now.",
+        );
+        setLiveState("ready");
+      } catch {
+        if (cancelled) return;
+        setLive(null);
+        setLiveNote("Live sources could not be retrieved for this search.");
+        setLiveState("unavailable");
+      }
+    }, 600);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
+  }, [search]);
+
   const filteredData = useMemo(() => {
     let filtered = [...data];
 
     if (search) {
-      const q = search.toLowerCase();
-      filtered = filtered.filter(
-        (c) =>
-          c.college.shortName.toLowerCase().includes(q) ||
-          c.college.name.toLowerCase().includes(q) ||
-          c.college.city.toLowerCase().includes(q) ||
-          c.degree.shortName.toLowerCase().includes(q) ||
-          c.degree.name.toLowerCase().includes(q),
-      );
+      const terms = search.toLowerCase().split(/\s+/).filter(Boolean);
+      filtered = filtered.filter((c) => {
+        const haystack = [
+          c.college.shortName,
+          c.college.name,
+          c.college.city,
+          c.degree.shortName,
+          c.degree.name,
+        ].join(" ").toLowerCase();
+        return terms.every((term) => haystack.includes(term));
+      });
     }
 
     if (fieldFilter) {
@@ -138,7 +199,9 @@ export default function ExplorePage() {
           India&apos;s degrees, priced as financial assets.
         </h1>
         <p className="text-[#86868B] text-sm max-w-xl mb-8 leading-relaxed">
-          1,420+ institutional programs ranked by composite ROI, AI displacement risk, and 20-year placement trajectory.
+          Every programme we have live data for, ranked by composite ROI, AI displacement risk,
+          and 20-year placement trajectory. Where a source has not published a figure, the index
+          says so rather than estimating one.
         </p>
         <Link href="/analyze" className="btn-primary inline-flex">
           Analyze a specific degree
@@ -191,6 +254,25 @@ export default function ExplorePage() {
 
       {/* Content */}
       <div className="container-xl mt-8">
+        {search.trim().length >= 3 && (
+          <div className="mb-8 bg-[#0A0A0A] border border-white/[0.08] rounded-2xl p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#86868B] mb-3">
+              Live sources
+            </p>
+            {liveState === "loading" && (
+              <p className="text-sm text-[#86868B]">Searching the web for current sources…</p>
+            )}
+            {liveState === "ready" && live && (
+              <>
+                <GroundedAnswer payload={live} />
+                <p className="mt-4 text-[11px] text-[#48484A]">{liveNote} The table below is the stored program index.</p>
+              </>
+            )}
+            {liveState === "unavailable" && (
+              <p className="text-sm text-[#86868B]">{liveNote} The programs below are from the stored index.</p>
+            )}
+          </div>
+        )}
         {isLoading ? (
           <div className="text-center py-16 text-[#48484A] font-mono text-sm">
             Loading program index…
