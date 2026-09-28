@@ -12,7 +12,10 @@ import {
   Lock,
   Search,
   Info,
+  BookX,
+  FilterX,
 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { NO_DATA, finiteOrNull } from "@/lib/mock-data";
 
 /*
@@ -434,21 +437,23 @@ export default function MarketplacePage() {
             </button>
           </div>
         ) : visibleCourses.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-sm">
-            <p className="text-sm text-slate-700">
-              {courses.length === 0
-                ? "The catalog returned no courses."
-                : "No courses in this category."}
-            </p>
-            {courses.length > 0 && selectedCategory !== "All" && (
-              <button
-                onClick={() => setSelectedCategory("All")}
-                className="mt-4 bg-slate-950 hover:bg-slate-800 text-white rounded-xl px-4 py-2.5 text-xs font-semibold transition"
-              >
-                Show all categories
-              </button>
-            )}
-          </div>
+          /* "The catalogue is empty" and "your filter excluded everything" are
+             different states with different remedies, so the copy branches and
+             so does the action offered. */
+          <EmptyState
+            icon={courses.length === 0 ? BookX : FilterX}
+            title={courses.length === 0 ? "The catalogue returned no courses" : "No courses in this category"}
+            hint={
+              courses.length === 0
+                ? "This is what the source returned, not a loading failure and not an empty search. We show it as-is rather than substituting recommended courses that were not in the data."
+                : "Courses exist in the catalogue, but none are filed under this category. Showing all categories will bring them back."
+            }
+            action={
+              courses.length > 0 && selectedCategory !== "All"
+                ? { label: "Show all categories", onClick: () => setSelectedCategory("All") }
+                : { label: "Explore the program index", href: "/explore" }
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {visibleCourses.map((course, idx) => {

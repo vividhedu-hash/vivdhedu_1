@@ -1,18 +1,25 @@
 "use client";
 
+import { RouteError } from "@/components/RouteError";
+
+/**
+ * /job-security error boundary.
+ *
+ * This page's whole claim is that it is showing priors rather than
+ * measurements. A boundary that degraded to "here are some scores anyway"
+ * would contradict that claim at exactly the moment the backing engine is
+ * unreachable, so it refuses to render a ranking it cannot source.
+ */
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] px-4 py-16">
-      <div className="mx-auto max-w-lg rounded-2xl border border-rose-200 bg-white p-6">
-        <h1 className="text-lg font-semibold text-slate-950">The profession matrix could not be shown</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          No scores are shown in place of a failed load.
-        </p>
-        {error.digest && <p className="mt-3 font-mono text-xs text-slate-400">ref {error.digest}</p>}
-        <button onClick={() => reset()} className="mt-5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
-          Retry
-        </button>
-      </div>
-    </div>
+    <RouteError
+      error={error}
+      reset={reset}
+      kicker="Model unavailable"
+      title="The job-security engine did not respond"
+      body="No safety scores are shown. This page ranks careers by automation exposure, and a ranking invented at read-time would be worse than no ranking at all."
+      fallbackHref="/explore"
+      fallbackLabel="Browse programmes"
+    />
   );
 }

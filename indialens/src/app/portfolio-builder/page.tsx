@@ -18,6 +18,7 @@ import {
   CircleAlert,
   Info,
 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { NO_DATA } from "@/lib/mock-data";
 import { AuthGate } from "@/components/AuthGate";
 
@@ -398,12 +399,12 @@ export default function PortfolioBuilderPage() {
             </h3>
 
             {activities.length === 0 ? (
-              <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-6 text-center">
-                <p className="text-xs text-slate-500">
-                  No activities recorded. The engine returns its floor score for an empty portfolio
-                  rather than a real assessment.
-                </p>
-              </div>
+              <EmptyState
+                icon={Briefcase}
+                title="No activities recorded"
+                hint="The engine returns its floor score for an empty portfolio rather than a real assessment — so this reads as 'not measured' until you add something worth measuring."
+                variant="inline"
+              />
             ) : (
               <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                 {activities.map((act, idx) => (

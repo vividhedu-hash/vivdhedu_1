@@ -6,7 +6,8 @@ import { APP_URL, BRAND, mailtoLink } from "@/lib/brand";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: `Terms of Use | ${BRAND.name}`,
+  // Brand suffix comes from the root layout's `%s | VividhEdu` template.
+  title: "Terms of Use",
   description:
     "The terms governing use of VividhEdu. What the product is, what it is not, acceptable use, disclaimers, liability, and governing law.",
   alternates: { canonical: `${APP_URL}/terms` },

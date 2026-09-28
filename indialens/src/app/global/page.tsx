@@ -12,7 +12,10 @@ import {
   Loader2,
   CircleAlert,
   ExternalLink,
+  GlobeX,
+  FilterX,
 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { NO_DATA, finiteOrNull } from "@/lib/mock-data";
 
 /*
@@ -399,25 +402,34 @@ export default function GlobalDegreesPage() {
             </button>
           </div>
         ) : filteredPrograms.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-sm">
-            <p className="text-sm text-slate-700">
-              {programs.length === 0
-                ? "The program registry returned no programs."
-                : "No programs match these filters."}
-            </p>
-            {programs.length > 0 && (
-              <button
-                onClick={() => {
-                  setSelectedCountry("All");
-                  setSelectedTier("All");
-                  setStemOnly(false);
-                }}
-                className="mt-4 bg-slate-950 hover:bg-slate-800 text-white rounded-xl px-4 py-2.5 text-xs font-semibold transition"
-              >
-                Clear filters
-              </button>
-            )}
-          </div>
+          /* Same distinction as the marketplace: an empty registry is a fact
+             about the data, an empty filter result is a fact about the query. */
+          <EmptyState
+            icon={programs.length === 0 ? GlobeX : FilterX}
+            title={
+              programs.length === 0
+                ? "The program registry returned no programs"
+                : "No programs match these filters"
+            }
+            hint={
+              programs.length === 0
+                ? "No global programme records are published yet. We would rather show this than display illustrative figures, which would be indistinguishable from real valuations."
+                : "Programmes exist in the registry, but none match the country, tier, and field you have selected."
+            }
+            action={
+              programs.length > 0
+                ? {
+                    label: "Clear filters",
+                    onClick: () => {
+                      setSelectedCountry("All");
+                      setSelectedTier("All");
+                      setStemOnly(false);
+                    },
+                  }
+                : { label: "Browse the program index", href: "/explore" }
+            }
+            secondaryAction={programs.length > 0 ? { label: "How we value degrees", href: "/methodology" } : undefined}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPrograms.map((p) => {

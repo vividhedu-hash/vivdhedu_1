@@ -6,7 +6,9 @@ import { APP_URL, BRAND, mailtoLink } from "@/lib/brand";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: `Contact | ${BRAND.name}`,
+  // Brand suffix comes from the root layout's `%s | VividhEdu` template.
+  // openGraph.title below does not pass through that template, so it keeps it.
+  title: "Contact",
   description:
     "Reach the VividhEdu team. Support, data corrections, privacy and deletion requests, and counsellor or institution enquiries.",
   alternates: { canonical: `${APP_URL}/contact` },
