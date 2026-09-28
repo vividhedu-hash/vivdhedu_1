@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { MOCK_DATA, finiteOrNull } from "../../../lib/mock-data";
-import { allowMockFallback, fetchBackend, unavailablePayload } from "../../../lib/backend";
+import { fetchBackend } from "../../../lib/backend";
 import { reportStore } from "../../../lib/report-store";
 import { fetchSupabaseRest } from "../../../lib/supabase";
 
