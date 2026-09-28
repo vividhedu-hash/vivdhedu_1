@@ -28,6 +28,7 @@ import { AuthGate } from "@/components/AuthGate";
 import { useAuth } from "@/lib/auth-context";
 import { NO_DATA, finiteOrNull } from "@/lib/mock-data";
 import { BRAND } from "@/lib/brand";
+import { fetchOwnedReports, fetchStoredProfile, type ReportLink } from "@/lib/profile-store";
 
 /**
  * The workspace previously rendered a hardcoded persona.
@@ -114,7 +115,7 @@ function WorkspaceView() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? undefined;
-  const { user, logout } = useAuth();
+  const { user, token: authToken, logout } = useAuth();
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -128,17 +129,28 @@ function WorkspaceView() {
 
   const completedMilestones = roadmap.filter((r) => r.status === "completed").length;
 
-  // 7-vector decision weights. These are the student's own stated
-  // priorities, so they are kept in component state and are not pretended
-  // to feed any model.
+  /*
+   * 7-vector decision weights, hydrated from this student's own onboarding
+   * answers.
+   *
+   * These were the persona's weights again — 95/82/70/64/48/40/32, the exact
+   * vector the onboarding wizard was seeded with. A student who had just been
+   * asked to rank their own priorities, and possibly moved the sliders, would
+   * land here and find the same invented profile presented as their settings.
+   *
+   * They now start at a neutral 50 and are overwritten from the signed-in
+   * student's own report/profile when one loads. The neutral default matters
+   * even for a signed-out visitor: a descending profile like this reads as
+   * "we know your priorities", and 50-across reads as "you have not said".
+   */
   const [weights, setWeights] = useState({
-    career: 95,
-    affordability: 82,
-    prestige: 70,
-    rigor: 64,
-    location: 48,
-    flexibility: 40,
-    opportunities: 32,
+    career: 50,
+    affordability: 50,
+    prestige: 50,
+    rigor: 50,
+    location: 50,
+    flexibility: 50,
+    opportunities: 50,
   });
 
   /**
@@ -162,6 +174,35 @@ function WorkspaceView() {
         if (!res.ok || cancelled) return;
         const payload = await res.json();
         const data = payload?.student_input ?? payload?.results?.profile_parsed ?? payload;
+
+        /*
+         * The student's own decision weights come back on the report, because
+         * the wizard posts them. Restoring them here is what makes "returning
+         * user sees their data" true for the Decision Weights tab rather than
+         * only for the identity card. Every key is coerced, so a report that
+         * predates the field leaves the neutral 50s in place instead of
+         * printing NaN.
+         */
+        const saved = data?.weights;
+        if (saved && typeof saved === "object") {
+          const pick = (...keys: string[]): number => {
+            for (const k of keys) {
+              const n = finiteOrNull(saved[k]);
+              if (n != null) return Math.max(0, Math.min(100, Math.round(n)));
+            }
+            return 50;
+          };
+          setWeights({
+            career: pick("career_outcomes", "career"),
+            affordability: pick("cost_affordability", "affordability"),
+            prestige: pick("prestige"),
+            rigor: pick("academic_rigor", "rigor"),
+            location: pick("location"),
+            flexibility: pick("flexibility"),
+            opportunities: pick("opportunities"),
+          });
+        }
+
         const traits = data?.psychometric_traits;
         if (!traits || cancelled) return;
 
@@ -306,7 +347,64 @@ function WorkspaceView() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const displayName = user?.full_name?.trim() || user?.email?.split("@")[0] || "there";
+  /*
+   * The name the student chose in onboarding is the authoritative one.
+   *
+   * `user.full_name` comes from OAuth metadata, and `mapSupabaseUser` falls back
+   * to the email's local part, so a GitHub user with no profile name would see
+   * "octocat" here even after typing a real name into onboarding. The account's
+   * own `users` row now holds what they typed, so it is read back and preferred.
+   *
+   * Note `token` in this component is the REPORT token from the query string,
+   * not the session — the two are different secrets with different scopes, and
+   * only the session token can read the `users` row. They are named
+   * `authToken` and `token` respectively to keep that distinction visible.
+   */
+  const [accountName, setAccountName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id || !authToken) {
+      setAccountName(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const row = await fetchStoredProfile(authToken, user.id).catch(() => null);
+      if (cancelled) return;
+      setAccountName(row?.full_name?.trim() || null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, authToken]);
+
+  const displayName =
+    accountName || user?.full_name?.trim() || user?.email?.split("@")[0] || "there";
+
+  /*
+   * The account's own reports, read back from `user_saved_reports`.
+   *
+   * `null` is "not loaded yet" and is deliberately distinct from `[]` ("loaded
+   * and there are none"). Collapsing them would make the empty state flash
+   * before the fetch resolves, which is how a panel ends up telling someone
+   * they have no reports before it has actually looked.
+   */
+  const [userReports, setUserReports] = useState<ReportLink[] | null>(null);
+
+  useEffect(() => {
+    if (!user?.id || !authToken) {
+      setUserReports(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const rows = await fetchOwnedReports(authToken, user.id).catch(() => [] as ReportLink[]);
+      if (!cancelled) setUserReports(rows);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, authToken]);
   const initials = (
     displayName === "there" ? "?" : displayName
   )
@@ -411,8 +509,9 @@ function WorkspaceView() {
             <span>Sign out</span>
           </button>
 
-          {/* Real identity, from the session. Was a hardcoded "AM / Alex M. /
-              Class 11-12 · Quantitative" card shown to every visitor. */}
+          {/* Real identity, from the session. Was a hardcoded initials-and-name
+              card pinned to a fictional Class 11-12 student, shown identically
+              to every visitor regardless of who was signed in. */}
           <div className="mt-3 p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center font-bold font-mono text-[10px] text-slate-800">
               {initials}
@@ -485,6 +584,73 @@ function WorkspaceView() {
                       <span>{notice}</span>
                     </div>
                   )}
+
+                  {/*
+                    A returning student's own reports.
+
+                    This is the other half of fixing onboarding. Saving the name
+                    to `users` is only useful if something reads it back, and a
+                    signed-in student who arrives at /workspace with no `?token=`
+                    in the URL previously had no way to find the report they had
+                    just built — the token existed only in the URL they came
+                    from. Now the account's own `user_saved_reports` rows are
+                    listed, scoped by the RLS policy on top of the id filter.
+
+                    If there is genuinely nothing, it says so rather than
+                    implying a report exists.
+                  */}
+                  <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="text-xs font-bold font-mono text-slate-500 uppercase tracking-wider">
+                        Your reports
+                      </h2>
+                      {userReports !== null && userReports.length > 0 && (
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {userReports.length} saved
+                        </span>
+                      )}
+                    </div>
+
+                    {!user ? (
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        Sign in to keep your reports. Without an account a report is reachable
+                        only by its link, and nothing is stored against you.
+                      </p>
+                    ) : userReports === null ? (
+                      <p className="text-xs text-slate-400">Loading your reports…</p>
+                    ) : userReports.length === 0 ? (
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        No reports saved to your account yet.{" "}
+                        <Link
+                          href="/onboard"
+                          className="text-rose-700 underline underline-offset-2 font-medium"
+                        >
+                          Build one
+                        </Link>
+                        .
+                      </p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {userReports.map((r) => (
+                          <li key={r.report_token}>
+                            <Link
+                              href={`/report/${r.report_token}`}
+                              className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors"
+                            >
+                              <span className="text-xs font-medium text-slate-800 truncate">
+                                {r.title || "Degree ROI Analysis"}
+                              </span>
+                              <span className="font-mono text-[10px] text-slate-400 shrink-0">
+                                {r.created_at
+                                  ? new Date(r.created_at).toLocaleDateString()
+                                  : r.report_token.slice(0, 8)}
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
 
                   <div className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm flex items-center gap-3">
                     <input
@@ -687,10 +853,11 @@ function WorkspaceView() {
                       What is measured, and what is not
                     </h2>
                     <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
-                      This tab used to show eight "AI Displacement" vectors with hardcoded
-                      decay slopes (0.82, 0.38, 0.14, …) and a "20-Year Monte Carlo Career
-                      Distribution" of ₹8.4L → ₹1.1 Cr across 10,000 paths. None of those
-                      numbers came from a simulation. Here is the honest inventory instead.
+                      This tab used to show eight &ldquo;AI Displacement&rdquo; vectors
+                      with hardcoded decay slopes (0.82, 0.38, 0.14, …) and a
+                      &ldquo;20-Year Monte Carlo Career Distribution&rdquo; of
+                      ₹8.4L → ₹1.1 Cr across 10,000 paths. None of those numbers came
+                      from a simulation. Here is the honest inventory instead.
                     </p>
                   </div>
 
@@ -949,8 +1116,9 @@ function TrajectoryCards({
         </div>
         <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
           This card previously showed a 58% chance of LSE admission, rising to 81%
-          "after SAT", with a "Model v4.1" tag. No admissions engine ran. An odds
-          figure without your rank and category is a guess with a percentage sign.
+          &ldquo;after SAT&rdquo;, with a &ldquo;Model v4.1&rdquo; tag. No admissions
+          engine ran. An odds figure without your rank and category is a guess with a
+          percentage sign.
         </p>
       </div>
     </div>

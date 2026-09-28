@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Radio, Building2, CircleAlert, Compass } from 'lucide-react';
+import { Radio, Building2, CircleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { NO_DATA } from '../lib/mock-data';
 
@@ -10,16 +10,20 @@ import { NO_DATA } from '../lib/mock-data';
  * This panel used to merge a `DEFAULT_TELEMETRY` constant into whatever the
  * page passed, so a signed-out student — or any student whose report token
  * had not loaded — saw a fully populated dashboard belonging to a fictional
- * "Alex M., Class 11-12, Quantitative": resilience 78, "Top 8% in Quantitative
- * Track", profile strength 82/71/69, primary gap "Demonstrated research
- * co-authorship" with a "~2.4x" admittance multiplier, a 12-day sprint
- * labelled "SSRN Working Paper Draft Submission", and a "1.4x pace" velocity.
+ * Class 11-12 student: resilience 78, "Top 8% in Quantitative Track", profile
+ * strength 82/71/69, primary gap "Demonstrated research co-authorship" with a
+ * "~2.4x" admittance multiplier, a 12-day sprint labelled "SSRN Working Paper
+ * Draft Submission", and a "1.4x pace" velocity.
  *
- * None of those came from any engine. They were a persona, and the merge
- * made them the default rather than a demo — the exact failure the /report
- * honesty work was written to fix. So the defaults are gone: the panel now
- * renders "—" and says what is missing, and only shows a number that arrived
- * from somewhere real.
+ * The invented student's name is deliberately not repeated here. Leaving it in
+ * the source is how it came back: the onboarding wizard was seeded with the
+ * same persona, and a comment quoting it is an easy thing to copy from.
+ *
+ * None of those numbers came from any engine. They were a persona, and the
+ * merge made them the default rather than a demo — the exact failure the
+ * /report honesty work was written to fix. So the defaults are gone: the panel
+ * now renders "—" and says what is missing, and only shows a number that
+ * arrived from somewhere real.
  */
 export interface TelemetryProps {
   /** null until a real AI-resilience / adaptation score is measured. */
@@ -258,7 +262,7 @@ export const WorkspaceTelemetrySidebar: React.FC<TelemetryProps> = (props) => {
         )}
       </div>
 
-      {/* 6. Next step — replaced a button that fired alert("Connecting with…") */}
+      {/* 6. Next step — replaced a button that fired a bare window.alert() */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
         <div className="flex items-start gap-2">
           <CircleAlert size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />

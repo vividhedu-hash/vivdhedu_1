@@ -1,9 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Check, Loader2, ShieldCheck, HelpCircle } from "lucide-react";
+import { Check, Loader2, ShieldCheck, HelpCircle, AlertTriangle } from "lucide-react";
 
 export interface SynthesisLoaderProps {
+  /**
+   * The student's own name. Accepted for call-site clarity but deliberately
+   * NOT rendered: this screen previously took the prop and ignored it, showing
+   * an anonymous "Building your starting point..." instead. The name now
+   * appears on the report screen that follows, where it is actually persisted.
+   */
   studentName?: string;
   onComplete: (token: string) => void;
   apiUrl?: string;
@@ -17,6 +23,7 @@ export const SynthesisLoader: React.FC<SynthesisLoaderProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [apiToken, setApiToken] = useState<string | null>(null);
+  const [apiError, setApiError] = useState(false);
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
@@ -49,10 +56,14 @@ export const SynthesisLoader: React.FC<SynthesisLoaderProps> = ({
         }
         throw new Error("Local analyze fallback");
       } catch (err) {
-        if (active) setApiToken(`demo-${Date.now()}`);
+        // A real failure. The previous fallback minted `demo-${Date.now()}`,
+        // which is not a report — no such row exists, so the "report ready"
+        // screen that follows was opening a token guaranteed to 404. It also
+        // looked like a success, because it produced a token-shaped string.
+        // So a failure now stays a failure and is reported as one.
+        if (active) setApiError(true);
       }
     };
-
     makeApiCall();
 
     return () => {
@@ -64,15 +75,17 @@ export const SynthesisLoader: React.FC<SynthesisLoaderProps> = ({
     };
   }, [profileData]);
 
-  // When steps are done and token is ready, wait briefly and complete
+  // When steps are done and a real token exists, wait briefly and complete.
+  // `apiError` is checked because without a token this never fires, which is
+  // the point: the caller must not be handed a token that resolves to nothing.
   useEffect(() => {
-    if (currentStep === 4 && apiToken) {
+    if (currentStep === 4 && apiToken && !apiError) {
       const finishTimer = setTimeout(() => {
         onComplete(apiToken);
       }, 1000);
       return () => clearTimeout(finishTimer);
     }
-  }, [currentStep, apiToken, onComplete]);
+  }, [currentStep, apiToken, apiError, onComplete]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-zinc-950 font-sans">
@@ -131,8 +144,12 @@ export const SynthesisLoader: React.FC<SynthesisLoaderProps> = ({
                 </div>
                 <span className="font-semibold text-zinc-800">1. Understanding you</span>
               </div>
+              {/* Was a static "Verified" badge. Nothing was verified — the step
+                  animation below is a setTimeout, and the only thing that had
+                  been confirmed is that the student pressed a button. It now
+                  names the thing that actually happened. */}
               <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                Verified
+                Your answers
               </span>
             </div>
 
@@ -195,15 +212,40 @@ export const SynthesisLoader: React.FC<SynthesisLoaderProps> = ({
             </div>
           </div>
 
-          {/* Subcard */}
+          {/* Subcard.
+              This said "Processed 4,200 program outcomes across 18 cohorts"
+              beside a hardcoded 98.4%. Neither number came from anywhere: the
+              database holds 73 programmes, and nothing was processed, counted
+              or scored here. A percentage presented next to a volume reads as
+              a measured pass rate, so a student would conclude their report was
+              built from 4,200 outcomes. It now states which inputs were used. */}
           <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
             <div className="flex items-center gap-1.5 text-zinc-600">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
-              <span>Processed 4,200 program outcomes across 18 cohorts</span>
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${apiError ? "bg-rose-500" : "bg-zinc-300"}`}
+              />
+              <span>
+                {apiError
+                  ? "Could not reach the analysis service"
+                  : "Matching your answers against the programme data we hold"}
+              </span>
             </div>
-            <span className="font-bold text-zinc-900">98.4%</span>
+            <span className="font-bold text-zinc-900">{apiError ? "—" : "1 request"}</span>
           </div>
         </div>
+
+        {/* An honest failure state. There is no report to open without a token,
+            so continuing into a "report ready" screen would be a lie. */}
+        {apiError && (
+          <div className="w-full max-w-md mb-4 flex items-start gap-2.5 px-3.5 py-3 rounded-xl border border-rose-200 bg-rose-50 text-[12px] text-rose-900">
+            <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+            <p className="leading-relaxed">
+              We could not build your report just now. Your answers have not been lost — go back
+              and try again, and if it keeps happening the service is genuinely down rather than
+              silently producing an empty report.
+            </p>
+          </div>
+        )}
 
         {/* Timer message */}
         <p className="text-xs text-zinc-400 font-mono flex items-center gap-1.5">
@@ -212,13 +254,21 @@ export const SynthesisLoader: React.FC<SynthesisLoaderProps> = ({
         </p>
       </main>
 
-      {/* Bottom Telemetry Bar matching Screen 08 */}
+      {/* Bottom Telemetry Bar matching Screen 08.
+          This claimed "Deterministic Synthesis Protocol · Zero Synthetic
+          Hallucination Threshold" and "Session ID: OS-90214-EXEC · Secure
+          Enclave 256-bit". The session id was a literal — identical for every
+          student, every run, forever — presented as a unique audit handle in a
+          "secure enclave" that does not exist. A "Zero Synthetic Hallucination
+          Threshold" is not a quantity, and this very screen sits in a codebase
+          full of synthetic values. Both are replaced with the request's real
+          correlation id, shown only once the server has issued one. */}
       <footer className="px-6 py-3 border-t border-slate-200 bg-white/70 text-[11px] font-mono text-zinc-400 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
-          <span>Deterministic Synthesis Protocol · Zero Synthetic Hallucination Threshold</span>
+          <span>Analysis request sent to /api/analyze</span>
         </div>
-        <div>Session ID: OS-90214-EXEC · Secure Enclave 256-bit</div>
+        <div>{apiToken ? `Report ${apiToken.slice(0, 8)}…` : "No report id yet"}</div>
       </footer>
     </div>
   );

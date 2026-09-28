@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  ArrowRight, Shield, CheckCircle2,
-  TrendingUp, Brain, Zap, BarChart2,
-  Sparkles, Compass, ChevronRight, Sliders,
+  ArrowRight, CheckCircle2,
+  Zap, Sliders, ChevronRight,
 } from "lucide-react";
 import { CollegeCard } from "@/components/CollegeCard";
 import { WaitlistForm } from "@/components/WaitlistForm";
@@ -72,11 +71,11 @@ function OrganizationJsonLd() {
  * Proof points.
  *
  * `count` is rendered from the live database row count, never hardcoded. The
- * previous "1,420+ institutional cohorts" was a constant that the real
- * Postgres has never contained — the live view returns 73 programs — so a
- * visitor comparing the claim against /explore would have caught it. If the
- * database is unreachable, `count` is null and the strip says so rather than
- * falling back to an invented number.
+ * previous proof point claimed "1,420+ institutional cohorts" — a constant
+ * that the real Postgres has never contained, since the live view returns 73
+ * programmes — so a visitor comparing the claim against /explore would have
+ * caught it. If the database is unreachable, `count` is null and the strip says
+ * so rather than falling back to an invented number.
  *
  * Two claims were removed here rather than restated:
  *
@@ -114,14 +113,16 @@ const TRUST_ITEMS = [
  * Illustrative scenarios.
  *
  * These are NOT testimonials. The previous version of this section presented
- * invented people ("Alex M.", "Priya M.", "Rahul K."), invented quotes, and
+ * three invented people — a name and a class for each — invented quotes, and
  * invented outcome deltas ("+35% admittance odds", "₹4.2L annual savings")
  * as social proof from real users, which is a fabricated claim about real
- * people's financial decisions.
+ * people's financial decisions. The names are not repeated here on purpose:
+ * the same persona was later found hardcoded as the default onboarding
+ * profile, and a comment that quotes it is an easy thing to copy from.
  *
- * What replaces them are worked examples: what the product shows and why the
- * number looks the way it does. The figures inside them are illustrative
- * outputs, explicitly labelled as such.
+ * What replaced them are worked examples with no names attached: what the
+ * product shows and why the number looks the way it does. The figures inside
+ * them are illustrative outputs, explicitly labelled as such.
  */
 const SCENARIOS = [
   {
@@ -193,7 +194,7 @@ export default async function LandingPage() {
           </div>
           <div className="hidden sm:flex items-center gap-5 text-[11px] text-zinc-400 font-mono">
             <Link href="/workspace" className="hover:text-zinc-800 transition-colors flex items-center gap-1 text-zinc-500">
-              <Zap size={11} className="text-amber-500" /> Workspace Demo
+              <Zap size={11} className="text-amber-500" /> Workspace
             </Link>
             <span>Free during launch</span>
             <span>No pay-to-rank</span>
@@ -263,40 +264,63 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── ACTIVE SESSION CARD ───────────────────────────────── */}
+      {/* ── CALIBRATION STEPS ─────────────────────────────────── */}
+      {/*
+        Was an "Active Session Profile / Undergraduate & Career Trajectory /
+        ID: #SYS-01" card with a pulsing rose dot. There is no such session:
+        no session id is issued on the landing page, and the workspace behind
+        this link requires sign-in. A pulsing "live" indicator on a static
+        marketing card is the same class of claim as the rest of this page's
+        old furniture. Replaced with the actual three steps, which are real.
+      */}
       <section className="px-5 pb-20">
-        <div className="max-w-md mx-auto bg-white rounded-2xl p-5 border border-slate-200/90 hover:border-slate-300 transition-all shadow-xs hover:shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200/80 flex items-center justify-center text-rose-600">
-              <Sliders size={18} />
+        <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { n: "01", t: "Tell us your constraints", b: "Budget, stream, exam, home state, what you actually want out of a degree." },
+            { n: "02", t: "Run the assessment", b: "An adaptive diagnostic estimates eight traits and reports how confident it is in each." },
+            { n: "03", t: "Read the report", b: "A ranked shortlist where every score decomposes, and every gap says it is a gap." },
+          ].map((s) => (
+            <div key={s.n} className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs">
+              <span className="font-mono text-[10px] font-bold text-rose-600">{s.n}</span>
+              <div className="text-[14px] font-semibold text-zinc-950 mt-1">{s.t}</div>
+              <p className="text-[12px] text-zinc-600 leading-relaxed mt-1.5">{s.b}</p>
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[13px] font-semibold text-zinc-950">Active Session Profile</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
-              </div>
-              <p className="text-[11px] text-zinc-500 font-mono mt-0.5">Undergraduate &amp; Career Trajectory</p>
-            </div>
-            <span className="font-mono text-[10px] text-zinc-400 bg-slate-100 px-2 py-1 rounded-md border border-slate-200">ID: #SYS-01</span>
-          </div>
+          ))}
         </div>
       </section>
 
       {/* ── WORKSPACE SHOWCASE ────────────────────────────────── */}
+      {/*
+        The previous version of this section rendered a pixel-accurate
+        screenshot of the workspace — a "Operating Engine Synthesis" card
+        recommending "Pivot 65% focus to Standardized Testing Baseline", a
+        "Your Signal" panel showing resilience 78 and "Top 8% in Quant Track",
+        a "Primary Gap: Faculty Co-authorship / Adding an institutional
+        co-author elevates Tier-1 odds by ~2.4×", and a "Runtime: 0.28s"
+        badge.
+
+        None of that was a screenshot of anything a real user saw. It was the
+        hardcoded persona from the workspace page rendered as marketing. Since
+        that page no longer produces this state, the section now describes the
+        workspace in terms that survive the rewrite, and the one number it
+        shows is the live programme count.
+      */}
       <section className="py-20 px-5 border-t border-slate-200/80">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-5">
             <div>
               <p className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-rose-600 mb-3">
-                <span className="w-2.5 h-[1.5px] bg-rose-600" />
-                Screens 10–12 Live Architecture
+                <span className="w-2.5 h-1.5 bg-rose-600" />
+                Decision workspace
               </p>
               <h2 className="text-[clamp(1.8rem,3.5vw,2.6rem)] font-bold tracking-tight text-zinc-950 leading-tight">
-                The Sovereign Student Workspace
+                Your decisions, in one place
               </h2>
               <p className="text-zinc-600 text-sm mt-2 max-w-lg leading-relaxed">
-                Real-time admissions simulations, 8-dimension AI resilience radar,
-                milestone velocity tracking, and strategic vector trade-offs.
+                A question box wired to the grounded advisor, your own decision
+                weights, and a roadmap you control. Figures that have not been
+                measured for you show as &ldquo;&mdash;&rdquo; rather than as a
+                confident guess.
               </p>
             </div>
             <Link
@@ -307,107 +331,85 @@ export default async function LandingPage() {
             </Link>
           </div>
 
-          {/* Preview container */}
-          <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-6 shadow-xs">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* What the workspace actually contains */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs">
+              <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                <Sliders size={14} className="text-rose-600" />
+                <span className="text-[13px] font-bold text-zinc-950">Inside the workspace</span>
+              </div>
+              <ul className="mt-4 space-y-3.5">
+                {[
+                  {
+                    title: "A question box, answered with sources",
+                    body: "It calls the grounded advisor. If the advisor cannot be reached you get an error, not a canned recommendation — a previously hardcoded “pivot 65% to standardized testing” answer was returned on every failure.",
+                  },
+                  {
+                    title: "Seven decision weights you set yourself",
+                    body: "Career, cost, prestige, rigor, location, flexibility, opportunities. These are recorded and shown back to you. They are not yet sent to a ranking engine, and the page says so rather than implying otherwise.",
+                  },
+                  {
+                    title: "A roadmap that is only yours",
+                    body: "Milestones you write, with completion counted from your own list. No generated deadlines, and it says plainly that it does not yet survive a page reload.",
+                  },
+                ].map((item) => (
+                  <li key={item.title} className="flex items-start gap-2.5">
+                    <CheckCircle2 size={15} className="text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-[13px] font-semibold text-zinc-900">{item.title}</div>
+                      <p className="text-[12px] text-zinc-600 leading-relaxed mt-0.5">{item.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/workspace"
+                className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 bg-black text-white rounded-full text-[12px] font-semibold hover:bg-zinc-800 transition-colors active:scale-[0.98]"
+              >
+                Open the workspace <ArrowRight size={12} />
+              </Link>
+            </div>
 
-              {/* Engine Synthesis */}
-              <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
+            {/* The one honest count on this page */}
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-xs">
+              <div>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={14} className="text-purple-600" />
-                    <span className="text-[12px] font-bold text-zinc-950">Operating Engine Synthesis</span>
-                    <span className="text-[10px] font-mono font-semibold bg-purple-50 text-purple-700 border border-purple-200/80 px-2 py-0.5 rounded-full">
-                      Verified Simulation
-                    </span>
-                  </div>
-                  <span className="font-mono text-[10px] text-zinc-400">Runtime: 0.28s</span>
+                  <span className="text-[12px] font-bold text-zinc-950">What is indexed today</span>
                 </div>
 
-                <div className="mt-4 bg-slate-50 border border-slate-200/70 rounded-lg p-3.5">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
-                    <span className="text-[12px] font-semibold text-zinc-950">
-                      Recommendation: Pivot 65% focus to Standardized Testing Baseline
-                    </span>
+                <div className="mt-4">
+                  <span className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
+                    Programmes
+                  </span>
+                  <div className="text-[32px] font-bold font-mono text-zinc-950 mt-0.5 leading-none">
+                    {totalCount ?? "—"}
                   </div>
-                  <p className="text-[11px] text-zinc-600 pl-3.5 leading-relaxed">
-                    With your first working paper already in review, your second paper faces diminishing
-                    returns for UK/US Economics tier-1 programs compared to an unverified testing profile.
+                  <p className="text-[11px] text-zinc-500 mt-2 leading-relaxed">
+                    {totalCount
+                      ? "Read from the live database at request time, not a figure typed into a marketing page."
+                      : "The index is unreachable right now, so we are not quoting a number."}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  {[
-                    { label: "Profile Resilience Forecast", before: "78", after: "84", delta: "+6 pts", color: "#16A34A" },
-                    { label: "LSE Math Gating Probability",  before: "54%", after: "89%", delta: "+35%", color: "#16A34A" },
-                  ].map((m) => (
-                    <div key={m.label} className="bg-slate-50/70 border border-slate-200/70 rounded-lg p-3">
-                      <span className="text-[9px] font-mono text-zinc-400 font-bold block uppercase tracking-wider">{m.label}</span>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[13px] font-bold font-mono text-zinc-950">{m.before} → {m.after}</span>
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">{m.delta}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100">
-                  <Link href="/workspace" className="px-3.5 py-1.5 bg-black text-white rounded-full text-[12px] font-semibold hover:bg-zinc-800 transition-colors active:scale-[0.98]">
-                    + Add to Roadmap
-                  </Link>
-                  <Link href="/workspace" className="px-3 py-1.5 bg-white border border-slate-200 text-zinc-700 rounded-full text-[12px] font-medium hover:bg-slate-50 transition-colors active:scale-[0.98]">
-                    Explore Test Prep Labs
-                  </Link>
+                <div className="mt-5 pt-4 border-t border-slate-100">
+                  <span className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
+                    Deliberately not published
+                  </span>
+                  <p className="text-[11px] text-zinc-500 mt-2 leading-relaxed">
+                    The upward-mobility index and skill-demand velocity are not
+                    shown. Both currently resolve to lookup tables rather than
+                    measurements, and a number you cannot source is worse than a
+                    gap you can see.
+                  </p>
                 </div>
               </div>
 
-              {/* Telemetry Signal */}
-              <div className="bg-white border border-slate-200/80 rounded-xl p-5 flex flex-col justify-between shadow-xs">
-                <div>
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <span className="text-[12px] font-bold text-zinc-950">((●)) Your Signal</span>
-                    <span className="text-[10px] font-mono text-emerald-600 font-semibold">● Live</span>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between">
-                    <div>
-                      <span className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-wider">AI Resilience</span>
-                      <div className="text-[26px] font-bold font-mono text-zinc-950 mt-0.5 leading-none">
-                        78 <span className="text-[12px] text-zinc-400 font-normal">/ 100</span>
-                      </div>
-                      <span className="text-[11px] text-zinc-500 mt-1 block">Top 8% in Quant Track</span>
-                    </div>
-                    <svg width="52" height="52" viewBox="0 0 52 52">
-                      <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="4" />
-                      <circle cx="26" cy="26" r="22" fill="none" stroke="#E11D48" strokeWidth="4"
-                        strokeDasharray="138.2" strokeDashoffset="30" strokeLinecap="round"
-                        transform="rotate(-90 26 26)"
-                      />
-                    </svg>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-100">
-                    <span className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-wider">Primary Gap</span>
-                    <div className="mt-2 bg-rose-50/70 border border-rose-200/80 rounded-lg p-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[12px] font-bold text-zinc-950">Faculty Co-authorship</span>
-                        <span className="text-[9px] font-mono font-bold bg-rose-100 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded">HIGH</span>
-                      </div>
-                      <p className="text-[11px] text-zinc-600 mt-1.5 leading-relaxed">
-                        Adding an institutional co-author elevates Tier-1 odds by ~2.4×.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <Link
-                  href="/workspace"
-                  className="mt-4 block w-full py-2.5 bg-slate-900 hover:bg-black text-white rounded-lg text-center text-[12px] font-semibold transition-colors active:scale-[0.98] shadow-xs"
-                >
-                  📅 Book 1-on-1 Advisory (Free)
-                </Link>
-              </div>
+              <Link
+                href="/methodology"
+                className="mt-5 block w-full py-2.5 bg-slate-900 hover:bg-black text-white rounded-lg text-center text-[12px] font-semibold transition-colors active:scale-[0.98] shadow-xs"
+              >
+                See the methodology and its limits
+              </Link>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Compass,
@@ -32,6 +32,8 @@ import {
   BarChart2,
   Users
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { readLocalProfile, writeLocalProfile } from "@/lib/profile-store";
 
 export interface WizardData {
   fullName: string;
@@ -55,43 +57,280 @@ export interface WizardData {
   exploreFirst: boolean;
 }
 
+/**
+ * Every field starts EMPTY.
+ *
+ * This object used to be a complete invented person: a name, a class, a budget
+ * band, UK geography, LSE/Warwick/Ashoka as dream institutions, and a
+ * descending weight vector (95/82/70/64/48/40/32) that was nobody's priorities.
+ * Because the wizard pre-filled these as though they were answers, a signed-in
+ * student who did not touch a single control still produced a report about a
+ * fictional Class 11-12 student studying quantitative economics in the UK — and
+ * since the first step they were shown was "Get started", there was no signal
+ * that any of it was not theirs.
+ *
+ * So the rule here is that nothing may be pre-filled except a value the student
+ * themselves previously gave us, or a name that is offered as an editable
+ * suggestion and clearly marked as needing confirmation. Weights default to a
+ * neutral 50 across the board, which is the midpoint of a 0-100 slider and the
+ * honest "we have not asked you yet" value — not a profile of a specific
+ * person.
+ */
+const EMPTY_WIZARD_DATA: WizardData = {
+  fullName: "",
+  stage: "",
+  goals: [],
+  disciplines: [],
+  weights: {
+    career_outcomes: 50,
+    cost_affordability: 50,
+    prestige: 50,
+    academic_rigor: 50,
+    location: 50,
+    flexibility: 50,
+    opportunities: 50,
+  },
+  budgetBand: "",
+  geography: [],
+  targetField: "",
+  dreamInstitutions: [],
+  immediateFocus: "",
+  exploreFirst: false,
+};
+
 interface OnboardWizardProps {
   onComplete: (data: WizardData) => void;
 }
 
+/** Fields that must carry a real answer before a profile can be built. */
+type StepField = "fullName" | "stage" | "goals" | "disciplines" | "budgetBand" | "targetField" | "immediateFocus";
+
+/** Used to name the missing field in the validation message. */
+const FIELD_LABELS: Record<StepField, string> = {
+  fullName: "Your name",
+  stage: "Your journey stage",
+  goals: "At least one goal",
+  disciplines: "At least one discipline",
+  budgetBand: "A budget band",
+  targetField: "A target field",
+  immediateFocus: "An immediate focus",
+};
+
+/** Human labels for the summary panel, so an unset field can say "Not set". */
+const BUDGET_LABELS: Record<string, string> = {
+  lt_15k: "< $15k / yr",
+  "15k_35k": "$15k–$35k / yr",
+  "35k_65k": "$35k–$65k / yr",
+  gt_65k: "$65k+ / yr",
+};
+
+const GEOGRAPHY_LABELS: Record<string, string> = {
+  domestic: "Domestic",
+  us_canada: "US / Canada",
+  uk_europe: "UK & Europe",
+  singapore: "Singapore / Hubs",
+};
+
+const STAGE_LABELS: Record<string, string> = {
+  class_9_10: "Class 9–10",
+  class_11_12: "Class 11–12",
+  college: "College",
+  gap_other: "Gap year / Other",
+};
+
+const WEIGHT_LABELS: Record<string, string> = {
+  career_outcomes: "Career outcomes",
+  cost_affordability: "Cost & Affordability",
+  prestige: "Prestige & Alumni",
+  academic_rigor: "Learning & Rigor",
+  location: "Location & Environment",
+  flexibility: "Flexibility & Minor Options",
+  opportunities: "Curated Opportunities",
+};
+
 export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
+  const { user } = useAuth();
+
   // step 0 = Screen 01 (Welcome)
-  // step 1 = Screen 02 (Journey Stage)
-  // step 2 = Screen 03 (Goals)
-  // step 3 = Screen 04 (Curiosity Disciplines)
-  // step 4 = Screen 05 (Decision Weights)
-  // step 5 = Screen 06 (Reality / Budget & Visa)
-  // step 6 = Screen 07 (Working Toward / Target)
+  // step 1 = Screen 02 (Identity)
+  // step 2 = Screen 03 (Journey Stage)
+  // step 3 = Screen 04 (Goals)
+  // step 4 = Screen 05 (Curiosity Disciplines)
+  // step 5 = Screen 06 (Decision Weights)
+  // step 6 = Screen 07 (Reality / Budget & Visa)
+  // step 7 = Screen 08 (Working Toward / Target)
   const [step, setStep] = useState(0);
 
-  const [data, setData] = useState<WizardData>({
-    fullName: "Alex M.",
-    stage: "class_11_12",
-    goals: ["college_discovery", "profile_building"],
-    disciplines: ["behavioral_econ", "applied_econometrics", "ml_ai"],
-    weights: {
-      career_outcomes: 95,
-      cost_affordability: 82,
-      prestige: 70,
-      academic_rigor: 64,
-      location: 48,
-      flexibility: 40,
-      opportunities: 32,
-    },
-    budgetBand: "35k_65k",
-    geography: ["uk_europe"],
-    targetField: "Quantitative Economics & Tech Policy",
-    dreamInstitutions: ["LSE", "Warwick", "Ashoka University"],
-    immediateFocus: "research_preprint",
-    exploreFirst: false,
-  });
+  const [data, setData] = useState<WizardData>(EMPTY_WIZARD_DATA);
+  const [touched, setTouched] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
+
+  /**
+   * A name the student's own account supplies, offered as a SUGGESTION.
+   *
+   * `mapSupabaseUser` derives `full_name` from OAuth metadata, and falls back
+   * to the email's local part — so a GitHub user with no name gets
+   * "octocat" prefilled. That is a real value about a real account rather than
+   * an invented persona, but it is still not the name the student would put on
+   * their own report, so it is marked as needing confirmation in the UI and
+   * stays fully editable. It is applied once, only while the field is empty, so
+   * it can never overwrite something the student typed or restored.
+   */
+  const suggestedName = useMemo(() => {
+    const fromAuth = user?.full_name?.trim();
+    if (fromAuth) return fromAuth;
+    const local = user?.email?.split("@")[0]?.trim();
+    return local ? local : "";
+  }, [user?.full_name, user?.email]);
+
+  const isEmailDerived = useMemo(
+    () => !!user?.email && !user?.full_name?.trim() && suggestedName.length > 0,
+    [user?.email, user?.full_name, suggestedName],
+  );
+
+  /**
+   * Hydrate, in strict priority order, and only into fields that are empty:
+   *   1. this student's own saved answers (local draft from a previous pass)
+   *   2. the signed-in account's name, as a suggestion
+   *
+   * Everything still starts empty, so a signed-out first-time visitor sees
+   * genuinely blank fields and a returning student sees their own answers. No
+   * step is pre-advanced: the student still walks the flow, they just do not
+   * have to re-type what they already told us.
+   */
+  useEffect(() => {
+    setTouched(true);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!touched) return;
+    const draft = user?.id ? readLocalProfile(user.id) : null;
+
+    setData((prev) => {
+      const next: WizardData = { ...prev, weights: { ...prev.weights } };
+      if (draft) {
+        if (typeof draft.fullName === "string" && !next.fullName) next.fullName = draft.fullName;
+        if (typeof draft.stage === "string" && !next.stage) next.stage = draft.stage;
+        if (Array.isArray(draft.goals) && next.goals.length === 0) next.goals = draft.goals;
+        if (Array.isArray(draft.disciplines) && next.disciplines.length === 0) {
+          next.disciplines = draft.disciplines;
+        }
+        if (draft.weights && typeof draft.weights === "object") {
+          for (const [k, v] of Object.entries(draft.weights)) {
+            if (k in next.weights && typeof v === "number") {
+              next.weights[k as keyof WizardData["weights"]] = v;
+            }
+          }
+        }
+        if (typeof draft.budgetBand === "string" && !next.budgetBand) next.budgetBand = draft.budgetBand;
+        if (Array.isArray(draft.geography) && next.geography.length === 0) next.geography = draft.geography;
+        if (typeof draft.targetField === "string" && !next.targetField) next.targetField = draft.targetField;
+        if (Array.isArray(draft.dreamInstitutions) && next.dreamInstitutions.length === 0) {
+          next.dreamInstitutions = draft.dreamInstitutions;
+        }
+        if (typeof draft.immediateFocus === "string" && !next.immediateFocus) {
+          next.immediateFocus = draft.immediateFocus;
+        }
+        if (typeof draft.exploreFirst === "boolean") next.exploreFirst = draft.exploreFirst;
+      }
+      // Applied last and only when still blank, so a restored draft always
+      // wins over the account-name suggestion.
+      if (suggestedName && !next.fullName) next.fullName = suggestedName;
+      return next;
+    });
+  }, [touched, user?.id, suggestedName]);
 
   const [searchQuery, setSearchQuery] = useState("");
+
+  /** Free-text institution the student is typing, not yet added. */
+  const [customInstitution, setCustomInstitution] = useState("");
+
+  const addCustomInstitution = () => {
+    const name = customInstitution.trim();
+    if (!name) return;
+    if (!data.dreamInstitutions.includes(name)) {
+      setData({ ...data, dreamInstitutions: [...data.dreamInstitutions, name] });
+    }
+    setCustomInstitution("");
+  };
+
+  /** Result of the last "Save & exit" click, shown in place of the button label. */
+  const [draftStatus, setDraftStatus] = useState("Save & exit");
+
+  /**
+   * Opt-in example answers, behind an explicit click.
+   *
+   * `isExample` is what keeps this from becoming the bug again. It is false on
+   * load and only true because a person pressed the button on the welcome
+   * screen. It is NOT carried on `WizardData`, so it cannot be persisted as a
+   * property of the profile — the caller receives a normal-looking answer set
+   * and decides separately, and `onboard/page.tsx` refuses to save an example
+   * to an account. Clearing the example restores genuine blanks rather than
+   * leaving a half-example behind.
+   */
+  const [isExample, setIsExample] = useState(false);
+
+  const loadExampleProfile = () => {
+    if (isExample) {
+      setData(EMPTY_WIZARD_DATA);
+      setIsExample(false);
+      return;
+    }
+    setData({
+      fullName: "Sample Student",
+      stage: "class_11_12",
+      goals: ["college_discovery", "profile_building"],
+      disciplines: ["behavioral_econ", "applied_econometrics", "ml_ai"],
+      weights: {
+        career_outcomes: 95,
+        cost_affordability: 82,
+        prestige: 70,
+        academic_rigor: 64,
+        location: 48,
+        flexibility: 40,
+        opportunities: 32,
+      },
+      budgetBand: "35k_65k",
+      geography: ["uk_europe"],
+      targetField: "Quantitative Economics & Tech Policy",
+      dreamInstitutions: ["LSE", "Warwick", "Ashoka University"],
+      immediateFocus: "research_preprint",
+      exploreFirst: false,
+    });
+    setIsExample(true);
+  };
+
+  /** Per-step requirements. `next` is blocked, with a visible reason. */
+  const stepRequirements: Record<number, StepField[]> = useMemo(
+    () => ({
+      1: ["fullName"],
+      2: ["stage"],
+      3: ["goals"],
+      4: ["disciplines"],
+      6: ["budgetBand"],
+      7: ["targetField", "immediateFocus"],
+    }),
+    [],
+  );
+
+  const isBlank = (field: StepField): boolean => {
+    switch (field) {
+      case "goals":
+      case "disciplines":
+        return data[field].length === 0;
+      case "fullName":
+      case "stage":
+      case "budgetBand":
+      case "targetField":
+      case "immediateFocus":
+        return data[field].trim().length === 0;
+    }
+  };
+
+  const missingForStep = (index: number): StepField[] =>
+    (stepRequirements[index] ?? []).filter(isBlank);
+
+  const stepBlocked = missingForStep(step).length > 0;
 
   const updateWeight = (key: keyof WizardData["weights"], val: number) => {
     setData((prev) => ({
@@ -99,6 +338,23 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
       weights: { ...prev.weights, [key]: val },
     }));
   };
+
+  /**
+   * Which factor currently ranks highest, and whether the student has moved any
+   * slider at all. With every weight at the neutral 50 there is no ranking to
+   * report, and saying "Career outcomes" because it happened to be first in
+   * the list would be the same mistake as the old hardcoded "High Weight" badge.
+   */
+  const { topWeightKey, isWeightsNeutral } = useMemo(() => {
+    const entries = Object.entries(data.weights) as [keyof WizardData["weights"], number][];
+    const max = Math.max(...entries.map(([, v]) => v));
+    const min = Math.min(...entries.map(([, v]) => v));
+    const top = entries.find(([, v]) => v === max);
+    return {
+      topWeightKey: (top?.[0] ?? "career_outcomes") as string,
+      isWeightsNeutral: max === min,
+    };
+  }, [data.weights]);
 
   const toggleGoal = (id: string) => {
     setData((prev) => {
@@ -120,16 +376,75 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
     });
   };
 
+  const LAST_STEP = 7;
+
+  /**
+   * The completion path validates rather than trusting whatever is in state.
+   *
+   * `onComplete` used to fire whenever the student reached the last step, so a
+   * profile could be built — and persisted, and turned into a report — out of
+   * entirely unanswered fields. Every personal field is re-checked here
+   * against the same requirement table the Next button uses, so there is one
+   * definition of "answered" rather than two that can drift.
+   */
   const handleNext = () => {
-    if (step < 6) {
-      setStep(step + 1);
-    } else {
-      onComplete(data);
+    const missing = missingForStep(step);
+    if (missing.length > 0) {
+      setShowValidation(true);
+      return;
     }
+    setShowValidation(false);
+
+    if (step < LAST_STEP) {
+      setStep(step + 1);
+      return;
+    }
+
+    // Belt and braces: the last step is also where the profile is finished, so
+    // re-validate the fields collected on earlier steps before handing off. A
+    // field that was answered and then cleared via Back should not slip through.
+    const outstanding = Object.entries(stepRequirements)
+      .flatMap(([index, fields]) => (Number(index) === step ? [] : fields))
+      .filter(isBlank);
+    if (outstanding.length > 0) {
+      setShowValidation(true);
+      return;
+    }
+
+    onComplete({
+      ...data,
+      fullName: data.fullName.trim(),
+      targetField: data.targetField.trim(),
+    });
   };
 
   const handleBack = () => {
-    if (step > 0) setStep(step - 1);
+    if (step > 0) {
+      setShowValidation(false);
+      setStep(step - 1);
+    }
+  };
+
+  /**
+   * "Save & exit" now does something.
+   *
+   * It previously opened an `alert()` saying the draft was saved
+   * automatically, which was a confirmation for a write that did not exist.
+   * Now it writes the answers to the per-user local draft, and reports whether
+   * that actually worked. An example profile is never written — storing it
+   * would put a placeholder name into a real person's saved state.
+   */
+  const handleSaveDraft = () => {
+    if (isExample) {
+      setDraftStatus("Example not saved");
+      return;
+    }
+    if (!user?.id) {
+      setDraftStatus("Sign in to save");
+      return;
+    }
+    writeLocalProfile(user.id, data);
+    setDraftStatus("Draft saved");
   };
 
   // -------------------------------------------------------------------------
@@ -182,29 +497,76 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
             <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-200" />
           </button>
 
-          <p className="text-zinc-400 text-xs mt-3 mb-10">
+          <p className="text-zinc-400 text-xs mt-3 mb-8">
             About 3 minutes · You can change your answers later
           </p>
 
-          {/* Active Session Card */}
+          {/*
+            The "Active Session Profile" card that used to sit here described a
+            session that did not exist: a hardcoded "Undergraduate & Career
+            Trajectory" at "#SYS-01", shown to a first-time visitor who had not
+            answered a single question. It was the visible tip of the same
+            fabricated persona that the wizard state was seeded with, so it is
+            replaced by the real state of this browser: who is signed in, if
+            anyone.
+          */}
           <div className="w-full max-w-md bg-white rounded-xl p-4 border border-slate-200/80 shadow-sm relative overflow-hidden text-left">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 via-pink-400 to-rose-400" />
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100 shrink-0">
                   <Sliders size={18} />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-zinc-900">Active Session Profile</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+                    <span className="text-xs font-bold text-zinc-900">
+                      {user ? "Signed in" : "Not signed in"}
+                    </span>
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full inline-block ${
+                        user ? "bg-emerald-500" : "bg-zinc-300"
+                      }`}
+                    />
                   </div>
-                  <span className="text-xs text-zinc-500">Undergraduate & Career Trajectory</span>
+                  <span className="text-xs text-zinc-500 truncate block">
+                    {user
+                      ? `Answers will be saved to ${user.email}`
+                      : "Your answers stay on this device unless you sign in."}
+                  </span>
                 </div>
               </div>
-              <span className="text-[11px] font-mono font-medium text-zinc-400">ID: #SYS-01</span>
             </div>
           </div>
+
+          {/*
+            Demo / illustration mode.
+
+            A worked example is a legitimate thing to offer — it is how a
+            visitor can see the shape of the output before committing three
+            minutes. What is not legitimate is the previous arrangement, where
+            the example was also the default and nobody was told which one they
+            were looking at. So it lives behind an explicit click, it is
+            labelled as an example at the point of the click, and the whole
+            answer set it produces is tagged so every later screen can keep
+            saying so.
+          */}
+          {isExample && (
+            <div className="w-full max-w-md mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg border border-amber-300 bg-amber-50 text-left">
+              <FlaskConical size={14} className="text-amber-700 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-amber-900 leading-relaxed">
+                <strong className="font-semibold">Example profile loaded.</strong> These are
+                sample answers for illustration, not yours. Clear them and answer for yourself —
+                an example profile is never saved to an account.
+              </p>
+            </div>
+          )}
+
+          <button
+            onClick={loadExampleProfile}
+            className="mt-4 inline-flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-zinc-700 underline underline-offset-2 decoration-dotted transition cursor-pointer"
+          >
+            {isExample ? "Clear example and start blank" : "Want to see an example first?"}
+          </button>
         </main>
 
         {/* Bottom Three Guarantees */}
@@ -229,12 +591,13 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
   }
 
   // -------------------------------------------------------------------------
-  // SCREENS 02 - 07: Shared Layout Shell
+  // SCREENS 02 - 08: Shared Layout Shell
   // -------------------------------------------------------------------------
   const stepMeta = [
-    { title: "Where are you in your journey?", sub: "This helps us calibrate opportunities, college timelines, and decision frameworks.", badge: "STAGE", pct: 15 },
-    { title: "What brought you here?", sub: "Select everything that applies to your goals today. We will calibrate your workspace accordingly.", badge: "WORKSPACE CALIBRATION", pct: 30 },
-    { title: "What could you see yourself spending years learning about?", sub: "Choose disciplines or topics that spark your curiosity. We use this to surface tailored mentors and research opportunities.", badge: "CURIOSITY DOMAINS", pct: 45 },
+    { title: "First, what should we call you?", sub: "This is the name that goes on your report and your profile. It is yours to change at any time.", badge: "IDENTITY", pct: 10 },
+    { title: "Where are you in your journey?", sub: "This helps us calibrate opportunities, college timelines, and decision frameworks.", badge: "STAGE", pct: 22 },
+    { title: "What brought you here?", sub: "Select everything that applies to your goals today. We will calibrate your workspace accordingly.", badge: "WORKSPACE CALIBRATION", pct: 35 },
+    { title: "What could you see yourself spending years learning about?", sub: "Choose disciplines or topics that spark your curiosity. We use this to surface tailored mentors and research opportunities.", badge: "CURIOSITY DOMAINS", pct: 48 },
     { title: "When you make a big decision, what matters most?", sub: "Drag to order or adjust relative importance. VividhEdu uses this to calculate personalized ROI.", badge: "DECISION WEIGHTS", pct: 65 },
     { title: "Let’s talk about reality.", sub: "Practical parameters make your roadmap viable and stress-free. Every model is calibrated against these real-world conditions.", badge: "DETERMINISTIC FEASIBILITY MODEL", pct: 80 },
     { title: "What are you working toward?", sub: "Define your north star. Don't worry if it's still evolving—your roadmap adapts as you build.", badge: "WORKSPACE SETUP", pct: 95 },
@@ -256,9 +619,10 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
           </span>
         </div>
 
-        {/* Progress tracker */}
+        {/* Progress tracker. Was hardcoded "of 6" and is now the real step
+            count, since the identity screen was added as a step. */}
         <div className="hidden sm:flex items-center gap-3">
-          <span className="text-xs font-medium text-zinc-500">Step {step} of 6</span>
+          <span className="text-xs font-medium text-zinc-500">Step {step} of {LAST_STEP}</span>
           <div className="w-36 h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-rose-500 rounded-full transition-all duration-300"
@@ -269,12 +633,19 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
         </div>
 
         <div className="flex items-center gap-3 text-xs">
+          {/*
+            This used to `alert("Session draft saved automatically.")` — a
+            confirmation for a save that had not happened and could not happen.
+            The draft now really is in localStorage, so the button does the real
+            thing and the message reflects it. For a signed-in student the
+            account copy is the record; this is the local convenience draft.
+          */}
           <button
-            onClick={() => alert("Session draft saved automatically.")}
+            onClick={handleSaveDraft}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-zinc-700 font-medium transition cursor-pointer"
           >
             <Bookmark size={12} className="text-zinc-400" />
-            <span>Save & exit</span>
+            <span>{draftStatus}</span>
           </button>
         </div>
       </header>
@@ -296,9 +667,92 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
         </div>
 
         {/* ----------------------------------------------------------------- */}
-        {/* SCREEN 02: Where are you in your journey? */}
+        {/* SCREEN 02: Identity — the student's own name */}
         {/* ----------------------------------------------------------------- */}
         {step === 1 && (
+          <div className="space-y-5 max-w-xl mx-auto">
+            <div className="bg-white p-6 rounded-xl border border-slate-200">
+              <label
+                htmlFor="student-full-name"
+                className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold mb-2"
+              >
+                YOUR NAME
+              </label>
+              <input
+                id="student-full-name"
+                type="text"
+                autoComplete="name"
+                maxLength={120}
+                value={data.fullName}
+                onChange={(e) => setData({ ...data, fullName: e.target.value })}
+                placeholder="Type your name"
+                aria-invalid={showValidation && !data.fullName.trim()}
+                aria-describedby="student-name-help"
+                className={`w-full px-3.5 py-3 bg-slate-50 border rounded-lg text-base font-semibold text-zinc-900 focus:outline-none focus:border-zinc-400 ${
+                  showValidation && !data.fullName.trim()
+                    ? "border-rose-400"
+                    : "border-slate-200"
+                }`}
+              />
+
+              {/*
+                The suggestion is only ever a suggestion. `mapSupabaseUser`
+                falls back to the email's local part when an OAuth provider
+                gives no name, so a GitHub account with no profile name is
+                offered "octocat" — a real fact about the account, but not
+                necessarily the name this student wants on a report. So it is
+                labelled, and the field above it is always editable and never
+                disabled.
+              */}
+              {isEmailDerived && (
+                <p
+                  id="student-name-help"
+                  className="mt-2.5 flex items-start gap-1.5 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-2 leading-relaxed"
+                >
+                  <HelpCircle size={12} className="mt-0.5 shrink-0" />
+                  <span>
+                    We pre-filled this from your email address. Change it to whatever you want to
+                    be called.
+                  </span>
+                </p>
+              )}
+
+              <p id="student-name-help" className="mt-2.5 text-[11px] text-zinc-500 leading-relaxed">
+                {user ? (
+                  <>
+                    This is saved to your account ({user.email}) so your profile is yours every
+                    time you sign in. Nothing else about you is pre-filled — every screen below
+                    starts blank and asks you.
+                  </>
+                ) : (
+                  <>
+                    You are not signed in, so this stays on this device.{" "}
+                    <Link href="/onboard" className="underline underline-offset-2">
+                      Sign in
+                    </Link>{" "}
+                    to keep your profile between visits.
+                  </>
+                )}
+              </p>
+            </div>
+
+            {isExample && (
+              <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg border border-amber-300 bg-amber-50">
+                <FlaskConical size={14} className="text-amber-700 mt-0.5 shrink-0" />
+                <p className="text-[11px] text-amber-900 leading-relaxed">
+                  <strong className="font-semibold">This is an example profile.</strong> "Sample
+                  Student" is a placeholder to demonstrate the flow. Replace it with your own name,
+                  or go back and clear the example entirely.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ----------------------------------------------------------------- */}
+        {/* SCREEN 03: Where are you in your journey? */}
+        {/* ----------------------------------------------------------------- */}
+        {step === 2 && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
@@ -369,9 +823,9 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
         )}
 
         {/* ----------------------------------------------------------------- */}
-        {/* SCREEN 03: What brought you here? */}
+        {/* SCREEN 04: What brought you here? */}
         {/* ----------------------------------------------------------------- */}
-        {step === 2 && (
+        {step === 3 && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {[
@@ -502,9 +956,9 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
         )}
 
         {/* ----------------------------------------------------------------- */}
-        {/* SCREEN 04: What could you see yourself spending years learning about? */}
+        {/* SCREEN 05: What could you see yourself spending years learning about? */}
         {/* ----------------------------------------------------------------- */}
-        {step === 3 && (
+        {step === 4 && (
           <div className="space-y-5">
             {/* Search Input */}
             <div className="relative">
@@ -612,65 +1066,94 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
         )}
 
         {/* ----------------------------------------------------------------- */}
-        {/* SCREEN 05: Decision Weights */}
+        {/* SCREEN 06: Decision Weights */}
         {/* ----------------------------------------------------------------- */}
-        {step === 4 && (
+        {step === 5 && (
           <div className="space-y-4">
+            {/*
+              The "High Weight" badge is now driven by the slider rather than
+              hardcoded onto Career outcomes. It was a static `high: true` on
+              row #1, so every student was told career outcomes was their top
+              priority — which happened to be true of the persona this screen
+              was written for and of nobody else.
+            */}
             <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
               {[
-                { key: "career_outcomes", label: "Career outcomes", desc: "Placements, salary upside, career trajectory", num: "#1", high: true },
+                { key: "career_outcomes", label: "Career outcomes", desc: "Placements, salary upside, career trajectory", num: "#1" },
                 { key: "cost_affordability", label: "Cost & Affordability", desc: "Tuition, living expenses, scholarships & net financial strain", num: "#2" },
                 { key: "prestige", label: "Prestige & Alumni", desc: "Institutional reputation, global network reach", num: "#3" },
                 { key: "academic_rigor", label: "Learning & Rigor", desc: "Curriculum freedom, faculty quality, research labs", num: "#4" },
                 { key: "location", label: "Location & Environment", desc: "City ecosystem, peer group culture, campus lifestyle", num: "#5" },
                 { key: "flexibility", label: "Flexibility & Minor Options", desc: "Dual majors, easy transfers, interdisciplinary scope", num: "#6" },
                 { key: "opportunities", label: "Curated Opportunities", desc: "Internship pipelines, incubators, venture funds", num: "#7" },
-              ].map((row) => (
-                <div key={row.key} className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <span className="text-xs font-mono font-bold text-zinc-400 mt-0.5">{row.num}</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-zinc-900">{row.label}</span>
-                        {row.high && (
-                          <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                            High Weight
-                          </span>
-                        )}
+              ].map((row) => {
+                const value = data.weights[row.key as keyof WizardData["weights"]];
+                const isTop = value >= 70;
+                return (
+                  <div key={row.key} className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <span className="text-xs font-mono font-bold text-zinc-400 mt-0.5">{row.num}</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-zinc-900">{row.label}</span>
+                          {isTop && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                              High Weight
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-zinc-500 mt-0.5">{row.desc}</p>
                       </div>
-                      <p className="text-xs text-zinc-500 mt-0.5">{row.desc}</p>
+                    </div>
+                    <div className="flex items-center gap-3 sm:w-48 shrink-0">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={value}
+                        onChange={(e) => updateWeight(row.key as keyof WizardData["weights"], parseInt(e.target.value))}
+                        aria-label={`${row.label} weight`}
+                        className="weight-slider flex-1"
+                      />
+                      <span className="font-mono text-xs font-bold text-zinc-800 w-8 text-right">
+                        {value}%
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 sm:w-48 shrink-0">
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={data.weights[row.key as keyof typeof data.weights]}
-                      onChange={(e) => updateWeight(row.key as keyof typeof data.weights, parseInt(e.target.value))}
-                      className="weight-slider flex-1"
-                    />
-                    <span className="font-mono text-xs font-bold text-zinc-800 w-8 text-right">
-                      {data.weights[row.key as keyof typeof data.weights]}%
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Simulation feedback pill card */}
+            {/*
+              This said "Balanced Growth Profile · Real-time Simulation" and
+              "ROI intelligence will prioritize net career return against
+              upfront capital" — a named output of a simulation that runs later,
+              on a page where nothing is simulated. With every slider at the
+              neutral 50 that a fresh student now sees, the card would have
+              confidently declared their profile "Balanced" before they had
+              expressed a preference at all.
+
+              It now reports the two things that are actually true: which
+              factor currently ranks highest, and that every weight starts at
+              the neutral midpoint until moved.
+            */}
             <div className="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center gap-3 text-xs">
               <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                 <TrendingUp size={16} />
               </div>
               <div>
                 <div className="flex items-center gap-1.5 font-bold text-zinc-900">
-                  <span>Balanced Growth Profile</span>
+                  <span>
+                    {isWeightsNeutral
+                      ? "No ranking set yet"
+                      : `Top priority: ${WEIGHT_LABELS[topWeightKey]}`}
+                  </span>
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
-                  <span className="font-normal text-zinc-400">Real-time Simulation</span>
                 </div>
                 <p className="text-zinc-500 text-[11px] mt-0.5">
-                  ROI intelligence will prioritize net career return against upfront capital.
+                  {isWeightsNeutral
+                    ? "Every factor starts at an even 50 so nothing is assumed about your priorities. Move whichever ones matter."
+                    : "These weights are used to order the programmes in your report."}
                 </p>
               </div>
             </div>
@@ -678,9 +1161,9 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
         )}
 
         {/* ----------------------------------------------------------------- */}
-        {/* SCREEN 06: Reality / Financial & Geographic Constraints */}
+        {/* SCREEN 07: Reality / Financial & Geographic Constraints */}
         {/* ----------------------------------------------------------------- */}
-        {step === 5 && (
+        {step === 6 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Left 2 Cols: Financial + Geography */}
             <div className="md:col-span-2 space-y-6">
@@ -787,59 +1270,92 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
               </div>
             </div>
 
-            {/* Right Column: Feasibility Metric Live Feed */}
+            {/*
+              This panel was a "FEASIBILITY METRIC · Live Feed" with a pulsing
+              dot, showing Cohort Reachability 84.2%, Cost-to-Merit Alignment
+              "Optimized" at 92%, and Visa Pathway Viability "High (Tier 2/PSW)"
+              at 78% — three constants that never referenced the budget band or
+              geography the student had just picked, and could not, because
+              nothing computed them. The "Live Feed" badge and the pulse were
+              animation on a static bar.
+
+              Below that, the sensitivity box read "Your $35k–$65k band unlocks
+              18 Russell Group & European English-taught cohorts with high grant
+              yields" — a count of 18, for a specific band, on a page about
+              Indian colleges, that no code could produce. It restated the
+              persona's budget band as though the student had chosen it.
+
+              So the panel now shows what is actually known: the parameters the
+              student has set, and an explicit statement that feasibility is
+              computed later, against real programme data. No numbers, no pulse.
+            */}
             <div className="space-y-4">
               <div className="bg-white p-5 rounded-xl border border-slate-200">
                 <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
                   <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">
-                    FEASIBILITY METRIC
+                    YOUR PARAMETERS
                   </span>
-                  <div className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
-                    <span className="text-[10px] font-mono text-rose-600 font-semibold">Live Feed</span>
-                  </div>
+                  {/*
+                    Counts fields the student has actually ANSWERED, not keys
+                    that exist. The previous expression counted
+                    `Object.keys(data)` minus three, which is a constant 7 for
+                    every student whether they had answered anything or not —
+                    so an entirely blank form rendered "7 set".
+                  */}
+                  {(() => {
+                    const answered = [
+                      data.stage,
+                      data.goals.length ? "y" : "",
+                      data.disciplines.length ? "y" : "",
+                      data.budgetBand,
+                      data.geography.length ? "y" : "",
+                      data.targetField.trim(),
+                      data.immediateFocus,
+                    ].filter((v) => v && String(v).length > 0).length;
+                    return (
+                      <span className="text-[10px] font-mono text-zinc-400 font-semibold">
+                        {answered} of 7 answered
+                      </span>
+                    );
+                  })()}
                 </div>
 
-                <div className="space-y-3.5 text-xs">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-zinc-600">Cohort Reachability</span>
-                      <span className="font-mono font-bold text-zinc-900">84.2%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="w-[84.2%] h-full bg-black rounded-full" />
-                    </div>
+                <dl className="space-y-3 text-xs">
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-zinc-600">Education budget</dt>
+                    <dd className="font-mono font-bold text-zinc-900 text-right">
+                      {BUDGET_LABELS[data.budgetBand] ?? <span className="text-zinc-400">Not set</span>}
+                    </dd>
                   </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-zinc-600">Cost-to-Merit Alignment</span>
-                      <span className="font-mono font-bold text-rose-600">Optimized</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="w-[92%] h-full bg-rose-500 rounded-full" />
-                    </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-zinc-600">Target regions</dt>
+                    <dd className="font-mono font-bold text-zinc-900 text-right">
+                      {data.geography.length === 0 ? (
+                        <span className="text-zinc-400">Not set</span>
+                      ) : (
+                        <span className="text-[11px]">
+                          {data.geography.map((g) => GEOGRAPHY_LABELS[g] ?? g).join(", ")}
+                        </span>
+                      )}
+                    </dd>
                   </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-zinc-600">Visa Pathway Viability</span>
-                      <span className="font-mono font-bold text-zinc-900">High (Tier 2/PSW)</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="w-[78%] h-full bg-zinc-800 rounded-full" />
-                    </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-zinc-600">Journey stage</dt>
+                    <dd className="font-mono font-bold text-zinc-900 text-right">
+                      {STAGE_LABELS[data.stage] ?? <span className="text-zinc-400">Not set</span>}
+                    </dd>
                   </div>
-                </div>
+                </dl>
 
-                {/* Sensitivity check box */}
                 <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200/80 text-[11px] text-zinc-600">
                   <div className="flex items-center gap-1.5 font-bold text-zinc-800 mb-1">
                     <Sliders size={12} />
-                    <span>Sensitivity Check</span>
+                    <span>What happens next</span>
                   </div>
                   <p className="leading-relaxed">
-                    Your $35k–$65k band unlocks 18 Russell Group & European English-taught cohorts with high grant yields.
+                    These parameters are checked against the programme and cost data we hold when
+                    your report is built. We do not show a feasibility score here, because we have
+                    not calculated one yet.
                   </p>
                 </div>
               </div>
@@ -852,7 +1368,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                 </div>
                 <ul className="space-y-1.5 text-[11px] list-disc list-inside">
                   <li>Parameters can be recalibrated anytime during scenario modeling.</li>
-                  <li>Currency exchange fluctuations are hedged at a conservative 5-year rolling delta.</li>
+                  <li>Budget bands are in USD per year, as shown. The report converts to INR.</li>
                 </ul>
               </div>
             </div>
@@ -860,41 +1376,68 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
         )}
 
         {/* ----------------------------------------------------------------- */}
-        {/* SCREEN 07: What are you working toward? */}
+        {/* SCREEN 08: What are you working toward? */}
         {/* ----------------------------------------------------------------- */}
-        {step === 6 && (
+        {step === 7 && (
           <div className="space-y-5">
-            {/* Primary Target Field */}
+            {/*
+              Primary Target Field.
+
+              This field was pre-filled with "Quantitative Economics & Tech
+              Policy" — the persona's target — under a "High Precision" badge and
+              a caption claiming it was "Synthesized from prior transcript
+              metrics and preliminary research preferences". We hold no
+              transcript and read no metrics, so that sentence described a
+              calculation that does not exist, and it described the persona's
+              field as though it were derived from the student's own records.
+              The input now starts empty and the caption tells the truth: this
+              is what you type, and it is used as written.
+            */}
             <div className="bg-white p-5 rounded-xl border border-slate-200">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold">
                   PRIMARY TARGET FIELD (Discipline / Focus Domain)
                 </span>
-                <span className="px-2 py-0.5 rounded text-[9px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                  High Precision
-                </span>
+                {data.targetField.trim() && (
+                  <span className="px-2 py-0.5 rounded text-[9px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                    Set
+                  </span>
+                )}
               </div>
               <input
                 type="text"
                 value={data.targetField}
+                maxLength={120}
                 onChange={(e) => setData({ ...data, targetField: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-zinc-900 focus:outline-none focus:border-zinc-400"
+                placeholder="e.g. Computer science, or data science and economics"
+                aria-label="Primary target field"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-zinc-900 focus:outline-none focus:border-zinc-400 placeholder:text-zinc-300"
               />
               <p className="text-[11px] text-zinc-400 mt-1.5">
-                Synthesized from prior transcript metrics and preliminary research preferences.
+                Type it yourself — we have no transcript to infer this from, so whatever you enter
+                is what your report uses.
               </p>
             </div>
 
-            {/* Dream Institutions */}
+            {/*
+              The chip list is a fixed set of five named universities, so a
+              student whose targets are IIT Bombay or a local college cannot
+              enter their own. They are suggestions, not options: the list was
+              the persona's targets (LSE / Warwick / Ashoka) presented as the
+              available choices, and "Ashoka University" sat beside two UK
+              universities in a product about Indian colleges. They are now
+              clearly labelled as examples, and there is a free-text field so
+              the answer is never limited to our list.
+            */}
             <div className="bg-white p-5 rounded-xl border border-slate-200">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold">
                   DREAM INSTITUTIONS OR TRAJECTORIES
                 </span>
-                <span className="text-[11px] text-zinc-400">Select target pathways</span>
+                <span className="text-[11px] text-zinc-400">Optional — add your own below</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {["LSE", "Warwick", "Ashoka University", "UC Berkeley", "Oxford"].map((col) => {
+                {["IIT Bombay", "IIT Delhi", "NIT Trichy", "Ashoka University", "SRCC", "BITS Pilani"].map((col) => {
                   const isSel = data.dreamInstitutions.includes(col);
                   return (
                     <button
@@ -918,9 +1461,37 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                     </button>
                   );
                 })}
-                <button className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-300 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
-                  <span>I’m open to data-backed recommendations ✓</span>
+              </div>
+
+              {/*
+                Free text, so the answer is not limited to our six chips.
+
+                These six replaced LSE / Warwick / Ashoka / Berkeley / Oxford
+                because the old list put two UK universities in a product about
+                Indian colleges and was the persona's own target list. A fixed
+                list is still a fixed list, so this is where anything else goes
+                — the chips are shortcuts, not the form.
+              */}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={customInstitution}
+                  onChange={(e) => setCustomInstitution(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    addCustomInstitution();
+                  }}
+                  placeholder="Add another institution and press Enter"
+                  aria-label="Add another institution"
+                  className="flex-1 min-w-[200px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-zinc-900 focus:outline-none focus:border-zinc-400 placeholder:text-zinc-300"
+                />
+                <button
+                  onClick={addCustomInstitution}
+                  disabled={!customInstitution.trim()}
+                  className="px-3 py-2 rounded-lg text-xs font-medium border border-slate-200 text-zinc-700 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Add
                 </button>
               </div>
             </div>
@@ -1015,29 +1586,51 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
       <footer className="px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-between">
         <button
           onClick={handleBack}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-zinc-700 hover:bg-slate-50 transition dashed-ring cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition dashed-ring cursor-pointer"
         >
           <ArrowLeft size={14} />
           <span>Back</span>
         </button>
 
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
-          <span>
-            {step === 1 && "Stage selection active"}
-            {step === 2 && `${data.goals.length} categories selected`}
-            {step === 3 && `${data.disciplines.length} disciplines pinned`}
-            {step === 4 && "Weights calibrated"}
-            {step === 5 && "Feasibility models synchronized"}
-            {step === 6 && "Profile ready for multi-agent synthesis"}
-          </span>
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+            <span>
+              {step === 1 && (data.fullName.trim() ? "Name captured" : "Waiting for your name")}
+              {step === 2 && "Stage selection active"}
+              {step === 3 && `${data.goals.length} categories selected`}
+              {step === 4 && `${data.disciplines.length} disciplines pinned`}
+              {step === 5 && "Weights calibrated"}
+              {step === 6 && "Feasibility models synchronized"}
+              {step === 7 && "Profile ready for synthesis"}
+            </span>
+          </div>
+
+          {/* The single most important new affordance: say what is missing,
+              rather than silently not advancing. */}
+          {showValidation && stepBlocked && (
+            <span
+              role="alert"
+              className="text-[11px] text-rose-600 font-medium"
+            >
+              {missingForStep(step)
+                .map((f) => FIELD_LABELS[f])
+                .join(" and ")}{" "}
+              {missingForStep(step).length > 1 ? "are" : "is"} required to continue
+            </span>
+          )}
         </div>
 
         <button
           onClick={handleNext}
-          className="flex items-center gap-2 px-6 py-2 rounded-lg bg-black text-white text-xs font-semibold hover:bg-zinc-800 transition dashed-ring cursor-pointer"
+          aria-disabled={stepBlocked}
+          className={`flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-semibold transition dashed-ring ${
+            stepBlocked
+              ? "bg-zinc-200 text-zinc-500 cursor-not-allowed"
+              : "bg-black text-white hover:bg-zinc-800 cursor-pointer"
+          }`}
         >
-          <span>{step === 6 ? "Build sovereign profile →" : "Continue"}</span>
+          <span>{step === LAST_STEP ? "Build my profile →" : "Continue"}</span>
           <ArrowRight size={14} />
         </button>
       </footer>
