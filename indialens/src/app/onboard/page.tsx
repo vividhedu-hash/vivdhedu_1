@@ -149,14 +149,14 @@ export default function OnboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <span className="font-mono text-xs text-zinc-500">Loading your profile…</span>
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <span className="font-mono text-xs text-ink-2">Loading your profile…</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-surface flex flex-col transition-colors duration-300">
       {phase === "wizard" && (
         <div className="animate-fade-slide-up w-full">
           <OnboardWizard onComplete={handleWizardComplete} />

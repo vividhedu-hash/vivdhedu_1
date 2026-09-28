@@ -2,17 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ShieldCheck, Lock, Trash2, Mail } from "lucide-react";
 import { APP_URL, BRAND, mailtoLink } from "@/lib/brand";
+import { CookiePolicyTable } from "@/components/CookiePolicyTable";
 
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: `Privacy Policy | ${BRAND.name}`,
+  // Brand suffix comes from the root layout's `%s | VividhEdu` template.
+  title: "Privacy Policy",
   description:
     "What data VividhEdu collects, why, how long it is kept, and how to have it deleted. Written for India, under the DPDP Act 2023.",
   alternates: { canonical: `${APP_URL}/privacy` },
 };
 
-const LAST_UPDATED = "27 September 2026";
+const LAST_UPDATED = "28 September 2026";
 
 function Section({
   id,
@@ -25,11 +27,11 @@ function Section({
 }) {
   return (
     <section id={id} className="scroll-mt-24">
-      <h2 className="text-lg font-bold tracking-tight text-zinc-950">
-        <span className="font-mono text-[11px] text-rose-600">{id}.</span>{" "}
+      <h2 className="text-lg font-bold tracking-tight text-ink">
+        <span className="font-mono text-[11px] text-accent">{id}.</span>{" "}
         {title}
       </h2>
-      <div className="mt-3 space-y-3 text-[14px] leading-relaxed text-zinc-600">
+      <div className="mt-3 space-y-3 text-[14px] leading-relaxed text-ink-2">
         {children}
       </div>
     </section>
@@ -44,7 +46,7 @@ const TOC = [
   { id: "5", title: "Why we are permitted to hold it" },
   { id: "6", title: "Who else can see it" },
   { id: "7", title: "How long we keep it" },
-  { id: "8", title: "Cookies and analytics" },
+  { id: "8", title: "Cookies and sessions" },
   { id: "9", title: "Your rights" },
   { id: "10", title: "Children" },
   { id: "11", title: "Security" },
@@ -54,20 +56,20 @@ const TOC = [
 
 export default function PrivacyPage() {
   return (
-    <div className="bg-[#F8FAFC] text-zinc-950">
+    <div className="bg-surface text-ink">
       {/* ── Header ───────────────────────────────────────────────── */}
-      <div className="border-b border-slate-200 bg-white">
+      <div className="border-b border-line/10 bg-elevated">
         <div className="mx-auto max-w-4xl px-5 py-12">
           <div className="flex items-center gap-2.5">
-            <ShieldCheck size={18} className="text-rose-600" />
-            <h1 className="text-3xl font-black tracking-tight text-zinc-950">
+            <ShieldCheck size={18} className="text-accent" />
+            <h1 className="text-3xl font-black tracking-tight text-ink">
               Privacy Policy
             </h1>
           </div>
-          <p className="mt-2 text-[13px] font-mono text-zinc-500">
+          <p className="mt-2 text-[13px] font-mono text-ink-2">
             {BRAND.name} · Last updated {LAST_UPDATED}
           </p>
-          <p className="mt-5 max-w-2xl text-[14px] leading-relaxed text-zinc-600">
+          <p className="mt-5 max-w-2xl text-[14px] leading-relaxed text-ink-2">
             This product asks for unusually sensitive information: a student&apos;s
             budget, debt, family income, and tolerance for financial risk. We
             think that deserves a specific policy rather than a boilerplate one,
@@ -81,7 +83,7 @@ export default function PrivacyPage() {
         <div className="grid gap-10 lg:grid-cols-[220px_1fr]">
           {/* TOC */}
           <nav className="lg:sticky lg:top-24 lg:self-start">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-ink-3">
               On this page
             </p>
             <ol className="mt-3 space-y-1.5">
@@ -89,7 +91,7 @@ export default function PrivacyPage() {
                 <li key={item.id}>
                   <a
                     href={`#${item.id}`}
-                    className="block text-[13px] text-zinc-500 transition-colors hover:text-zinc-950"
+                    className="block text-[13px] text-ink-2 transition-colors hover:text-ink"
                   >
                     {item.id}. {item.title}
                   </a>
@@ -102,9 +104,9 @@ export default function PrivacyPage() {
             <Section id="1" title="Who runs this">
               <p>
                 This service is operated from India as{" "}
-                <strong className="font-semibold text-zinc-900">{BRAND.legalEntity}</strong>.
+                <strong className="font-semibold text-ink">{BRAND.legalEntity}</strong>.
                 Questions about this policy or about your data go to{" "}
-                <a href={mailtoLink("Privacy request")} className="font-semibold text-rose-600 underline underline-offset-2">
+                <a href={mailtoLink("Privacy request")} className="font-semibold text-accent underline underline-offset-2">
                   {BRAND.supportEmail}
                 </a>
                 .
@@ -123,7 +125,7 @@ export default function PrivacyPage() {
                 That makes this <strong>financial information about an
                 identifiable person</strong>. It is not anonymous usage data, and
                 we do not treat it as if it were. The{" "}
-                <Link href="/terms" className="font-semibold text-rose-600 underline underline-offset-2">
+                <Link href="/terms" className="font-semibold text-accent underline underline-offset-2">
                   terms of use
                 </Link>{" "}
                 also make clear that none of this is financial advice.
@@ -134,20 +136,20 @@ export default function PrivacyPage() {
               <p>Three distinct categories. They are separable, and you can give us only the first.</p>
               <ul className="ml-4 list-disc space-y-2">
                 <li>
-                  <strong className="font-semibold text-zinc-900">Analysis inputs you enter.</strong>{" "}
+                  <strong className="font-semibold text-ink">Analysis inputs you enter.</strong>{" "}
                   Academic scores and interests, your budget range, the loan amount
                   you would consider, family or household income where it affects
                   feasibility, your risk tolerance, career goals, and your answers
                   to the adaptive assessment. These are stored with your report.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">Account details, if you sign in.</strong>{" "}
+                  <strong className="font-semibold text-ink">Account details, if you sign in.</strong>{" "}
                   Your email address and, if you use Google sign-in, your name and
                   profile image. An account is optional: a full report can be
                   generated without one.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">Waitlist details, if you join.</strong>{" "}
+                  <strong className="font-semibold text-ink">Waitlist details, if you join.</strong>{" "}
                   Your email address, an optional name, which audience you selected
                   (student, parent, or counsellor), the page you submitted from, and
                   any utm campaign parameters present in the URL at the time.
@@ -160,7 +162,7 @@ export default function PrivacyPage() {
                 your analysis inputs.
               </p>
               <p>
-                <strong className="font-semibold text-zinc-900">
+                <strong className="font-semibold text-ink">
                   We do not collect:
                 </strong>{" "}
                 Aadhaar, PAN, or any government identity number. Bank account,
@@ -175,13 +177,13 @@ export default function PrivacyPage() {
             <Section id="4" title="What we do not do with it">
               <ul className="ml-4 list-disc space-y-2">
                 <li>
-                  <strong className="font-semibold text-zinc-900">We do not sell your data.</strong>{" "}
+                  <strong className="font-semibold text-ink">We do not sell your data.</strong>{" "}
                   Not to advertisers, not to data brokers, not to anyone. The
                   waitlist address is used to send you launch pricing, and for
                   nothing else.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">
+                  <strong className="font-semibold text-ink">
                     We do not sell your analysis to a college.
                   </strong>{" "}
                   We do not disclose that you shortlisted a programme, considered
@@ -189,14 +191,14 @@ export default function PrivacyPage() {
                   activity, and none can buy access to it.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">
+                  <strong className="font-semibold text-ink">
                     We do not accept payment for rankings.
                   </strong>{" "}
                   No college, university, or programme can pay to change a score
                   or a position. A paid ranking is not a ranking.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">
+                  <strong className="font-semibold text-ink">
                     We do not use your finances for advertising.
                   </strong>{" "}
                   No lender, insurer, or education-finance provider receives
@@ -204,7 +206,7 @@ export default function PrivacyPage() {
                 </li>
               </ul>
               <p>
-                <strong className="font-semibold text-zinc-900">What we do earn from:</strong>{" "}
+                <strong className="font-semibold text-ink">What we do earn from:</strong>{" "}
                 Some course links in the marketplace are affiliate-tracked, and
                 clicking one may earn us a small commission from the provider. The
                 commission does not affect course pricing, ordering, or the match
@@ -220,13 +222,13 @@ export default function PrivacyPage() {
               </p>
               <ul className="ml-4 list-disc space-y-2">
                 <li>
-                  <strong className="font-semibold text-zinc-900">Consent</strong>{" "}
+                  <strong className="font-semibold text-ink">Consent</strong>{" "}
                   for the waitlist, for optional account creation, and for any
                   marketing email. You can withdraw it at any time, and we will
                   stop.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">
+                  <strong className="font-semibold text-ink">
                     Performance of a contract
                   </strong>{" "}
                   for processing the inputs needed to produce the report you
@@ -234,7 +236,7 @@ export default function PrivacyPage() {
                   compute an NPV, so this is necessary to deliver the service.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">
+                  <strong className="font-semibold text-ink">
                     Legitimate interests
                   </strong>{" "}
                   for security logging, abuse prevention, and anonymous product
@@ -259,11 +261,11 @@ export default function PrivacyPage() {
               <p>A small number of processors see data in order to run the service:</p>
               <ul className="ml-4 list-disc space-y-2">
                 <li>
-                  <strong className="font-semibold text-zinc-900">Supabase</strong>{" "}
+                  <strong className="font-semibold text-ink">Supabase</strong>{" "}
                   — database and authentication hosting.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">
+                  <strong className="font-semibold text-ink">
                     Google (and OpenRouter, where used)
                   </strong>{" "}
                   — sign-in, and retrieval-augmented grounding for the AI advisor.
@@ -271,17 +273,17 @@ export default function PrivacyPage() {
                   model provider in order to produce a cited answer.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">Vercel</strong>{" "}
+                  <strong className="font-semibold text-ink">Vercel</strong>{" "}
                   — hosting the web application.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">PostHog</strong>{" "}
+                  <strong className="font-semibold text-ink">PostHog</strong>{" "}
                   — product analytics. Initialised with{" "}
-                  <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[12px]">person_profiles: &quot;identified_only&quot;</code>,
+                  <code className="rounded bg-chip px-1 py-0.5 font-mono text-[12px]">person_profiles: &quot;identified_only&quot;</code>,
                   so analytics stay pseudonymous unless you sign in.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">Resend</strong>{" "}
+                  <strong className="font-semibold text-ink">Resend</strong>{" "}
                   — transactional email, if configured.
                 </li>
               </ul>
@@ -296,22 +298,22 @@ export default function PrivacyPage() {
             <Section id="7" title="How long we keep it">
               <ul className="ml-4 list-disc space-y-2">
                 <li>
-                  <strong className="font-semibold text-zinc-900">Reports</strong>{" "}
+                  <strong className="font-semibold text-ink">Reports</strong>{" "}
                   — stored for 90 days, then expired by the database. After
                   expiry the record is deleted rather than hidden.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">Waitlist entries</strong>{" "}
+                  <strong className="font-semibold text-ink">Waitlist entries</strong>{" "}
                   — kept while the waitlist is live, and deleted on request at any
                   time. We will not keep the address after pricing has been sent
                   unless you ask us to.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">Accounts</strong>{" "}
+                  <strong className="font-semibold text-ink">Accounts</strong>{" "}
                   — until you ask us to delete the account, then within 30 days.
                 </li>
                 <li>
-                  <strong className="font-semibold text-zinc-900">Server logs</strong>{" "}
+                  <strong className="font-semibold text-ink">Server logs</strong>{" "}
                   — rotated on a short cycle. Email addresses are reduced to their
                   domain in application logs, so logs cannot be used to rebuild a
                   list of signups.
@@ -319,13 +321,25 @@ export default function PrivacyPage() {
               </ul>
             </Section>
 
-            <Section id="8" title="Cookies and analytics">
+            <Section id="8" title="Cookies and sessions">
+              <span id="cookies" className="block scroll-mt-24" />
               <p>
-                We use a small amount of local storage to keep you signed in and
-                to remember your theme. We do not use advertising cookies, we do
-                not build cross-site profiles, and we do not run third-party
-                advertising trackers. Analytics are first-party and
-                pseudonymous.
+                Necessary storage keeps you signed in and lets you reopen the
+                report you just made. Theme and analytics stay off until you
+                allow them. We do not use advertising cookies and we do not
+                build a cross-site profile. The same list, and the rules for
+                session handles, is on the{" "}
+                <Link href="/cookies" className="font-semibold text-accent underline underline-offset-2">
+                  cookie page
+                </Link>.
+              </p>
+              <CookiePolicyTable />
+              <p>
+                A report token is 128 bits from a cryptographic random generator.
+                A psychometric session id is a UUID. An unknown or placeholder
+                id is refused. Signing out ends the session and deletes the
+                return path and the report handle in that tab. It does not
+                delete the record of your cookie choice.
               </p>
             </Section>
 
@@ -336,20 +350,20 @@ export default function PrivacyPage() {
                 exercise them:
               </p>
               <ul className="ml-4 list-disc space-y-2">
-                <li><strong className="font-semibold text-zinc-900">Access</strong> — tell you what personal data we hold about you.</li>
-                <li><strong className="font-semibold text-zinc-900">Correction</strong> — fix anything inaccurate.</li>
-                <li><strong className="font-semibold text-zinc-900">Erasure</strong> — delete your waitlist entry, your reports, and your account.</li>
-                <li><strong className="font-semibold text-zinc-900">Withdraw consent</strong> — stop the marketing email, immediately.</li>
-                <li><strong className="font-semibold text-zinc-900">Nominate</strong> — ask us to stop processing data about a deceased person.</li>
-                <li><strong className="font-semibold text-zinc-900">Grievance redressal</strong> — complain, and have it answered.</li>
+                <li><strong className="font-semibold text-ink">Access</strong> — tell you what personal data we hold about you.</li>
+                <li><strong className="font-semibold text-ink">Correction</strong> — fix anything inaccurate.</li>
+                <li><strong className="font-semibold text-ink">Erasure</strong> — delete your waitlist entry, your reports, and your account.</li>
+                <li><strong className="font-semibold text-ink">Withdraw consent</strong> — stop the marketing email, immediately.</li>
+                <li><strong className="font-semibold text-ink">Nominate</strong> — ask us to stop processing data about a deceased person.</li>
+                <li><strong className="font-semibold text-ink">Grievance redressal</strong> — complain, and have it answered.</li>
               </ul>
               <p>
                 To exercise any of these, email{" "}
-                <a href={mailtoLink("Data deletion request")} className="font-semibold text-rose-600 underline underline-offset-2">
+                <a href={mailtoLink("Data deletion request")} className="font-semibold text-accent underline underline-offset-2">
                   {BRAND.supportEmail}
                 </a>{" "}
                 from the address associated with your account, or use the{" "}
-                <Link href="/contact" className="font-semibold text-rose-600 underline underline-offset-2">
+                <Link href="/contact" className="font-semibold text-accent underline underline-offset-2">
                   contact form
                 </Link>
                 . Include the email address you used. We respond to a deletion
@@ -385,7 +399,7 @@ export default function PrivacyPage() {
               <p>
                 No system is perfectly secure. If you find a vulnerability,
                 report it to{" "}
-                <a href={mailtoLink("Security disclosure")} className="font-semibold text-rose-600 underline underline-offset-2">
+                <a href={mailtoLink("Security disclosure")} className="font-semibold text-accent underline underline-offset-2">
                   {BRAND.supportEmail}
                 </a>{" "}
                 and we will investigate and fix it. We would rather hear about
@@ -404,7 +418,7 @@ export default function PrivacyPage() {
                 This policy is governed by the laws of India. Data protection
                 matters are addressed under the Digital Personal Data Protection
                 Act, 2023. Complaints go to{" "}
-                <a href={mailtoLink("Privacy complaint")} className="font-semibold text-rose-600 underline underline-offset-2">
+                <a href={mailtoLink("Privacy complaint")} className="font-semibold text-accent underline underline-offset-2">
                   {BRAND.supportEmail}
                 </a>
                 ; we aim to acknowledge a complaint within three working days and
@@ -425,11 +439,11 @@ export default function PrivacyPage() {
             <a
               key={item.label}
               href={item.href}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:border-slate-300 hover:shadow-sm"
+              className="rounded-2xl border border-line/10 bg-elevated p-5 shadow-xs transition-all hover:border-line/20 hover:shadow-sm"
             >
-              <item.icon size={16} className="text-rose-600" />
-              <h3 className="mt-2.5 text-[13px] font-bold text-zinc-950">{item.label}</h3>
-              <p className="mt-1 text-[12px] leading-relaxed text-zinc-500">{item.body}</p>
+              <item.icon size={16} className="text-accent" />
+              <h3 className="mt-2.5 text-[13px] font-bold text-ink">{item.label}</h3>
+              <p className="mt-1 text-[12px] leading-relaxed text-ink-2">{item.body}</p>
             </a>
           ))}
         </div>

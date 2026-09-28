@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { X, Lock, Mail, ArrowRight, ShieldCheck, Zap, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { BRAND } from "@/lib/brand";
 
 export function AuthModal() {
   const { isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, loginWithGithub, loginWithEmail } = useAuth();
@@ -12,6 +13,54 @@ export function AuthModal() {
   const [oauthLoading, setOauthLoading] = useState<"google" | "github" | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  /* Focus handling. A modal that appears without moving focus is invisible to a
+     keyboard user, and one that leaves focus on <body> after closing strands
+     them at the top of the document. Focus moves in on open, to the first
+     field, and back to the invoking element on close. */
+  useEffect(() => {
+    if (!isAuthModalOpen) return;
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
+    emailRef.current?.focus();
+    return () => returnFocusRef.current?.focus?.();
+  }, [isAuthModalOpen]);
+
+  /* Escape closes, and Tab is kept inside the panel. Without the focus trap,
+     Tab walks into the page behind the overlay, which is visible and looks
+     interactive but is unreachable by design. */
+  useEffect(() => {
+    if (!isAuthModalOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsAuthModalOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !panelRef.current) return;
+
+      const focusable = panelRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isAuthModalOpen, setIsAuthModalOpen]);
 
   if (!isAuthModalOpen) return null;
 
@@ -57,35 +106,56 @@ export function AuthModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-md p-6 bg-[#0A0A0A] border border-white/[0.1] rounded-2xl shadow-2xl text-[#F5F5F7]">
+    <div
+      // The backdrop is presentational; the dialog is named and described so a
+      // screen reader announces what opened rather than just "dialog".
+      onClick={() => setIsAuthModalOpen(false)}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
+        aria-describedby="auth-modal-desc"
+        // Click inside must not bubble to the backdrop and close the dialog
+        // mid-sign-in.
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-md p-6 bg-[#0A0A0A] border border-white/[0.1] rounded-2xl shadow-2xl text-[#F5F5F7]"
+      >
         {/* Close Button */}
         <button
+          type="button"
           onClick={() => setIsAuthModalOpen(false)}
+          aria-label="Close sign in"
           className="absolute top-4 right-4 p-1.5 text-[#86868B] hover:text-[#F5F5F7] rounded-lg hover:bg-white/[0.06] transition"
         >
-          <X size={18} />
+          <X size={18} aria-hidden="true" />
         </button>
 
         {/* Brand Header */}
         <div className="flex items-center gap-2.5 mb-2">
           <div className="w-7 h-7 rounded-lg bg-[#E11D48] flex items-center justify-center">
-            <Zap size={14} className="text-white" />
+            <Zap size={14} className="text-white" aria-hidden="true" />
           </div>
           <span className="font-extrabold text-base tracking-tight text-[#F5F5F7]">
-            India<span className="text-[#E11D48]">Lens</span>
+            {BRAND.name}
           </span>
         </div>
 
-        <h2 className="text-xl font-bold tracking-tight text-white mb-1">
-          Sign In to Your Career OS
+        <h2
+          id="auth-modal-title"
+          className="text-xl font-bold tracking-tight text-white mb-1"
+        >
+          Sign in to {BRAND.name}
         </h2>
-        <p className="text-xs text-slate-400 mb-5 leading-relaxed">
-          Access your longitudinal path DAG, saved degree analyses, and actuarial debt stress tests across all devices.
+        <p id="auth-modal-desc" className="text-xs text-slate-400 mb-5 leading-relaxed">
+          Sign in to keep your saved reports and open them on any device. Without an account, a
+          report is reachable only by its link.
         </p>
 
         {errorMessage && (
-          <div className="p-3 mb-4 text-xs text-rose-400 bg-rose-950/40 border border-rose-800 rounded-lg">
+          <div role="alert" className="p-3 mb-4 text-xs text-rose-400 bg-rose-950/40 border border-rose-800 rounded-lg">
             {errorMessage}
           </div>
         )}
@@ -161,11 +231,17 @@ export function AuthModal() {
         {/* Email Form */}
         <form onSubmit={handleEmailSubmit} className="space-y-3">
           <div>
-            <label className="block text-[11px] font-mono text-slate-400 mb-1">
+            {/* `htmlFor`/`id` pairing: a <label> wrapping nothing gives a
+                screen reader an unassociated text node instead of a field
+                label, and clicking the label does not focus the input. */}
+            <label htmlFor="auth-name" className="block text-[11px] font-mono text-slate-400 mb-1">
               Your Name (Optional)
             </label>
             <input
+              id="auth-name"
+              name="name"
               type="text"
+              autoComplete="name"
               placeholder="e.g. Arjun Sharma"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -174,20 +250,28 @@ export function AuthModal() {
           </div>
 
           <div>
-            <label className="block text-[11px] font-mono text-slate-400 mb-1">
+            <label htmlFor="auth-email" className="block text-[11px] font-mono text-slate-400 mb-1">
               Institutional or Personal Email
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-2.5 text-slate-500" size={14} />
               <input
+                id="auth-email"
+                name="email"
                 type="email"
                 required
+                autoComplete="email"
+                ref={emailRef}
+                aria-describedby="auth-email-hint"
                 placeholder="student@college.edu or name@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-[#0077C8]"
               />
             </div>
+            <p id="auth-email-hint" className="mt-1.5 text-[11px] text-slate-500">
+              We send a one-time sign-in link. No password is created or stored.
+            </p>
           </div>
 
           <button
@@ -196,17 +280,17 @@ export function AuthModal() {
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0077C8] hover:bg-[#0077C8]/90 text-white font-semibold text-xs rounded-xl transition shadow-lg shadow-blue-900/20 disabled:opacity-50"
           >
             {isSubmitting ? "Authenticating..." : "Send Magic Session Key"}
-            <ArrowRight size={13} />
+            <ArrowRight size={13} aria-hidden="true" />
           </button>
         </form>
 
         {/* Trust Badges */}
         <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono">
           <span className="flex items-center gap-1">
-            <Lock size={11} className="text-emerald-400" /> 256-bit Encrypted
+            <Lock size={11} className="text-emerald-400" aria-hidden="true" /> Encrypted in transit
           </span>
           <span className="flex items-center gap-1">
-            <ShieldCheck size={11} className="text-[#0077C8]" /> Zero Ads / No Data Sold
+            <ShieldCheck size={11} className="text-[#0077C8]" aria-hidden="true" /> No ads, no data sold
           </span>
         </div>
       </div>

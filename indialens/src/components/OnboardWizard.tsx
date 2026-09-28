@@ -452,20 +452,20 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
   // -------------------------------------------------------------------------
   if (step === 0) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-zinc-950 font-sans animate-fade-slide-up">
+      <div className="min-h-screen bg-surface flex flex-col justify-between text-ink font-sans animate-fade-slide-up">
         {/* Top Header */}
-        <header className="px-6 py-4 flex items-center justify-between border-b border-slate-200/80 bg-white/70 backdrop-blur-sm">
+        <header className="px-6 py-4 flex items-center justify-between border-b border-line/10 bg-elevated/70 backdrop-blur-sm">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center text-white font-bold text-[10px]">
+            <div className="w-6 h-6 rounded-lg bg-ink flex items-center justify-center text-elevated font-bold text-[10px]">
               OS
             </div>
-            <span className="font-bold text-sm text-zinc-900 tracking-tight">VividhEdu</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-600 inline-block ml-0.5" />
+            <span className="font-bold text-sm text-ink tracking-tight">VividhEdu</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-accent inline-block ml-0.5" />
           </div>
-          <div className="flex items-center gap-3 text-xs text-zinc-500">
-            <span className="hover:text-zinc-800 cursor-pointer">Privacy Guarantee</span>
-            <span className="text-zinc-300">/</span>
-            <span className="hover:text-zinc-800 cursor-pointer flex items-center gap-1">
+          <div className="flex items-center gap-3 text-xs text-ink-2">
+            <span className="hover:text-ink cursor-pointer">Privacy Guarantee</span>
+            <span className="text-ink-3">/</span>
+            <span className="hover:text-ink cursor-pointer flex items-center gap-1">
               <HelpCircle size={12} />
               Assistance
             </span>
@@ -475,29 +475,29 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
         {/* Center Hero */}
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-2xl mx-auto w-full text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200/70 text-rose-700 text-xs font-semibold mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-dim border border-accent/25/70 text-accent text-xs font-semibold mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
             <span>Student Intelligence Platform</span>
           </div>
 
           {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-zinc-950 tracking-tight leading-tight mb-4">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-ink tracking-tight leading-tight mb-4">
             Let’s start with you.
           </h1>
-          <p className="text-zinc-500 text-base max-w-md mx-auto mb-8 leading-relaxed">
+          <p className="text-ink-2 text-base max-w-md mx-auto mb-8 leading-relaxed">
             We’ll ask a few questions so everything you see here is built around your goals.
           </p>
 
           {/* Black CTA Button with smooth hover and click feedback */}
           <button
             onClick={() => setStep(1)}
-            className="group relative inline-flex items-center justify-center gap-2.5 px-8 py-3.5 bg-black hover:bg-zinc-800 active:scale-[0.98] text-white font-semibold text-sm rounded-xl transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
+            className="group relative inline-flex items-center justify-center gap-2.5 px-8 py-3.5 bg-ink hover:bg-ink active:scale-[0.98] text-elevated font-semibold text-sm rounded-xl transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
           >
             <span>Get started</span>
             <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-200" />
           </button>
 
-          <p className="text-zinc-400 text-xs mt-3 mb-8">
+          <p className="text-ink-3 text-xs mt-3 mb-8">
             About 3 minutes · You can change your answers later
           </p>
 
@@ -510,25 +510,25 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
             replaced by the real state of this browser: who is signed in, if
             anyone.
           */}
-          <div className="w-full max-w-md bg-white rounded-xl p-4 border border-slate-200/80 shadow-sm relative overflow-hidden text-left">
+          <div className="w-full max-w-md bg-elevated rounded-xl p-4 border border-line/10 shadow-sm relative overflow-hidden text-left">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 via-pink-400 to-rose-400" />
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100 shrink-0">
+                <div className="w-9 h-9 rounded-lg bg-accent-dim text-accent flex items-center justify-center border border-rose-100 shrink-0">
                   <Sliders size={18} />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-zinc-900">
+                    <span className="text-xs font-bold text-ink">
                       {user ? "Signed in" : "Not signed in"}
                     </span>
                     <span
                       className={`w-1.5 h-1.5 rounded-full inline-block ${
-                        user ? "bg-emerald-500" : "bg-zinc-300"
+                        user ? "bg-sys-green" : "bg-chip"
                       }`}
                     />
                   </div>
-                  <span className="text-xs text-zinc-500 truncate block">
+                  <span className="text-xs text-ink-2 truncate block">
                     {user
                       ? `Answers will be saved to ${user.email}`
                       : "Your answers stay on this device unless you sign in."}
@@ -563,26 +563,26 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
 
           <button
             onClick={loadExampleProfile}
-            className="mt-4 inline-flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-zinc-700 underline underline-offset-2 decoration-dotted transition cursor-pointer"
+            className="mt-4 inline-flex items-center gap-1.5 text-[11px] text-ink-3 hover:text-ink underline underline-offset-2 decoration-dotted transition cursor-pointer"
           >
             {isExample ? "Clear example and start blank" : "Want to see an example first?"}
           </button>
         </main>
 
         {/* Bottom Three Guarantees */}
-        <footer className="py-4 border-t border-slate-200/80 bg-white/70 backdrop-blur-sm text-xs text-zinc-500 flex flex-wrap items-center justify-center gap-8">
+        <footer className="py-4 border-t border-line/10 bg-elevated/70 backdrop-blur-sm text-xs text-ink-2 flex flex-wrap items-center justify-center gap-8">
           <div className="flex items-center gap-1.5">
-            <FileText size={13} className="text-zinc-400" />
+            <FileText size={13} className="text-ink-3" />
             <span>Personalized ROI models</span>
           </div>
-          <span className="text-zinc-300">•</span>
+          <span className="text-ink-3">•</span>
           <div className="flex items-center gap-1.5">
-            <Shield size={13} className="text-zinc-400" />
+            <Shield size={13} className="text-ink-3" />
             <span>AI Resilience Index</span>
           </div>
-          <span className="text-zinc-300">•</span>
+          <span className="text-ink-3">•</span>
           <div className="flex items-center gap-1.5">
-            <Scale size={13} className="text-zinc-400" />
+            <Scale size={13} className="text-ink-3" />
             <span>Unbiased guidance</span>
           </div>
         </footer>
@@ -606,15 +606,15 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
   const currentMeta = stepMeta[step - 1];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-zinc-950 font-sans">
+    <div className="min-h-screen bg-surface flex flex-col justify-between text-ink font-sans">
       {/* Top Navbar matching PDF Screens */}
-      <header className="px-6 py-3 flex items-center justify-between border-b border-slate-200/80 bg-white">
+      <header className="px-6 py-3 flex items-center justify-between border-b border-line/10 bg-elevated">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center text-white font-bold text-[10px]">
+          <div className="w-6 h-6 rounded-lg bg-ink flex items-center justify-center text-elevated font-bold text-[10px]">
             OS
           </div>
-          <span className="font-bold text-sm text-zinc-900 tracking-tight">VividhEdu</span>
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 font-semibold ml-1">
+          <span className="font-bold text-sm text-ink tracking-tight">VividhEdu</span>
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-chip text-ink-2 font-semibold ml-1">
             v2.4
           </span>
         </div>
@@ -622,14 +622,14 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
         {/* Progress tracker. Was hardcoded "of 6" and is now the real step
             count, since the identity screen was added as a step. */}
         <div className="hidden sm:flex items-center gap-3">
-          <span className="text-xs font-medium text-zinc-500">Step {step} of {LAST_STEP}</span>
-          <div className="w-36 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <span className="text-xs font-medium text-ink-2">Step {step} of {LAST_STEP}</span>
+          <div className="w-36 h-1.5 bg-chip rounded-full overflow-hidden">
             <div
-              className="h-full bg-rose-500 rounded-full transition-all duration-300"
+              className="h-full bg-accent rounded-full transition-all duration-300"
               style={{ width: `${currentMeta.pct}%` }}
             />
           </div>
-          <span className="text-xs font-mono text-zinc-400 font-medium">{currentMeta.pct}%</span>
+          <span className="text-xs font-mono text-ink-3 font-medium">{currentMeta.pct}%</span>
         </div>
 
         <div className="flex items-center gap-3 text-xs">
@@ -642,9 +642,9 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
           */}
           <button
             onClick={handleSaveDraft}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-zinc-700 font-medium transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line/10 bg-elevated hover:bg-surface text-ink font-medium transition cursor-pointer"
           >
-            <Bookmark size={12} className="text-zinc-400" />
+            <Bookmark size={12} className="text-ink-3" />
             <span>{draftStatus}</span>
           </button>
         </div>
@@ -654,14 +654,14 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
       <main key={step} className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 animate-fade-slide-up">
         {/* Title Header */}
         <div className="mb-8 text-center sm:text-left">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200/60 text-rose-700 text-[11px] font-bold tracking-wide uppercase font-mono mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-dim border border-accent/25/60 text-accent text-[11px] font-bold tracking-wide uppercase font-mono mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
             <span>{currentMeta.badge}</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-950 tracking-tight mb-2">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-ink tracking-tight mb-2">
             {currentMeta.title}
           </h2>
-          <p className="text-zinc-500 text-sm max-w-2xl leading-relaxed">
+          <p className="text-ink-2 text-sm max-w-2xl leading-relaxed">
             {currentMeta.sub}
           </p>
         </div>
@@ -671,10 +671,10 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
         {/* ----------------------------------------------------------------- */}
         {step === 1 && (
           <div className="space-y-5 max-w-xl mx-auto">
-            <div className="bg-white p-6 rounded-xl border border-slate-200">
+            <div className="bg-elevated p-6 rounded-xl border border-line/10">
               <label
                 htmlFor="student-full-name"
-                className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold mb-2"
+                className="block text-[10px] font-mono uppercase tracking-wider text-ink-3 font-bold mb-2"
               >
                 YOUR NAME
               </label>
@@ -688,10 +688,10 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                 placeholder="Type your name"
                 aria-invalid={showValidation && !data.fullName.trim()}
                 aria-describedby="student-name-help"
-                className={`w-full px-3.5 py-3 bg-slate-50 border rounded-lg text-base font-semibold text-zinc-900 focus:outline-none focus:border-zinc-400 ${
+                className={`w-full px-3.5 py-3 bg-surface border rounded-lg text-base font-semibold text-ink focus:outline-none focus:border-zinc-400 ${
                   showValidation && !data.fullName.trim()
                     ? "border-rose-400"
-                    : "border-slate-200"
+                    : "border-line/10"
                 }`}
               />
 
@@ -717,7 +717,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                 </p>
               )}
 
-              <p id="student-name-help" className="mt-2.5 text-[11px] text-zinc-500 leading-relaxed">
+              <p id="student-name-help" className="mt-2.5 text-[11px] text-ink-2 leading-relaxed">
                 {user ? (
                   <>
                     This is saved to your account ({user.email}) so your profile is yours every
@@ -790,33 +790,33 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                   <div
                     key={card.id}
                     onClick={() => setData({ ...data, stage: card.id })}
-                    className={`relative p-5 rounded-xl border bg-white cursor-pointer transition-all ${
+                    className={`relative p-5 rounded-xl border bg-elevated cursor-pointer transition-all ${
                       isSelected
-                        ? "border-rose-400 shadow-md ring-1 ring-rose-400 bg-white"
-                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                        ? "border-rose-400 shadow-md ring-1 ring-rose-400 bg-elevated"
+                        : "border-line/10 hover:border-line/20 hover:bg-surface/50"
                     }`}
                   >
                     {isSelected && (
-                      <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-rose-600 text-white flex items-center gap-1">
+                      <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-accent text-elevated flex items-center gap-1">
                         <Check size={10} /> ACTIVE
                       </span>
                     )}
                     {!isSelected && (
-                      <span className="absolute top-3 right-3 text-xs font-mono font-semibold text-zinc-300">
+                      <span className="absolute top-3 right-3 text-xs font-mono font-semibold text-ink-3">
                         {card.num}
                       </span>
                     )}
-                    <div className="w-8 h-8 rounded-lg bg-zinc-100 text-zinc-700 flex items-center justify-center mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-chip text-ink flex items-center justify-center mb-3">
                       {card.icon}
                     </div>
-                    <h3 className="font-bold text-base text-zinc-900 mb-1">{card.title}</h3>
-                    <p className="text-xs text-zinc-500 leading-relaxed">{card.desc}</p>
+                    <h3 className="font-bold text-base text-ink mb-1">{card.title}</h3>
+                    <p className="text-xs text-ink-2 leading-relaxed">{card.desc}</p>
                   </div>
                 );
               })}
             </div>
-            <div className="flex items-center gap-2 text-xs text-zinc-500 bg-white p-3 rounded-lg border border-slate-200/80">
-              <span className="text-zinc-400">ⓘ</span>
+            <div className="flex items-center gap-2 text-xs text-ink-2 bg-elevated p-3 rounded-lg border border-line/10">
+              <span className="text-ink-3">ⓘ</span>
               <span>You can calibrate stream-specific requirements in the next step.</span>
             </div>
           </div>
@@ -883,33 +883,33 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                   <div
                     key={card.id}
                     onClick={() => toggleGoal(card.id)}
-                    className={`p-4 rounded-xl border bg-white cursor-pointer transition-all flex flex-col justify-between ${
+                    className={`p-4 rounded-xl border bg-elevated cursor-pointer transition-all flex flex-col justify-between ${
                       isSelected
                         ? "border-rose-400 shadow-sm ring-1 ring-rose-400"
-                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                        : "border-line/10 hover:border-line/20 hover:bg-surface/50"
                     }`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <h3 className="font-bold text-sm text-zinc-900">{card.title}</h3>
+                        <h3 className="font-bold text-sm text-ink">{card.title}</h3>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-mono text-zinc-400">{card.num}</span>
+                          <span className="text-[10px] font-mono text-ink-3">{card.num}</span>
                           <div
                             className={`w-4 h-4 rounded flex items-center justify-center border transition ${
                               isSelected
-                                ? "bg-black border-black text-white"
-                                : "border-slate-300 bg-white"
+                                ? "bg-ink border-line/10 text-elevated"
+                                : "border-line/20 bg-elevated"
                             }`}
                           >
                             {isSelected && <Check size={10} />}
                           </div>
                         </div>
                       </div>
-                      <p className="text-xs text-zinc-500 leading-relaxed mb-3">{card.desc}</p>
+                      <p className="text-xs text-ink-2 leading-relaxed mb-3">{card.desc}</p>
                     </div>
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-zinc-400">
+                    <div className="pt-2 border-t border-line/5 flex items-center justify-between text-[11px] font-mono text-ink-3">
                       <span>{card.footerLeft}</span>
-                      <span className="font-medium text-zinc-600">{card.footerRight}</span>
+                      <span className="font-medium text-ink-2">{card.footerRight}</span>
                     </div>
                   </div>
                 );
@@ -919,29 +919,29 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
             {/* Confused Card (Wide) */}
             <div
               onClick={() => toggleGoal("confused")}
-              className={`p-4 rounded-xl border bg-white cursor-pointer transition-all ${
+              className={`p-4 rounded-xl border bg-elevated cursor-pointer transition-all ${
                 data.goals.includes("confused")
                   ? "border-rose-400 ring-1 ring-rose-400"
-                  : "border-slate-200 hover:border-slate-300"
+                  : "border-line/10 hover:border-line/20"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-sm text-zinc-900">I’m confused</h3>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                    <h3 className="font-bold text-sm text-ink">I’m confused</h3>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-accent-dim text-accent border border-accent/25">
                       Human First
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-ink-2">
                     That’s completely fine. We will map your natural strengths from scratch.
                   </p>
                 </div>
                 <div
                   className={`w-4 h-4 rounded flex items-center justify-center border transition ${
                     data.goals.includes("confused")
-                      ? "bg-black border-black text-white"
-                      : "border-slate-300 bg-white"
+                      ? "bg-ink border-line/10 text-elevated"
+                      : "border-line/20 bg-elevated"
                   }`}
                 >
                   {data.goals.includes("confused") && <Check size={10} />}
@@ -949,7 +949,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
               </div>
             </div>
 
-            <div className="text-center text-xs font-mono text-zinc-400 pt-2">
+            <div className="text-center text-xs font-mono text-ink-3 pt-2">
               1 – 7 to toggle options · Enter to continue
             </div>
           </div>
@@ -962,15 +962,15 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
           <div className="space-y-5">
             {/* Search Input */}
             <div className="relative">
-              <Search className="absolute left-3.5 top-3 text-zinc-400 w-4 h-4" />
+              <Search className="absolute left-3.5 top-3 text-ink-3 w-4 h-4" />
               <input
                 type="text"
                 placeholder="Search disciplines, subjects, or industries (e.g. Behavioral Economics, Robotics)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-12 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-zinc-900 focus:outline-none focus:border-zinc-400 shadow-sm"
+                className="w-full pl-10 pr-12 py-2.5 bg-elevated border border-line/10 rounded-xl text-xs text-ink focus:outline-none focus:border-zinc-400 shadow-sm"
               />
-              <span className="absolute right-3.5 top-2.5 text-[11px] font-mono text-zinc-400 bg-slate-100 px-1.5 py-0.5 rounded">
+              <span className="absolute right-3.5 top-2.5 text-[11px] font-mono text-ink-3 bg-chip px-1.5 py-0.5 rounded">
                 ⌘K
               </span>
             </div>
@@ -1023,13 +1023,13 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                   ],
                 },
               ].map((group) => (
-                <div key={group.code} className="p-4 rounded-xl border border-slate-200 bg-white">
+                <div key={group.code} className="p-4 rounded-xl border border-line/10 bg-elevated">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-zinc-600">{group.icon}</span>
-                      <h3 className="font-bold text-xs text-zinc-900">{group.domain}</h3>
+                      <span className="text-ink-2">{group.icon}</span>
+                      <h3 className="font-bold text-xs text-ink">{group.domain}</h3>
                     </div>
-                    <span className="text-[10px] font-mono text-zinc-400">{group.code}</span>
+                    <span className="text-[10px] font-mono text-ink-3">{group.code}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {group.items.map((it) => {
@@ -1040,8 +1040,8 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                           onClick={() => toggleDiscipline(it.id)}
                           className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                             isSel
-                              ? "bg-rose-50 text-rose-700 border border-rose-200 font-semibold"
-                              : "bg-slate-50 hover:bg-slate-100 text-zinc-700 border border-slate-200/80"
+                              ? "bg-accent-dim text-accent border border-accent/25 font-semibold"
+                              : "bg-surface hover:bg-chip text-ink border border-line/10"
                           }`}
                         >
                           <span>{isSel ? "✓" : "+"}</span>
@@ -1055,12 +1055,12 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
             </div>
 
             {/* Helper box */}
-            <div className="p-3 bg-white rounded-xl border border-slate-200/80 flex items-center justify-between text-xs text-zinc-500">
+            <div className="p-3 bg-elevated rounded-xl border border-line/10 flex items-center justify-between text-xs text-ink-2">
               <div className="flex items-center gap-2">
-                <Sliders size={14} className="text-zinc-400" />
+                <Sliders size={14} className="text-ink-3" />
                 <span>Not seeing a niche discipline? You can refine specific subfields later in your Research Profile settings.</span>
               </div>
-              <span className="font-mono text-zinc-400 text-[11px] shrink-0">Auto-calibrated</span>
+              <span className="font-mono text-ink-3 text-[11px] shrink-0">Auto-calibrated</span>
             </div>
           </div>
         )}
@@ -1077,7 +1077,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
               priority — which happened to be true of the persona this screen
               was written for and of nobody else.
             */}
-            <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+            <div className="bg-elevated rounded-xl border border-line/10 divide-y divide-line/5">
               {[
                 { key: "career_outcomes", label: "Career outcomes", desc: "Placements, salary upside, career trajectory", num: "#1" },
                 { key: "cost_affordability", label: "Cost & Affordability", desc: "Tuition, living expenses, scholarships & net financial strain", num: "#2" },
@@ -1092,17 +1092,17 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                 return (
                   <div key={row.key} className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <span className="text-xs font-mono font-bold text-zinc-400 mt-0.5">{row.num}</span>
+                      <span className="text-xs font-mono font-bold text-ink-3 mt-0.5">{row.num}</span>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-zinc-900">{row.label}</span>
+                          <span className="font-bold text-sm text-ink">{row.label}</span>
                           {isTop && (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-accent-dim text-accent border border-accent/25">
                               High Weight
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-zinc-500 mt-0.5">{row.desc}</p>
+                        <p className="text-xs text-ink-2 mt-0.5">{row.desc}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 sm:w-48 shrink-0">
@@ -1115,7 +1115,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                         aria-label={`${row.label} weight`}
                         className="weight-slider flex-1"
                       />
-                      <span className="font-mono text-xs font-bold text-zinc-800 w-8 text-right">
+                      <span className="font-mono text-xs font-bold text-ink w-8 text-right">
                         {value}%
                       </span>
                     </div>
@@ -1137,20 +1137,20 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
               factor currently ranks highest, and that every weight starts at
               the neutral midpoint until moved.
             */}
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center gap-3 text-xs">
-              <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+            <div className="p-3.5 bg-elevated rounded-xl border border-line/10 flex items-center gap-3 text-xs">
+              <div className="w-8 h-8 rounded-lg bg-accent-dim text-accent flex items-center justify-center shrink-0">
                 <TrendingUp size={16} />
               </div>
               <div>
-                <div className="flex items-center gap-1.5 font-bold text-zinc-900">
+                <div className="flex items-center gap-1.5 font-bold text-ink">
                   <span>
                     {isWeightsNeutral
                       ? "No ranking set yet"
                       : `Top priority: ${WEIGHT_LABELS[topWeightKey]}`}
                   </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                 </div>
-                <p className="text-zinc-500 text-[11px] mt-0.5">
+                <p className="text-ink-2 text-[11px] mt-0.5">
                   {isWeightsNeutral
                     ? "Every factor starts at an even 50 so nothing is assumed about your priorities. Move whichever ones matter."
                     : "These weights are used to order the programmes in your report."}
@@ -1168,15 +1168,15 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
             {/* Left 2 Cols: Financial + Geography */}
             <div className="md:col-span-2 space-y-6">
               {/* Budget */}
-              <div className="bg-white p-5 rounded-xl border border-slate-200">
+              <div className="bg-elevated p-5 rounded-xl border border-line/10">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold block">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-ink-3 font-bold block">
                       FINANCIAL PARAMETERS
                     </span>
-                    <h3 className="font-bold text-sm text-zinc-900">Target Annual Education Budget</h3>
+                    <h3 className="font-bold text-sm text-ink">Target Annual Education Budget</h3>
                   </div>
-                  <DollarSign size={16} className="text-zinc-400" />
+                  <DollarSign size={16} className="text-ink-3" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
@@ -1198,23 +1198,23 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                         onClick={() => setData({ ...data, budgetBand: b.id })}
                         className={`p-3 rounded-xl border cursor-pointer transition relative ${
                           isSel
-                            ? "border-zinc-950 bg-white shadow-sm ring-1 ring-zinc-950"
-                            : "border-slate-200 hover:border-slate-300"
+                            ? "border-zinc-950 bg-elevated shadow-sm ring-1 ring-zinc-950"
+                            : "border-line/10 hover:border-line/20"
                         }`}
                       >
                         {b.badge && (
-                          <span className="absolute -top-2 left-3 px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
+                          <span className="absolute -top-2 left-3 px-1.5 py-0.2 rounded text-[9px] font-bold bg-accent-dim text-accent border border-accent/25">
                             • {b.badge}
                           </span>
                         )}
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-mono text-zinc-400 font-semibold">{b.tier}</span>
-                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSel ? "border-black" : "border-slate-300"}`}>
-                            {isSel && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+                          <span className="text-[10px] font-mono text-ink-3 font-semibold">{b.tier}</span>
+                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSel ? "border-black" : "border-line/20"}`}>
+                            {isSel && <div className="w-1.5 h-1.5 rounded-full bg-ink" />}
                           </div>
                         </div>
-                        <div className="font-bold text-xs text-zinc-900">{b.label}</div>
-                        <p className="text-[11px] text-zinc-500 mt-1 leading-tight">{b.desc}</p>
+                        <div className="font-bold text-xs text-ink">{b.label}</div>
+                        <p className="text-[11px] text-ink-2 mt-1 leading-tight">{b.desc}</p>
                       </div>
                     );
                   })}
@@ -1222,17 +1222,17 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
               </div>
 
               {/* Geography */}
-              <div className="bg-white p-5 rounded-xl border border-slate-200">
+              <div className="bg-elevated p-5 rounded-xl border border-line/10">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold block">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-ink-3 font-bold block">
                       JURISDICTION & VISAS
                     </span>
-                    <h3 className="font-bold text-sm text-zinc-900">Geographic Mobility</h3>
+                    <h3 className="font-bold text-sm text-ink">Geographic Mobility</h3>
                   </div>
-                  <Globe size={16} className="text-zinc-400" />
+                  <Globe size={16} className="text-ink-3" />
                 </div>
-                <p className="text-xs text-zinc-500 mb-3">
+                <p className="text-xs text-ink-2 mb-3">
                   Select target regions for post-study work regulations, currency exposure, and relocation logistics.
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -1256,11 +1256,11 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                         }
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                           isSel
-                            ? "bg-black text-white font-semibold"
-                            : "bg-slate-50 text-zinc-700 border border-slate-200 hover:bg-slate-100"
+                            ? "bg-ink text-elevated font-semibold"
+                            : "bg-surface text-ink border border-line/10 hover:bg-chip"
                         }`}
                       >
-                        {isSel && <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />}
+                        {isSel && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
                         <span>{geo.label}</span>
                         {isSel && <span>✓</span>}
                       </button>
@@ -1290,9 +1290,9 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
               computed later, against real programme data. No numbers, no pulse.
             */}
             <div className="space-y-4">
-              <div className="bg-white p-5 rounded-xl border border-slate-200">
-                <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
-                  <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">
+              <div className="bg-elevated p-5 rounded-xl border border-line/10">
+                <div className="flex items-center justify-between mb-4 border-b border-line/5 pb-2">
+                  <span className="text-[10px] font-mono uppercase font-bold text-ink-3">
                     YOUR PARAMETERS
                   </span>
                   {/*
@@ -1313,7 +1313,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                       data.immediateFocus,
                     ].filter((v) => v && String(v).length > 0).length;
                     return (
-                      <span className="text-[10px] font-mono text-zinc-400 font-semibold">
+                      <span className="text-[10px] font-mono text-ink-3 font-semibold">
                         {answered} of 7 answered
                       </span>
                     );
@@ -1322,16 +1322,16 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
 
                 <dl className="space-y-3 text-xs">
                   <div className="flex items-center justify-between gap-3">
-                    <dt className="text-zinc-600">Education budget</dt>
-                    <dd className="font-mono font-bold text-zinc-900 text-right">
-                      {BUDGET_LABELS[data.budgetBand] ?? <span className="text-zinc-400">Not set</span>}
+                    <dt className="text-ink-2">Education budget</dt>
+                    <dd className="font-mono font-bold text-ink text-right">
+                      {BUDGET_LABELS[data.budgetBand] ?? <span className="text-ink-3">Not set</span>}
                     </dd>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <dt className="text-zinc-600">Target regions</dt>
-                    <dd className="font-mono font-bold text-zinc-900 text-right">
+                    <dt className="text-ink-2">Target regions</dt>
+                    <dd className="font-mono font-bold text-ink text-right">
                       {data.geography.length === 0 ? (
-                        <span className="text-zinc-400">Not set</span>
+                        <span className="text-ink-3">Not set</span>
                       ) : (
                         <span className="text-[11px]">
                           {data.geography.map((g) => GEOGRAPHY_LABELS[g] ?? g).join(", ")}
@@ -1340,15 +1340,15 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                     </dd>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <dt className="text-zinc-600">Journey stage</dt>
-                    <dd className="font-mono font-bold text-zinc-900 text-right">
-                      {STAGE_LABELS[data.stage] ?? <span className="text-zinc-400">Not set</span>}
+                    <dt className="text-ink-2">Journey stage</dt>
+                    <dd className="font-mono font-bold text-ink text-right">
+                      {STAGE_LABELS[data.stage] ?? <span className="text-ink-3">Not set</span>}
                     </dd>
                   </div>
                 </dl>
 
-                <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200/80 text-[11px] text-zinc-600">
-                  <div className="flex items-center gap-1.5 font-bold text-zinc-800 mb-1">
+                <div className="mt-4 p-3 rounded-lg bg-surface border border-line/10 text-[11px] text-ink-2">
+                  <div className="flex items-center gap-1.5 font-bold text-ink mb-1">
                     <Sliders size={12} />
                     <span>What happens next</span>
                   </div>
@@ -1361,9 +1361,9 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
               </div>
 
               {/* Parameter Rules */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200 text-xs text-zinc-500">
-                <div className="flex items-center gap-1.5 font-bold text-zinc-800 mb-2">
-                  <Shield size={12} className="text-zinc-400" />
+              <div className="bg-elevated p-4 rounded-xl border border-line/10 text-xs text-ink-2">
+                <div className="flex items-center gap-1.5 font-bold text-ink mb-2">
+                  <Shield size={12} className="text-ink-3" />
                   <span>PARAMETER RULES</span>
                 </div>
                 <ul className="space-y-1.5 text-[11px] list-disc list-inside">
@@ -1393,13 +1393,13 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
               The input now starts empty and the caption tells the truth: this
               is what you type, and it is used as written.
             */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200">
+            <div className="bg-elevated p-5 rounded-xl border border-line/10">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-ink-3 font-bold">
                   PRIMARY TARGET FIELD (Discipline / Focus Domain)
                 </span>
                 {data.targetField.trim() && (
-                  <span className="px-2 py-0.5 rounded text-[9px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                  <span className="px-2 py-0.5 rounded text-[9px] font-semibold bg-accent-dim text-accent border border-accent/25">
                     Set
                   </span>
                 )}
@@ -1411,9 +1411,9 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                 onChange={(e) => setData({ ...data, targetField: e.target.value })}
                 placeholder="e.g. Computer science, or data science and economics"
                 aria-label="Primary target field"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-zinc-900 focus:outline-none focus:border-zinc-400 placeholder:text-zinc-300"
+                className="w-full px-3.5 py-2.5 bg-surface border border-line/10 rounded-lg text-xs font-semibold text-ink focus:outline-none focus:border-zinc-400 placeholder:text-ink-3"
               />
-              <p className="text-[11px] text-zinc-400 mt-1.5">
+              <p className="text-[11px] text-ink-3 mt-1.5">
                 Type it yourself — we have no transcript to infer this from, so whatever you enter
                 is what your report uses.
               </p>
@@ -1429,12 +1429,12 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
               clearly labelled as examples, and there is a free-text field so
               the answer is never limited to our list.
             */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200">
+            <div className="bg-elevated p-5 rounded-xl border border-line/10">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-ink-3 font-bold">
                   DREAM INSTITUTIONS OR TRAJECTORIES
                 </span>
-                <span className="text-[11px] text-zinc-400">Optional — add your own below</span>
+                <span className="text-[11px] text-ink-3">Optional — add your own below</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {["IIT Bombay", "IIT Delhi", "NIT Trichy", "Ashoka University", "SRCC", "BITS Pilani"].map((col) => {
@@ -1452,8 +1452,8 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                       }
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                         isSel
-                          ? "bg-rose-50 text-rose-700 border border-rose-200 font-semibold"
-                          : "bg-slate-50 hover:bg-slate-100 text-zinc-700 border border-slate-200"
+                          ? "bg-accent-dim text-accent border border-accent/25 font-semibold"
+                          : "bg-surface hover:bg-chip text-ink border border-line/10"
                       }`}
                     >
                       <span>{col}</span>
@@ -1484,12 +1484,12 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                   }}
                   placeholder="Add another institution and press Enter"
                   aria-label="Add another institution"
-                  className="flex-1 min-w-[200px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-zinc-900 focus:outline-none focus:border-zinc-400 placeholder:text-zinc-300"
+                  className="flex-1 min-w-[200px] px-3 py-2 bg-surface border border-line/10 rounded-lg text-xs text-ink focus:outline-none focus:border-zinc-400 placeholder:text-ink-3"
                 />
                 <button
                   onClick={addCustomInstitution}
                   disabled={!customInstitution.trim()}
-                  className="px-3 py-2 rounded-lg text-xs font-medium border border-slate-200 text-zinc-700 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="px-3 py-2 rounded-lg text-xs font-medium border border-line/10 text-ink hover:bg-surface transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   Add
                 </button>
@@ -1497,12 +1497,12 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
             </div>
 
             {/* Immediate 6-Month Focus */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200">
+            <div className="bg-elevated p-5 rounded-xl border border-line/10">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">
+                <span className="text-[10px] font-mono uppercase font-bold text-ink-3">
                   IMMEDIATE 6-MONTH FOCUS
                 </span>
-                <span className="text-[11px] text-zinc-400">Select top priority initiative</span>
+                <span className="text-[11px] text-ink-3">Select top priority initiative</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
@@ -1532,18 +1532,18 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
                       onClick={() => setData({ ...data, immediateFocus: foc.id })}
                       className={`p-3.5 rounded-xl border cursor-pointer transition relative ${
                         isSel
-                          ? "border-rose-400 ring-1 ring-rose-400 bg-white"
-                          : "border-slate-200 hover:border-slate-300 bg-slate-50/50"
+                          ? "border-rose-400 ring-1 ring-rose-400 bg-elevated"
+                          : "border-line/10 hover:border-line/20 bg-surface/50"
                       }`}
                     >
                       {isSel && (
-                        <span className="w-2 h-2 rounded-full bg-rose-600 absolute top-3 right-3" />
+                        <span className="w-2 h-2 rounded-full bg-accent absolute top-3 right-3" />
                       )}
-                      <div className="w-7 h-7 rounded-lg bg-zinc-100 text-zinc-700 flex items-center justify-center mb-2">
+                      <div className="w-7 h-7 rounded-lg bg-chip text-ink flex items-center justify-center mb-2">
                         {foc.icon}
                       </div>
-                      <h4 className="font-bold text-xs text-zinc-900 leading-snug">{foc.title}</h4>
-                      <p className="text-[11px] text-zinc-400 mt-1">{foc.sub}</p>
+                      <h4 className="font-bold text-xs text-ink leading-snug">{foc.title}</h4>
+                      <p className="text-[11px] text-ink-3 mt-1">{foc.sub}</p>
                     </div>
                   );
                 })}
@@ -1551,16 +1551,16 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
             </div>
 
             {/* Explore first toggle card */}
-            <div className="p-4 bg-white rounded-xl border border-slate-200 flex items-center justify-between">
+            <div className="p-4 bg-elevated rounded-xl border border-line/10 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-accent-dim text-accent flex items-center justify-center">
                   <Compass size={16} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-xs text-zinc-900">
+                  <h4 className="font-bold text-xs text-ink">
                     I’m not sure yet — help me explore options first
                   </h4>
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-ink-3">
                     Our algorithm will prioritize diagnostic discovery modules over hard milestones.
                   </p>
                 </div>
@@ -1568,11 +1568,11 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
               <button
                 onClick={() => setData({ ...data, exploreFirst: !data.exploreFirst })}
                 className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                  data.exploreFirst ? "bg-black" : "bg-slate-200"
+                  data.exploreFirst ? "bg-ink" : "bg-chip"
                 }`}
               >
                 <div
-                  className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 ${
+                  className={`w-4 h-4 rounded-full bg-elevated transition-transform absolute top-1 ${
                     data.exploreFirst ? "left-6" : "left-1"
                   }`}
                 />
@@ -1583,18 +1583,18 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
       </main>
 
       {/* Bottom Sticky Action Bar matching PDF */}
-      <footer className="px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-between">
+      <footer className="px-6 py-4 border-t border-line/10 bg-elevated flex items-center justify-between">
         <button
           onClick={handleBack}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition dashed-ring cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-line/10 text-xs font-semibold text-ink hover:bg-surface transition dashed-ring cursor-pointer"
         >
           <ArrowLeft size={14} />
           <span>Back</span>
         </button>
 
         <div className="flex flex-col items-center gap-1">
-          <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+          <div className="flex items-center gap-1.5 text-xs text-ink-2 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
             <span>
               {step === 1 && (data.fullName.trim() ? "Name captured" : "Waiting for your name")}
               {step === 2 && "Stage selection active"}
@@ -1611,7 +1611,7 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
           {showValidation && stepBlocked && (
             <span
               role="alert"
-              className="text-[11px] text-rose-600 font-medium"
+              className="text-[11px] text-accent font-medium"
             >
               {missingForStep(step)
                 .map((f) => FIELD_LABELS[f])
@@ -1626,8 +1626,8 @@ export const OnboardWizard: React.FC<OnboardWizardProps> = ({ onComplete }) => {
           aria-disabled={stepBlocked}
           className={`flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-semibold transition dashed-ring ${
             stepBlocked
-              ? "bg-zinc-200 text-zinc-500 cursor-not-allowed"
-              : "bg-black text-white hover:bg-zinc-800 cursor-pointer"
+              ? "bg-chip text-ink-2 cursor-not-allowed"
+              : "bg-ink text-elevated hover:bg-ink cursor-pointer"
           }`}
         >
           <span>{step === LAST_STEP ? "Build my profile →" : "Continue"}</span>

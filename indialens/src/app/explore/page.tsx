@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Search, Lock, RefreshCw } from "lucide-react";
+import { Search, Lock, RefreshCw, SearchX } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import type { CollegeDegreeRecord, DegreeField } from "@/lib/mock-data";
 import { finiteOrNull, compareNullableAsc, compareNullableDesc, NO_DATA } from "@/lib/mock-data";
 import { GroundedAnswer } from "@/components/GroundedAnswer";
@@ -43,15 +44,23 @@ function tuitionInr(record: CollegeDegreeRecord): number | null {
 }
 
 /**
- * Colour-code a composite score. A null score is deliberately NOT red — red
- * asserts "this is the worst program on the list", when the truth is "we have
- * not measured it". It renders neutral grey with an explicit dash instead.
+ * Colour-code a composite score.
+ *
+ * Returns a CLASS, not a colour string. It used to return a raw hex applied
+ * through `style={{ color }}`, which cannot respond to the theme — a dark-mode
+ * visitor got the light-theme grey for "unmeasured", which does not exist on
+ * black. The neutral is now `--text-tertiary` and the three tiers are the
+ * system tokens, so this follows the theme.
+ *
+ * A null score is deliberately NOT red. Red asserts "this is the worst
+ * programme on the list", when the truth is "we have not measured it". It
+ * renders neutral with an explicit dash instead.
  */
-function scoreColor(score: number | null): string {
-  if (score == null) return "#6E6E73";
-  if (score >= 80) return "#30D158";
-  if (score >= 50) return "#FF9F0A";
-  return "#FF453A";
+function scoreToneClass(score: number | null): string {
+  if (score == null) return "text-ink-3";
+  if (score >= 80) return "text-sys-green";
+  if (score >= 50) return "text-sys-amber";
+  return "text-sys-red";
 }
 
 export default function ExplorePage() {
@@ -190,15 +199,15 @@ export default function ExplorePage() {
   const uniqueFields = Array.from(new Set(data.map((d) => d.degree.field)));
 
   return (
-    <div className="min-h-screen bg-black text-[#F5F5F7] pb-24">
+    <div className="min-h-screen bg-bg text-ink pb-24">
 
       {/* Header */}
       <div className="container-xl pt-14 pb-10">
         <p className="kicker-web mb-4">Program Asset Index</p>
-        <h1 className="text-[clamp(2rem,4vw,3rem)] font-bold tracking-tight text-[#F5F5F7] mb-3">
+        <h1 className="text-[clamp(2rem,4vw,3rem)] font-bold tracking-tight text-ink mb-3">
           India&apos;s degrees, priced as financial assets.
         </h1>
-        <p className="text-[#86868B] text-sm max-w-xl mb-8 leading-relaxed">
+        <p className="text-ink-2 text-sm max-w-xl mb-8 leading-relaxed">
           Every programme we have live data for, ranked by composite ROI, AI displacement risk,
           and 20-year placement trajectory. Where a source has not published a figure, the index
           says so rather than estimating one.
@@ -209,10 +218,10 @@ export default function ExplorePage() {
       </div>
 
       {/* Sticky filter bar */}
-      <div className="sticky top-[58px] z-10 bg-black/95 backdrop-blur-xl border-b border-white/[0.06] py-3.5">
+      <div className="sticky top-[58px] z-10 bg-bg/95 backdrop-blur-xl border-b border-line/10 py-3.5">
         <div className="container-xl flex flex-wrap md:flex-nowrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#48484A]" size={15} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" size={15} />
             <input
               type="text"
               placeholder="Search institutions, programs, or cities…"
@@ -245,7 +254,7 @@ export default function ExplorePage() {
           </select>
 
           {!isLoading && (
-            <span className="text-[11px] text-[#48484A] font-mono whitespace-nowrap">
+            <span className="text-[11px] text-ink-3 font-mono whitespace-nowrap">
               {filteredData.length} program{filteredData.length === 1 ? "" : "s"}
             </span>
           )}
@@ -255,31 +264,31 @@ export default function ExplorePage() {
       {/* Content */}
       <div className="container-xl mt-8">
         {search.trim().length >= 3 && (
-          <div className="mb-8 bg-[#0A0A0A] border border-white/[0.08] rounded-2xl p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#86868B] mb-3">
+          <div className="mb-8 bg-surface border border-line/10 rounded-2xl p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-2 mb-3">
               Live sources
             </p>
             {liveState === "loading" && (
-              <p className="text-sm text-[#86868B]">Searching the web for current sources…</p>
+              <p className="text-sm text-ink-2">Searching the web for current sources…</p>
             )}
             {liveState === "ready" && live && (
               <>
                 <GroundedAnswer payload={live} />
-                <p className="mt-4 text-[11px] text-[#48484A]">{liveNote} The table below is the stored program index.</p>
+                <p className="mt-4 text-[11px] text-ink-3">{liveNote} The table below is the stored program index.</p>
               </>
             )}
             {liveState === "unavailable" && (
-              <p className="text-sm text-[#86868B]">{liveNote} The programs below are from the stored index.</p>
+              <p className="text-sm text-ink-2">{liveNote} The programs below are from the stored index.</p>
             )}
           </div>
         )}
         {isLoading ? (
-          <div className="text-center py-16 text-[#48484A] font-mono text-sm">
+          <div className="text-center py-16 text-ink-3 font-mono text-sm">
             Loading program index…
           </div>
         ) : loadError ? (
-          <div className="bg-[#0A0A0A] border border-white/[0.08] rounded-xl text-center py-14 px-8">
-            <p className="text-[#86868B] mb-5 text-sm">The program index could not be loaded. Please try again.</p>
+          <div className="bg-surface border border-line/10 rounded-xl text-center py-14 px-8">
+            <p className="text-ink-2 mb-5 text-sm">The program index could not be loaded. Please try again.</p>
             <button
               className="btn-secondary inline-flex items-center gap-2"
               onClick={() => setReloadKey((k) => k + 1)}
@@ -290,7 +299,7 @@ export default function ExplorePage() {
         ) : (
           <>
             {/* Desktop table */}
-            <div className="hidden md:block overflow-x-auto bg-[#0A0A0A] border border-white/[0.08] rounded-2xl">
+            <div className="hidden md:block overflow-x-auto bg-surface border border-line/10 rounded-2xl">
               <table className="data-table w-full">
                 <thead>
                   <tr>
@@ -310,37 +319,37 @@ export default function ExplorePage() {
                       item.meta.aiRiskLabel === "Medium" ? "badge-amber" : "badge-red";
 
                     const composite = finiteOrNull(item.roi.compositeScore);
-                    const scoreTone = scoreColor(composite);
+                    const scoreTone = scoreToneClass(composite);
                     const placement = placementPct(item);
                     const tuition = tuitionInr(item);
 
                     return (
-                      <tr key={item.id} className="transition-colors hover:bg-white/[0.03]">
-                        <td className="p-4 font-mono text-[#48484A] text-[12px]">{index + 1}</td>
+                      <tr key={item.id} className="transition-colors hover:bg-elevated/[0.03]">
+                        <td className="p-4 font-mono text-ink-3 text-[12px]">{index + 1}</td>
                         <td className="p-4">
-                          <Link href={`/college/${item.id}`} className="hover:text-[#F5F5F7] transition group">
-                            <div className="font-semibold text-[#F5F5F7] text-[13px]">{item.college.shortName}</div>
-                            <div className="text-[12px] text-[#86868B] mt-0.5">{item.degree.shortName}</div>
+                          <Link href={`/college/${item.id}`} className="hover:text-ink transition group">
+                            <div className="font-semibold text-ink text-[13px]">{item.college.shortName}</div>
+                            <div className="text-[12px] text-ink-2 mt-0.5">{item.degree.shortName}</div>
                           </Link>
                         </td>
                         <td className="p-4">
                           {/* `.toFixed()` on a null score would throw; the dash
                               is the honest answer, not "0.0". */}
-                          <span className="font-mono font-bold text-[13px]" style={{ color: scoreTone }}>
+                          <span className={`font-mono font-bold text-[13px] ${scoreTone}`}>
                             {composite == null ? NO_DATA : composite.toFixed(1)}
                           </span>
                         </td>
                         <td className="p-4">
                           <span className={`badge ${badgeClass}`}>{item.meta.aiRiskLabel}</span>
                         </td>
-                        <td className="p-4 font-mono text-[#86868B] text-[13px]">
+                        <td className="p-4 font-mono text-ink-2 text-[13px]">
                           {placement == null ? NO_DATA : `${placement}%`}
                         </td>
-                        <td className="p-4 font-mono text-[#86868B] text-[13px]">
+                        <td className="p-4 font-mono text-ink-2 text-[13px]">
                           {tuition == null ? NO_DATA : `₹${(tuition / 100000).toFixed(1)}L`}
                         </td>
                         <td className="p-4">
-                          <Lock size={14} className="text-[#48484A]" />
+                          <Lock size={14} className="text-ink-3" />
                         </td>
                       </tr>
                     );
@@ -353,34 +362,34 @@ export default function ExplorePage() {
             <div className="md:hidden grid gap-3 grid-cols-1 sm:grid-cols-2">
               {filteredData.map((item, index) => {
                 const composite = finiteOrNull(item.roi.compositeScore);
-                const scoreTone = scoreColor(composite);
+                const scoreTone = scoreToneClass(composite);
                 const placement = placementPct(item);
                 const tuition = tuitionInr(item);
 
                 return (
                   <Link key={item.id} href={`/college/${item.id}`}>
-                    <div className="bg-[#0A0A0A] border border-white/[0.08] rounded-xl p-4 hover:border-white/[0.14] transition-all">
+                    <div className="bg-surface border border-line/10 rounded-xl p-4 hover:border-line/20 transition-all">
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <div className="text-[10px] text-[#48484A] font-mono mb-1">#{index + 1}</div>
-                          <h3 className="font-bold text-[#F5F5F7] text-[13px] leading-tight">{item.college.shortName}</h3>
-                          <p className="text-[11px] text-[#86868B] mt-0.5">{item.degree.shortName}</p>
+                          <div className="text-[10px] text-ink-3 font-mono mb-1">#{index + 1}</div>
+                          <h3 className="font-bold text-ink text-[13px] leading-tight">{item.college.shortName}</h3>
+                          <p className="text-[11px] text-ink-2 mt-0.5">{item.degree.shortName}</p>
                         </div>
-                        <span className="font-mono text-xl font-bold" style={{ color: scoreTone }}>
+                        <span className={`font-mono text-xl font-bold ${scoreTone}`}>
                           {composite == null ? NO_DATA : composite.toFixed(0)}
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <div className="text-[9px] text-[#48484A] font-mono uppercase">Tuition</div>
-                          <div className="font-mono text-[#86868B] text-[12px]">
+                          <div className="text-[9px] text-ink-3 font-mono uppercase">Tuition</div>
+                          <div className="font-mono text-ink-2 text-[12px]">
                             {tuition == null ? NO_DATA : `₹${(tuition / 100000).toFixed(1)}L`}
                           </div>
                         </div>
                         <div>
-                          <div className="text-[9px] text-[#48484A] font-mono uppercase">Placement</div>
-                          <div className="font-mono text-[#86868B] text-[12px]">
+                          <div className="text-[9px] text-ink-3 font-mono uppercase">Placement</div>
+                          <div className="font-mono text-ink-2 text-[12px]">
                             {placement == null ? NO_DATA : `${placement}%`}
                           </div>
                         </div>
@@ -392,9 +401,17 @@ export default function ExplorePage() {
             </div>
 
             {filteredData.length === 0 && (
-              <div className="text-center py-14 text-[#48484A] font-mono text-sm">
-                No programs found matching your filters.
-              </div>
+              /* "Nothing matched" is a different state from "nothing indexed".
+                 It says what to do about it, rather than leaving the user to
+                 guess whether the filters or the dataset are at fault. */
+              <EmptyState
+                icon={SearchX}
+                title="No programs match these filters"
+                hint="The index is loaded and every program in it is accounted for — none of them match the filters you have set. Try widening the score range or clearing the field of study."
+                action={{ label: "Clear all filters", href: "/explore" }}
+                secondaryAction={{ label: "Analyse a specific degree", href: "/analyze" }}
+                variant="bare"
+              />
             )}
           </>
         )}

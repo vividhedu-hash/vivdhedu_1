@@ -20,7 +20,9 @@ import {
   Plus,
   Check,
   TrendingUp,
+  MapPin,
 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { WorkspaceTelemetrySidebar, type TelemetryProps } from "@/components/WorkspaceTelemetrySidebar";
 import { AIDecisionCard, type AIDecisionResult } from "@/components/AIDecisionCard";
 import { RecentWavesFeed } from "@/components/RecentWavesFeed";
@@ -100,8 +102,8 @@ export default function WorkspacePage() {
     <AuthGate title="workspace">
       <Suspense
         fallback={
-          <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-            <span className="font-mono text-xs text-slate-500">Loading your workspace…</span>
+          <div className="min-h-screen bg-surface flex items-center justify-center">
+            <span className="font-mono text-xs text-ink-2">Loading your workspace…</span>
           </div>
         }
       >
@@ -414,18 +416,18 @@ function WorkspaceView() {
     .join("");
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#09090B] flex flex-col lg:flex-row antialiased">
+    <div className="min-h-screen bg-surface text-ink flex flex-col lg:flex-row antialiased">
       {/* ── LEFT SIDEBAR ── */}
-      <aside className="w-full lg:w-60 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col justify-between p-4 lg:h-screen lg:sticky lg:top-0 z-30">
+      <aside className="w-full lg:w-60 bg-elevated border-r border-line/10 flex-shrink-0 flex flex-col justify-between p-4 lg:h-screen lg:sticky lg:top-0 z-30">
         <div>
           <div className="flex items-center justify-between pb-3">
             <Link href="/" className="flex items-center gap-2 text-decoration-none">
-              <div className="w-7 h-7 rounded-lg bg-black flex items-center justify-center text-white font-bold text-xs">
+              <div className="w-7 h-7 rounded-lg bg-ink flex items-center justify-center text-elevated font-bold text-xs">
                 OS
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm tracking-tight text-slate-900">{BRAND.name}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#E11D48]" />
+                <span className="font-bold text-sm tracking-tight text-ink">{BRAND.name}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-accent" />
               </div>
             </Link>
           </div>
@@ -435,13 +437,13 @@ function WorkspaceView() {
               setActiveNav("overview");
               inputRef.current?.focus();
             }}
-            className="w-full mt-3 mb-4 py-2.5 px-3 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center justify-between shadow-sm transition-all cursor-pointer"
+            className="w-full mt-3 mb-4 py-2.5 px-3 bg-ink hover:bg-ink text-elevated rounded-xl text-xs font-semibold flex items-center justify-between shadow-sm transition-all cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <span className="text-sm leading-none font-bold">+</span>
               <span>New Analysis</span>
             </div>
-            <span className="font-mono text-[10px] text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded">
+            <span className="font-mono text-[10px] text-ink-2 bg-chip px-1.5 py-0.5 rounded">
               ⌘N
             </span>
           </button>
@@ -461,18 +463,18 @@ function WorkspaceView() {
                   aria-current={isActive ? "page" : undefined}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                     isActive
-                      ? "bg-slate-100 text-slate-950 font-bold"
-                      : "text-slate-600 hover:text-slate-950 hover:bg-slate-50"
+                      ? "bg-chip text-ink font-bold"
+                      : "text-ink-2 hover:text-ink hover:bg-surface"
                   }`}
                 >
-                  <span className={isActive ? "text-slate-950" : "text-slate-400"}>{item.icon}</span>
+                  <span className={isActive ? "text-ink" : "text-ink-3"}>{item.icon}</span>
                   <span>{item.label}</span>
                 </button>
               );
             })}
           </nav>
 
-          <hr className="my-3 border-slate-200" />
+          <hr className="my-3 border-line/10" />
 
           <nav className="space-y-0.5">
             {[
@@ -484,41 +486,41 @@ function WorkspaceView() {
               <Link
                 key={item.label}
                 href={item.href}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-950 hover:bg-slate-50 transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-ink-2 hover:text-ink hover:bg-surface transition-colors"
               >
-                <span className="text-slate-400">{item.icon}</span>
+                <span className="text-ink-3">{item.icon}</span>
                 <span>{item.label}</span>
               </Link>
             ))}
           </nav>
         </div>
 
-        <div className="pt-3 border-t border-slate-200 space-y-1">
+        <div className="pt-3 border-t border-line/10 space-y-1">
           <Link
             href="/methodology"
-            className="flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors"
+            className="flex items-center gap-2.5 px-3 py-1.5 text-xs text-ink-2 hover:text-ink transition-colors"
           >
-            <HelpCircle size={14} className="text-slate-400" />
+            <HelpCircle size={14} className="text-ink-3" />
             <span>Documentation</span>
           </Link>
           <button
             onClick={logout}
-            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-ink-2 hover:text-ink transition-colors cursor-pointer"
           >
-            <Settings size={14} className="text-slate-400" />
+            <Settings size={14} className="text-ink-3" />
             <span>Sign out</span>
           </button>
 
           {/* Real identity, from the session. Was a hardcoded initials-and-name
               card pinned to a fictional Class 11-12 student, shown identically
               to every visitor regardless of who was signed in. */}
-          <div className="mt-3 p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center font-bold font-mono text-[10px] text-slate-800">
+          <div className="mt-3 p-2 bg-surface border border-line/10 rounded-xl flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-chip border border-line/20 flex items-center justify-center font-bold font-mono text-[10px] text-ink">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-bold text-slate-900 truncate">{displayName}</div>
-              <div className="text-[10px] text-slate-500 truncate">{user?.email}</div>
+              <div className="text-xs font-bold text-ink truncate">{displayName}</div>
+              <div className="text-[10px] text-ink-2 truncate">{user?.email}</div>
             </div>
           </div>
         </div>
@@ -526,11 +528,11 @@ function WorkspaceView() {
 
       {/* ── MAIN ── */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-20">
+        <header className="h-14 bg-elevated border-b border-line/10 px-6 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-2 text-xs">
-            <span className="font-semibold text-slate-900">Workspace</span>
-            <span className="text-slate-400">/</span>
-            <span className="text-slate-700">{displayName}</span>
+            <span className="font-semibold text-ink">Workspace</span>
+            <span className="text-ink-3">/</span>
+            <span className="text-ink">{displayName}</span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -543,7 +545,7 @@ function WorkspaceView() {
                 View source report
               </Link>
             ) : (
-              <span className="hidden sm:inline font-mono text-[11px] text-slate-400">
+              <span className="hidden sm:inline font-mono text-[11px] text-ink-3">
                 No report linked
               </span>
             )}
@@ -553,7 +555,7 @@ function WorkspaceView() {
                   "Nothing was saved. This workspace has no database table behind it yet — your roadmap lives in this tab only and will be gone on reload.",
                 );
               }}
-              className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-elevated hover:bg-surface border border-line/10 rounded-lg text-xs font-medium text-ink transition-colors cursor-pointer"
             >
               Save &amp; exit
             </button>
@@ -567,10 +569,10 @@ function WorkspaceView() {
               {activeNav === "overview" && (
                 <>
                   <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-950">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-ink">
                       Hello, {displayName}.
                     </h1>
-                    <p className="text-sm text-slate-500 mt-0.5">
+                    <p className="text-sm text-ink-2 mt-0.5">
                       Ask a question, or work through your weights and roadmap below.
                     </p>
                   </div>
@@ -599,48 +601,49 @@ function WorkspaceView() {
                     If there is genuinely nothing, it says so rather than
                     implying a report exists.
                   */}
-                  <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                  <section className="bg-elevated border border-line/10 rounded-xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-xs font-bold font-mono text-slate-500 uppercase tracking-wider">
+                      <h2 className="text-xs font-bold font-mono text-ink-2 uppercase tracking-wider">
                         Your reports
                       </h2>
                       {userReports !== null && userReports.length > 0 && (
-                        <span className="text-[10px] font-mono text-slate-400">
+                        <span className="text-[10px] font-mono text-ink-3">
                           {userReports.length} saved
                         </span>
                       )}
                     </div>
 
                     {!user ? (
-                      <p className="text-xs text-slate-500 leading-relaxed">
+                      <p className="text-xs text-ink-2 leading-relaxed">
                         Sign in to keep your reports. Without an account a report is reachable
                         only by its link, and nothing is stored against you.
                       </p>
                     ) : userReports === null ? (
-                      <p className="text-xs text-slate-400">Loading your reports…</p>
+                      <p className="text-xs text-ink-3">Loading your reports…</p>
                     ) : userReports.length === 0 ? (
-                      <p className="text-xs text-slate-500 leading-relaxed">
-                        No reports saved to your account yet.{" "}
-                        <Link
-                          href="/onboard"
-                          className="text-rose-700 underline underline-offset-2 font-medium"
-                        >
-                          Build one
-                        </Link>
-                        .
-                      </p>
+                      /* Signed in, but nothing saved yet. The next step is the
+                         conversion path, so it is named here rather than left
+                         to be discovered. */
+                      <EmptyState
+                        icon={FileText}
+                        title="No reports saved yet"
+                        hint="Run an analysis and it is saved to your account, so you can reopen it from any device. Without that, a report lives only on the link you were sent."
+                        action={{ label: "Run your first analysis", href: "/onboard" }}
+                        variant="bare"
+                        className="py-4"
+                      />
                     ) : (
                       <ul className="space-y-1.5">
                         {userReports.map((r) => (
                           <li key={r.report_token}>
                             <Link
                               href={`/report/${r.report_token}`}
-                              className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors"
+                              className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-lg border border-line/10 hover:border-line/20 hover:bg-surface transition-colors"
                             >
-                              <span className="text-xs font-medium text-slate-800 truncate">
+                              <span className="text-xs font-medium text-ink truncate">
                                 {r.title || "Degree ROI Analysis"}
                               </span>
-                              <span className="font-mono text-[10px] text-slate-400 shrink-0">
+                              <span className="font-mono text-[10px] text-ink-3 shrink-0">
                                 {r.created_at
                                   ? new Date(r.created_at).toLocaleDateString()
                                   : r.report_token.slice(0, 8)}
@@ -652,7 +655,7 @@ function WorkspaceView() {
                     )}
                   </section>
 
-                  <div className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm flex items-center gap-3">
+                  <div className="bg-elevated border border-line/10 rounded-xl p-2 shadow-sm flex items-center gap-3">
                     <input
                       ref={inputRef}
                       type="text"
@@ -661,23 +664,23 @@ function WorkspaceView() {
                       onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleAsk()}
                       placeholder="e.g. Is a ₹22L private engineering degree worth it when NIT seats are available at ₹6L?"
                       aria-label="Ask a decision question"
-                      className="flex-1 bg-transparent border-none text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                      className="flex-1 bg-transparent border-none text-xs sm:text-sm text-ink placeholder:text-ink-3 focus:outline-none"
                     />
-                    <span className="hidden sm:inline-block font-mono text-[10px] text-slate-400 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5">
+                    <span className="hidden sm:inline-block font-mono text-[10px] text-ink-3 bg-chip border border-line/10 rounded px-1.5 py-0.5">
                       ⌘K
                     </span>
                     <button
                       onClick={() => handleAsk()}
                       disabled={decisionResult?.loading}
                       aria-label="Send question"
-                      className="w-8 h-8 rounded-full bg-slate-950 hover:bg-slate-800 disabled:opacity-50 text-white flex items-center justify-center transition-colors flex-shrink-0 cursor-pointer"
+                      className="w-8 h-8 rounded-full bg-ink hover:bg-ink disabled:opacity-50 text-elevated flex items-center justify-center transition-colors flex-shrink-0 cursor-pointer"
                     >
                       <Send size={13} />
                     </button>
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 mr-1">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink-3 mr-1">
                       Try:
                     </span>
                     {SIMULATE_CHIPS.map((chip) => (
@@ -687,7 +690,7 @@ function WorkspaceView() {
                           setQuestion(chip);
                           handleAsk(chip);
                         }}
-                        className="text-xs bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 px-3 py-1 rounded-full transition-colors font-medium cursor-pointer"
+                        className="text-xs bg-chip hover:bg-chip border border-line/10 text-ink px-3 py-1 rounded-full transition-colors font-medium cursor-pointer"
                       >
                         {chip}
                       </button>
@@ -722,10 +725,10 @@ function WorkspaceView() {
                   />
 
                   <div className="pt-2">
-                    <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                    <h2 className="text-base font-bold text-ink tracking-tight">
                       Your profile, as far as we have measured it
                     </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-ink-2 mt-0.5">
                       {token
                         ? "Sourced from the report linked to this workspace."
                         : "No report is linked to this workspace, so nothing here is measured yet."}
@@ -748,15 +751,15 @@ function WorkspaceView() {
                 <div className="space-y-6">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <Sliders size={16} className="text-[#E11D48]" />
-                      <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
+                      <Sliders size={16} className="text-accent" />
+                      <span className="text-xs font-mono font-bold text-ink-3 uppercase tracking-wider">
                         7-Vector Weighting
                       </span>
                     </div>
-                    <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+                    <h2 className="text-2xl font-bold tracking-tight text-ink">
                       What matters most to you
                     </h2>
-                    <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                    <p className="text-xs text-ink-2 mt-1 max-w-2xl leading-relaxed">
                       Set how much each factor should count when programs are ranked
                       for you. These weights are stored in this tab only — they are not
                       yet sent to a ranking engine, so no NPV or payback figure below is
@@ -764,7 +767,7 @@ function WorkspaceView() {
                     </p>
                   </div>
 
-                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
+                  <div className="bg-elevated border border-line/10 rounded-2xl p-6 shadow-sm space-y-5">
                     {[
                       { key: "career", label: "Career Outcomes & Salary Upside", tag: "High Weight" },
                       { key: "affordability", label: "Cost & Net Financial Debt Sensitivity", tag: "High Weight" },
@@ -777,15 +780,15 @@ function WorkspaceView() {
                       <div key={item.key} className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-mono text-[10px] font-bold flex items-center justify-center">
+                            <span className="w-5 h-5 rounded-full bg-chip border border-line/10 text-ink-2 font-mono text-[10px] font-bold flex items-center justify-center">
                               #{i + 1}
                             </span>
-                            <span className="font-semibold text-slate-900">{item.label}</span>
-                            <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
+                            <span className="font-semibold text-ink">{item.label}</span>
+                            <span className="text-[10px] font-mono text-ink-3 bg-surface px-1.5 py-0.5 rounded border border-line/10">
                               {item.tag}
                             </span>
                           </div>
-                          <span className="font-mono font-bold text-slate-900">
+                          <span className="font-mono font-bold text-ink">
                             {weights[item.key as keyof typeof weights]}%
                           </span>
                         </div>
@@ -798,7 +801,7 @@ function WorkspaceView() {
                           onChange={(e) =>
                             setWeights({ ...weights, [item.key]: Number(e.target.value) })
                           }
-                          className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#E11D48]"
+                          className="w-full h-1.5 bg-chip rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
                         />
                       </div>
                     ))}
@@ -818,19 +821,19 @@ function WorkspaceView() {
                       { label: "Debt Payback Horizon", note: "Needs a verified total cost of degree" },
                       { label: "Downside Tail Risk (P10)", note: "Needs the same two inputs" },
                     ].map((c) => (
-                      <div key={c.label} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                        <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
+                      <div key={c.label} className="bg-elevated border border-line/10 rounded-xl p-4 shadow-sm">
+                        <span className="text-[10px] font-mono font-bold text-ink-3 uppercase">
                           {c.label}
                         </span>
-                        <div className="text-xl font-bold font-mono text-slate-300 mt-1">{NO_DATA}</div>
-                        <span className="text-[11px] text-slate-500 font-mono">{c.note}</span>
+                        <div className="text-xl font-bold font-mono text-ink-3 mt-1">{NO_DATA}</div>
+                        <span className="text-[11px] text-ink-2 font-mono">{c.note}</span>
                       </div>
                     ))}
                   </div>
 
-                  <p className="text-xs text-slate-500 leading-relaxed bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+                  <p className="text-xs text-ink-2 leading-relaxed bg-surface border border-line/10 rounded-xl p-3.5">
                     A ranking that honours these weights needs a program to rank.{" "}
-                    <Link href="/explore" className="text-rose-600 font-semibold hover:underline">
+                    <Link href="/explore" className="text-accent font-semibold hover:underline">
                       Open the program index
                     </Link>{" "}
                     and the composite breakdown for each program is shown in full, with
@@ -844,15 +847,15 @@ function WorkspaceView() {
                 <div className="space-y-6">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <Shield size={16} className="text-[#E11D48]" />
-                      <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
+                      <Shield size={16} className="text-accent" />
+                      <span className="text-xs font-mono font-bold text-ink-3 uppercase tracking-wider">
                         Coverage
                       </span>
                     </div>
-                    <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+                    <h2 className="text-2xl font-bold tracking-tight text-ink">
                       What is measured, and what is not
                     </h2>
-                    <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                    <p className="text-xs text-ink-2 mt-1 max-w-2xl leading-relaxed">
                       This tab used to show eight &ldquo;AI Displacement&rdquo; vectors
                       with hardcoded decay slopes (0.82, 0.38, 0.14, …) and a
                       &ldquo;20-Year Monte Carlo Career Distribution&rdquo; of
@@ -861,11 +864,11 @@ function WorkspaceView() {
                     </p>
                   </div>
 
-                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono mb-4">
+                  <div className="bg-elevated border border-line/10 rounded-2xl p-6 shadow-sm">
+                    <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono mb-4">
                       Automation exposure
                     </h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs text-ink-2 leading-relaxed">
                       The composite for each program carries an automation-exposure
                       component derived from published occupational taxonomies
                       crosswalked to Indian roles. It is a per-program figure, shown on
@@ -874,17 +877,17 @@ function WorkspaceView() {
                     </p>
                     <Link
                       href="/methodology"
-                      className="inline-flex items-center gap-1 mt-4 text-xs font-semibold text-rose-600 hover:text-rose-700"
+                      className="inline-flex items-center gap-1 mt-4 text-xs font-semibold text-accent hover:text-accent"
                     >
                       How the composite is built <ExternalLink size={12} />
                     </Link>
                   </div>
 
-                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono mb-3">
+                  <div className="bg-elevated border border-line/10 rounded-2xl p-6 shadow-sm">
+                    <h3 className="text-xs font-bold text-ink uppercase tracking-wider font-mono mb-3">
                       Not currently modelled
                     </h3>
-                    <ul className="space-y-2.5 text-xs text-slate-600 leading-relaxed">
+                    <ul className="space-y-2.5 text-xs text-ink-2 leading-relaxed">
                       {[
                         "Upward mobility index — the backend returns tier-keyed constants, not a measured mobility statistic. We do not publish it.",
                         "Skill demand velocity — a three-entry lookup table in the analytics service, not a Lightcast feed. Not published.",
@@ -892,12 +895,12 @@ function WorkspaceView() {
                         "Monte Carlo salary distributions over 20 years — the simulator exists but is only meaningful once a program has a verified starting salary and total cost. It is not run on invented inputs.",
                       ].map((line) => (
                         <li key={line} className="flex items-start gap-2">
-                          <span className="font-mono text-slate-300">—</span>
+                          <span className="font-mono text-ink-3">—</span>
                           <span>{line}</span>
                         </li>
                       ))}
                     </ul>
-                    <p className="mt-4 text-[11px] text-slate-500 leading-relaxed border-t border-slate-100 pt-3">
+                    <p className="mt-4 text-[11px] text-ink-2 leading-relaxed border-t border-line/5 pt-3">
                       Publishing a number you cannot defend is worse than publishing a
                       gap. When these become real measurements they will appear here,
                       with their source and vintage.
@@ -911,15 +914,15 @@ function WorkspaceView() {
                 <div className="space-y-6">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <Target size={16} className="text-[#E11D48]" />
-                      <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
+                      <Target size={16} className="text-accent" />
+                      <span className="text-xs font-mono font-bold text-ink-3 uppercase tracking-wider">
                         Your list
                       </span>
                     </div>
-                    <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+                    <h2 className="text-2xl font-bold tracking-tight text-ink">
                       Student Roadmap
                     </h2>
-                    <p className="text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                    <p className="text-sm text-ink-2 mt-1 max-w-2xl leading-relaxed">
                       A checklist you control. Milestones you add are yours to write;
                       nothing is generated for you, and nothing here survives a page
                       reload until workspace storage exists.
@@ -934,11 +937,11 @@ function WorkspaceView() {
                       onChange={(e) => setNewRoadmapTask(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleAddRoadmapTask()}
                       aria-label="New milestone"
-                      className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-400 shadow-2xs"
+                      className="flex-1 bg-elevated border border-line/10 rounded-xl px-4 py-2 text-xs text-ink focus:outline-none focus:border-line/30 shadow-2xs"
                     />
                     <button
                       onClick={handleAddRoadmapTask}
-                      className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                      className="px-4 py-2 bg-ink hover:bg-ink text-elevated rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                     >
                       <Plus size={14} />
                       Add
@@ -946,23 +949,20 @@ function WorkspaceView() {
                   </div>
 
                   {roadmap.length === 0 ? (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-sm">
-                      <p className="text-sm text-slate-600">
-                        Nothing on your roadmap yet.
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1.5">
-                        Add your own milestones above. We will not invent deadlines for
-                        you.
-                      </p>
-                    </div>
+                    <EmptyState
+                      icon={MapPin}
+                      title="Nothing on your roadmap yet"
+                      hint="Add your own milestones above. We will not invent deadlines for you — a schedule you did not set is not a plan."
+                      variant="inline"
+                    />
                   ) : (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm divide-y divide-slate-100">
+                    <div className="bg-elevated border border-line/10 rounded-2xl p-4 shadow-sm divide-y divide-line/5">
                       {roadmap.map((item) => {
                         const isCompleted = item.status === "completed";
                         return (
                           <div
                             key={item.id}
-                            className="py-3.5 px-2 flex items-center justify-between gap-4 hover:bg-slate-50/50 rounded-lg transition-colors"
+                            className="py-3.5 px-2 flex items-center justify-between gap-4 hover:bg-surface/50 rounded-lg transition-colors"
                           >
                             <div className="flex items-center gap-3">
                               <button
@@ -971,8 +971,8 @@ function WorkspaceView() {
                                 aria-pressed={isCompleted}
                                 className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all cursor-pointer ${
                                   isCompleted
-                                    ? "bg-slate-950 border-slate-950 text-white"
-                                    : "border-slate-300 hover:border-slate-400 bg-white"
+                                    ? "bg-ink border-line/10 text-elevated"
+                                    : "border-line/20 hover:border-line/30 bg-elevated"
                                 }`}
                               >
                                 {isCompleted && <Check size={12} strokeWidth={3} />}
@@ -980,16 +980,16 @@ function WorkspaceView() {
                               <div>
                                 <span
                                   className={`text-xs font-semibold ${
-                                    isCompleted ? "line-through text-slate-400" : "text-slate-900"
+                                    isCompleted ? "line-through text-ink-3" : "text-ink"
                                   }`}
                                 >
                                   {item.label}
                                 </span>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded">
+                                  <span className="text-[10px] font-mono text-ink-3 bg-chip px-1.5 py-0.2 rounded">
                                     {item.category}
                                   </span>
-                                  <span className="text-[10px] font-mono text-slate-500">
+                                  <span className="text-[10px] font-mono text-ink-2">
                                     {item.due ? `Due: ${item.due}` : "No deadline set"}
                                   </span>
                                 </div>
@@ -999,8 +999,8 @@ function WorkspaceView() {
                             <span
                               className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
                                 isCompleted
-                                  ? "bg-slate-100 text-slate-500"
-                                  : "bg-blue-50 text-blue-700 border border-blue-200"
+                                  ? "bg-chip text-ink-2"
+                                  : "bg-sys-blue/10 text-blue-700 border border-sys-blue/30"
                               }`}
                             >
                               {isCompleted ? "Completed" : "Active"}
@@ -1056,65 +1056,65 @@ function TrajectoryCards({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+      <div className="bg-elevated border border-line/10 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
         <div>
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink-3">
             AI Resilience
           </span>
-          <h3 className="text-xs font-bold text-slate-900 mt-1">Measured trait</h3>
+          <h3 className="text-xs font-bold text-ink mt-1">Measured trait</h3>
           <div className="my-3 h-16 flex items-center">
-            <span className="text-4xl font-bold font-mono text-slate-950">
+            <span className="text-4xl font-bold font-mono text-ink">
               {aiResilienceScore ?? NO_DATA}
             </span>
           </div>
         </div>
-        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 border-t border-slate-100 pt-2">
+        <div className="flex items-center justify-between text-[10px] font-mono text-ink-3 border-t border-line/5 pt-2">
           <span>From your assessment</span>
         </div>
-        <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+        <p className="text-[11px] text-ink-2 mt-2 leading-relaxed">
           A single measurement, not a trend. We do not chart a trajectory until there
           is a history of measurements to chart.
         </p>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+      <div className="bg-elevated border border-line/10 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
         <div>
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink-3">
             Profile Strength
           </span>
-          <h3 className="text-xs font-bold text-slate-900 mt-1">Your checklist</h3>
+          <h3 className="text-xs font-bold text-ink mt-1">Your checklist</h3>
           <div className="my-3 h-16 flex items-baseline gap-1">
-            <span className="text-4xl font-bold font-mono text-slate-950">
+            <span className="text-4xl font-bold font-mono text-ink">
               {milestonesTotal > 0 ? milestonesComplete : NO_DATA}
             </span>
             {milestonesTotal > 0 && (
-              <span className="text-sm font-mono text-slate-400">/ {milestonesTotal}</span>
+              <span className="text-sm font-mono text-ink-3">/ {milestonesTotal}</span>
             )}
           </div>
         </div>
-        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 border-t border-slate-100 pt-2">
+        <div className="flex items-center justify-between text-[10px] font-mono text-ink-3 border-t border-line/5 pt-2">
           <span>Milestones you completed</span>
         </div>
-        <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+        <p className="text-[11px] text-ink-2 mt-2 leading-relaxed">
           Counted from your own list. There is no velocity metric, because velocity
           needs a dated history of completed work that we do not have.
         </p>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+      <div className="bg-elevated border border-line/10 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
         <div>
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink-3">
             Admittance odds
           </span>
-          <h3 className="text-xs font-bold text-slate-900 mt-1">Not modelled here</h3>
+          <h3 className="text-xs font-bold text-ink mt-1">Not modelled here</h3>
           <div className="my-3 h-16 flex items-center">
-            <span className="text-4xl font-bold font-mono text-slate-300">{NO_DATA}</span>
+            <span className="text-4xl font-bold font-mono text-ink-3">{NO_DATA}</span>
           </div>
         </div>
-        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 border-t border-slate-100 pt-2">
+        <div className="flex items-center justify-between text-[10px] font-mono text-ink-3 border-t border-line/5 pt-2">
           <span>Needs rank, exam, category, home state</span>
         </div>
-        <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+        <p className="text-[11px] text-ink-2 mt-2 leading-relaxed">
           This card previously showed a 58% chance of LSE admission, rising to 81%
           &ldquo;after SAT&rdquo;, with a &ldquo;Model v4.1&rdquo; tag. No admissions
           engine ran. An odds figure without your rank and category is a guess with a
