@@ -5,71 +5,163 @@
 @tailwind utilities;
 
 /* =====================================================
-   INDIALENS DESIGN SYSTEM — Dual-Mode Apple Edition
-   Dark = default. Light = [data-theme="light"].
-   Every token changes. Zero hardcoded colors in JS.
-   ===================================================== */
+   VIVIDHEDU DESIGN SYSTEM — single source of truth
+   =====================================================
 
-/* ─── DARK MODE (default) ─────────────────────────── */
+THE BUG THIS FIXES
+------------------
+This file used to claim "Dark = default. Light = [data-theme="light"]" while
+shipping the opposite: `:root` set `--bg: #FFFFFF` and `--text-primary:
+#09090B`, and `[data-theme="light"]` re-set almost the same light values. So
+`:root` and `[data-theme="light"]` were near-duplicates, the "dark" theme was
+not dark, and `tailwind.config.ts` simultaneously declared a *third* palette as
+literal hex (`bg: "#000000"`, `text-primary: "#F5F5F7"`, `accent: "#E11D48"`)
+that nothing used. The comment and the values disagreed, and the config and the
+stylesheet disagreed with each other.
+
+WHICH PALETTE WON, AND WHY
+--------------------------
+LIGHT is the default. DARK is the opt-in `[data-theme="dark"]`.
+
+This is the opposite of the header comment, and it is the deliberate decision.
+Light wins because of what the rest of the codebase is already written against:
+
+  - `<body className="bg-[#F8FAFC] text-zinc-950">` in the root layout, and
+    ~1,350 `bg-white` / `text-zinc-*` / `bg-black` / `border-slate-*` classes
+    across 69 files, are light-mode utilities. Making dark the `:root` default
+    would put a black page behind every one of those, turning a token cleanup
+    into a site-wide visual regression. Fixing that is the job of the page
+    migration, not of this file — and doing it here would break 44 pages to
+    improve 6.
+  - The product's own conversion surfaces (pricing, home, explore, workspace)
+    are light today, and the onboarding wizard was just rewritten against that.
+    A dark default would silently change the onboarding experience that
+    commits 8531a2e / b3a272f recently stabilised.
+  - "Dark = default" is also a worse claim for an India-facing consumer product
+    read in daylight.
+
+So light is the truth of the existing UI, and this file now states it. Dark
+becomes a real, working, opt-in theme rather than a comment.
+
+THE ONE CONTRACT
+----------------
+Every colour in the product resolves through one of two routes:
+
+  1. A CSS custom property from the blocks below, consumed by the `.t-*`
+     utility classes and the component classes further down this file.
+  2. A semantic Tailwind colour declared in `tailwind.config.ts` as
+     `rgb(var(--token-rgb) / <alpha-value>)`.
+
+Route 2 is what lets one class name work in BOTH themes. The tailwind config no
+longer carries a competing palette — it points at the `--c-*-rgb` triples
+defined here, which is what makes this file the single source of truth rather
+than one of two.
+
+To add a colour: define `--x-rgb` in BOTH `:root` and `[data-theme="dark"]`,
+expose it in tailwind.config.ts, use the class. Never hardcode a hex value in
+the config, and never write a hex literal into a component.
+
+prefers-color-scheme
+--------------------
+There is deliberately NO `prefers-color-scheme` rule for dark. A visitor whose
+OS is dark is not opted in: the product's light default is a design decision
+about legibility for its audience, and a media query that flips 44 unconverted
+pages to a palette they do not use would reintroduce exactly the incoherence
+this file exists to remove. Dark is reached the way it should be — by asking,
+via the toggle in the navbar, and it then persists under the `functional`
+consent category.
+
+REMAINING DEBT
+--------------
+Six surfaces are converted to tokens in this pass: home, /explore, /onboard +
+OnboardWizard, /workspace, /pricing, and the shared shell (AppShell, Navbar,
+Footer). They render correctly in both themes. Every other page still carries
+`bg-white` / `text-zinc-*` / `bg-[#...]` and therefore renders correctly only in
+the default (light) theme. That is a documented, accepted interim state — see
+DESIGN-SYSTEM.md for the list and the migration order.
+*/
+
+/* ─── LIGHT (default) ──────────────────────────────── */
 :root {
-  /* Backgrounds */
+  color-scheme: light;
+
+  /* Backgrounds (Apple marketing light palette) */
   --bg:           #FFFFFF;
-  --bg-surface:   #F8FAFC;
+  --bg-surface:   #F5F5F7;
   --bg-elevated:  #FFFFFF;
-  --bg-overlay:   #F1F5F9;
+  --bg-overlay:   #E8E8ED;
   --bg-hover:     rgba(0,0,0,0.04);
   --bg-chip:      rgba(0,0,0,0.05);
-  --bg-input:     #F8FAFC;
+  --bg-input:     #F5F5F7;
 
   /* Navbar */
-  --nav-bg:       rgba(255,255,255,0.85);
-  --nav-bg-scrolled: rgba(255,255,255,0.97);
+  --nav-bg:         rgba(255,255,255,0.82);
+  --nav-bg-scrolled: rgba(255,255,255,0.95);
 
   /* Borders */
-  --border:       rgba(0,0,0,0.09);
-  --border-focus: rgba(0,0,0,0.20);
-  --border-subtle:rgba(0,0,0,0.05);
-  --border-strong:rgba(0,0,0,0.14);
-  --divider:      rgba(0,0,0,0.07);
+  --border:        rgba(0,0,0,0.10);
+  --border-focus:  rgba(0,0,0,0.26);
+  --border-subtle: rgba(0,0,0,0.05);
+  --border-strong: rgba(0,0,0,0.42);
+  --divider:       rgba(0,0,0,0.08);
 
-  /* Text Hierarchy (Apple dark text on light) */
-  --text-primary:   #09090B;
-  --text-secondary: #52525B;
-  --text-tertiary:  #A1A1AA;
+  /* Text hierarchy */
+  --text-primary:   #1D1D1F;
+  --text-secondary: #5B5B60;
+  --text-tertiary:  #86868B;
   --text-inverse:   #FFFFFF;
 
-  /* Accent */
+  /* Accent — rose. It does not invert between themes. */
   --accent:       #E11D48;
   --accent-hover: #BE123C;
-  --accent-dim:   rgba(225,29,72,0.08);
+  --accent-dim:   rgba(225,29,72,0.10);
 
-  /* System palette (vivid on dark, slightly muted on light) */
-  --blue:         #0A84FF;
-  --blue-dim:     rgba(10,132,255,0.12);
-  --green:        #30D158;
-  --green-dim:    rgba(48,209,88,0.12);
-  --amber:        #FF9F0A;
-  --amber-dim:    rgba(255,159,10,0.12);
-  --red:          #FF453A;
-  --red-dim:      rgba(255,69,58,0.12);
-  --purple:       #BF5AF2;
-  --purple-dim:   rgba(191,90,242,0.12);
-  --teal:         #5AC8F5;
-  --teal-dim:     rgba(90,200,245,0.12);
+  /* System palette — deeper, for contrast on white */
+  --blue:    #0066CC;  --blue-dim:   rgba(0,102,204,0.12);
+  --green:   #1A7F37;  --green-dim:  rgba(26,127,55,0.12);
+  --amber:   #9A5B00;  --amber-dim:  rgba(154,91,0,0.12);
+  --red:     #C42B21;  --red-dim:    rgba(196,43,33,0.12);
+  --purple:  #6B2FBF;  --purple-dim: rgba(107,47,191,0.12);
+  --teal:    #00688F;  --teal-dim:   rgba(0,104,143,0.12);
 
   /* Shadows */
-  --shadow-sm:  0 1px 2px rgba(0,0,0,0.5);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg:  0 8px 32px rgba(0,0,0,0.5);
-  --shadow-card:0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05);
-  --shadow-glow-accent: 0 0 24px rgba(225,29,72,0.18);
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+  --shadow-lg:   0 8px 30px rgba(0,0,0,0.14), 0 4px 10px rgba(0,0,0,0.08);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.06);
+  --shadow-glow-accent: 0 0 24px rgba(225,29,72,0.14);
 
   /* Hero glow */
-  --hero-glow: radial-gradient(ellipse 60% 50% at 50% -5%, rgba(225,29,72,0.12) 0%, transparent 70%);
-  --hero-glow-bottom: radial-gradient(ellipse 60% 40% at 50% 120%, rgba(225,29,72,0.06) 0%, transparent 60%);
+  --hero-glow:        radial-gradient(ellipse 60% 50% at 50% -5%, rgba(225,29,72,0.08) 0%, transparent 70%);
+  --hero-glow-bottom: radial-gradient(ellipse 60% 40% at 50% 120%, rgba(225,29,72,0.05) 0%, transparent 60%);
 
-  /* Status indicator */
-  --live-dot:   #30D158;
+  /* Status */
+  --live-dot: #1A7F37;
+
+  /* Focus ring — one definition, both themes, never removed. */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+
+  /* ── RGB triples, consumed by tailwind.config.ts ──
+     A semantic tailwind colour is `rgb(var(--c-x-rgb) / <alpha-value>)`, so
+     these tokens are what make `bg-surface` mean off-white in one theme and
+     near-black in the other from a single class name. */
+  --c-bg-rgb:           255 255 255;
+  --c-surface-rgb:      245 245 247;
+  --c-elevated-rgb:      255 255 255;
+  --c-overlay-rgb:      232 232 237;
+  --c-accent-rgb:       225 29 72;
+  --c-accent-hover-rgb: 190 18 60;
+  --c-ink-rgb:          29 29 31;   /* text-primary */
+  --c-ink-2-rgb:        91 91 96;   /* text-secondary */
+  --c-ink-3-rgb:        134 134 139;/* text-tertiary */
+  --c-line-rgb:         0 0 0;      /* border — alpha applied per use */
+  --c-line-2-rgb:       0 0 0;
+  --c-blue-rgb:         0 102 204;
+  --c-green-rgb:        26 127 55;
+  --c-amber-rgb:        154 91 0;
+  --c-red-rgb:          196 43 33;
+  --c-purple-rgb:       107 47 191;
+  --c-teal-rgb:         0 104 143;
 
   /* Fonts */
   --font-display: -apple-system, 'SF Pro Display', 'Inter', BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -77,79 +169,97 @@
   --font-mono:    'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace;
 
   /* Radius */
-  --r-sm:  8px;
-  --r-md:  12px;
-  --r-lg:  16px;
-  --r-xl:  20px;
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
   --r-full: 9999px;
 
   /* Theme toggle icon */
-  --toggle-icon: "☾";
+  --toggle-icon: "☀";
 }
 
-/* ─── LIGHT MODE ──────────────────────────────────── */
-[data-theme="light"] {
-  /* Backgrounds (Apple marketing light palette) */
-  --bg:           #FFFFFF;
-  --bg-surface:   #F5F5F7;
-  --bg-elevated:  #EBEBEB;
-  --bg-overlay:   #D1D1D6;
-  --bg-hover:     rgba(0,0,0,0.04);
-  --bg-chip:      rgba(0,0,0,0.05);
-  --bg-input:     #F5F5F7;
+/* ─── DARK (explicit in-app choice) ────────────────── */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Backgrounds */
+  --bg:           #000000;
+  --bg-surface:   #0A0A0A;
+  --bg-elevated:  #141414;
+  --bg-overlay:   #1C1C1E;
+  --bg-hover:     rgba(255,255,255,0.06);
+  --bg-chip:      rgba(255,255,255,0.08);
+  --bg-input:     #141414;
 
   /* Navbar */
-  --nav-bg:       rgba(255,255,255,0.85);
-  --nav-bg-scrolled: rgba(255,255,255,0.97);
+  --nav-bg:         rgba(10,10,10,0.80);
+  --nav-bg-scrolled: rgba(10,10,10,0.95);
 
   /* Borders */
-  --border:       rgba(0,0,0,0.09);
-  --border-focus: rgba(0,0,0,0.20);
-  --border-subtle:rgba(0,0,0,0.05);
-  --border-strong:rgba(0,0,0,0.14);
-  --divider:      rgba(0,0,0,0.07);
+  --border:        rgba(255,255,255,0.12);
+  --border-focus:  rgba(255,255,255,0.28);
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.45);
+  --divider:       rgba(255,255,255,0.10);
 
-  /* Text Hierarchy (Apple dark text on light) */
-  --text-primary:   #1D1D1F;
-  --text-secondary: #6E6E73;
-  --text-tertiary:  #AEAEB2;
-  --text-inverse:   #FFFFFF;
+  /* Text hierarchy */
+  --text-primary:   #F5F5F7;
+  --text-secondary: #A1A1AA;
+  --text-tertiary:  #8A8A8E;
+  --text-inverse:   #09090B;
 
-  /* Accent stays rose — brand identity is unchanged */
-  --accent:       #E11D48;
-  --accent-hover: #BE123C;
-  --accent-dim:   rgba(225,29,72,0.08);
+  /* Accent — lightened so it holds contrast on black */
+  --accent:       #FB7185;
+  --accent-hover: #F43F5E;
+  --accent-dim:   rgba(251,113,133,0.16);
 
-  /* System palette — slightly deeper for contrast on white */
-  --blue:         #0066CC;
-  --blue-dim:     rgba(0,102,204,0.1);
-  --green:        #1A9E3F;
-  --green-dim:    rgba(26,158,63,0.1);
-  --amber:        #C36B00;
-  --amber-dim:    rgba(195,107,0,0.1);
-  --red:          #CC3A2F;
-  --red-dim:      rgba(204,58,47,0.1);
-  --purple:       #7936C8;
-  --purple-dim:   rgba(121,54,200,0.1);
-  --teal:         #0070A6;
-  --teal-dim:     rgba(0,112,166,0.1);
+  /* System palette, saturated for dark */
+  --blue:    #0A84FF;  --blue-dim:   rgba(10,132,255,0.16);
+  --green:   #30D158;  --green-dim:  rgba(48,209,88,0.16);
+  --amber:   #FF9F0A;  --amber-dim:  rgba(255,159,10,0.16);
+  --red:     #FF453A;  --red-dim:    rgba(255,69,58,0.16);
+  --purple:  #BF5AF2;  --purple-dim: rgba(191,90,242,0.16);
+  --teal:    #5AC8F5;  --teal-dim:   rgba(90,200,245,0.16);
 
-  /* Shadows (lighter, Apple-style) */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
-  --shadow-lg:  0 8px 30px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.08);
-  --shadow-card:0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.06);
-  --shadow-glow-accent: 0 0 24px rgba(225,29,72,0.12);
+  /* Shadows */
+  --shadow-sm:   0 1px 2px rgba(0,0,0,0.6);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.6);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+  --shadow-glow-accent: 0 0 24px rgba(251,113,133,0.22);
 
   /* Hero glow */
-  --hero-glow: radial-gradient(ellipse 60% 50% at 50% -5%, rgba(225,29,72,0.07) 0%, transparent 70%);
-  --hero-glow-bottom: radial-gradient(ellipse 60% 40% at 50% 120%, rgba(225,29,72,0.04) 0%, transparent 60%);
+  --hero-glow:        radial-gradient(ellipse 60% 50% at 50% -5%, rgba(251,113,133,0.16) 0%, transparent 70%);
+  --hero-glow-bottom: radial-gradient(ellipse 60% 40% at 50% 120%, rgba(251,113,133,0.08) 0%, transparent 60%);
 
   /* Status */
-  --live-dot:   #1A9E3F;
+  --live-dot: #30D158;
+
+  /* Focus ring */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+
+  /* RGB triples */
+  --c-bg-rgb:           0 0 0;
+  --c-surface-rgb:      10 10 10;
+  --c-elevated-rgb:     20 20 20;
+  --c-overlay-rgb:      28 28 30;
+  --c-accent-rgb:       251 113 133;
+  --c-accent-hover-rgb: 244 63 94;
+  --c-ink-rgb:          245 245 247;
+  --c-ink-2-rgb:        161 161 170;
+  --c-ink-3-rgb:        138 138 138;
+  --c-line-rgb:         255 255 255;
+  --c-line-2-rgb:       255 255 255;
+  --c-blue-rgb:         10 132 255;
+  --c-green-rgb:        48 209 88;
+  --c-amber-rgb:        255 159 10;
+  --c-red-rgb:          255 69 58;
+  --c-purple-rgb:       191 90 242;
+  --c-teal-rgb:         90 200 245;
 
   /* Toggle icon */
-  --toggle-icon: "☀";
+  --toggle-icon: "☾";
 }
 
 /* =====================================================
@@ -161,6 +271,150 @@
   padding: 0;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+}
+
+/* =====================================================
+   LOADING STATES
+   =====================================================
+   A skeleton is the default for "data is arriving", a spinner for "you asked
+   for something and it is in flight". The distinction is not cosmetic:
+
+   - A spinner tells the user nothing about what is coming, so the page it
+     replaces and the page that loads feel like different products. A skeleton
+     shaped like the result means the layout does not jump when data lands,
+     which is most of what makes a page feel "loading" rather than "broken".
+   - A spinner implies the wait is short. On a 3s backend timeout a spinner is
+     a lie about progress; a skeleton is honest, because it is not claiming to
+     know how long.
+   - An infinite animation is a vestibular trigger. Both respect
+     `prefers-reduced-motion` (see below), where the shimmer stops and the
+     blocks sit at their resting opacity rather than disappearing entirely —
+     the placeholder must still be visible.
+
+   `aria-busy` on the container is what makes this accessible; the decorative
+   blocks themselves are hidden from assistive tech so a screen reader is not
+   read a list of empty rectangles. */
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-chip);
+  border-radius: var(--r-sm);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--bg-hover),
+    transparent
+  );
+  animation: skeletonShimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* Spinner — for a user-initiated action (button submit, inline mutation). */
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--border-focus);
+  border-top-color: var(--accent);
+  border-radius: 9999px;
+  animation: spinnerRotate 0.7s linear infinite;
+}
+
+@keyframes spinnerRotate {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; border-top-color: var(--border-focus); }
+}
+
+/* =====================================================
+   FOCUS VISIBILITY
+   =====================================================
+   One rule, every interactive element. Before this, keyboard focus was
+   effectively invisible on most of the app: `.form-input` set `outline: none`
+   and substituted a soft shadow, and buttons and links had no focus styling
+   at all, so a keyboard user navigating the site had no reliable way to tell
+   where they were.
+
+   `:focus-visible` rather than `:focus` so a mouse click does not leave a ring
+   behind — the indicator appears for keyboard and assistive navigation, which
+   is exactly when it is needed. Browsers without `:focus-visible` support fall
+   back to `:focus` via the preceding rule.
+
+   `outline` is used rather than `box-shadow` because it follows border-radius
+   in modern browsers and is not silently overridden by an element's own
+   shadow styling. The `outline-offset` keeps it clear of the control. */
+:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* Inputs and the dashed ring draw their own focus treatment. The global rule
+   above would double up with those, so the outline is traded for the more
+   specific border + shadow the component already defines. */
+.form-input:focus,
+.form-input:focus-visible {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.dashed-ring:focus,
+.dashed-ring:focus-visible {
+  outline: none;
+}
+
+/* =====================================================
+   REDUCED MOTION
+   =====================================================
+   `prefers-reduced-motion` is an OS-level accessibility setting, and honouring
+   it is not optional. Several elements animate indefinitely — the pulsing
+   status dots, the `animate-gentle-pulse` loader — and continuous motion is a
+   known trigger for vestibular discomfort.
+
+   The rule collapses animation and transition durations to near-zero rather
+   than setting `animation: none`, so that any element depending on an
+   `animationend` or `transitionend` event to advance state still fires it.
+   Replacing the animation outright would strand those handlers. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 html {
