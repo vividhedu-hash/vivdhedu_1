@@ -86,33 +86,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Assert no unconditional RLS policy is reintroduced
+        # This used to be a grep for `USING (true)`. It reported migrations
+        # 0006 and 0007 as breaches, both of which are correct: it flagged
+        # service_role policies (which bypass RLS by design and grant the
+        # browser key nothing) and public-catalogue tables (which are public by
+        # design, exactly like colleges and programs). A check that fails on
+        # correct code stops being read, so it was replaced with a parser that
+        # reads the table and the role, not just the predicate.
+        #
+        # The P0 it guards is still caught: a bare-`true` SELECT/UPDATE granted
+        # to anon or authenticated on a non-public table fails the build. There
+        # is a regression fixture in backend/tests for exactly that.
         run: |
           set -euo pipefail
-          fail=0
-          # Rollback scripts are excluded by design: their entire purpose is to
-          # recreate the pre-hardening policies, so they are necessarily full of
-          # USING (true). A rollback that fails this audit is not a rollback.
-          for f in backend/db/migrations/*.sql backend/db/schema.sql; do
-            [ -f "$f" ] || continue
-            case "$f" in
-              *_rollback.sql|*/rollback/*) continue ;;
-            esac
-            # A SELECT/UPDATE policy whose USING/WITH CHECK is bare `true`
-            # grants every row to the listed role. Match the bare boolean in
-            # any position: `USING (true)`, `USING true`,
-            # `USING (true);` and `WITH CHECK (true)` must all be caught.
-            if grep -nEi '(USING|WITH[[:space:]]+CHECK)[[:space:]]*\(?[[:space:]]*true[[:space:]]*\)?' "$f"; then
-              echo "::error::$f contains an unconditional RLS policy (USING/WITH CHECK = true)"
-              fail=1
-            fi
-          done
-          # SECURITY DEFINER views bypass RLS on the underlying tables.
-          if grep -nEi 'CREATE([[:space:]]+OR[[:space:]]+REPLACE)?[[:space:]]+VIEW' backend/db/*.sql backend/db/migrations/*.sql 2>/dev/null \
-               | grep -qi 'security[[:space:]]+definer'; then
-            echo "::error::SECURITY DEFINER view found; use security_invoker"
-            fail=1
-          fi
-          exit $fail
+          python3 scripts/audit_rls.py --root .
 
   import-depth-guard:
     name: import-depth-guard
