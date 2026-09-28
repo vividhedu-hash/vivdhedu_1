@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowRight, Check, Loader2, Mail } from "lucide-react";
-import posthog from "posthog-js";
+import { capture } from "@/lib/analytics";
 
 /**
  * The single conversion form for the launch. Every commercial page renders
@@ -149,7 +149,7 @@ export function WaitlistForm({
 
       setSubmittedEmail(values.email);
 
-      posthog.capture("waitlist_signup", {
+      capture("waitlist_signup", {
         source,
         interest: values.interest,
         has_name: Boolean(values.fullName),

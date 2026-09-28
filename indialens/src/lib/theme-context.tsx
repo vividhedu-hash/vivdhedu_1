@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { functionalAllowed } from "./consent";
+import { THEME_KEY } from "./session-policy";
 
 export type Theme = "dark" | "light";
 
@@ -16,8 +18,6 @@ const ThemeContext = createContext<ThemeContextValue>({
   setTheme: () => {},
 });
 
-const STORAGE_KEY = "il-theme";
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
   const [mounted, setMounted] = useState(false);
@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMounted(true);
     const stored = (typeof localStorage !== "undefined"
-      ? localStorage.getItem(STORAGE_KEY)
+      ? localStorage.getItem(THEME_KEY)
       : null) as Theme | null;
     const preferred: Theme = stored ?? "dark";
     setThemeState(preferred);
@@ -36,7 +36,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const applyTheme = useCallback((next: Theme) => {
     setThemeState(next);
     document.documentElement.setAttribute("data-theme", next);
-    try { localStorage.setItem(STORAGE_KEY, next); } catch {}
+    if (!functionalAllowed()) return;
+    try { localStorage.setItem(THEME_KEY, next); } catch {}
   }, []);
 
   const toggle = useCallback(() => {

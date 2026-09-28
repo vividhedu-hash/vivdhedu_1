@@ -47,6 +47,7 @@ export const metadata: Metadata = {
 };
 
 import { AppShell } from "@/components/AppShell";
+import { CookieConsent } from "@/components/CookieConsent";
 
 export default function RootLayout({
   children,
@@ -54,21 +55,44 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    // `suppressHydrationWarning` is required and not a shortcut: the inline
+    // script below writes `data-theme` on <html> before React hydrates, so the
+    // server-rendered attribute and the client one differ by design. Without
+    // this, React logs a mismatch on every page load.
+    <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Inter + JetBrains Mono + Newsreader */}
+        {/* Inter + JetBrains Mono. Loaded twice (here and via the @import in
+            globals.css) — see DESIGN-SYSTEM.md; the @import is the one to
+            remove, and it was left alone here to keep this diff reviewable. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        {/* Applies the stored theme before first paint. Blocking on purpose:
+            deferring it is what causes the white flash this exists to prevent. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var m=/(?:^|;\\s*)vividhedu_consent=([^;]*)/.exec(document.cookie);" +
+              "var r=m?decodeURIComponent(m[1]):'';" +
+              "if(/^\\d+\\.1\\.[01]\\.\\d+$/.test(r)){var s=null;try{s=localStorage.getItem('il-theme')}catch(e){}" +
+              "if(s==='dark'||s==='light'){document.documentElement.setAttribute('data-theme',s);return}}}" +
+              "document.documentElement.setAttribute('data-theme','light')})();",
+          }}
+        />
       </head>
-      <body className="bg-[#F8FAFC] text-zinc-950 antialiased selection:bg-rose-100 selection:text-rose-900">
+      {/* Tokens, not literals. The old `bg-[#F8FAFC] text-zinc-950` here was a
+          hardcoded light background sitting on <body> — it painted over the
+          dark theme on every dark-mode page, which is why `background-color:
+          var(--bg)` in globals.css could never actually be seen. */}
+      <body className="t-bg t-text antialiased selection:bg-[var(--accent-dim)] selection:text-[var(--text-primary)]">
         <PostHogProvider>
           <AuthProvider>
             <AppShell>{children}</AppShell>
             <AuthModal />
+            <CookieConsent />
           </AuthProvider>
         </PostHogProvider>
       </body>

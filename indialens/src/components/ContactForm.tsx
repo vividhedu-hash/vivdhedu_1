@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Check, Loader2, Send } from "lucide-react";
-import posthog from "posthog-js";
+import { capture } from "@/lib/analytics";
 import { BRAND, mailtoLink } from "@/lib/brand";
 
 /**
@@ -98,7 +98,7 @@ export function ContactForm() {
       }
 
       setSent(values.email);
-      posthog.capture("contact_message_sent", { topic: values.topic });
+      capture("contact_message_sent", { topic: values.topic });
     } catch {
       setServerError(
         "We could not reach the contact service. Email us directly and we will pick it up.",
