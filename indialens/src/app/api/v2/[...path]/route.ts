@@ -235,7 +235,7 @@ async function proxy(request: Request, path: string[], method: string) {
 
   // 3. Psychometric CAT Engine: Start Assessment
   if (subpath === "psychometric/start") {
-    const sessionId = "psy_" + randomBytes(8).toString("hex");
+    const sessionId = "psy_" + randomBytes(16).toString("hex");
     const initialTraits: TraitVector = {
       risk: 0, value: 0, autonomy: 0, ai_adapt: 0,
       openness: 0, diligence: 0, social: 0, security: 0,
@@ -259,14 +259,31 @@ async function proxy(request: Request, path: string[], method: string) {
   if (subpath === "psychometric/respond") {
     let parsed: any = {};
     try { if (body) parsed = JSON.parse(body); } catch {}
-    const sessionId = parsed.session_id || "psy_default";
+    const sessionId = typeof parsed.session_id === "string" ? parsed.session_id : "";
+    if (sessionId.length < 22) {
+      return NextResponse.json(
+        {
+          error: "invalid_session",
+          _source: "unavailable",
+          reason: "A psychometric session id must be the handle issued at start. A missing or short id is not a session.",
+        },
+        { status: 400 },
+      );
+    }
     const itemId = parsed.item_id;
     const optionIndex = Number(parsed.option_index ?? 0);
 
-    const state = sessionStates.get(sessionId) || {
-      traits: { risk: 0, value: 0, autonomy: 0, ai_adapt: 0, openness: 0, diligence: 0, social: 0, security: 0 },
-      completedIndex: 0,
-    };
+    const state = sessionStates.get(sessionId);
+    if (!state) {
+      return NextResponse.json(
+        {
+          error: "session_not_found",
+          _source: "unavailable",
+          reason: "No psychometric session exists for this id. A new result is not invented in its place.",
+        },
+        { status: 404 },
+      );
+    }
 
     const item = PSYCH_ITEMS.find((p) => p.id === itemId) || PSYCH_ITEMS[state.completedIndex];
     if (item && item.options[optionIndex]) {
@@ -311,7 +328,7 @@ async function proxy(request: Request, path: string[], method: string) {
   // 5. Psychometric CAT Engine: Result Report
   if (subpath.startsWith("psychometric/result")) {
     const parts = subpath.split("/");
-    const sessionId = parts[parts.length - 1] || "psy_default";
+    const sessionId = parts[parts.length - 1] || "";
     const state = sessionStates.get(sessionId);
 
     // A session lives in this module's in-memory Map, so it is lost on any

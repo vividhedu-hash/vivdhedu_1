@@ -214,21 +214,32 @@ async def evaluate_traits(payload: CATItemRequest):
 
     # How many answers actually bear on each trait. `compute_trait_estimates`
     # averages per trait over the items that measured it, so a trait with zero
-    # supporting items returns 0.0 — a number that is indistinguishable from a
-    # genuinely neutral score. It is a default, not a measurement.
-    measured_counts = {trait: 0 for trait in ("risk", "value", "autonomy", "ai_adaptability")}
+    # supporting items returns 0.0 — a number indistinguishable from a genuinely
+    # neutral score. It is a default, not a measurement.
+    #
+    # The trait a response measures is NOT carried on the response: callers send
+    # `{item_id, score, *_bias}` and the bank resolves item_id → trait, falling
+    # back to `resp["trait"]` for items it does not recognise (mirroring
+    # compute_trait_estimates exactly, so this cannot disagree with it). An
+    # earlier version of this check read only `resp["trait"]` and therefore
+    # counted a normal 10-answer assessment as having 0 measured traits,
+    # withholding a perfectly well-supported archetype.
+    bank_traits = {item.get("id"): item.get("trait") for item in adaptive_cat_service.item_bank}
+    valid_traits = ("risk", "value", "autonomy", "ai_adaptability")
+    measured_counts = {trait: 0 for trait in valid_traits}
     for response in payload.response_history:
-        if response.get("trait") in measured_counts:
-            measured_counts[response["trait"]] += 1
-        else:
-            for key, target in (
-                ("value_bias", "value"),
-                ("risk_bias", "risk"),
-                ("autonomy_bias", "autonomy"),
-                ("ai_bias", "ai_adaptability"),
-            ):
-                if response.get(key):
-                    measured_counts[target] += 1
+        raw_trait = bank_traits.get(response.get("item_id")) or response.get("trait")
+        trait_name = "ai_adaptability" if raw_trait == "ai_adapt" else raw_trait
+        if trait_name in measured_counts:
+            measured_counts[trait_name] += 1
+        for key, target in (
+            ("value_bias", "value"),
+            ("risk_bias", "risk"),
+            ("autonomy_bias", "autonomy"),
+            ("ai_bias", "ai_adaptability"),
+        ):
+            if response.get(key):
+                measured_counts[target] += 1
 
     measured_traits = [t for t, c in measured_counts.items() if c > 0]
     enough_evidence = len(measured_traits) >= 3
@@ -268,9 +279,7 @@ async def evaluate_traits(payload: CATItemRequest):
                 "fewer than 3 measured traits is a guess about a person, so none is returned."
             )
         ),
-        "traits_with_no_measurement": [
-            t for t in ("risk", "value", "autonomy", "ai_adaptability") if measured_counts[t] == 0
-        ],
+        "traits_with_no_measurement": [t for t in valid_traits if measured_counts[t] == 0],
         "confidence_score": round(min(0.98, 0.60 + (len(payload.response_history) * 0.06)), 2),
         "confidence_note": (
             "Confidence scales with the number of responses received, not with the "

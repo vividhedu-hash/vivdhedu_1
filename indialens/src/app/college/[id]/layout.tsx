@@ -4,7 +4,16 @@ import { finiteOrNull } from "../../../lib/mock-data";
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const found = await fetchCollegeById(params.id);
-  if (!found) return { title: "Program Not Found" };
+
+  // `!found.record` covers two distinct situations — a real 404, and an outage
+  // where the index could not be checked — and they deliberately share this
+  // fallback. Before the guard existed, an outage fell through to
+  // `MOCK_DATA`, and this function then built a title, a description, and an
+  // OG image URL from seed data: fabricated scores and salaries published as
+  // structured metadata for a real-looking institution URL. Failing to a
+  // neutral title is the correct outcome for both cases; the visible page
+  // below handles the difference.
+  if (!found.record) return { title: "Program Not Found" };
 
   const record = found.record;
   const composite = finiteOrNull(record.roi.compositeScore);

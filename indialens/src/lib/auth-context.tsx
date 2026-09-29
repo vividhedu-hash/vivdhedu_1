@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { getSupabaseClient } from "./supabase-client";
-import { BRAND } from "./brand";
+import { clearBrowserSession } from "./consent";
+import { RETURN_TO_KEY } from "./session-policy";
 
 /**
  * Supabase Auth is the single source of truth for "is this browser signed in".
@@ -48,19 +49,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
- * Local mirror of the Supabase access token, kept so other code can read the
- * current session without a second round trip to Supabase.
- *
- * This is NOT a credential of its own: it is the same HS256 token Supabase
- * already issued, and the backend verifies it with the Supabase JWT secret.
- * The key is derived from BRAND so the product rename does not leave stale
- * branding behind, and it is deliberately distinct from the key Supabase uses
- * for its own session store — writing a raw token over Supabase's session blob
- * corrupted the session on the next reload.
- */
-const TOKEN_KEY = `${brandSlug()}_auth_token`;
-
-/**
  * Where the user was when they hit "Sign in", so OAuth can return them to the
  * route they asked for instead of dropping them on the landing page.
  *
@@ -73,8 +61,6 @@ const TOKEN_KEY = `${brandSlug()}_auth_token`;
  * preference. A user who abandons a sign-in in one tab should not be silently
  * redirected there days later in another.
  */
-const RETURN_TO_KEY = "vividhedu_auth_return_to";
-
 /** Records the current path as the post-sign-in destination. */
 export function rememberReturnTo(path?: string): void {
   if (typeof window === "undefined") return;
@@ -105,11 +91,6 @@ export function consumeReturnTo(): string | null {
   } catch {
     return null;
   }
-}
-
-/** Brand-derived, storage-safe. Declared before TOKEN_KEY uses it. */
-function brandSlug(): string {
-  return BRAND.name.replace(/[^a-z0-9_-]/gi, "").toLowerCase() || "vividhedu";
 }
 
 /**
@@ -147,13 +128,7 @@ function mapSupabaseUser(supabaseUser: any): AuthUser {
  */
 export function clearStoredTokens(): void {
   if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(TOKEN_KEY);
-  } catch (err) {
-    // A storage failure (private mode, disabled cookies) must not break auth:
-    // Supabase's own session is the authority, this mirror is a convenience.
-    console.warn("[Auth] Could not clear stored auth token:", err);
-  }
+  clearBrowserSession();
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -174,11 +149,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           setUser(mapSupabaseUser(session.user));
           setToken(session.access_token);
-          try {
-            window.localStorage.setItem(TOKEN_KEY, session.access_token);
-          } catch {
-            // Non-fatal: see clearStoredTokens.
-          }
         } else {
           setUser(null);
           setToken(null);
@@ -204,11 +174,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         setUser(mapSupabaseUser(session.user));
         setToken(session.access_token);
-        try {
-          window.localStorage.setItem(TOKEN_KEY, session.access_token);
-        } catch {
-          // Non-fatal: see clearStoredTokens.
-        }
       } else {
         setUser(null);
         setToken(null);

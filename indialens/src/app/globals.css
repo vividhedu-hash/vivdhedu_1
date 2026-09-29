@@ -541,6 +541,270 @@ h1, h2, h3, h4, h5, h6 {
 .mono    { font-family: var(--font-mono); }
 
 /* =====================================================
+   PAGE SHELL — the frame every route sits in
+   =====================================================
+   Four decisions, and every page obeys them.
+
+   1. THE PAGE OWNS ITS BACKGROUND. `t-bg` is the page canvas; the navbar and
+      footer are `t-surface`, so a long page reads as one continuous document
+      with distinct chrome rather than as stacked rectangles. When a page
+      wrapped itself in `bg-surface` (which several did) that separation was
+      lost and the whole page read as one card.
+   2. RHYTHM IS A 4-STEP SCALE. Sections are `page-section` (96px) unless
+      something is genuinely denser, in which case `page-section-tight` (64px).
+      The band classes also own the top hairline, so a section boundary is one
+      class rather than `border-t border-line/10` written out 30 times.
+   3. ONE PAGE HEADER. `page-header` is the single composition of kicker →
+      headline → lead that every route uses. It is a class rather than repeated
+      markup because drift between page headers was the single biggest tell
+      that this was a template rather than a product.
+   4. HORIZONTAL RHYTHM IS `container-xl` (1280). `container-lg` (1080) is for
+      prose. A 1280 gutter is what makes wide tables and side-by-side chart
+      pairs sit on the same line; a prose page at 1280 is unreadable, which is
+      why the narrow variant exists rather than one global width. */
+.page-shell {
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* Section rhythm. `clamp()` collapses the gap on narrow viewports, so one
+   class reads correctly at 375px and at 1440px without a breakpoint per page. */
+.page-section      { padding-block: clamp(56px, 8vw, 96px); }
+.page-section-tight{ padding-block: clamp(40px, 5vw, 64px); }
+
+.page-band     { border-top: 1px solid var(--divider); background: var(--bg); }
+.page-band-alt { border-top: 1px solid var(--divider); background: var(--bg-surface); }
+
+/* The single page-header composition. */
+.page-header    { padding-top: clamp(44px, 6vw, 72px); padding-bottom: clamp(28px, 3.5vw, 44px); }
+.page-header-sm { padding-top: clamp(32px, 4vw, 48px); padding-bottom: clamp(20px, 2.5vw, 28px); }
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.032em;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+.page-title-sm {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.028em;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 2.6vw, 2rem);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+.section-lead {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  max-width: 62ch;
+}
+
+/* Prose pages (methodology, terms, privacy) need a readable measure. */
+.prose-measure { max-width: 68ch; }
+
+/* =====================================================
+   DATA TYPOGRAPHY
+   =====================================================
+   This is a data product, so figures are typography, not decoration. The three
+   rules that make a number readable as a number:
+
+   1. `font-variant-numeric: tabular-nums` — a column of scores is only
+      scannable if every glyph occupies the same width. Without it, "11.0" and
+      "8.0" sit at different widths and the eye cannot track a column down.
+      JetBrains Mono already does this, but `.num` applies it to any numeric
+      run so a figure set in the body face still aligns.
+   2. A fixed decimal convention. `.num-2` is 2dp, `.num-1` is 1dp, `.num-0`
+      is integer. Money, scores and percentages each pick one and stick to it,
+      so a column never mixes "8" with "87.40".
+   3. An unmeasured figure is styled as a gap, not as a zero. `.num-na` is
+      muted, letter-spaced, and semantically distinct from every real value —
+      a dash in the accent colour would read as a finding.
+
+   `.metric` / `.metric-lg` / `.metric-xl` are the only three sizes a figure
+   may take. Anything outside that ramp was the reason score displays drifted
+   between pages. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+  letter-spacing: -0.01em;
+}
+
+.num-0 { font-size: 12px; }
+.num-1 { font-size: 13px; }
+.num-2 { font-size: 15px; }
+.num-3 { font-size: 19px; }
+.num-4 { font-size: 26px; }
+.num-5 { font-size: 34px; }
+
+/* The unmeasured marker. `NO_DATA` in the app is an em dash; this is how it is
+   meant to be drawn wherever a figure is absent. Never `text-red-500`: red
+   asserts "this is the worst reading", which is a different claim. */
+.num-na {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  letter-spacing: 0.08em;
+}
+
+.metric      { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.02em; }
+.metric-lg   { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.025em; }
+.metric-xl   { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 30px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.035em; line-height: 1; }
+
+/* The label above a figure. Uppercase mono at 10px, the convention already set
+   by `.form-label` and `.data-table th`, applied to every metric so the eye
+   learns to skip them. */
+.metric-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+/* A label/value pair, laid out so a stack of them scans as a table. */
+.metric-cell { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.metric-cell-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+
+/* A range with its interval. The median is the emphasised point and the
+   interval is a visibly lighter span, so a reader can see at a glance that the
+   number is a band rather than a reading. */
+.range {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.range-point { font-weight: 600; color: var(--text-primary); }
+.range-band  { color: var(--text-tertiary); font-size: 0.86em; }
+
+/* A confidence band drawn as a track, used wherever a score is shown next to
+   its interval. The unfilled portion is the "not measured" region, so the
+   geometry itself carries the epistemics. */
+.ci-track {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-chip);
+  overflow: hidden;
+}
+.ci-fill { position: absolute; inset-block: 0; border-radius: 999px; }
+
+/* =====================================================
+   PANEL — one card treatment for the whole product
+   =====================================================
+   `.card` and `.card-elevated` are the existing surfaces; `.panel` is the
+   third, and the distinction matters:
+
+     `.card`        interactive — lifts on hover, for things you can click
+     `.card-elevated` static at rest, raised — for a card sitting on a surface
+     `.panel`       static, flat, hairline only — the default for DATA
+
+   Data panels get no lift and no heavy shadow because a wall of hovering,
+   floating cards reads as a marketing page, and this is a terminal. Depth is
+   expressed with a 1px `--border` hairline and nothing else; `--shadow-card`
+   stays at its resting value, which is already near-zero.
+
+   `.panel-head` is the standard internal header: a mono uppercase title on the
+   left, an optional right-hand control. It is the only header a data panel
+   should have. */
+.panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.panel-pad     { padding: 20px 22px; }
+.panel-pad-sm  { padding: 14px 16px; }
+.panel-pad-lg  { padding: 26px 28px; }
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--divider);
+  background: var(--bg-elevated);
+}
+.panel-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.panel-body    { padding: 18px; }
+.panel-body-sm { padding: 14px; }
+
+/* A panel resting on the page canvas rather than on a surface — used for a
+   single "this is the one card that matters" block inside a busy page. */
+.panel-raised {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* A callout for a stated caveat, a formula, or a "this is not measured" note.
+   `--blue` rather than the accent: the accent means "emphasis", and a caveat
+   that glows the same colour as a CTA competes with the CTA. */
+.notice {
+  display: flex;
+  gap: 11px;
+  padding: 13px 15px;
+  border-radius: var(--r-md);
+  background: var(--bg-chip);
+  border: 1px solid var(--border-subtle);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.notice-accent { border-color: color-mix(in srgb, var(--accent) 28%, transparent); background: var(--accent-dim); color: var(--text-primary); }
+.notice-warn { border-color: color-mix(in srgb, var(--amber) 30%, transparent); background: var(--amber-dim); }
+.notice-err  { border-color: color-mix(in srgb, var(--red) 30%, transparent);   background: var(--red-dim); }
+.notice-ok   { border-color: color-mix(in srgb, var(--green) 30%, transparent); background: var(--green-dim); }
+.notice-icon { flex-shrink: 0; margin-top: 1px; }
+
+/* A status row used by every surface that reports its own state. One component
+   class so "system online" and "not configured" cannot drift apart. */
+.status-strip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--divider);
+  background: var(--bg-elevated);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* =====================================================
    LAYOUT
    ===================================================== */
 .container-xl {
@@ -617,6 +881,23 @@ h1, h2, h3, h4, h5, h6 {
 
 .card-dark    { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px 22px; box-shadow: var(--shadow-card); }
 .card-subtle  { background: var(--bg-hover);   border: 1px solid var(--border-subtle); border-radius: var(--r-md); padding: 14px 16px; }
+
+/* The interactive card — a card you can click.
+   `.card` already does this, so this is a name rather than a new style: the
+   point is that data panels (`.panel`) must NOT lift, and having the two names
+   distinct makes "should this lift?" answerable at review time. */
+.card-interactive {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-card);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-interactive:hover {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-md);
+}
 
 /* =====================================================
    BUTTONS
@@ -1107,6 +1388,84 @@ h1, h2, h3, h4, h5, h6 {
 .animate-slide-down    { animation: slideDown 0.25s ease forwards; }
 .animate-fade-slide-up { animation: fadeSlideUp 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .animate-gentle-pulse  { animation: gentlePulse 2s ease-in-out infinite; }
+
+/* =====================================================
+   MOTION SYSTEM
+   =====================================================
+   The rule for this product: motion explains a state change, it does not
+   decorate. Three motions earn their place and nothing else does.
+
+   1. ENTRY. A section fades up 10px and settles. Scroll-triggered, once, with
+      a per-item stagger, so a long results page assembles top-to-bottom in
+      reading order rather than popping in all at once.
+   2. VALUE. A figure that changes counts to its new value, because a jump in a
+      number is exactly the kind of change a reader misses. Handled in React
+      (`.num-roll` is the CSS hook); never applied to an em dash.
+   3. REVEAL. A chart's series fade in from zero, so the reader sees the axis
+      populate rather than finding a finished drawing.
+
+   What is banned: bounce, elastic, anything that overshoots, and anything that
+   loops indefinitely except the two status dots (a live indicator that does not
+   move is not a live indicator).
+
+   `--motion-reduce` is honoured three ways, and all three are needed:
+     a. the global `prefers-reduced-motion` block collapses durations to 0.01ms
+        so animationend/transitionend handlers still fire;
+     b. `.reveal` and `.num-roll` are additionally neutralised to their
+        final state, because a 0.01ms animation that ends on `opacity: 0`
+        from a scroll observer that never fires would leave content invisible;
+     c. JS callers read `prefersReducedMotion()` before starting a count-up,
+        since a JS number tween has no `animationend` to collapse. */
+
+/* Scroll entry. `.reveal` is applied by `Reveal`/`RevealGroup`; the observer
+   adds `is-in` when the element enters. The `no-js` fallback is that motion
+   only ever *adds* — content starts at opacity 0 ONLY when JS is present to
+   remove it, which is why the initial state lives in `.reveal` and not in a
+   `prefers-reduced-motion` media query. */
+.reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-in { opacity: 1; transform: none; }
+
+.reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-stagger.is-in > * { opacity: 1; transform: none; }
+.reveal-stagger.is-in > *:nth-child(1) { transition-delay: 0ms; }
+.reveal-stagger.is-in > *:nth-child(2) { transition-delay: 45ms; }
+.reveal-stagger.is-in > *:nth-child(3) { transition-delay: 90ms; }
+.reveal-stagger.is-in > *:nth-child(4) { transition-delay: 135ms; }
+.reveal-stagger.is-in > *:nth-child(5) { transition-delay: 180ms; }
+.reveal-stagger.is-in > *:nth-child(6) { transition-delay: 225ms; }
+.reveal-stagger.is-in > *:nth-child(n + 7) { transition-delay: 260ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-stagger > * {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* The value transition hook. A JS count-up writes a new string into an
+   element carrying this class; the class itself only supplies the font
+   contract so the digits do not reflow mid-count. */
+.num-roll {
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+  transition: color 0.3s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .num-roll { transition: none; }
+}
 
 .separator { height: 1px; background: var(--divider); margin: 24px 0; }
 

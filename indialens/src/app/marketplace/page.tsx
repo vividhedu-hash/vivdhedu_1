@@ -6,8 +6,6 @@ import {
   ExternalLink,
   Filter,
   RefreshCw,
-  Loader2,
-  CircleAlert,
   CheckCircle2,
   Lock,
   Search,
@@ -17,6 +15,9 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { NO_DATA, finiteOrNull } from "@/lib/mock-data";
+import { PageHeader, SectionHeader } from "@/components/PageHeader";
+import { Notice } from "@/components/Notice";
+import { Skeleton, SkeletonStatus, SkeletonCards } from "@/components/Skeleton";
 
 /*
  * Both lists on this page are served by backend/api/routers/marketplace.py:
@@ -208,296 +209,348 @@ export default function MarketplacePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Header */}
-        <div className="border-b border-slate-200 pb-8 mb-10">
-          <div className="flex items-center gap-2 text-rose-600 text-xs uppercase tracking-widest font-mono font-semibold mb-2">
-            <ShoppingBag className="w-4 h-4" />
-            <span>Actuarial Upskilling Hub · Section 03 Specification</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950">
-            Curated Course Marketplace &amp; Skill Gap Hedge
-          </h1>
-          <p className="mt-3 text-base text-slate-600 max-w-3xl leading-relaxed">
-            The catalog is the server&apos;s <code className="font-mono text-sm">course_marketplace</code>{" "}
-            table. Enter your current skills and a target role to have the matching engine score it
-            against your actual gaps, and to see exactly which skills each course would add.
-          </p>
-        </div>
+    <div className="page-shell">
+      <div className="container-xl page-header">
+        <PageHeader
+          kicker="Actuarial upskilling hub · Section 03"
+          eyebrow={
+            <span className="badge badge-rose">
+              <ShoppingBag size={10} aria-hidden="true" />
+              Formula 3.1 skill-gap matching
+            </span>
+          }
+          title="Curated Course Marketplace & Skill Gap Hedge"
+          lead="The catalogue is the server's own course_marketplace table. Enter your current skills and a target role to have the matching engine score it against your actual gaps, and to see exactly which skills each course would add."
+        />
+      </div>
 
+      <div className="container-xl pb-16">
         {/* Skill-gap matcher */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
-          <div className="flex items-center gap-2 text-rose-600 text-xs font-mono uppercase tracking-wider mb-2">
-            <Search className="w-4 h-4" />
-            <span>Formula 3.1 Skill-Gap Matcher</span>
-          </div>
-          <h2 className="text-base font-bold text-slate-950 mb-1">What should we match you against?</h2>
-          <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-            M = 0.35·SkillGap + 0.25·CareerAlign + 0.25·AI-Resilience + 0.15·BudgetFit. Only courses at
-            or above M ≥ {MATCH_THRESHOLD} are returned.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div className="md:col-span-2">
-              <label htmlFor="skills" className="block text-xs font-mono text-slate-500 uppercase mb-1">
-                Skills you already have (comma separated)
-              </label>
-              <input
-                id="skills"
-                type="text"
-                value={skillsInput}
-                onChange={(e) => setSkillsInput(e.target.value)}
-                placeholder="e.g. Python, Data Analysis, Calculus"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
-              />
-            </div>
-            <div>
-              <label htmlFor="role" className="block text-xs font-mono text-slate-500 uppercase mb-1">
-                Target role
-              </label>
-              <input
-                id="role"
-                type="text"
-                value={targetRole}
-                onChange={(e) => setTargetRole(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
-              />
-            </div>
-            <div>
-              <label htmlFor="budget" className="block text-xs font-mono text-slate-500 uppercase mb-1">
-                Monthly budget (₹)
-              </label>
-              <input
-                id="budget"
-                type="number"
-                min={0}
-                value={monthlyBudget}
-                onChange={(e) => setMonthlyBudget(Number(e.target.value))}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => void runMatch()}
-              disabled={isMatching}
-              className="bg-slate-950 hover:bg-slate-800 disabled:bg-slate-300 text-white rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-2 transition"
-            >
-              {isMatching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-              <span>{isMatching ? "Matching…" : "Match courses to my gaps"}</span>
-            </button>
+        <div className="panel">
+          <div className="panel-head">
+            <span className="panel-title flex items-center gap-2">
+              <Search size={12} aria-hidden="true" />
+              Formula 3.1 skill-gap matcher
+            </span>
             {hasRunMatch && (
               <button
+                type="button"
                 onClick={() => {
                   setHasRunMatch(false);
                   setMatches(null);
                   setMatchError(null);
                 }}
-                className="text-xs text-slate-500 hover:text-slate-900 underline"
+                className="btn-ghost"
               >
                 Clear results
               </button>
             )}
           </div>
 
-          {matchUsedDefaultSkills && hasRunMatch && (
-            <p className="mt-4 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3 leading-relaxed">
-              You left the skills field empty, so the engine scored against its own default assumption
-              (Python, Data Analysis, Calculus). These scores describe that assumed profile, not you.
+          <div className="panel-pad">
+            <h2 className="text-[15px] font-semibold t-text">
+              What should we match you against?
+            </h2>
+            <p className="body-p mt-1.5">
+              M = 0.35·SkillGap + 0.25·CareerAlign + 0.25·AI-Resilience + 0.15·BudgetFit. Only
+              courses at or above M ≥ <span className="num">{MATCH_THRESHOLD}</span> are returned.
             </p>
-          )}
 
-          {matchError && (
-            <div className="mt-4 flex items-start gap-2 text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-xl p-3">
-              <CircleAlert className="w-3.5 h-3.5 mt-px shrink-0" />
-              <span>{matchError} No match scores are shown in its place.</span>
+            <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-4">
+              <div className="md:col-span-2">
+                <label htmlFor="skills" className="form-label">
+                  Skills you already have
+                </label>
+                <input
+                  id="skills"
+                  type="text"
+                  value={skillsInput}
+                  onChange={(e) => setSkillsInput(e.target.value)}
+                  placeholder="Comma separated — e.g. Python, Data Analysis, Calculus"
+                  className="form-input text-[13px]"
+                />
+              </div>
+              <div>
+                <label htmlFor="role" className="form-label">
+                  Target role
+                </label>
+                <input
+                  id="role"
+                  type="text"
+                  value={targetRole}
+                  onChange={(e) => setTargetRole(e.target.value)}
+                  className="form-input text-[13px]"
+                />
+              </div>
+              <div>
+                <label htmlFor="budget" className="form-label">
+                  Monthly budget (₹)
+                </label>
+                <input
+                  id="budget"
+                  type="number"
+                  min={0}
+                  value={monthlyBudget}
+                  onChange={(e) => setMonthlyBudget(Number(e.target.value))}
+                  className="form-input text-[13px]"
+                />
+              </div>
             </div>
-          )}
 
-          {hasRunMatch && !matchError && matches && matches.length > 0 && (
-            <div className="mt-6 space-y-3">
-              {matches.map((m, i) => (
-                <div
-                  key={`${m.course_title}-${i}`}
-                  className="border border-emerald-200 bg-emerald-50/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-start gap-4 justify-between"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="epistemic-tag tag-ui">
-                        <CheckCircle2 size={9} />
-                        M={Math.round(m.match_score * 100)}%
-                      </span>
-                      <span className="text-[11px] text-slate-500 font-mono">
-                        {m.provider} · {m.category}
-                      </span>
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-950 mt-1.5">{m.course_title}</h3>
-                    <p className="text-[11px] text-slate-600 mt-1">
-                      <span className="font-mono uppercase text-slate-400">Skills this adds that you lack:</span>{" "}
-                      {m.skill_gap_addressed.length > 0 ? m.skill_gap_addressed.join(", ") : NO_DATA}
-                    </p>
-                    <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
-                      AI-resilience {Math.round(m.ai_resilience_score * 100)}% is a stored catalog
-                      attribute for this course, not a measured outcome. The engine&apos;s{" "}
-                      <code className="font-mono">projected_salary_uplift_inr</code> is a flat fee ×
-                      18.5 multiple ({inr(m.projected_salary_uplift_inr)}) — it is a cost multiple, not a
-                      predicted salary, and is not shown as one.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      void handleTrackClick({
-                        id: m.course_id ?? null,
-                        course_title: m.course_title,
-                        affiliate_url: m.affiliate_url,
-                        match_score: m.match_score,
-                      })
-                    }
-                    className="shrink-0 bg-slate-950 hover:bg-slate-800 text-white rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-1.5 transition"
-                  >
-                    <span>Enroll on {m.provider}</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-              <p className="text-[11px] text-slate-500 flex items-start gap-1.5">
-                <Info className="w-3.5 h-3.5 mt-px shrink-0 text-slate-400" />
-                <span>
-                  The skill-gap term measures the share of a course&apos;s skills you do not already
-                  have, so a shorter skill list raises it. A high M on this component means
-                  &ldquo;this course adds a lot for you&rdquo;, not &ldquo;you are well prepared&rdquo;.
-                </span>
-              </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => void runMatch()}
+                disabled={isMatching}
+                className="btn-primary"
+              >
+                {isMatching ? (
+                  <span className="spinner" aria-hidden="true" />
+                ) : (
+                  <Search size={14} aria-hidden="true" />
+                )}
+                <span>{isMatching ? "Matching…" : "Match courses to my gaps"}</span>
+              </button>
             </div>
-          )}
 
-          {hasRunMatch && !matchError && matches && matches.length === 0 && (
-            <div className="mt-5 border border-slate-200 bg-slate-50 rounded-xl p-4 text-xs text-slate-700">
-              <p className="font-semibold text-slate-900">
-                No catalog course reached M ≥ {matchThreshold} for this profile.
-              </p>
-              <p className="mt-1 text-slate-600">
-                That is a real result, not a missing one. Raising your budget or targeting a role the
-                catalog lists will change it.
-              </p>
-            </div>
-          )}
+            {isMatching && (
+              <div className="mt-5 space-y-2.5" role="status" aria-live="polite">
+                <Skeleton className="h-3 w-40" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-2/3" />
+                <span className="sr-only">Scoring the catalog against your profile…</span>
+              </div>
+            )}
+
+            {matchUsedDefaultSkills && hasRunMatch && (
+              <Notice tone="warn" className="mt-4" title="Scored against a default profile">
+                You left the skills field empty, so the engine scored against its own default
+                assumption (Python, Data Analysis, Calculus). These scores describe that assumed
+                profile, not you.
+              </Notice>
+            )}
+
+            {matchError && (
+              <div role="alert" className="mt-4">
+                <Notice tone="error" title="No match scores">
+                  {matchError} No match scores are shown in its place.
+                </Notice>
+              </div>
+            )}
+
+            {hasRunMatch && !matchError && matches && matches.length > 0 && (
+              <div className="mt-6">
+                <ul className="space-y-3">
+                  {matches.map((m, i) => (
+                    <li key={`${m.course_title}-${i}`}>
+                      <div className="panel">
+                        <div className="panel-pad-sm">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="epistemic-tag tag-ui">
+                                  <CheckCircle2 size={9} aria-hidden="true" />
+                                  M=<span className="num">{Math.round(m.match_score * 100)}</span>%
+                                </span>
+                                <span className="num text-[11px] t-faint">
+                                  {m.provider} · {m.category}
+                                </span>
+                              </div>
+                              <h3 className="mt-1.5 text-[14px] font-bold t-text">
+                                {m.course_title}
+                              </h3>
+                              <p className="mt-1 text-[11px] t-muted">
+                                <span className="metric-label mr-1.5 inline">
+                                  Skills this adds that you lack
+                                </span>
+                                {m.skill_gap_addressed.length > 0
+                                  ? m.skill_gap_addressed.join(", ")
+                                  : NO_DATA}
+                              </p>
+                              <p className="mt-1.5 text-[10px] leading-relaxed t-faint">
+                                AI-resilience{" "}
+                                <span className="num">{Math.round(m.ai_resilience_score * 100)}</span>
+                                % is a stored catalog attribute for this course, not a measured
+                                outcome. The engine&apos;s{" "}
+                                <code className="mono">projected_salary_uplift_inr</code> is a flat
+                                fee × 18.5 multiple (
+                                <span className="num">{inr(m.projected_salary_uplift_inr)}</span>)
+                                — it is a cost multiple, not a predicted salary, and is not shown
+                                as one.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void handleTrackClick({
+                                  id: m.course_id ?? null,
+                                  course_title: m.course_title,
+                                  affiliate_url: m.affiliate_url,
+                                  match_score: m.match_score,
+                                })
+                              }
+                              className="btn-primary shrink-0"
+                            >
+                              <span>Enroll on {m.provider}</span>
+                              <ExternalLink size={13} aria-hidden="true" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <Notice tone="info" className="mt-4" icon={Info}>
+                  The skill-gap term measures the share of a course&apos;s skills you do not
+                  already have, so a shorter skill list raises it. A high M on this component
+                  means &ldquo;this course adds a lot for you&rdquo;, not &ldquo;you are well
+                  prepared&rdquo;.
+                </Notice>
+              </div>
+            )}
+
+            {hasRunMatch && !matchError && matches && matches.length === 0 && (
+              <div className="mt-5">
+                <Notice tone="info" title={`No course reached M ≥ ${matchThreshold}`}>
+                  That is a real result, not a missing one. Raising your budget or targeting a
+                  role the catalogue lists will change it.
+                </Notice>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Category Filters */}
-        <div className="flex flex-wrap items-center gap-2 mb-8 bg-white border border-slate-200 p-2.5 rounded-xl shadow-sm">
-          <span className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500 uppercase px-2">
-            <Filter className="w-3.5 h-3.5" />
-            Category
-          </span>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              disabled={isLoading}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-40 ${
-                selectedCategory === cat
-                  ? "bg-slate-950 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-          {!isLoading && (
-            <span className="ml-auto text-[11px] font-mono text-slate-400">
-              {visibleCourses.length} course{visibleCourses.length === 1 ? "" : "s"}
-              {catalogSource ? ` · ${catalogSource.replace(/_/g, " ")}` : ""}
+        {/* Category filters */}
+        <div className="panel mt-6">
+          <div className="panel-head">
+            <span className="panel-title flex items-center gap-2">
+              <Filter size={12} aria-hidden="true" />
+              Category
             </span>
-          )}
+            {!isLoading && (
+              <span className="num text-[11px] t-faint">
+                {visibleCourses.length} course{visibleCourses.length === 1 ? "" : "s"}
+                {catalogSource ? ` · ${catalogSource.replace(/_/g, " ")}` : ""}
+              </span>
+            )}
+          </div>
+          <div className="panel-pad-sm">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by category">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  aria-pressed={selectedCategory === cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  disabled={isLoading}
+                  className={`domain-chip ${selectedCategory === cat ? "selected" : ""}`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Catalog states: loading → error → empty → data */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <Loader2 className="w-6 h-6 animate-spin mb-3" />
-            <p className="text-sm font-mono">Loading course catalog…</p>
+          <div className="mt-6">
+            <SkeletonCards count={6} />
+            <SkeletonStatus label="Loading course catalog" />
           </div>
         ) : loadError ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-sm">
-            <CircleAlert className="w-6 h-6 text-rose-600 mx-auto mb-3" />
-            <p className="text-sm text-slate-700">{loadError}</p>
-            <p className="text-xs text-slate-500 mt-1">
-              Courses are not substituted from a local list — a list that did not come from the
-              catalog would look reviewed when it was not.
-            </p>
-            <button
-              onClick={() => setReloadKey((k) => k + 1)}
-              className="mt-5 inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-white rounded-xl px-4 py-2.5 text-xs font-semibold transition"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Retry</span>
-            </button>
+          <div className="panel mt-6">
+            <div className="panel-head">
+              <span className="panel-title">Catalog unavailable</span>
+            </div>
+            <div className="panel-pad">
+              <Notice tone="error" title="The catalog could not be loaded">
+                {loadError} Courses are not substituted from a local list — a list that did not
+                come from the catalog would look reviewed when it was not.
+              </Notice>
+              <button
+                type="button"
+                onClick={() => setReloadKey((k) => k + 1)}
+                className="btn-secondary mt-4"
+              >
+                <RefreshCw size={13} aria-hidden="true" />
+                <span>Retry</span>
+              </button>
+            </div>
           </div>
         ) : visibleCourses.length === 0 ? (
           /* "The catalogue is empty" and "your filter excluded everything" are
              different states with different remedies, so the copy branches and
              so does the action offered. */
-          <EmptyState
-            icon={courses.length === 0 ? BookX : FilterX}
-            title={courses.length === 0 ? "The catalogue returned no courses" : "No courses in this category"}
-            hint={
-              courses.length === 0
-                ? "This is what the source returned, not a loading failure and not an empty search. We show it as-is rather than substituting recommended courses that were not in the data."
-                : "Courses exist in the catalogue, but none are filed under this category. Showing all categories will bring them back."
-            }
-            action={
-              courses.length > 0 && selectedCategory !== "All"
-                ? { label: "Show all categories", onClick: () => setSelectedCategory("All") }
-                : { label: "Explore the program index", href: "/explore" }
-            }
-          />
+          <div className="mt-6">
+            <EmptyState
+              icon={courses.length === 0 ? BookX : FilterX}
+              title={courses.length === 0 ? "The catalogue returned no courses" : "No courses in this category"}
+              hint={
+                courses.length === 0
+                  ? "This is what the source returned, not a loading failure and not an empty search. We show it as-is rather than substituting recommended courses that were not in the data."
+                  : "Courses exist in the catalogue, but none are filed under this category. Showing all categories will bring them back."
+              }
+              action={
+                courses.length > 0 && selectedCategory !== "All"
+                  ? { label: "Show all categories", onClick: () => setSelectedCategory("All") }
+                  : { label: "Explore the program index", href: "/explore" }
+              }
+            />
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {visibleCourses.map((course, idx) => {
               const resilience = finiteOrNull(course.ai_resilience_score);
               return (
                 <div
                   key={course.id ?? `${course.course_title}-${idx}`}
-                  className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition"
+                  className="panel flex flex-col"
                 >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                        {course.provider}
-                      </span>
+                  <div className="panel-pad flex-1">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <span className="badge badge-blue">{course.provider}</span>
                       {/* The catalog table carries no match score — it is only
                           computed per student by /recommended. Showing a number
                           here would mean inventing one. */}
-                      <span className="epistemic-tag tag-gap" title="Not yet scored against your profile">
-                        <Lock size={9} />
+                      <span
+                        className="epistemic-tag tag-gap"
+                        title="Not yet scored against your profile"
+                      >
+                        <Lock size={9} aria-hidden="true" />
                         Not scored
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-slate-950 leading-snug">{course.course_title}</h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {course.category} · {finiteOrNull(course.duration_hours) == null ? NO_DATA : `${course.duration_hours} Hours`}
+                    <h3 className="text-[15px] font-bold leading-snug t-text">
+                      {course.course_title}
+                    </h3>
+                    <p className="num mt-1 text-[12px] t-muted">
+                      {course.category} ·{" "}
+                      {finiteOrNull(course.duration_hours) == null ? (
+                        <span className="num-na">{NO_DATA}</span>
+                      ) : (
+                        <>{course.duration_hours} hours</>
+                      )}
                     </p>
 
                     {course.career_paths && course.career_paths.length > 0 && (
-                      <p className="text-[11px] text-slate-500 mt-1.5">
-                        <span className="font-mono uppercase text-slate-400">Roles:</span>{" "}
+                      <p className="mt-1.5 text-[11px] t-muted">
+                        <span className="metric-label mr-1.5 inline">Roles</span>
                         {course.career_paths.join(", ")}
                       </p>
                     )}
 
-                    {/* Skill Tags */}
-                    <div className="flex flex-wrap gap-1.5 mt-3">
+                    {/* Skill tags */}
+                    <div className="mt-3 flex flex-wrap gap-1.5">
                       {(course.skill_tags ?? []).length === 0 ? (
-                        <span className="text-[11px] text-slate-400 font-mono">No skill tags recorded</span>
+                        <span className="num-na text-[11px]">No skill tags recorded</span>
                       ) : (
                         (course.skill_tags ?? []).map((st, i) => (
                           <span
                             key={`${st}-${i}`}
-                            className="text-[10px] bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md"
+                            className="t-chip rounded border px-2 py-0.5 text-[10px] t-muted"
+                            style={{ borderColor: "var(--border-subtle)" }}
                           >
                             {st}
                           </span>
@@ -505,31 +558,46 @@ export default function MarketplacePage() {
                       )}
                     </div>
 
-                    <div className="mt-4 bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-xs space-y-1.5">
-                      <div className="flex justify-between items-center text-slate-500">
-                        <span>Course Fee:</span>
-                        <span className="text-slate-900 font-bold font-mono">{inr(finiteOrNull(course.price_inr))}</span>
+                    <dl
+                      className="t-chip mt-4 space-y-1.5 rounded-lg border p-3.5"
+                      style={{ borderColor: "var(--border-subtle)" }}
+                    >
+                      <div className="metric-cell-row">
+                        <dt className="metric-label">Course fee</dt>
+                        <dd className="num text-[13px] font-bold t-text">
+                          {inr(finiteOrNull(course.price_inr))}
+                        </dd>
                       </div>
-                      <div className="flex justify-between items-center text-slate-500 text-[11px]">
-                        <span>AI Resilience (catalog):</span>
-                        <span className="font-mono text-slate-700">
-                          {resilience == null ? NO_DATA : `${Math.round(resilience * 100)}%`}
-                        </span>
+                      <div className="metric-cell-row">
+                        <dt className="metric-label">AI resilience · catalog</dt>
+                        <dd className="num text-[12px] t-muted">
+                          {resilience == null ? (
+                            <span className="num-na">{NO_DATA}</span>
+                          ) : (
+                            <>{Math.round(resilience * 100)}%</>
+                          )}
+                        </dd>
                       </div>
-                      <div className="flex justify-between items-center text-slate-400 text-[10px]">
-                        <span>Match score:</span>
-                        <span className="font-mono">{hasRunMatch ? "See matched list above" : "Run the matcher above"}</span>
+                      <div className="metric-cell-row">
+                        <dt className="metric-label">Match score</dt>
+                        <dd className="num text-[11px] t-faint">
+                          {hasRunMatch ? "See matched list above" : "Run the matcher above"}
+                        </dd>
                       </div>
-                    </div>
+                    </dl>
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-slate-100">
+                  <div
+                    className="border-t px-[22px] py-3"
+                    style={{ borderColor: "var(--border-subtle)" }}
+                  >
                     <button
+                      type="button"
                       onClick={() => void handleTrackClick(course)}
-                      className="w-full rounded-xl text-xs font-semibold py-2.5 flex items-center justify-center gap-1.5 transition focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-950 hover:bg-slate-800 text-white"
+                      className="btn-primary w-full"
                     >
                       <span>View on {course.provider}</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <ExternalLink size={13} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -537,7 +605,15 @@ export default function MarketplacePage() {
             })}
           </div>
         )}
-      </main>
+
+        <div className="mt-10">
+          <SectionHeader
+            kicker="Provenance"
+            title="Nothing on this page is scored in the browser"
+            lead="Match scores, AI-resilience attributes and fee multiples all come off the wire. A figure the catalogue does not carry is drawn as a dash, and the match score is deliberately withheld until the matcher has run."
+          />
+        </div>
+      </div>
     </div>
   );
 }

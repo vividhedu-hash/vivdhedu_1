@@ -7,6 +7,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { REPORT_TOKEN_KEY } from "@/lib/session-policy";
 
 export interface StudentProfilePayload {
   tenth_pct?: number;
@@ -109,7 +110,7 @@ export function useAnalyze(): UseAnalyzeReturn {
 
       // Persist token for sharing / direct URL
       if (data.token && typeof window !== "undefined") {
-        sessionStorage.setItem("indialens_report_token", data.token);
+        sessionStorage.setItem(REPORT_TOKEN_KEY, data.token);
       }
 
       return data;

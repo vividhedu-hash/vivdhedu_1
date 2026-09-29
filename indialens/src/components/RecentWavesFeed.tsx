@@ -1,13 +1,12 @@
 import React from 'react';
-import { CircleAlert, ExternalLink } from 'lucide-react';
-import Link from 'next/link';
+import { EmptyState } from './EmptyState';
 
 /**
  * Removed the hardcoded feed.
  *
  * This component rendered four invented "developments" as live intelligence:
  *
- *   - "3 Economics & Quantitative Research Competitions Opened", "98% Match",
+*   - "3 Economics & Quantitative Research Competitions Opened", "98% Match",
  *     "Deadline in 14 days"
  *   - "LSE & Warwick Updated International Admissions Matrix" with a "Recalculate
  *     Odds" action
@@ -25,9 +24,24 @@ import Link from 'next/link';
  * The `WaveCard` type and the `onAction` contract are kept so a real feed can
  * be dropped in without rewriting the page. Until such a source is wired, the
  * honest state is an explicit empty state with a route to the real data.
+ *
+ * ## Why the empty state is now the shared one
+ *
+ * The bespoke block this used to render duplicated `EmptyState` badly: a
+ * hand-drawn icon circle, an `<h4>` in one weight, copy set at two sizes with
+ * no lead, and two hand-built links where the shared component has an `action`
+ * and a `secondaryAction` for exactly this. The shared `EmptyState` also
+ * carries `role="status"`, which the bespoke version did not — so a screen
+ * reader now hears that the feed is legitimately empty instead of reading three
+ * unlabelled paragraphs and concluding the panel had failed to render.
+ *
+ * The heading and its lead stay outside it, because they describe the surface
+ * (what this panel is for) and the `EmptyState` describes the state (why it is
+ * empty). Two components, two jobs; the previous version had one component
+ * doing both and doing neither in the shared vocabulary.
  */
 export interface WaveCard {
-  id: string;
+    id: string;
   category: 'competitions' | 'admissions' | 'research' | 'scholarships' | 'skills';
   categoryLabel: string;
   badgeLabel: string;
@@ -37,7 +51,7 @@ export interface WaveCard {
   metaLeft: string;
   isUrgent?: boolean;
   actionLabel: string;
-  actionIcon?: 'arrow' | 'refresh' | 'external' | 'shield';
+   actionIcon?: 'arrow' | 'refresh' | 'external' | 'shield';
   href?: string;
 }
 
@@ -45,44 +59,35 @@ export const RecentWavesFeed: React.FC<{
   onAction?: (wave: WaveCard) => void;
 }> = () => {
   return (
-    <div className="w-full">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-slate-900 tracking-tight">
-              Recent waves
-            </h3>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Live deadlines, intakes and scholarship windows, matched to your profile.
+    <div className="w-full min-w-0">
+      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h3 className="text-[15px] font-semibold tracking-tight t-text">
+            Recent waves
+          </h3>
+          <p className="mt-0.5 text-[12px] t-muted">
+            Live deadlines, intakes and scholarship windows, matched to your
+            profile.
           </p>
         </div>
+        <span className="badge badge-amber mt-1 shrink-0 sm:mt-0">
+          No calendar connected
+        </span>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-sm">
-        <CircleAlert size={22} className="mx-auto text-slate-400 mb-3" />
-        <h4 className="text-sm font-bold text-slate-800">Nothing to show yet</h4>
-        <p className="text-xs text-slate-500 mt-2 max-w-md mx-auto leading-relaxed">
-          This feed is empty because no admissions or scholarship calendar is
-          connected. Rather than fill it with plausible-looking deadlines, we
-          leave it empty — a wrong deadline is worse than a missing one.
-        </p>
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-          <Link
-            href="/explore"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-950 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-colors"
-          >
-            Browse the program index
-            <ExternalLink size={12} />
-          </Link>
-          <Link
-            href="/methodology"
-            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors"
-          >
-            What we track
-          </Link>
-        </div>
-      </div>
+      <EmptyState
+        variant="inline"
+        title="Nothing to show yet"
+        hint="This feed is empty because no admissions or scholarship calendar is connected. Rather than fill it with plausible-looking deadlines, we leave it empty — a wrong deadline is worse than a missing one."
+        action={{
+          label: 'Browse the program index',
+          href: '/explore',
+        }}
+        secondaryAction={{
+          label: 'What we track',
+          href: '/methodology',
+        }}
+      />
     </div>
   );
 };

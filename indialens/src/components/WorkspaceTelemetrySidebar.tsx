@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, Building2, CircleAlert } from 'lucide-react';
+import { Radio, Building2, CircleAlert, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { NO_DATA } from '../lib/mock-data';
 
@@ -7,7 +7,7 @@ import { NO_DATA } from '../lib/mock-data';
  * Every field here is `number | null` / `string | null` and null means
  * **not measured**.
  *
- * This panel used to merge a `DEFAULT_TELEMETRY` constant into whatever the
+* This panel used to merge a `DEFAULT_TELEMETRY` constant into whatever the
  * page passed, so a signed-out student — or any student whose report token
  * had not loaded — saw a fully populated dashboard belonging to a fictional
  * Class 11-12 student: resilience 78, "Top 8% in Quantitative Track", profile
@@ -19,15 +19,37 @@ import { NO_DATA } from '../lib/mock-data';
  * the source is how it came back: the onboarding wizard was seeded with the
  * same persona, and a comment quoting it is an easy thing to copy from.
  *
- * None of those numbers came from any engine. They were a persona, and the
+* None of those numbers came from any engine. They were a persona, and the
  * merge made them the default rather than a demo — the exact failure the
  * /report honesty work was written to fix. So the defaults are gone: the panel
  * now renders "—" and says what is missing, and only shows a number that
  * arrived from somewhere real.
+ *
+ * ## What the restyle did and did not do
+ *
+ * The six blocks were six white bordered boxes. They are now six `.panel`
+ * blocks with a `.panel-head` carrying the label, because none of them is
+ * interactive and none of them may lift on hover.
+ *
+ * The figures all went through `.num` / `.metric*`, and — the part that matters
+ * here — every unmeasured one renders in `.num-na`. The previous `Pct` helper
+ * used a muted grey for a dash, which is the right *colour* but was applied to
+ * a mono span with no letter-spacing, so the dash did not read as a deliberate
+ * gap; `num-na` gives it the muted, letter-spaced treatment that distinguishes
+ * "absent" from every real value in the panel.
+ *
+ * The meters use `.ci-track` / `.ci-fill`. The unfilled portion of that track
+ * *is* the epistemics, which is the whole point of the class: a sub-score with
+ * no value draws an empty track rather than a zero-width fill, because a 0%-wide
+ * bar reads as a score of zero.
+ *
+ * The three hardcoded surface colours are gone: the gauge track is now
+ * `--bg-chip` (the one value that reads as a track on both themes), the gauge
+ * and roadmap fills are `--accent`, and the meter fill is `--text-primary`.
  */
 export interface TelemetryProps {
   /** null until a real AI-resilience / adaptation score is measured. */
-  aiResilienceScore: number | null;
+ aiResilienceScore: number | null;
   /** null when we cannot place this student in a percentile. */
   resilience_percentile: string | null;
   profileStrength: {
@@ -37,7 +59,7 @@ export interface TelemetryProps {
   } | null;
   primaryGap: string | null;
   primaryGapOddsMultiplier: string | null;
-  sprintDaysRemaining: number | null;
+   sprintDaysRemaining: number | null;
   sprintLabel: string | null;
   /** null — there is no milestone ledger to compute a velocity from. */
   milestoneVelocity: string | null;
@@ -45,29 +67,61 @@ export interface TelemetryProps {
   milestonesTotal: number;
 }
 
+/** A percentage figure, or the muted unmeasured marker. */
 const Pct = ({ value }: { value: number | null }) =>
   value == null ? (
-    <span className="font-mono text-slate-400">{NO_DATA}</span>
+    <span className="num text-[12px] num-na">{NO_DATA}</span>
   ) : (
-    <span className="font-mono text-slate-900 font-medium">{Math.round(value)}%</span>
+    <span className="num text-[12px] font-semibold t-text">{Math.round(value)}%</span>
   );
 
-/** Zero-length track + a muted "no bar" label, rather than a 0%-looking bar. */
-const Meter = ({ value, tone = "dark" }: { value: number | null; tone?: "dark" | "coral" }) => (
-  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-    {value == null ? (
-      <div className="h-full w-full bg-slate-100" />
-    ) : (
+/** Zero-length track + no fill, rather than a 0%-looking bar. */
+const Meter = ({
+  value,
+  color = "var(--text-primary)",
+}: {
+  value: number | null;
+  color?: string;
+}) => (
+  <div className="ci-track">
+    {value != null && (
       <div
-        className={`h-full rounded-full ${tone === "coral" ? "bg-[#E11D48]" : "bg-slate-900"}`}
-        style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+        className="ci-fill"
+        style={{
+          width: `${Math.max(0, Math.min(100, value))}%`,
+          background: color,
+          opacity: 0.85,
+        }}
       />
     )}
   </div>
 );
 
+/** A panel with a `.panel-head` label and nothing in the right slot. */
+function Block({
+  label,
+  icon: Icon,
+  children,
+}: {
+  label: string;
+  icon?: LucideIcon;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="panel min-w-0">
+      <div className="panel-head">
+        <span className="panel-title flex items-center gap-2">
+          {Icon && <Icon size={12} aria-hidden="true" />}
+          {label}
+        </span>
+      </div>
+      <div className="panel-pad-sm">{children}</div>
+    </section>
+  );
+}
+
 export const WorkspaceTelemetrySidebar: React.FC<TelemetryProps> = (props) => {
-  const { aiResilienceScore, profileStrength, milestonesComplete, milestonesTotal } = props;
+    const { aiResilienceScore, profileStrength, milestonesComplete, milestonesTotal } = props;
 
   // The gauge arc is derived from the score, so it is only drawn when a
   // score exists — otherwise the ring reads as a real 0/100.
@@ -79,203 +133,202 @@ export const WorkspaceTelemetrySidebar: React.FC<TelemetryProps> = (props) => {
   const progress = milestonesTotal > 0 ? (milestonesComplete / milestonesTotal) * 100 : null;
 
   return (
-    <div className="flex flex-col gap-5 w-full">
+    <div className="flex min-w-0 flex-col gap-4 w-full">
       {/* Header */}
-      <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+      <div className="flex items-center justify-between border-b t-divider pb-2">
         <div className="flex items-center gap-2">
-          <Radio size={14} className="text-slate-700" />
-          <span className="text-sm font-bold text-slate-900">Your Signal</span>
+          <Radio size={14} style={{ color: "var(--text-secondary)" }} aria-hidden="true" />
+          <span className="text-[14px] font-semibold t-text">Your signal</span>
         </div>
       </div>
 
       {/* 1. AI Resilience Score */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              AI Resilience
-            </span>
-            <div className="flex items-baseline gap-1">
+      <Block label="AI resilience">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="metric-cell">
+              <span className="metric-label">Score</span>
               {hasScore ? (
-                <>
-                  <span className="text-3xl font-bold font-mono text-slate-950">
-                    {Math.round(aiResilienceScore)}
-                  </span>
-                  <span className="text-xs font-mono text-slate-400">/ 100</span>
-                </>
+                <span className="flex items-baseline gap-1">
+                  <span className="metric-xl">{Math.round(aiResilienceScore)}</span>
+                  <span className="num text-[12px] t-faint">/ 100</span>
+                </span>
               ) : (
-                <span className="text-3xl font-bold font-mono text-slate-300">{NO_DATA}</span>
+                <span className="metric-xl num-na">{NO_DATA}</span>
               )}
             </div>
-            <p className="text-[11px] text-slate-500 mt-1 font-medium">
+            <p className="mt-1 text-[11px] t-muted">
               {props.resilience_percentile ?? "Not yet measured"}
             </p>
           </div>
 
-          <div className="relative w-14 h-14 flex-shrink-0 flex items-center justify-center">
-            <svg width="56" height="56" viewBox="0 0 56 56" className="rotate-[-90deg]">
-              <circle cx="28" cy="28" r="24" stroke="#F1F5F9" strokeWidth="4" fill="none" />
+          <div className="relative h-14 w-14 flex-shrink-0 flex items-center justify-center">
+            <svg width="56" height="56" viewBox="0 0 56 56" className="rotate-[-90deg]" aria-hidden="true">
+              <circle cx="28" cy="28" r="24" stroke="var(--bg-chip)" strokeWidth="4" fill="none" />
               <circle
                 cx="28"
                 cy="28"
                 r="24"
-                stroke="#E11D48"
+                stroke="var(--accent)"
                 strokeWidth="4"
                 fill="none"
                 strokeLinecap="round"
                 strokeDasharray={strokeDash}
+                opacity={hasScore ? 1 : 0.4}
               />
             </svg>
-            <span className="absolute font-mono font-bold text-xs text-slate-900">
+            <span
+              className={`absolute text-[12px] font-bold ${hasScore ? "num t-text" : "num num-na"}`}
+            >
               {hasScore ? `${Math.round(aiResilienceScore)}%` : NO_DATA}
             </span>
           </div>
         </div>
         {!hasScore && (
-          <p className="mt-3 text-[11px] leading-relaxed text-slate-500 border-t border-slate-100 pt-2.5">
+          <p className="mt-3 border-t t-divider pt-2.5 text-[11px] leading-relaxed t-faint">
             This is the AI-adaptation trait from the psychometric assessment. It is a
-            measurement of you, not a default — take the assessment and it appears here.
+            measurement of you, not a default &mdash; take the assessment and it appears here.
           </p>
         )}
-      </div>
+      </Block>
 
       {/* 2. Target Vector — was hardcoded to "Economics → Research & Quant" */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-2">
-          Target Vector
-        </span>
-        <div className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800">
-          <Building2 size={14} className="text-slate-500 flex-shrink-0" />
-          <span className="truncate text-slate-500">Not set</span>
+      <Block label="Target vector" icon={Building2}>
+        <div className="t-chip t-border flex items-center gap-2 rounded-lg border p-2.5">
+          <Building2 size={13} className="flex-shrink-0" style={{ color: "var(--text-tertiary)" }} aria-hidden="true" />
+          <span className="truncate text-[12px] t-faint">Not set</span>
         </div>
-        <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+        <p className="mt-2 text-[11px] leading-relaxed t-muted">
           A target field has not been chosen yet, so nothing is ranked against it.
         </p>
-      </div>
+      </Block>
 
       {/* 3. Profile Strength — the "74%" header was hardcoded regardless of input */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-            Profile Strength
-          </span>
-          <span className="text-xs font-mono font-bold text-slate-900">
-            {profileStrength ? (
-              pctMean([profileStrength.academic, profileStrength.initiative, profileStrength.consistency])
-            ) : (
-              <span className="text-slate-400">{NO_DATA}</span>
-            )}
-          </span>
+      <Block label="Profile strength">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <span className="text-[12px] font-semibold t-text">Mean of three</span>
+          {profileStrength ? (
+            <span className="num text-[13px] font-bold t-text">
+              {pctMean([
+                profileStrength.academic,
+                profileStrength.initiative,
+                profileStrength.consistency,
+              ])}
+            </span>
+          ) : (
+            <span className="num text-[13px] num-na">{NO_DATA}</span>
+          )}
         </div>
 
         <div className="space-y-3">
           {([
-            ['academic', 'Academic Rigor'],
-            ['initiative', 'Initiative & Research'],
-            ['consistency', 'Execution Consistency'],
-          ] as const).map(([key, label]) => (
-            <div key={key}>
-              <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-                <span>{label}</span>
-                <Pct value={profileStrength?.[key] ?? null} />
+            ['academic', 'Academic rigor'],
+            ['initiative', 'Initiative & research'],
+            ['consistency', 'Execution consistency'],
+          ] as const).map(([key, label]) => {
+            const value = profileStrength?.[key] ?? null;
+            return (
+              <div key={key} className="min-w-0">
+                <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                  <span className="text-[12px] t-muted">{label}</span>
+                  <Pct value={value} />
+                </div>
+                <Meter value={value} />
               </div>
-              <Meter value={profileStrength?.[key] ?? null} />
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {!profileStrength && (
-          <p className="text-[11px] text-slate-500 mt-3 leading-relaxed border-t border-slate-100 pt-2.5">
+          <p className="mt-3 border-t t-divider pt-2.5 text-[11px] leading-relaxed t-faint">
             These three map to diligence, autonomy and security traits from the
             assessment. They stay empty until it is run.
           </p>
         )}
-      </div>
+      </Block>
 
       {/* 4. Primary Gap — the copy asserted a ~2.4x odds uplift from a preprint */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-            Primary Gap
-          </span>
-        </div>
+      <Block label="Primary gap">
         {props.primaryGap ? (
           <>
-            <h4 className="text-xs font-bold text-slate-900 leading-snug">{props.primaryGap}</h4>
+            <h4 className="text-[12px] font-bold leading-snug t-text">
+              {props.primaryGap}
+            </h4>
             {props.primaryGapOddsMultiplier && (
-              <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+              <p className="mt-1.5 text-[11px] leading-relaxed t-muted">
                 Closing this is associated with a reported{" "}
-                {props.primaryGapOddsMultiplier} change in admittance odds.
+                <span className="num">{props.primaryGapOddsMultiplier}</span> change
+                in admittance odds.
               </p>
             )}
           </>
         ) : (
           <>
-            <h4 className="text-xs font-bold text-slate-400 leading-snug">Not identified</h4>
-            <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+            <h4 className="text-[12px] font-bold leading-snug t-faint">
+              Not identified
+            </h4>
+            <p className="mt-1.5 text-[11px] leading-relaxed t-muted">
               A primary gap is only named once an admissions engine has compared your
               profile against a real target program. We do not guess one.
             </p>
           </>
         )}
-      </div>
+      </Block>
 
       {/* 5. Roadmap Status — derived entirely from the user's own list */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-            Roadmap Status
-          </span>
-          <span className="text-xs font-mono font-bold text-slate-900">
-            {milestonesComplete} / {milestonesTotal} Milestones
+      <Block label="Roadmap status">
+        <div className="mb-2 flex items-baseline justify-between gap-3">
+          <span className="text-[12px] font-semibold t-text">Milestones</span>
+          <span className="num text-[12px] font-bold t-text">
+            {milestonesComplete} / {milestonesTotal}
           </span>
         </div>
 
-        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mb-3">
-          {progress == null ? (
-            <div className="h-full w-full bg-slate-100" />
-          ) : (
-            <div
-              className="h-full bg-[#E11D48] rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          )}
+        <div className="mb-3">
+          <Meter value={progress} color="var(--accent)" />
         </div>
 
         {props.sprintLabel ? (
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-            <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
-              <span className="flex items-center gap-1.5 text-slate-600 font-semibold">
-                Active Target
-              </span>
-              {props.sprintDaysRemaining != null && <span>{props.sprintDaysRemaining} days left</span>}
+          <div className="t-chip t-border rounded-lg border p-3">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="metric-label">Active target</span>
+              {props.sprintDaysRemaining != null && (
+                <span className="num text-[10px] t-faint">
+                  {props.sprintDaysRemaining} days left
+                </span>
+              )}
             </div>
-            <p className="text-xs font-semibold text-slate-900">{props.sprintLabel}</p>
+            <p className="text-[12px] font-semibold t-text">{props.sprintLabel}</p>
           </div>
         ) : (
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-            <p className="text-[11px] text-slate-500 leading-relaxed">
+          <div className="t-chip t-border rounded-lg border p-3">
+            <p className="text-[11px] leading-relaxed t-muted">
               No active sprint. Deadlines come from the exam calendar and program
               intakes, neither of which is loaded on this page yet.
             </p>
           </div>
         )}
-      </div>
+      </Block>
 
       {/* 6. Next step — replaced a button that fired a bare window.alert() */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <div className="flex items-start gap-2">
-          <CircleAlert size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-slate-500 leading-relaxed">
+      <section className="panel min-w-0">
+        <div className="panel-pad-sm flex items-start gap-2">
+          <CircleAlert
+            size={14}
+            className="mt-0.5 flex-shrink-0"
+            style={{ color: "var(--text-tertiary)" }}
+            aria-hidden="true"
+          />
+          <p className="text-[11px] leading-relaxed t-muted">
             This panel has no AI-resilience figure, no target field and no sprint
             because none have been measured for this account.{" "}
-            <Link href="/onboard" className="text-rose-600 font-semibold hover:underline">
+            <Link href="/onboard" className="t-accent font-semibold">
               Start calibration
             </Link>{" "}
             to populate them.
           </p>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

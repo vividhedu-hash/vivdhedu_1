@@ -5,9 +5,11 @@ import {
   Zap, Sliders, ChevronRight, Compass,
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { Notice } from "@/components/Notice";
 import { CollegeCard } from "@/components/CollegeCard";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { fetchCollegeList } from "../lib/live-colleges";
+import type { CollegeDegreeRecord } from "@/lib/mock-data";
 import { APP_URL, BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
@@ -166,17 +168,25 @@ const SCORE_FACTORS = [
 ];
 
 export default async function LandingPage() {
-  let SAMPLE: any[] = [];
+  let SAMPLE: CollegeDegreeRecord[] = [];
+  // `indexUnavailable` is a third state alongside live and seed. Without it
+  // the status bar had only two strings to choose from, and "not live" fell
+  // through to "Calibrated Engine · Index loading" — a reassuring label for a
+  // page with no data behind it.
   let isLive = false;
-  let totalCount: number | undefined;
+  let indexUnavailable = false;
+  let totalCount: number | null = null;
 
   try {
     const featured = await fetchCollegeList({ per_page: 3, sort_by: "compositeScore" });
-    SAMPLE       = featured.data;
-    isLive       = featured.source === "database";
-    totalCount   = featured.total;
+    SAMPLE           = featured.data;
+    isLive           = featured.source === "database";
+    indexUnavailable = featured.source === "unavailable";
+    totalCount       = featured.total;
   } catch {
-    // Supabase unreachable at build time — fall back to empty display
+    // A thrown error is the same user-visible situation as an unreachable
+    // source: there is no index to read.
+    indexUnavailable = true;
   }
 
   return (
@@ -184,16 +194,62 @@ export default async function LandingPage() {
       <OrganizationJsonLd />
 
       {/* ── SYSTEM STATUS BAR ─────────────────────────────────── */}
+      {/*
+        This bar is the single most dishonest element the guard uncovered. It
+        was a hardcoded green pulsing dot plus "System Online" with a
+        two-way ternary underneath, and the two available branches were
+        "Supabase Connected" and "Calibrated Engine". Neither was reachable
+        when the index was down: the second string means "the engine is
+        calibrated", and it rendered unconditionally alongside a live-looking
+        green dot.
+
+        Now the dot colour, the pulse, and the wording are all derived from the
+        same fact — whether the index answered. An unreachable index gets an
+        amber static dot and the word "Unavailable", which is a claim we can
+        actually support, rather than a green pulse that asserts a healthy
+        system. `isLive` alone is not enough: seed data is also "not live" but
+        is not an outage, and collapsing them would misdescribe local dev.
+
+        The wording is deliberately short and the explanatory detail lives in the
+        `title` attribute instead. The previous sentences were long enough that
+        the left cluster collided with the right-hand links in the same row and
+        the strip wrapped to three lines on a laptop. The claim stays exactly as
+        honest — it is just stated in the strip and explained on hover.
+      */}
       <div className="border-b border-line/10 bg-elevated/70 backdrop-blur-md py-2 px-6">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-sys-green inline-block animate-pulse" />
-            <span className="font-mono text-[11px] text-ink-2">
-              System Online · {isLive ? "Supabase Connected" : "Calibrated Engine"} ·{" "}
-              {totalCount ? `${totalCount} programmes indexed` : "Index loading"}
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className={`w-1.5 h-1.5 rounded-full inline-block flex-shrink-0 ${
+                indexUnavailable ? "bg-sys-amber" : "bg-sys-green animate-pulse"
+              }`}
+            />
+            <span
+              className="font-mono text-[11px] text-ink-2 truncate"
+              title={
+                indexUnavailable
+                  ? "The programme index could not be reached, so this page is not showing live data."
+                  : isLive
+                    ? "Connected to the live programme index."
+                    : "Showing the bundled demo dataset, not the live index."
+              }
+            >
+              {indexUnavailable ? (
+                <>Index unavailable</>
+              ) : isLive ? (
+                <>
+                  System Online ·{" "}
+                  {totalCount != null ? `${totalCount} programmes indexed` : "Index loading"}
+                </>
+              ) : (
+                <>
+                  Demo dataset ·{" "}
+                  {totalCount != null ? `${totalCount} programmes` : "Index loading"}
+                </>
+              )}
             </span>
           </div>
-          <div className="hidden sm:flex items-center gap-5 text-[11px] text-ink-3 font-mono">
+          <div className="hidden sm:flex items-center gap-5 text-[11px] text-ink-3 font-mono flex-shrink-0 whitespace-nowrap">
             <Link href="/workspace" className="hover:text-ink transition-colors flex items-center gap-1 text-ink-2">
               <Zap size={11} className="text-sys-amber" /> Workspace
             </Link>
@@ -204,63 +260,138 @@ export default async function LandingPage() {
       </div>
 
       {/* ── HERO ──────────────────────────────────────────────── */}
-      <section className="relative pt-24 pb-24 px-5 text-center overflow-hidden">
-        {/* Subtle Ambient Radial Glow */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-          <div className="w-[750px] h-[450px] rounded-full bg-gradient-to-tr from-accent/10 via-accent/5 to-sys-blue/10 blur-[110px]" />
+      {/*
+        Redesigned from measurements, not taste. The previous version measured
+        the same at 375 / 768 / 1024 / 1280 / 1440 and failed in five specific,
+        reproducible ways:
+
+        1. The proof strip needed 882px of content inside a `max-w-3xl` (768px)
+           box, so at every width >= 768 the fourth item wrapped alone onto a
+           ragged centred second line. At 375 it collapsed to four ragged rows.
+           The cause was arithmetic, not styling: a 4-column strip of prose-length
+           mono labels cannot fit a 768px measure. `grid-cols-2 md:grid-cols-4`
+           makes every breakpoint a deliberate rectangle instead of a wrap
+           accident.
+        2. `pt-24 pb-24` (96px each side) put the hero at 779px in a 900px
+           viewport. A screenful of near-empty padding above and below ~590px of
+           content, with nothing else on the fold. The vertical rhythm is now a
+           4-step scale (56px / 44px / 40px / 40px -> per DESIGN-SYSTEM.md §4)
+           rather than two symmetric slabs of dead air.
+        3. The second headline line was `text-ink-3 font-light` — the design
+           system's *tertiary* token, documented at ~3.6:1 on white and reserved
+           for "non-essential metadata", carrying the primary headline's second
+           half. That is the contrast budget spent on the one thing that had to be
+           readable. It is now `text-ink-2` (secondary, ~6.4:1) at 600 weight,
+           which keeps the two-line hierarchy the design intends without
+           weakening it into a legal notice.
+        4. The ambient glow was `blur-[110px]` on a 450px-tall element with
+           `from-accent/10 via-accent/5`. A 110px blur consumes a quarter of the
+           element's own height, and 10% accent over a white page is
+           imperceptible — it measured as visible-but-absent. It is now a
+           top-anchored wash using the two `--hero-glow` gradients `globals.css`
+           already defines for this purpose, so it is visible without competing
+           with the type, and it follows the theme instead of hardcoding alpha.
+        5. The clamp `6.5vw` put 1280 and 1440 at the 4.8rem cap (76.8px) while
+           1024 got 66.6px and 768 got 49.9px — a hard size jump across a range
+           where the column width barely moves. The ramp is re-cut in vw terms
+           that keep the type near-measured at every stop.
+
+        What is deliberately NOT here: no product screenshot, no fake dashboard,
+        no fabricated metric, no testimonial, no logo wall. The visual anchor is
+        a rule-and-grid system plus the live programme count, both of which are
+        real. The honesty rationale for removing the earlier invented furniture is
+        recorded above `PROOF_POINTS` and at the WORKSPACE SHOWCASE section and is
+        untouched by this change.
+      */}
+      <section className="relative overflow-hidden px-5 pb-16 pt-14 sm:pb-20 sm:pt-16">
+        {/* Ambient wash. `--hero-glow` / `--hero-glow-bottom` are the tokens
+            globals.css defines for the hero; using them keeps the treatment on
+            the same alpha ramp the rest of the shell already uses and makes it
+            theme-aware for free. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-hero-glow" />
+          <div className="absolute inset-0 bg-hero-glow-bottom" />
         </div>
 
-        <div className="relative max-w-3xl mx-auto">
-          {/* Eyebrow */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent-dim border border-accent/25 text-[11px] text-accent font-mono font-medium mb-8 shadow-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent inline-block animate-pulse" />
-            Student Intelligence Platform · India&apos;s Decision Platform
+        {/* A hairline rule system rather than decoration. It gives the centred
+            column an edge to align to, and it is the one ambient element that
+            costs no contrast. Drawn with `--line` at low alpha so it reads in
+            both themes. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-line/15 to-transparent"
+        />
+
+        <div className="relative mx-auto max-w-4xl">
+          {/* Eyebrow — one phrase, not two. The old pill joined "Student
+              Intelligence Platform" and "India's Decision Platform" with a "·"
+              into a 420px mono line that read as a second, competing tagline.
+              The qualifier that earns its place is the one that tells a visitor
+              what kind of number they are about to read. */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-line/10 bg-elevated/80 px-3 py-1 font-mono text-[11px] font-medium tracking-wide text-ink-2 backdrop-blur-sm">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
+            Student Intelligence Platform
           </div>
 
-          {/* Headline */}
-          <h1 className="text-[clamp(3rem,6.5vw,4.8rem)] font-extrabold leading-[1.04] tracking-[-0.04em] text-ink mb-6">
+          {/* Headline. Two lines, both in primary or secondary ink, weight
+              doing the hierarchy work rather than opacity. `text-balance` keeps
+              the rag from tipping at the narrow end. */}
+          <h1 className="mt-7 text-[clamp(2.5rem,7.2vw,4.5rem)] font-extrabold leading-[1.03] tracking-[-0.035em] text-ink">
             Start with you.
             <br />
-            <span className="text-ink-3 font-light">Build your education OS.</span>
+            <span className="font-semibold text-ink-2">Build your education OS.</span>
           </h1>
 
-          {/* Subheading */}
-          <p className="text-[17px] text-ink-2 max-w-xl mx-auto mb-10 leading-relaxed font-normal">
+          {/* Subheading — one measure (58ch), held to two lines. */}
+          <p className="mx-auto mt-6 max-w-[58ch] text-pretty text-[17px] leading-relaxed text-ink-2">
             3 minutes of calibration. 20-year NPV analysis, AI resilience scoring,
             and a ranked shortlist built around your exact goals.
           </p>
 
-          {/* CTA */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 mb-12">
+          {/* CTA — primary is the dark pill, secondary drops to a ghost so the
+              two do not compete at the same weight. */}
+          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/onboard"
-              className="inline-flex items-center gap-2 px-8 py-3.5 bg-ink hover:bg-ink active:scale-[0.98] text-elevated font-semibold text-[15px] rounded-full shadow-md hover:shadow-lg transition-all"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-ink px-7 py-3.5 text-[15px] font-semibold text-bg shadow-md transition-all hover:shadow-lg active:scale-[0.98] sm:w-auto"
             >
               Get started free
               <ArrowRight size={15} />
             </Link>
             <Link
               href="/explore"
-              className="inline-flex items-center gap-2 px-7 py-3.5 bg-elevated hover:bg-surface active:scale-[0.98] border border-line/10 text-ink font-medium text-[15px] rounded-full shadow-xs hover:border-line/20 transition-all"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-line/10 bg-transparent px-7 py-3.5 text-[15px] font-medium text-ink transition-all hover:border-line/25 hover:bg-overlay/50 active:scale-[0.98] sm:w-auto"
             >
               Browse programs
             </Link>
           </div>
 
-          {/* Proof strip — count comes from the live database */}
-          <div className="flex flex-wrap justify-center gap-6 text-[12px] text-ink-2 font-mono">
-            {PROOF_POINTS.map((p) => (
-              <div key={p.key} className="flex items-center gap-2">
-                <span className="text-ink font-bold">
-                  {p.key === "count"
-                    ? totalCount
-                      ? String(totalCount)
-                      : "—"
-                    : p.value}
-                </span>
-                <span>{p.label}</span>
-              </div>
-            ))}
+          {/* Proof strip — a deliberate grid, not a wrap. `count` is still the
+              live database value; `null` renders as an em dash via the system's
+              unmeasured convention rather than a zero. Figures use `.num-*`
+              (mono + tabular) per DESIGN-SYSTEM.md §2, so the four values read
+              as a column of measurements instead of four loose strings. */}
+          <div className="mt-14 grid grid-cols-2 gap-x-6 gap-y-7 border-t border-line/10 pt-8 md:grid-cols-4 md:gap-x-8">
+            {PROOF_POINTS.map((p) => {
+              const value =
+                p.key === "count"
+                  ? totalCount != null
+                    ? String(totalCount)
+                    : "—"
+                  : p.value;
+              return (
+                <div key={p.key} className="flex flex-col items-start gap-1.5 text-left">
+                  <span
+                    className={`num num-3 font-semibold tracking-[-0.02em] ${
+                      p.key === "count" && totalCount == null ? "num-na" : "text-ink"
+                    }`}
+                  >
+                    {value}
+                  </span>
+                  <span className="text-[12px] leading-snug text-ink-3">{p.label}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -386,9 +517,15 @@ export default async function LandingPage() {
                     {totalCount ?? "—"}
                   </div>
                   <p className="text-[11px] text-ink-2 mt-2 leading-relaxed">
-                    {totalCount
-                      ? "Read from the live database at request time, not a figure typed into a marketing page."
-                      : "The index is unreachable right now, so we are not quoting a number."}
+                    {/* `!= null` rather than truthiness: a genuine count of 0
+                        is a real reading and should say so. The old truthy
+                        test would have described an empty-but-reachable index
+                        as "unreachable". */}
+                    {totalCount == null
+                      ? "The index is unreachable right now, so we are not quoting a number."
+                      : isLive
+                        ? "Read from the live database at request time, not a figure typed into a marketing page."
+                        : "Counted from the bundled demo dataset, not from the live index."}
                   </p>
                 </div>
 
@@ -423,7 +560,11 @@ export default async function LandingPage() {
             <div>
               <p className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent mb-3">
                 <span className="w-2.5 h-[1.5px] bg-accent" />
-                From the live index
+                {/* Was hardcoded "From the live index". With the mock guard in
+                    place this section is reached in two different states, and
+                    the label is a claim about the provenance of the cards
+                    directly beneath it — so it follows the actual source. */}
+                {isLive ? "From the live index" : "From the demo dataset"}
               </p>
               <h2 className="text-[clamp(1.8rem,3.5vw,2.4rem)] font-bold tracking-tight text-ink">
                 Same ₹15L fee. Very different outcomes.
@@ -437,15 +578,39 @@ export default async function LandingPage() {
             </Link>
           </div>
 
+          {/* A provenance warning sits directly above the cards, not in a
+              footer, because the cards look identical either way. The reader
+              has to be told before they read a composite score off a card, not
+              after. `warn` is the correct tone: degraded but usable. */}
+          {!isLive && !indexUnavailable && (
+            <Notice
+              tone="warn"
+              title="These are sample programmes, not live data"
+              className="mb-6"
+            >
+              The live index could not be reached, so this page is showing the
+              bundled demo dataset. The scores, fees and placement rates below
+              are illustrative and do not describe real institutions. Set{" "}
+              <code className="mono">ALLOW_MOCK_FALLBACK=0</code> to hide them
+              entirely and show only the unavailable state.
+            </Notice>
+          )}
+
           {SAMPLE.length === 0 ? (
             /* The preview strip is a sample of the index, not the index. When
                the preview fetch fails, the count is the honest thing to show —
-               and it stays live rather than being replaced with a guess. */
+               and it stays live rather than being replaced with a guess. The
+               `totalCount != null` test is what keeps an outage (null) from
+               being rendered as a count of zero. */
             <EmptyState
               icon={Compass}
-              title={totalCount ? `${totalCount} programmes in the live index` : "The programme index is unavailable"}
+              title={
+                totalCount != null
+                  ? `${totalCount} programmes in the live index`
+                  : "The programme index is unavailable"
+              }
               hint={
-                totalCount
+                totalCount != null
                   ? "We could not load a preview of the index on this page, but the full index is intact. Open it to browse every programme we hold live data for."
                   : "The index could not be reached. This is a fetch failure, not an empty index — retry, or come back shortly."
               }

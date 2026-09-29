@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Lock, UserRound, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { BRAND } from "@/lib/brand";
+import { Skeleton, SkeletonCards } from "@/components/Skeleton";
 
 /**
  * AuthGate — route-level guard for pages that require a signed-in student.
@@ -71,23 +72,19 @@ export function AuthGate({
  */
 function AuthGateSkeleton({ title }: { title?: string }) {
   return (
-    <div className="min-h-[70vh] bg-[#F8FAFC] text-zinc-950">
-      <div className="container-lg py-20">
-        <div className="h-3 w-28 rounded-full bg-slate-200/80 animate-pulse" />
-        <div className="mt-5 h-9 w-2/3 max-w-xl rounded-lg bg-slate-200/80 animate-pulse" />
-        <div className="mt-3 h-4 w-1/2 max-w-md rounded bg-slate-200/60 animate-pulse" />
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-40 rounded-2xl border border-slate-200 bg-white shadow-sm animate-pulse"
-              style={{ animationDelay: `${i * 90}ms` }}
-            >
-              <div className="h-full w-full rounded-2xl bg-slate-100/70" />
-            </div>
-          ))}
+    <div className="page-shell">
+      <div className="container-xl page-section">
+        <div className="max-w-2xl">
+          <Skeleton className="h-2.5 w-28" />
+          <Skeleton className="mt-5 h-9 w-2/3 max-w-xl" delay={60} />
+          <Skeleton className="mt-3 h-4 w-1/2 max-w-md" delay={110} />
         </div>
-        <span className="sr-only" role="status">
+
+        <div className="mt-10">
+          <SkeletonCards count={3} />
+        </div>
+
+        <span className="sr-only" role="status" aria-live="polite">
           {title ? `Loading ${title}` : "Checking your session"}
         </span>
       </div>
@@ -105,38 +102,43 @@ function SignInWall({
   onSignIn: () => void;
 }) {
   return (
-    <div className="min-h-[70vh] bg-[#F8FAFC] text-zinc-950 flex items-center justify-center px-4 py-20">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
-        <div className="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center mb-5">
-          <Lock size={18} className="text-zinc-600" />
+    <div className="t-bg t-text flex min-h-[70vh] items-center justify-center px-4 py-20">
+      <div className="t-surface t-border t-shadow-card w-full max-w-md rounded-2xl border p-8">
+        <div
+          className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl"
+          style={{ background: "var(--bg-chip)", border: "1px solid var(--border)" }}
+          aria-hidden="true"
+        >
+          <Lock size={18} className="t-muted" />
         </div>
 
         <p className="kicker-web mb-2">{title ?? "Members only"}</p>
-        <h1 className="text-xl font-bold tracking-tight text-zinc-950">
+        <h1 className="text-xl font-bold tracking-tight t-text">
           Sign in to open {title ?? "this page"}
         </h1>
-        <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+        <p className="mt-2 text-sm leading-relaxed t-muted">
           {description ??
             `Your ${BRAND.name} workspace, saved analyses and psychometric profile live behind an account so they survive a page refresh. You will come straight back here once you sign in.`}
         </p>
 
-        <button
-          onClick={onSignIn}
-          className="mt-6 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-950 hover:bg-zinc-800 active:scale-[0.99] text-white text-sm font-semibold rounded-xl transition"
-        >
-          <UserRound size={15} />
+        <button type="button" onClick={onSignIn} className="btn-primary mt-6 w-full">
+          <UserRound size={15} aria-hidden="true" />
           Sign in to continue
         </button>
 
-        <p className="mt-4 text-[11px] text-slate-400 font-mono text-center">
+        <p className="mono mt-4 text-center text-[11px] t-faint">
           No password. Google, GitHub, or a one-time email link.
         </p>
 
-        <div className="mt-6 pt-4 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400 font-mono">
-          <span className="flex items-center gap-1">
-            <ShieldCheck size={11} className="text-emerald-600" /> Session encrypted
+        <div
+          className="mt-6 flex items-center justify-between border-t pt-4 t-faint"
+          style={{ borderColor: "var(--divider)" }}
+        >
+          <span className="mono flex items-center gap-1 text-[11px]">
+            <ShieldCheck size={11} style={{ color: "var(--green)" }} aria-hidden="true" />
+            Session encrypted
           </span>
-          <Link href="/" className="hover:text-zinc-700 transition">
+          <Link href="/" className="mono text-[11px] transition-colors hover:t-text">
             Back to home
           </Link>
         </div>

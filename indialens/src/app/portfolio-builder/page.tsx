@@ -6,7 +6,6 @@ import {
   Calendar,
   ShieldAlert,
   CheckCircle,
-  RefreshCw,
   Plus,
   Trash2,
   FileText,
@@ -14,13 +13,16 @@ import {
   GitCommit,
   GraduationCap,
   Briefcase,
-  Loader2,
-  CircleAlert,
   Info,
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { NO_DATA } from "@/lib/mock-data";
 import { AuthGate } from "@/components/AuthGate";
+import { PageHeader, SectionHeader } from "@/components/PageHeader";
+import { Notice, UnmeasuredNote } from "@/components/Notice";
+import { Metric } from "@/components/Metric";
+import { Skeleton, SkeletonStatus } from "@/components/Skeleton";
+import { RevealGroup } from "@/components/Reveal";
 
 /*
  * Scores and verdicts on this page come from backend/api/routers/portfolio.py:
@@ -93,11 +95,23 @@ type JournalState =
   | { status: "ready"; data: JournalResult }
   | { status: "unavailable"; reason: string };
 
-const TIER_TONE: Record<string, string> = {
-  "Exceptional Angular Spike": "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  "Solid Competitive Spike": "bg-blue-50 text-blue-700 border border-blue-200",
-  "Developing Portfolio": "bg-amber-50 text-amber-700 border border-amber-200",
-  "Generic Portfolio": "bg-amber-50 text-amber-700 border border-amber-200",
+/**
+ * Engine tier label → badge class, as a CLASS rather than a colour string.
+ *
+ * The previous map carried hardcoded light-palette backgrounds
+ * (`bg-emerald-50 text-emerald-700`), which do not exist in the dark theme — a
+ * dark-mode visitor got near-white on near-white. The badge tokens
+ * (`--green-dim` / `--green`) are the same meaning in both.
+ *
+ * The engine's own tier vocabulary is four values, and it is the engine that
+ * chooses them. Unrecognised labels fall back to a neutral badge rather than a
+ * guessed colour, so a new backend tier does not get mis-stated.
+ */
+const TIER_BADGE: Record<string, string> = {
+  "Exceptional Angular Spike": "badge-green",
+  "Solid Competitive Spike": "badge-blue",
+  "Developing Portfolio": "badge-amber",
+  "Generic Portfolio": "badge-amber",
 };
 
 export default function PortfolioBuilderPage() {
@@ -296,474 +310,620 @@ export default function PortfolioBuilderPage() {
     }
   };
 
+  const spikeLoading = spike.status === "loading" || spike.status === "idle";
+  const evaluatedCount =
+    spike.status === "ready"
+      ? (spike.data.evaluated_activities_count ?? activities.length)
+      : null;
+
   return (
     <AuthGate title="portfolio builder">
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Header */}
-        <div className="border-b border-slate-200 pb-8 mb-10">
-          <div className="flex items-center gap-2 text-rose-600 text-xs uppercase tracking-widest font-mono font-semibold mb-2">
-            <Sparkles className="w-4 h-4" />
-            <span>Admissions Spike Studio · Section 11 Specification</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950">
-            Global Portfolio Builder &amp; Angular Spike Studio
-          </h1>
-          <p className="mt-3 text-base text-slate-600 max-w-3xl leading-relaxed">
-            Elite international universities reject 90%+ of generic &quot;well-rounded&quot; applicants.
-            This studio scores the depth of your angular spike, and checks a prospective publisher
-            against a known predatory-publisher deny-list.
-          </p>
+      <div className="page-shell">
+        <div className="container-xl page-header">
+          <PageHeader
+            kicker="Admissions Spike Studio · Section 11"
+            eyebrow={
+              <span className="badge badge-rose">
+                <Sparkles size={10} aria-hidden="true" />
+                Engine-scored · Formula 11.1
+              </span>
+            }
+            title="Global Portfolio Builder & Angular Spike Studio"
+            lead="Scores the depth of an angular spike against the backend engine, and checks a prospective publisher against a known predatory-publisher deny-list. Where the engine will not return a score, this page shows the gap rather than estimating one."
+          />
         </div>
 
-        {/* Top Split: Engine Spike Meter & Activity Inventory */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-          {/* Spike Authenticity Score — POST /api/v2/portfolio/compute-spike */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-mono text-slate-500 uppercase">Spike Authenticity</span>
-                <span className="text-xs font-mono text-rose-600 font-semibold">Formula 11.1</span>
+        <div className="container-xl pb-16">
+          {/* ── Top split: engine score + activity inventory ────────── */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Spike Authenticity Score — POST /api/v2/portfolio/compute-spike */}
+            <div className="panel">
+              <div className="panel-head">
+                <span className="panel-title">Spike Authenticity</span>
+                <span className="num text-[11px] t-accent">Formula 11.1</span>
               </div>
 
-              {spike.status === "loading" || spike.status === "idle" ? (
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="text-sm font-mono">Scoring with engine…</span>
+              <div className="panel-pad">
+                {spikeLoading ? (
+                  <>
+                    <Skeleton className="h-9 w-24" />
+                    <Skeleton className="mt-3 h-3 w-28" />
+                    <SkeletonStatus label="Scoring with the engine" />
+                  </>
+                ) : spike.status === "unavailable" ? (
+                  <>
+                    {/* Unmeasured, not zero. A 0 here would assert "the
+                        portfolio is the worst possible one", which is a
+                        different claim from "the engine did not answer". */}
+                    <Metric
+                      label="Spike authenticity"
+                      value={null}
+                      size="lg"
+                    />
+                    <div className="mt-4">
+                      <Notice tone="error" title="No score available">
+                        {spike.reason}
+                      </Notice>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap items-baseline gap-2.5">
+                      <span className="metric-xl t-text">
+                        {spike.data.spike_authenticity_score}
+                      </span>
+                      <span className="num text-[13px] t-faint">/ 100</span>
+                    </div>
+
+                    <div className="mt-3">
+                      <span className={`badge ${TIER_BADGE[spike.data.tier] ?? ""}`}>
+                        {spike.data.tier}
+                      </span>
+                    </div>
+
+                    <dl className="mt-5 grid grid-cols-2 gap-4">
+                      <Metric
+                        label="Activities scored"
+                        value={evaluatedCount}
+                        format={(v) => String(v)}
+                        caption="Engine-reported"
+                      />
+                      <Metric
+                        label="In portfolio"
+                        value={activities.length}
+                        format={(v) => String(v)}
+                        caption="Submitted this session"
+                      />
+                    </dl>
+
+                    {spike.data.spike_summary && (
+                      <p className="body-p mt-4">{spike.data.spike_summary}</p>
+                    )}
+                    {spike.data.recommendation && (
+                      <p className="body-p mt-2.5">{spike.data.recommendation}</p>
+                    )}
+
+                    <Notice tone="info" className="mt-4" title="What this score is">
+                      Engine output for{" "}
+                      {evaluatedCount ?? activities.length} activit
+                      {(evaluatedCount ?? activities.length) === 1 ? "y" : "ies"}. The engine
+                      weights the rarity, external-validation and alignment figures you
+                      entered — it does not verify them, so the score is a weighted
+                      restatement of your own assessment, not an external measurement.
+                    </Notice>
+                  </>
+                )}
+
+                <div className="mt-6 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
+                  <label htmlFor="target-major" className="form-label">
+                    Target major
+                  </label>
+                  <input
+                    id="target-major"
+                    type="text"
+                    value={targetMajor}
+                    onChange={(e) => setTargetMajor(e.target.value)}
+                    className="form-input text-[13px]"
+                  />
                 </div>
-              ) : spike.status === "unavailable" ? (
+              </div>
+            </div>
+
+            {/* Activity Inventory Manager */}
+            <div className="panel lg:col-span-2">
+              <div className="panel-head">
+                <span className="panel-title">
+                  Activity portfolio · {activities.length} recorded
+                </span>
+                <span className="num text-[11px] t-faint">All entries are scored</span>
+              </div>
+
+              <div className="panel-pad">
+                {activities.length === 0 ? (
+                  <EmptyState
+                    icon={Briefcase}
+                    title="No activities recorded"
+                    hint="The engine returns its floor score for an empty portfolio rather than a real assessment — so this reads as 'not measured' until you add something worth measuring."
+                    variant="bare"
+                  />
+                ) : (
+                  <div className="max-h-56 space-y-2.5 overflow-y-auto pr-1">
+                    {activities.map((act, idx) => (
+                      <div
+                        key={idx}
+                        className="t-chip flex items-center justify-between gap-3 rounded-lg border p-3"
+                        style={{ borderColor: "var(--border-subtle)" }}
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-[13px] font-semibold t-text">
+                            {act.title}
+                          </div>
+                          <div className="mt-0.5 text-[11px] t-muted">
+                            {act.role} ·{" "}
+                            <span className="num">{act.months}</span>{" "}
+                            <span className="t-faint">months invested</span>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-3">
+                          <span className="num text-[11px] font-semibold t-accent">
+                            Rarity{" "}
+                            <span className="num-1">{Math.round(act.rarity * 100)}%</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveActivity(idx)}
+                            aria-label={`Remove ${act.title}`}
+                            className="btn-ghost p-1"
+                          >
+                            <Trash2 size={14} aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add activity form */}
+                <div
+                  className="mt-4 grid grid-cols-1 gap-3 border-t pt-4 sm:grid-cols-3"
+                  style={{ borderColor: "var(--border-subtle)" }}
+                >
+                  <input
+                    type="text"
+                    placeholder="Activity / Project Title"
+                    aria-label="Activity title"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleAddActivity(); }}
+                    className="form-input text-[13px] sm:col-span-2"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Your role (optional)"
+                    aria-label="Your role"
+                    value={newRole}
+                    onChange={(e) => setNewRole(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleAddActivity(); }}
+                    className="form-input text-[13px]"
+                  />
+                  <div className="flex gap-2 sm:col-span-3">
+                    <div className="w-24 flex-shrink-0">
+                      <label htmlFor="new-months" className="sr-only">
+                        Months invested
+                      </label>
+                      <input
+                        id="new-months"
+                        type="number"
+                        placeholder="Months"
+                        aria-label="Months invested"
+                        min={1}
+                        value={newMonths}
+                        onChange={(e) => setNewMonths(Number(e.target.value))}
+                        className="form-input text-[13px]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddActivity}
+                      disabled={!newTitle.trim()}
+                      className="btn-primary flex-1 sm:flex-none"
+                    >
+                      <Plus size={14} aria-hidden="true" />
+                      <span>Add activity</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── X-Y-Z Transformer ──────────────────────────────────── */}
+          <div className="panel mt-6">
+            <div className="panel-head">
+              <span className="panel-title flex items-center gap-2">
+                <FileText size={12} aria-hidden="true" />
+                Google &amp; Common App X-Y-Z optimization engine
+              </span>
+            </div>
+            <div className="panel-pad">
+              <h2 className="text-[15px] font-semibold t-text">Action-Impact X-Y-Z Transformer</h2>
+              <p className="body-p mt-1.5">
+                Restructures a bullet into{" "}
+                <em className="t-text">&quot;Accomplished [X] as measured by [Y] by doing [Z]&quot;</em>.
+              </p>
+
+              <div className="mt-5 grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
-                  <div className="text-4xl font-black text-slate-300">{/* no number is invented */"—"}</div>
-                  <div className="text-sm font-semibold text-slate-400">/ 100</div>
-                  <div className="mt-3 flex items-start gap-2 text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-xl p-3 leading-relaxed">
-                    <CircleAlert className="w-3.5 h-3.5 mt-px shrink-0" />
-                    <span>
-                      <strong className="block mb-0.5">No score available</strong>
-                      {spike.reason}
-                    </span>
+                  <label htmlFor="raw-bullet" className="form-label">
+                    Your draft bullet
+                  </label>
+                  <textarea
+                    id="raw-bullet"
+                    rows={4}
+                    value={rawDraft}
+                    onChange={(e) => setRawDraft(e.target.value)}
+                    placeholder="e.g. Built a machine learning model on Raspberry Pi to test water quality in local village wells..."
+                    className="form-input text-[13px]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleTransformXYZ}
+                    disabled={isTransforming || !rawDraft.trim()}
+                    className="btn-primary mt-3"
+                  >
+                    {isTransforming ? (
+                      <span className="spinner" aria-hidden="true" />
+                    ) : (
+                      <Sparkles size={14} aria-hidden="true" />
+                    )}
+                    <span>Transform to X-Y-Z format</span>
+                  </button>
+                </div>
+
+                <div
+                  className="t-chip flex flex-col justify-between rounded-lg border p-4"
+                  style={{ borderColor: "var(--border-subtle)" }}
+                >
+                  <div>
+                    <span className="metric-label">Optimized result</span>
+                    {transformedOutput ? (
+                      <div className="mt-2.5 space-y-2.5">
+                        <p className="notice-ok notice text-[12px] leading-relaxed t-text">
+                          &quot;{transformedOutput.transformed_xyz ?? NO_DATA}&quot;
+                        </p>
+                        <div className="metric-cell">
+                          <span className="metric-label">Metric highlighted</span>
+                          <span className="body-p">
+                            {transformedOutput.metric_highlighted ?? NO_DATA}
+                          </span>
+                        </div>
+                        <div className="metric-cell">
+                          <span className="metric-label">Admissions critique</span>
+                          <span className="body-p">
+                            {transformedOutput.critique ?? NO_DATA}
+                          </span>
+                        </div>
+                      </div>
+                    ) : transformNotice ? (
+                      <div className="mt-3">
+                        <Notice tone="warn" title="Unavailable — deliberately" icon={Lock}>
+                          {transformNotice}
+                        </Notice>
+                      </div>
+                    ) : (
+                      <EmptyState
+                        variant="bare"
+                        title="No rewrite yet"
+                        hint="Input a draft bullet and transform it. If the engine declines, it says so rather than writing a metric you did not measure."
+                        action={{ label: "Analyse a degree instead", href: "/analyze" }}
+                      />
+                    )}
                   </div>
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-baseline gap-3">
-                    <div className="text-5xl font-black text-slate-950">{spike.data.spike_authenticity_score}</div>
-                    <div className="text-sm font-semibold text-slate-400">/ 100</div>
-                  </div>
-                  <div className="mt-3">
-                    <span
-                      className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                        TIER_TONE[spike.data.tier] ??
-                        "bg-slate-50 text-slate-700 border border-slate-200"
+              </div>
+            </div>
+          </div>
+
+          {/* ── Milestone framework + publisher scanner ─────────────── */}
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Grade framework — intentionally in-page, see header comment. */}
+            <div className="panel">
+              <div className="panel-head">
+                <span className="panel-title flex items-center gap-2">
+                  <Calendar size={12} aria-hidden="true" />
+                  4-year timeline · grades 9&ndash;12
+                </span>
+              </div>
+              <div className="panel-pad">
+                <div
+                  className="flex flex-wrap gap-2"
+                  role="group"
+                  aria-label="Select a grade year"
+                >
+                  {[9, 10, 11, 12].map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      aria-pressed={selectedGrade === g}
+                      onClick={() => setSelectedGrade(g)}
+                      className={`goal-chip ${
+                        selectedGrade === g ? "selected" : ""
                       }`}
                     >
-                      {spike.data.tier}
-                    </span>
-                  </div>
-                  {spike.data.spike_summary && (
-                    <p className="text-xs text-slate-600 mt-3 leading-relaxed">{spike.data.spike_summary}</p>
-                  )}
-                  {spike.data.recommendation && (
-                    <p className="text-xs text-slate-600 mt-3 leading-relaxed">{spike.data.recommendation}</p>
-                  )}
-                  <p className="text-[11px] text-slate-500 mt-3 leading-relaxed">
-                    Engine output for{" "}
-                    {spike.data.evaluated_activities_count ?? activities.length} activit
-                    {(spike.data.evaluated_activities_count ?? activities.length) === 1 ? "y" : "ies"}. The engine
-                    weights the rarity, external-validation and alignment figures you entered — it does
-                    not verify them, so the score is a weighted restatement of your own assessment, not
-                    an external measurement.
-                  </p>
-                </>
-              )}
-            </div>
+                      Grade <span className="num">{g}</span>
+                    </button>
+                  ))}
+                </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-100">
-              <label htmlFor="target-major" className="block text-xs font-mono text-slate-500 uppercase mb-1">
-                Target Major:
-              </label>
-              <input
-                id="target-major"
-                type="text"
-                value={targetMajor}
-                onChange={(e) => setTargetMajor(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
-              />
-            </div>
-          </div>
-
-          {/* Activity Inventory Manager */}
-          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-base font-bold text-slate-950 mb-4 flex items-center justify-between">
-              <span>Activity Portfolio ({activities.length} Recorded)</span>
-              <span className="text-xs font-mono text-slate-500">All entries are scored</span>
-            </h3>
-
-            {activities.length === 0 ? (
-              <EmptyState
-                icon={Briefcase}
-                title="No activities recorded"
-                hint="The engine returns its floor score for an empty portfolio rather than a real assessment — so this reads as 'not measured' until you add something worth measuring."
-                variant="inline"
-              />
-            ) : (
-              <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
-                {activities.map((act, idx) => (
-                  <div key={idx} className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 truncate">{act.title}</div>
-                      <div className="text-[11px] text-slate-500">{act.role} · {act.months} Months Invested</div>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-[11px] font-mono text-rose-600 font-semibold">Rarity: {Math.round(act.rarity * 100)}%</span>
-                      <button
-                        onClick={() => handleRemoveActivity(idx)}
-                        aria-label={`Remove ${act.title}`}
-                        className="text-slate-400 hover:text-rose-600 p-1 transition"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Add activity form */}
-            <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <input
-                type="text"
-                placeholder="Activity / Project Title"
-                aria-label="Activity title"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleAddActivity(); }}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900 sm:col-span-2"
-              />
-              <input
-                type="text"
-                placeholder="Your role (optional)"
-                aria-label="Your role"
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleAddActivity(); }}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
-              />
-              <div className="flex gap-2 sm:col-span-3">
-                <input
-                  type="number"
-                  placeholder="Months"
-                  aria-label="Months invested"
-                  min={1}
-                  value={newMonths}
-                  onChange={(e) => setNewMonths(Number(e.target.value))}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 w-24 focus:outline-none focus:border-slate-900"
-                />
-                <button
-                  onClick={handleAddActivity}
-                  disabled={!newTitle.trim()}
-                  className="flex-1 sm:flex-none sm:px-6 bg-slate-950 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl text-xs font-semibold py-2 flex items-center justify-center gap-1 transition"
+                <div
+                  className="t-chip mt-4 space-y-2.5 rounded-lg border p-4 text-[12px] leading-relaxed"
+                  style={{ borderColor: "var(--border-subtle)" }}
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add</span>
-                </button>
+                  {selectedGrade === 9 && (
+                    <>
+                      <div className="kicker-accent">Broad intellectual exploration</div>
+                      <div className="t-muted">3 diverse exploratory projects (Robotics, Algorithms, Economics)</div>
+                      <div className="t-muted">Foundational competitive coding &amp; open-source contributions</div>
+                      <div className="t-muted">Maintain a top-5% class rank baseline</div>
+                    </>
+                  )}
+                  {selectedGrade === 10 && (
+                    <>
+                      <div className="kicker-accent">Spike hypothesis &amp; regional contests</div>
+                      <div className="t-muted">Isolate a singular spike focus area</div>
+                      <div className="t-muted">National Olympiad entry (INMO / INPhO / INOI / IRIS)</div>
+                      <div className="t-muted">Launch first community technical artifact</div>
+                    </>
+                  )}
+                  {selectedGrade === 11 && (
+                    <>
+                      <div className="kicker-accent">Primary research artifact &amp; external validation</div>
+                      <div className="t-muted">Author primary research preprint (arXiv / SSRN)</div>
+                      <div className="t-muted">Secure national/international award validation</div>
+                      <div className="t-muted">
+                        Standardized testing (target: SAT 1540+ / ACT 35+)
+                      </div>
+                    </>
+                  )}
+                  {selectedGrade === 12 && (
+                    <>
+                      <div className="kicker-accent">Common App synthesis &amp; early action</div>
+                      <div className="t-muted">Socratic personal statement authoring</div>
+                      <div className="t-muted">Structure 10 Common App activities in strict X-Y-Z prose</div>
+                      <div className="t-muted">Early Decision (ED) portfolio optimization</div>
+                    </>
+                  )}
+                </div>
+
+                <Notice tone="info" className="mt-4" icon={Info}>
+                  Editorial guidance, kept on the page rather than fetched. The{" "}
+                  <code className="mono text-[11px]">/portfolio/milestones</code> endpoint exists
+                  but its body is a literal dict inside the router, so calling it would add a
+                  network round-trip and a new way for this panel to fail without adding any data.
+                </Notice>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Action-Impact X-Y-Z Transformer Section */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-10">
-          <div className="flex items-center gap-2 text-rose-600 text-xs font-mono uppercase tracking-wider mb-2">
-            <FileText className="w-4 h-4" />
-            <span>Google &amp; Common App X-Y-Z Optimization Engine</span>
-          </div>
-          <h2 className="text-xl font-bold text-slate-950 mb-2">Action-Impact X-Y-Z Transformer</h2>
-          <p className="text-xs text-slate-500 mb-4">
-            Restructures a bullet into <em>&quot;Accomplished [X] as measured by [Y] by doing [Z]&quot;</em>.
-          </p>
+            {/* Predatory Publisher Scanner — POST /api/v2/portfolio/check-preprint */}
+            <div className="panel">
+              <div className="panel-head">
+                <span className="panel-title flex items-center gap-2">
+                  <ShieldAlert size={12} aria-hidden="true" />
+                  Predatory publisher scanner
+                </span>
+              </div>
+              <div className="panel-pad">
+                <p className="body-p">
+                  Check a prospective journal or publisher against a deny-list of known
+                  pay-to-publish names before you submit.
+                </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="raw-bullet" className="block text-xs font-mono text-slate-500 uppercase mb-1">
-                Your Draft Bullet:
-              </label>
-              <textarea
-                id="raw-bullet"
-                rows={4}
-                value={rawDraft}
-                onChange={(e) => setRawDraft(e.target.value)}
-                placeholder="e.g. Built a machine learning model on Raspberry Pi to test water quality in local village wells..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
-              />
-              <button
-                onClick={handleTransformXYZ}
-                disabled={isTransforming || !rawDraft.trim()}
-                className="mt-3 bg-slate-950 hover:bg-slate-800 disabled:bg-slate-200 text-white rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-2 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {isTransforming ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                <span>Transform to X-Y-Z Format</span>
-              </button>
-            </div>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                  <div className="min-w-0 flex-1">
+                    <label htmlFor="journal-name" className="sr-only">
+                      Journal or publisher name
+                    </label>
+                    <input
+                      id="journal-name"
+                      type="text"
+                      placeholder="Enter journal / publisher name…"
+                      aria-label="Journal or publisher name"
+                      value={journalQuery}
+                      onChange={(e) => setJournalQuery(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") void handleCheckJournal(); }}
+                      className="form-input text-[13px]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleCheckJournal()}
+                    disabled={journal.status === "loading" || !journalQuery.trim()}
+                    className="btn-primary flex-shrink-0"
+                  >
+                    {journal.status === "loading" && (
+                      <span className="spinner" aria-hidden="true" />
+                    )}
+                    <span>Scan</span>
+                  </button>
+                </div>
 
-            <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col justify-between">
-              <div>
-                <span className="text-[11px] font-mono text-slate-500 uppercase font-semibold">Optimized Result:</span>
-                {transformedOutput ? (
-                  <div className="mt-2 space-y-2">
-                    <p className="text-xs text-emerald-950 font-medium leading-relaxed bg-emerald-50 p-3 rounded-xl border border-emerald-200">
-                      &quot;{transformedOutput.transformed_xyz ?? NO_DATA}&quot;
-                    </p>
-                    <div className="text-[11px] text-slate-600">
-                      <strong>Metric Highlighted:</strong> {transformedOutput.metric_highlighted ?? NO_DATA}
+                {journal.status === "idle" && (
+                  <EmptyState
+                    variant="bare"
+                    title="Nothing scanned yet"
+                    hint="Enter a journal or publisher name and the engine will match it against its deny-list. Until then no verdict exists, and none is guessed."
+                  />
+                )}
+
+                {journal.status === "loading" && (
+                  <div className="mt-4 space-y-2" role="status" aria-live="polite">
+                    <Skeleton className="h-3 w-40" />
+                    <Skeleton className="h-3 w-3/4" />
+                    <span className="sr-only">Checking the deny-list…</span>
+                  </div>
+                )}
+
+                {journal.status === "ready" && (
+                  <>
+                    <div className="mt-4">
+                      <Notice
+                        tone={journal.data.is_flagged_predatory ? "error" : "ok"}
+                        title={journal.data.journal_name}
+                      >
+                        {journal.data.warning}
+                      </Notice>
                     </div>
-                    <div className="text-[11px] text-slate-600">
-                      <strong>Admissions Critique:</strong> {transformedOutput.critique ?? NO_DATA}
-                    </div>
-                  </div>
-                ) : transformNotice ? (
-                  <div className="mt-3 flex items-start gap-2 text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-3 leading-relaxed">
-                    <Lock className="w-3.5 h-3.5 mt-px shrink-0" />
-                    <span>
-                      <strong className="block mb-0.5">Unavailable — deliberately</strong>
-                      {transformNotice}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="mt-6 text-xs text-slate-400">
-                    Input a draft bullet and click transform. If the engine declines, it says so
-                    rather than writing a number you did not measure.
-                  </div>
+                    {/* A deny-list miss is not a clean bill of health. The engine
+                        matches against ten substrings; it does not reach Beall's
+                        list or an ISSN registry, despite the `source` label it
+                        returns. Saying "not flagged" is the only honest claim. */}
+                    <Notice tone="info" className="mt-3" icon={Info}>
+                      &ldquo;Not flagged&rdquo; means the name did not match this short
+                      deny-list. It is not independent confirmation that the journal is
+                      legitimate — verify the ISSN and publisher before submitting.
+                    </Notice>
+                  </>
+                )}
+
+                {journal.status === "unavailable" && (
+                  <UnmeasuredNote
+                    className="mt-4"
+                    what="Publisher verdict"
+                  >
+                    {journal.reason} No verdict is computed locally in its place, because a
+                    local deny-list match is not the same check the engine performs.
+                  </UnmeasuredNote>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Split: Milestone Framework & Publisher Scanner */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Grade framework — intentionally in-page, see header comment. */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-base font-bold text-slate-950 mb-3 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-rose-600" />
-              <span>4-Year High School Spike Timeline (Grades 9–12)</span>
-            </h3>
+        {/* ── Opportunity architecture ─────────────────────────────── */}
+        <div className="page-band">
+          <div className="container-xl page-section-tight">
+            <SectionHeader
+              kicker="Opportunity architecture · flagship program"
+              title="Research, practical experience & structured evidence"
+              lead="A claim on a resume is only as good as the artefact behind it. VividhEdu helps you document real research and practical work, then export it in a form a reviewer can actually verify instead of taking on faith."
+            />
 
-            <div className="flex gap-2 mb-4">
-              {[9, 10, 11, 12].map((g) => (
-                <button
-                  key={g}
-                  onClick={() => setSelectedGrade(g)}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono font-medium transition ${
-                    selectedGrade === g ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  Grade {g}
-                </button>
-              ))}
-            </div>
-
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2.5">
-              {selectedGrade === 9 && (
-                <>
-                  <div className="font-bold text-rose-600">Grade 9: Broad Intellectual Exploration</div>
-                  <div className="text-slate-700">• 3 Diverse exploratory projects (Robotics, Algorithms, Economics)</div>
-                  <div className="text-slate-700">• Foundational competitive coding &amp; open-source contributions</div>
-                  <div className="text-slate-700">• Maintain top-5% class rank baseline</div>
-                </>
-              )}
-              {selectedGrade === 10 && (
-                <>
-                  <div className="font-bold text-rose-600">Grade 10: Spike Hypothesis &amp; Regional Contests</div>
-                  <div className="text-slate-700">• Isolate singular spike focus area</div>
-                  <div className="text-slate-700">• National Olympiad entry (INMO / INPhO / INOI / IRIS)</div>
-                  <div className="text-slate-700">• Launch first community technical artifact</div>
-                </>
-              )}
-              {selectedGrade === 11 && (
-                <>
-                  <div className="font-bold text-rose-600">Grade 11: Primary Research Artifact &amp; External Validation</div>
-                  <div className="text-slate-700">• Author primary research preprint (arXiv / SSRN)</div>
-                  <div className="text-slate-700">• Secure national/international award validation</div>
-                  <div className="text-slate-700">• Standardized testing (Target: SAT 1540+ / ACT 35+)</div>
-                </>
-              )}
-              {selectedGrade === 12 && (
-                <>
-                  <div className="font-bold text-rose-600">Grade 12: Common App Synthesis &amp; Early Action</div>
-                  <div className="text-slate-700">• Socratic Personal Statement authoring</div>
-                  <div className="text-slate-700">• Structure 10 Common App activities in strict X-Y-Z prose</div>
-                  <div className="text-slate-700">• Early Decision (ED) portfolio optimization</div>
-                </>
-              )}
-            </div>
-
-            <p className="text-[11px] text-slate-500 mt-4 flex items-start gap-1.5">
-              <Info className="w-3.5 h-3.5 mt-px shrink-0 text-slate-400" />
-              <span>
-                Editorial guidance, kept on the page rather than fetched. The
-                <code className="font-mono"> /portfolio/milestones</code> endpoint exists but its body
-                is a literal dict inside the router, so calling it would add a network round-trip and a
-                new way for this card to fail without adding any data.
-              </span>
-            </p>
-          </div>
-
-          {/* Predatory Publisher Scanner — POST /api/v2/portfolio/check-preprint */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-base font-bold text-slate-950 mb-2 flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-amber-500" />
-              <span>Predatory Publisher Scanner</span>
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              Check a prospective journal or publisher against a deny-list of known pay-to-publish
-              names before you submit.
-            </p>
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Enter Journal / Publisher Name..."
-                aria-label="Journal or publisher name"
-                value={journalQuery}
-                onChange={(e) => setJournalQuery(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") void handleCheckJournal(); }}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-900"
-              />
-              <button
-                onClick={() => void handleCheckJournal()}
-                disabled={journal.status === "loading" || !journalQuery.trim()}
-                className="bg-slate-950 hover:bg-slate-800 disabled:bg-slate-300 text-white rounded-xl px-4 py-2 text-xs font-semibold transition flex items-center gap-1.5"
-              >
-                {journal.status === "loading" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                <span>Scan</span>
-              </button>
-            </div>
-
-            {journal.status === "loading" && (
-              <p className="mt-4 text-xs text-slate-400 font-mono flex items-center gap-2">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking deny-list…
-              </p>
-            )}
-
-            {journal.status === "ready" && (
-              <>
-                <div className={`mt-4 p-3 rounded-xl border text-xs ${
-                  journal.data.is_flagged_predatory
-                    ? "bg-rose-50 border-rose-200 text-rose-800"
-                    : "bg-emerald-50 border-emerald-200 text-emerald-800"
-                }`}>
-                  <div className="font-bold">{journal.data.journal_name}</div>
-                  <div className="mt-1 text-[11px]">{journal.data.warning}</div>
-                </div>
-                {/* A deny-list miss is not a clean bill of health. The engine
-                    matches against ten substrings; it does not reach Beall's
-                    list or an ISSN registry, despite the `source` label it
-                    returns. Saying "not flagged" is the only honest claim. */}
-                <p className="text-[11px] text-slate-500 mt-3 flex items-start gap-1.5">
-                  <Info className="w-3.5 h-3.5 mt-px shrink-0 text-slate-400" />
-                  <span>
-                    &ldquo;Not flagged&rdquo; means the name did not match this short deny-list. It is not
-                    independent confirmation that the journal is legitimate — verify the ISSN and
-                    publisher before submitting.
+            <RevealGroup className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {/* Pillar 1: Research */}
+              <div className="panel">
+                <div
+                  className="h-1 w-full"
+                  style={{ background: "var(--accent)" }}
+                  aria-hidden="true"
+                />
+                <div className="panel-pad">
+                  <span className="metric-label flex items-center gap-2">
+                    <GraduationCap size={13} aria-hidden="true" />
+                    1. 1:1 PhD research fellowship
                   </span>
-                </p>
-              </>
-            )}
-
-            {journal.status === "unavailable" && (
-              <div className="mt-4 flex items-start gap-2 text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-xl p-3 leading-relaxed">
-                <CircleAlert className="w-3.5 h-3.5 mt-px shrink-0" />
-                <span>
-                  <strong className="block mb-0.5">No verdict</strong>
-                  {journal.reason}
-                </span>
+                  <h3 className="mt-2.5 text-[14px] font-semibold t-text">
+                    Working paper + registered DOI
+                  </h3>
+                  <p className="body-p mt-2">
+                    Develop empirical econometric models or ML pipelines and publish on verified
+                    preprint servers, with faculty co-authorship.
+                  </p>
+                  <ul className="mt-4 space-y-1.5">
+                    {["Faculty co-authorship protocol", "Registered Crossref DOI"].map((item) => (
+                      <li key={item} className="flex items-start gap-2">
+                        <span className="num text-[11px] t-faint" aria-hidden="true">▪</span>
+                        <span className="mono text-[11px] t-muted">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            )}
+
+              {/* Pillar 2: Micro-Internships */}
+              <div className="panel">
+                <div
+                  className="h-1 w-full"
+                  style={{ background: "var(--purple)" }}
+                  aria-hidden="true"
+                />
+                <div className="panel-pad">
+                  <span className="metric-label flex items-center gap-2">
+                    <Briefcase size={13} aria-hidden="true" />
+                    2. Corporate micro-internships
+                  </span>
+                  <h3 className="mt-2.5 text-[14px] font-semibold t-text">
+                    4&ndash;8 week vetted high-growth sprints
+                  </h3>
+                  <p className="body-p mt-2">
+                    Curated technical and policy sprints at algorithmic trading desks, AI startups
+                    and think tanks. Ship production code instead of hypothetical essays.
+                  </p>
+                  <ul className="mt-4 space-y-1.5">
+                    {[
+                      "Applied LLM fine-tuning",
+                      "Quantitative factor backtesting",
+                      "Bi-weekly senior practitioner hours",
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2">
+                        <span className="num text-[11px] t-faint" aria-hidden="true">▪</span>
+                        <span className="mono text-[11px] t-muted">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Pillar 3: Verifiable artifacts */}
+              <div className="panel">
+                <div
+                  className="h-1 w-full"
+                  style={{ background: "var(--green)" }}
+                  aria-hidden="true"
+                />
+                <div className="panel-pad">
+                  <span className="metric-label flex items-center gap-2">
+                    <GitCommit size={13} aria-hidden="true" />
+                    3. Structured verification
+                  </span>
+                  <h3 className="mt-2.5 text-[14px] font-semibold t-text">
+                    Structured, verifiable artifacts
+                  </h3>
+                  <p className="body-p mt-2">
+                    Your portfolio exports as structured, readable documents that a reviewer or
+                    an admissions system can parse directly — so a claim is easy to check
+                    against the underlying artefact rather than taken on trust.
+                  </p>
+                  <ul className="mt-4 space-y-1.5">
+                    {[
+                      "Exportable written record",
+                      "Machine-readable formatting",
+                      "ATS-parsable structure",
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2">
+                        <span className="num text-[11px] t-faint" aria-hidden="true">▪</span>
+                        <span className="mono text-[11px] t-muted">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div
+                  className="flex items-center gap-1.5 border-t px-[22px] py-3"
+                  style={{ borderColor: "var(--border-subtle)" }}
+                >
+                  <CheckCircle size={13} style={{ color: "var(--green)" }} aria-hidden="true" />
+                  <span className="num text-[11px] t-muted">Private until you share</span>
+                </div>
+              </div>
+            </RevealGroup>
+
+            <Notice tone="accent" className="mt-8" title="What this page does not do">
+              No figure on this page is computed in the browser. The spike score, the tier label
+              and the publisher verdict all come from the engine or are shown as unmeasured —
+              there is no local fallback that could produce a number the backend never issued.
+            </Notice>
           </div>
         </div>
-
-        {/* Flagship Opportunity Architecture: 3 Pillars from Master PRD Section 11 & 12 */}
-        <div className="mt-12 pt-10 border-t border-slate-200">
-          <div className="flex items-center gap-2 text-rose-600 text-xs font-mono font-semibold uppercase tracking-wider mb-2">
-            <span>Opportunity Architecture · Flagship Program</span>
-          </div>
-          <h2 className="text-2xl font-bold text-slate-950 mb-2">
-            Research, Practical Experience &amp; Structured Evidence
-          </h2>
-          <p className="text-sm text-slate-600 max-w-3xl mb-8 leading-relaxed">
-            A claim on a resume is only as good as the artefact behind it. VividhEdu helps you
-            document real research and practical work, then export it in a form a reviewer can
-            actually verify instead of taking on faith.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Pillar 1: Research */}
-            <div className="bg-white border border-slate-200 border-t-2 border-t-rose-500 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-rose-600 mb-2">
-                  <GraduationCap className="w-4 h-4" />
-                  <span className="text-xs font-mono font-bold uppercase">1. 1:1 PhD Research Fellowship</span>
-                </div>
-                <h3 className="text-sm font-bold text-slate-950 mb-2">Working Paper + Registered DOI</h3>
-                <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                  Develop empirical econometric models or ML pipelines and publish on verified
-                  preprint servers, with faculty co-authorship.
-                </p>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-700 font-mono space-y-1">
-                  <div>• Faculty Co-Authorship Protocol</div>
-                  <div>• Registered Crossref DOI</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Pillar 2: Micro-Internships */}
-            <div className="bg-white border border-slate-200 border-t-2 border-t-purple-500 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-purple-600 mb-2">
-                  <Briefcase className="w-4 h-4" />
-                  <span className="text-xs font-mono font-bold uppercase">2. Corporate Micro-Internships</span>
-                </div>
-                <h3 className="text-sm font-bold text-slate-950 mb-2">4–8 Week Vetted High-Growth Sprints</h3>
-                <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                  Curated technical and policy sprints at algorithmic trading desks, AI startups, and think tanks. Ship production code instead of hypothetical essays.
-                </p>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-700 font-mono space-y-1">
-                  <div>• Applied LLM Fine-Tuning</div>
-                  <div>• Quantitative Factor Backtesting</div>
-                  <div>• Bi-Weekly Senior Practitioner Hours</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Pillar 3: Verifiable artifacts */}
-            <div className="bg-white border border-slate-200 border-t-2 border-t-emerald-500 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-emerald-600 mb-2">
-                  <GitCommit className="w-4 h-4" />
-                  <span className="text-xs font-mono font-bold uppercase">3. Structured Verification</span>
-                </div>
-                <h3 className="text-sm font-bold text-slate-950 mb-2">Structured, Verifiable Artifacts</h3>
-                <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                  Your portfolio exports as structured, readable documents that a reviewer or an
-                  admissions system can parse directly — so a claim is easy to check against the
-                  underlying artefact rather than taken on trust.
-                </p>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-700 font-mono space-y-1">
-                  <div>• Exportable written record</div>
-                  <div>• Machine-readable formatting</div>
-                  <div>• ATS-parsable structure</div>
-                </div>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-100">
-                <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5" /> Private until you share
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+      </div>
     </AuthGate>
   );
 }

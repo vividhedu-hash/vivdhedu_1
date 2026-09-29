@@ -12,6 +12,41 @@ const SORT_MAP: Record<string, string> = {
   placement_rate: "placement_rate",
 };
 
+/**
+ * Where a set of rows came from.
+ *
+ * `unavailable` is new and load-bearing. Previously the list helper had two
+ * outcomes — rows from a real store, or rows from `MOCK_DATA` — so a failed
+ * fetch and a successful one were indistinguishable unless the caller
+ * remembered to check `.source`. `MOCK_DATA.length` as `total` in particular
+ * reads exactly like a real count, and the landing page renders that count as
+ * a headline figure.
+ *
+ * With a third state, "we could not reach the index" is representable, and
+ * each caller is forced to decide what a page looks like when it happens.
+ */
+export type CollegeDataSource = "database" | "mock" | "unavailable";
+
+export type CollegeListResult = {
+  data: CollegeDegreeRecord[];
+  /**
+   * `null` when unknown, NOT `0`. A zero here would be indistinguishable from
+   * an index that is genuinely empty, and the landing page prints this value
+   * as a headline number.
+   */
+  total: number | null;
+  source: CollegeDataSource;
+  /** Human-readable failure reason, present only when `source === "unavailable"`. */
+  reason?: string;
+};
+
+export type CollegeDetailResult =
+  | { record: CollegeDegreeRecord; source: "database" | "mock" }
+  /** Checked, and genuinely absent. A 404 is a statement about the catalogue. */
+  | { record: null; source: "not_found" }
+  /** Could not check. Distinct from `not_found` — see the docstring below. */
+  | { record: null; source: "unavailable"; reason: string };
+
 export function mapCollegeSort(sortBy?: string | null): string {
   if (!sortBy) return "composite_score";
   return SORT_MAP[sortBy] ?? "composite_score";
@@ -26,7 +61,7 @@ export async function fetchCollegeList(query: {
   search?: string | null;
   sort_by?: string | null;
   sort_dir?: string | null;
-} = {}): Promise<{ data: CollegeDegreeRecord[]; total: number; source: "database" | "mock" }> {
+} = {}): Promise<CollegeListResult> {
   // 1. Direct Supabase Query (Primary - ultra fast on Vercel Serverless)
   try {
     const supabaseParams = new URLSearchParams();
@@ -98,12 +133,33 @@ export async function fetchCollegeList(query: {
     }
   }
 
-  return applyMockFilters(query);
+  // GUARD: seed data is a local-dev affordance, not a fallback.
+  //
+  // Both real sources are unreachable at this point. Returning `MOCK_DATA`
+  // here meant a dead Supabase and a dead FastAPI produced a page that looked
+  // exactly like a working one: 73 fake programmes with plausible composite
+  // scores, tuition, and placement rates, and a `total` that the landing page
+  // renders as a headline figure. The old code carried a `source` field, but
+  // nothing in the render path consulted it — `source` was advisory, so the
+  // honesty was opt-in and the default was the lie.
+  //
+  // With ALLOW_MOCK_FALLBACK unset in production, this returns an explicit
+  // unavailable result and the pages render their empty state. Set
+  // ALLOW_MOCK_FALLBACK=1 in a local .env file to keep the demo dataset.
+  if (allowMockFallback()) {
+    return applyMockFilters(query);
+  }
+
+  return {
+    data: [],
+    total: null,
+    source: "unavailable",
+    reason:
+      "The programme index is unreachable. Supabase and the analytics API both did not answer, and seed data is disabled in this environment.",
+  };
 }
 
-export async function fetchCollegeById(
-  id: string,
-): Promise<{ record: CollegeDegreeRecord; source: "database" | "mock" } | null> {
+export async function fetchCollegeById(id: string): Promise<CollegeDetailResult> {
   // 1. Direct Supabase Query (Primary)
   try {
     const rows = await fetchSupabaseRest<SupabaseProgramRow[]>(
@@ -127,8 +183,31 @@ export async function fetchCollegeById(
     return { record: await resp.json(), source: "database" };
   }
 
-  const record = MOCK_DATA.find((r) => r.id === id);
-  return record ? { record, source: "mock" } : null;
+  // GUARD: same rule as the list path — a single unreachable store must not
+  // yield a fabricated detail page. This one matters more than the list does:
+  // a programme page is the product, and it renders a composite score, a
+  // placement rate, a median salary and a total cost of degree. Every one of
+  // those is a financial claim about a real institution, and a URL that
+  // resolves to a real institution's fake numbers is worse than a 503.
+  //
+  // The distinction that matters: `null` here now means "could not check",
+  // not "checked and absent". Those used to be the same value, so a dead
+  // database and a typo'd id were indistinguishable to the caller.
+  if (allowMockFallback()) {
+    const record = MOCK_DATA.find((r) => r.id === id);
+    // `not_found` rather than `source: "mock"` for the miss case: we did check
+    // the seed catalogue, and it does not contain this id. Reporting that as
+    // "mock" would make a genuine absence look like an outage.
+    if (record) return { record, source: "mock" };
+    return { record: null, source: "not_found" };
+  }
+
+  return {
+    record: null,
+    source: "unavailable",
+    reason:
+      "This programme could not be loaded. The data stores did not answer, and seed data is disabled in this environment.",
+  };
 }
 
 function applyMockFilters(query: {

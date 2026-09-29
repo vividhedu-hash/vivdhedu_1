@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { NO_DATA, finiteOrNull } from "../lib/mock-data";
+import { prefersReducedMotion } from "@/lib/motion";
 
 interface ScoreRingProps {
   /**
@@ -17,21 +18,31 @@ interface ScoreRingProps {
   className?: string;
 }
 
-const NO_DATA_COLOR = "#94A3B8";
-
+/**
+ * Score bands → CSS custom properties, not hex.
+ *
+ * The five hex literals this used to return could not theme: a dark-mode visitor
+ * got the light palette's green on a black surface, which is a different colour
+ * with a different perceived weight. `var(--green)` etc. resolve per theme, so
+ * the ring is the same *meaning* in both.
+ *
+ * A fifth band exists below the previous four-tier split. `--red` at the bottom
+ * was previously `#FF6B35` (a hardcoded orange that is not in the token
+ * palette at all) and now falls through to `--red`, which themes correctly.
+ */
 function getScoreColor(score: number): string {
-  if (score >= 85) return "#30D158"; // Apple green
-  if (score >= 70) return "#5AC8F5"; // Apple teal
-  if (score >= 55) return "#FF9F0A"; // Apple amber
-  if (score >= 40) return "#FF6B35"; // orange
-  return "#FF453A"; // Apple red
+  if (score >= 85) return "var(--green)";
+  if (score >= 70) return "var(--teal)";
+  if (score >= 55) return "var(--amber)";
+  if (score >= 40) return "var(--accent)";
+  return "var(--red)";
 }
 
 function getScoreLabel(score: number): string {
   if (score >= 85) return "Excellent";
   if (score >= 70) return "Good";
   if (score >= 55) return "Average";
-  if (score >= 40) return "Below Avg";
+  if (score >= 40) return "Below avg";
   return "Poor";
 }
 
@@ -50,7 +61,7 @@ export function ScoreRing({
 
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const color = measured == null ? NO_DATA_COLOR : getScoreColor(measured);
+  const color = measured == null ? "var(--text-tertiary)" : getScoreColor(measured);
   const targetOffset =
     circumference - ((measured ?? 0) / 100) * circumference;
 
@@ -62,43 +73,59 @@ export function ScoreRing({
     if (!animate || hasAnimated.current) return;
     hasAnimated.current = true;
 
-    // Animate score number
+    // The count-up is a rAF loop, so the global `prefers-reduced-motion` CSS
+    // rule cannot collapse it. It has to be checked here or the number tweens
+    // regardless of the OS setting.
+    if (prefersReducedMotion()) {
+      setDisplayScore(measured);
+      setOffset(targetOffset);
+      return;
+    }
+
     const duration = 1200;
     const start = Date.now();
+    let raf = 0;
     const tick = () => {
       const progress = Math.min((Date.now() - start) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setDisplayScore(Math.round(eased * measured));
-      if (progress < 1) requestAnimationFrame(tick);
+      if (progress < 1) raf = requestAnimationFrame(tick);
     };
-    requestAnimationFrame(tick);
-
-    // Animate ring
+    raf = requestAnimationFrame(tick);
     setOffset(targetOffset);
+
+    return () => cancelAnimationFrame(raf);
   }, [measured, animate, targetOffset, circumference]);
 
   return (
     <div
       className={`relative inline-flex items-center justify-center ${className}`}
       style={{ width: size, height: size }}
-      title={measured == null ? "Not enough verified data to score this program" : undefined}
+      title={
+        measured == null
+          ? "Not enough verified data to score this programme"
+          : `Composite score ${measured.toFixed(1)} of 100`
+      }
     >
       <svg
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         style={{ transform: "rotate(-90deg)" }}
+        aria-hidden="true"
       >
-        {/* Track */}
+        {/* Track. `--bg-chip` is the right fill on both themes: a light grey
+            disappears on white, a white one disappears on black. */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(255,255,255,0.08)"
+          stroke="var(--bg-chip)"
           strokeWidth={strokeWidth}
         />
-        {/* Progress */}
+        {/* Progress. No drop-shadow: a glow on a 4px ring is a heavy shadow
+            by another name, and it did not survive the dark palette. */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -109,26 +136,24 @@ export function ScoreRing({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={animate ? offset : targetOffset}
-          opacity={measured == null ? 0.45 : 1}
+          opacity={measured == null ? 0.4 : 1}
           style={{
             transition: animate ? "stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)" : "none",
-            filter: `drop-shadow(0 0 5px ${color}50)`,
           }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span
-          className="font-mono font-bold leading-none"
+          className={`leading-none ${measured == null ? "num-na" : "num font-bold"}`}
           style={{ fontSize: size * 0.24, color }}
         >
           {measured == null ? NO_DATA : Math.round(displayScore)}
         </span>
         {showLabel && size >= 72 && (
           <span
-            className="mt-0.5 font-body text-center leading-tight"
+            className="t-faint mt-0.5 text-center leading-tight"
             style={{
               fontSize: size * 0.1,
-              color: "#48484A",
               letterSpacing: "0.04em",
             }}
           >

@@ -1,26 +1,35 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import CollegeCompareTable from "@/components/CollegeCompareTable";
 import { CsvExportButton } from "@/components/CsvExportButton";
-import { Scale, Plus, Sparkles } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { Notice } from "@/components/Notice";
+import { Scale, Plus, Sparkles, ArrowRight } from "lucide-react";
 import { fetchCollegeList } from "../../lib/live-colleges";
 import { finiteOrNull } from "../../lib/mock-data";
 import type { CollegeDegreeRecord } from "../../lib/mock-data";
+import { BRAND } from "@/lib/brand";
 
-export const metadata = {
-  title: `Compare Colleges & Programs | VividhEdu`,
-  description: "Compare up to 4 Indian college programs side-by-side on 20-Year NPV, placement consistency, fees, and AI risk exposure.",
+export const metadata: Metadata = {
+  title: "Compare Colleges & Programs",
+  description:
+    "Compare Indian college programmes side-by-side on 20-year NPV, placement consistency, fees and AI risk exposure.",
 };
 
+/**
+ * Map a live record to the comparison shape.
+ *
+ * Every derivation here is guarded, and the guards are the point of this
+ * page: a programme with no published fee must not be rendered as "0L",
+ * i.e. free, and a programme with no measured placement must not show 0%.
+ * Null propagates all the way to the table, which draws an em dash for it.
+ */
 function toCompareItem(r: CollegeDegreeRecord) {
-  // `?? 0` here would publish a program with an unverified cost as "₹0L",
-  // i.e. free. Unmeasured cost has to propagate as null all the way through
-  // to the table, which already renders an em dash for missing values.
   const costOfDegree = finiteOrNull(r.costs?.totalCostOfDegreeInr);
   const feeLakhs = costOfDegree == null ? null : costOfDegree / 100000;
-  // Only derive salary/placement figures when they were actually measured.
-  // Defaulting to 0 previously rendered unmeasured programs as "0% placement,
-  // ₹0 salary, -₹X NPV", which reads as real data rather than a gap.
   const medianRaw = r.salary?.year1?.p50 ?? r.placement?.medianSalaryInr ?? null;
-  const salaryLpa = finiteOrNull(medianRaw) != null ? finiteOrNull(medianRaw)! / 100000 : null;
+  const salaryLpa =
+    finiteOrNull(medianRaw) != null ? finiteOrNull(medianRaw)! / 100000 : null;
   const rateRaw = finiteOrNull(r.placement?.rate);
   const placementPct = rateRaw == null ? null : rateRaw > 1 ? rateRaw : rateRaw * 100;
   const aiRisk = finiteOrNull(r.risk?.aiAutomationProbability);
@@ -46,72 +55,100 @@ function toCompareItem(r: CollegeDegreeRecord) {
 }
 
 export default async function ComparePage() {
-  let programs: any[] = [];
+  let programs: ReturnType<typeof toCompareItem>[] = [];
   let isLive = false;
+  // Distinguishes "the index is down" from "we are showing the demo dataset".
+  // The lead paragraph below already handles the down case; without this the
+  // page could not tell the reader that the rows on screen, if any, are seed
+  // data rather than a real index.
+  let isSeed = false;
 
   try {
-    const listed = await fetchCollegeList({ per_page: 4, sort_by: "compositeScore" });
+    const listed = await fetchCollegeList({
+      per_page: 4,
+      sort_by: "compositeScore",
+    });
     programs = listed.data.map(toCompareItem);
     isLive = listed.source === "database";
+    isSeed = listed.source === "mock";
   } catch {
-    // Graceful fallback
+    // The index is unreachable. The table renders its own empty state rather
+    // than being given substitute rows.
   }
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] text-slate-950 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold mb-2">
-              <Scale className="w-3.5 h-3.5" />
-              Side-by-Side ROI Benchmark Matrix
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-950">
-              Compare Colleges & Programs
-            </h1>
-            <p className="text-slate-500 text-sm mt-1">
-              {isLive
-                ? "Live programs from the VividhEdu quantitative index."
-                : "Actuarial benchmark comparison — 20-year NPV, debt recovery, and AI risk."}
-            </p>
-          </div>
+    <div className="page-shell">
+      <div className="container-xl page-header">
+        <PageHeader
+          kicker="Benchmark matrix"
+          eyebrow={
+            <span className="badge badge-teal">
+              <Scale size={10} aria-hidden="true" />
+              Side-by-side
+            </span>
+          }
+          title="Compare colleges &amp; programmes"
+          lead={
+            isLive
+              ? "Live programmes from the quantitative index, compared on the same four measures. A dash means the figure is not measured, not that it is zero."
+              : "The index is unreachable right now, so no comparison can be built from it. Everything else on this page still works."
+          }
+          actions={
+            <>
+              <CsvExportButton />
+              <Link href="/explore" className="btn-secondary inline-flex items-center gap-2">
+                <Plus size={14} aria-hidden="true" />
+                Browse programmes
+              </Link>
+            </>
+          }
+        />
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Backend's own `GET /api/colleges/export/csv`, proxied through
-                /api/colleges/export/csv. The export covers the whole active
-                program index, not just the four rows above, so the two are
-                deliberately not presented as the same dataset. */}
-            <CsvExportButton />
-            <a href="/explore" className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-              <Plus className="w-4 h-4" /> Browse programs
-            </a>
-          </div>
-        </div>
+        {/* Provenance of the rows below. A comparison matrix is the page most
+            likely to be screenshotted and shared, so a reader who is looking
+            at sample data needs to be told before they act on it. */}
+        {isSeed && (
+          <Notice tone="warn" title="Comparing the demo dataset" className="mt-5">
+            The live index is unreachable, so these rows come from the bundled
+            sample data. The fees, placement rates and salaries are illustrative
+            and do not describe real institutions.
+          </Notice>
+        )}
 
-        <p className="-mt-4 text-[11px] text-slate-400 font-mono">
-          The CSV export is the backend&apos;s projection of the full active program index
-          (73 programs), not a dump of the four rows in this table.
-        </p>
+        {/* The export covers the whole active index, not just the four rows
+            above. Stating that is the difference between "download this table"
+            and "download this". */}
+        <Notice tone="info" className="mt-2">
+          The CSV export is the backend&apos;s projection of the full active
+          programme index, not a dump of the rows in this table.
+        </Notice>
 
-        <CollegeCompareTable programs={programs} />
-
-        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="space-y-1 text-center md:text-left">
-            <h3 className="text-base font-bold text-slate-950 flex items-center justify-center md:justify-start gap-2">
-              <Sparkles className="w-4 h-4 text-rose-600" /> Need AI Guidance on these selections?
-            </h3>
-            <p className="text-xs text-slate-500">
-              The advisor evaluates your budget against programs in the live index using Gemini search grounding.
-            </p>
-          </div>
-          <a
-            href="/advisor"
-            className="px-5 py-2.5 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-all shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Open AI Mode →
-          </a>
+        <div className="mt-7">
+          <CollegeCompareTable programs={programs} />
         </div>
       </div>
-    </main>
+
+      <div className="container-xl page-section-tight">
+        <div className="panel panel-pad-lg flex flex-col items-center justify-between gap-5 md:flex-row">
+          <div className="text-center md:text-left">
+            <h2 className="flex items-center justify-center gap-2 text-[16px] font-bold t-text md:justify-start">
+              <Sparkles size={15} style={{ color: "var(--accent)" }} aria-hidden="true" />
+              Want these judged against your own constraints?
+            </h2>
+            <p className="mt-1.5 text-[13px] leading-relaxed t-muted">
+              {BRAND.name} scores each programme against your budget and risk
+              tolerance, rather than against an average student.
+            </p>
+          </div>
+          <Link
+            href="/onboard"
+            className="btn-primary inline-flex flex-shrink-0 items-center gap-2"
+          >
+            Run my comparison
+            <ArrowRight size={13} aria-hidden="true" />
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }

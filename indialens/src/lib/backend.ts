@@ -20,9 +20,30 @@ export function getBackendUrl(): string | null {
   return null;
 }
 
+/**
+ * The single switch that decides whether synthetic data may stand in for a
+ * failed fetch.
+ *
+ * The contract, which the docstring above has always claimed and the body
+ * never implemented:
+ *
+ *   - Local dev: mocks on unless `ALLOW_MOCK_FALLBACK=0`.
+ *   - Production: mocks OFF unless `ALLOW_MOCK_FALLBACK=1`.
+ *
+ * The previous body only ever checked for the literal "0". That made the
+ * default "allow", so a production deploy with the variable unset — the most
+ * common way for it to be unset, since an unset server-side env var is not a
+ * failure — served seed data through every guarded path. The `"0"` was the
+ * only value that did anything, which is why the flag read as decorative.
+ *
+ * In production the burden of proof is on showing the data: opting in to
+ * fabricated figures has to be a deliberate act, and a deploy that forgets the
+ * variable gets an honest error page rather than a healthy-looking lie.
+ */
 export function allowMockFallback(): boolean {
+  if (process.env.ALLOW_MOCK_FALLBACK === "1") return true;
   if (process.env.ALLOW_MOCK_FALLBACK === "0") return false;
-  return true;
+  return process.env.NODE_ENV !== "production";
 }
 
 export async function fetchBackend(

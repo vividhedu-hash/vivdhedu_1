@@ -2,19 +2,22 @@
 
 import React, { useState } from "react";
 import {
-  Check, X, ArrowUpRight, ShieldAlert, Award, DollarSign,
-  Briefcase, Activity, Scale, Sparkles, TrendingUp
+  ShieldAlert, Award, DollarSign,
+  Briefcase, Activity, Scale, Trophy, TrendingUp, type LucideIcon,
 } from "lucide-react";
-import { formatInr } from "../lib/mock-data";
+import { EmptyState } from "./EmptyState";
+import { Notice, UnmeasuredNote } from "./Notice";
+import { Skeleton } from "./Skeleton";
+import { formatInr, NO_DATA } from "../lib/mock-data";
 
 interface ProgramItem {
   id: string;
   name: string;
   college: string;
   tier: string;
-  /** null = cost of degree not verified. Rendered as "—", never "₹0 Lakhs". */
+  /** null = cost of degree not verified. Rendered as an em dash, never "0 Lakhs". */
   fee_lakhs: number | null;
-  /** null = not measured. Rendered as "—" rather than a fabricated 0/100. */
+  /** null = not measured. Rendered as an em dash rather than a fabricated 0/100. */
   placement_rate_pct: number | null;
   median_salary_lpa: number | null;
   ai_risk_pct: number | null;
@@ -26,6 +29,104 @@ interface CollegeCompareTableProps {
   programs: ProgramItem[];
 }
 
+/**
+ * One row of the comparison matrix, declared once and rendered twice.
+ *
+ * The metric list was previously six hand-written `<tr>` blocks, each with its
+ * own icon, its own conditional, and its own three different ways of spelling
+ * "no data" ("Not verified", a bare em dash, and a tertiary-ink em dash). A
+ * seventh column added later would have been a seventh block to write by hand,
+ * and the odds of the new one matching the other six on padding and border
+ * treatment are poor. So the matrix is data-driven: one row definition, one
+ * renderer for the wide layout, one for the narrow one, and the two cannot
+ * drift apart.
+ *
+ * The cell renderer draws a missing figure as an em dash in `.num-na`, per the
+ * contract. It never draws `0` and never draws the dash in red, because a zero
+ * fee reads as "free" and a red dash reads as "the worst reading on the
+ * table" — both are claims none of these programmes has earned.
+ */
+interface MetricRow {
+  key: string;
+  label: string;
+  Icon: LucideIcon;
+  /** CSS var for the row icon, so it carries the same meaning in both themes. */
+  iconColor: string;
+  /** Which emphasis the reading gets — only when there is a reading at all. */
+  tone: (p: ProgramItem) => "accent" | "ok" | "warn" | "default";
+  value: (p: ProgramItem) => string;
+}
+
+const RUPEE = "\u20b9";
+const EM_DASH = "\u2014";
+
+const METRIC_ROWS: MetricRow[] = [
+  {
+    key: "fee",
+    label: "Total degree fee",
+    Icon: DollarSign,
+    iconColor: "var(--amber)",
+    tone: () => "default",
+    value: (p) => (p.fee_lakhs == null ? NO_DATA : `${RUPEE}${p.fee_lakhs} Lakhs`),
+  },
+  {
+    key: "placement",
+    label: "Placement consistency",
+    Icon: Briefcase,
+    iconColor: "var(--green)",
+    tone: () => "ok",
+    value: (p) => (p.placement_rate_pct == null ? NO_DATA : `${p.placement_rate_pct}%`),
+  },
+  {
+    key: "salary",
+    label: "Median year-1 salary",
+    Icon: Award,
+    iconColor: "var(--blue)",
+    tone: () => "default",
+    value: (p) => (p.median_salary_lpa == null ? NO_DATA : `${RUPEE}${p.median_salary_lpa} LPA`),
+  },
+  {
+    key: "payback",
+    label: "Net payback horizon",
+    Icon: TrendingUp,
+    iconColor: "var(--teal)",
+    tone: () => "default",
+    value: (p) => (p.payback_years == null ? NO_DATA : `${p.payback_years} yrs`),
+  },
+  {
+    key: "npv",
+    label: "20-year net present value",
+    Icon: Activity,
+    iconColor: "var(--accent)",
+    /* NPV is the row the reader is actually comparing on, so it is the
+       emphasised one. A green wash behind the row is not: a wash is a verdict,
+       and the sign of an NPV is relative to a discount rate this page does not
+       display. */
+    tone: () => "accent",
+    value: (p) => (p.npv_20yr_lakhs == null ? NO_DATA : `${RUPEE}${p.npv_20yr_lakhs} Lakhs`),
+  },
+  {
+    key: "ai_risk",
+    label: "AI automation risk",
+    Icon: ShieldAlert,
+    iconColor: "var(--red)",
+    tone: (p) => (p.ai_risk_pct == null ? "default" : p.ai_risk_pct > 30 ? "warn" : "ok"),
+    value: (p) => (p.ai_risk_pct == null ? NO_DATA : `${p.ai_risk_pct}%`),
+  },
+];
+
+const TONE_CLASS: Record<string, string> = {
+  accent: "t-accent",
+  ok: "score-high",
+  warn: "score-medium",
+  default: "t-text",
+};
+
+/** An unmeasured cell. `num-na` is the whole treatment — muted, no colour. */
+function Na() {
+  return <span className="num-na">{NO_DATA}</span>;
+}
+
 export default function CollegeCompareTable({ programs }: CollegeCompareTableProps) {
   const [selectedPair, setSelectedPair] = useState<[number, number]>([0, 1]);
   const [counterfactual, setCounterfactual] = useState<any>(null);
@@ -33,9 +134,11 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
 
   if (!programs || programs.length === 0) {
     return (
-      <div className="p-8 text-center bg-white border border-slate-200 rounded-2xl text-slate-500 shadow-sm">
-        No colleges selected for comparison. Add programs to compare ROI.
-      </div>
+      <EmptyState
+        icon={Scale}
+        title="No programmes selected for comparison"
+        hint="The comparison matrix needs at least one programme from the index. Browse the programme index to add programmes to compare on cost, placement, salary, payback and AI exposure."
+      />
     );
   }
 
@@ -109,7 +212,7 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
         counterfactual_verdict:
           npvDeltaLakhs == null
             ? "Not enough measured data to compare these two programs."
-            : `Choosing ${pA.college} ${pA.name} over ${pB.college} ${pB.name} yields ₹${Math.abs(npvDeltaLakhs)}L ${npvDeltaLakhs >= 0 ? "higher" : "lower"} 20-year career NPV${paybackDelta ? ` with a ${paybackDelta} years payback delta` : ""}.`,
+            : `Choosing ${pA.college} ${pA.name} over ${pB.college} ${pB.name} yields ${RUPEE}${Math.abs(npvDeltaLakhs)}L ${npvDeltaLakhs >= 0 ? "higher" : "lower"} 20-year career NPV${paybackDelta ? ` with a ${paybackDelta} years payback delta` : ""}.`,
         npv_delta_20yr_inr: npvDeltaLakhs == null ? null : npvDeltaLakhs * 100000,
       });
     } finally {
@@ -118,183 +221,274 @@ export default function CollegeCompareTable({ programs }: CollegeCompareTablePro
   };
 
   return (
-    <div className="space-y-6">
-      {/* ── Side-by-Side Comparison Table ───────────────────────────────── */}
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full text-left border-collapse min-w-[650px]">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/80">
-              <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-1/4">
-                Comparison Metric
-              </th>
-              {programs.map((p, idx) => (
-                <th key={p.id} className="p-4 text-sm font-bold text-slate-900 border-l border-slate-200">
-                  <div className="text-slate-500 text-xs font-semibold">{p.college}</div>
-                  <div className="text-base text-slate-950 font-extrabold">{p.name}</div>
-                  <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono">
-                    Tier {p.tier}
-                  </span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 text-sm">
-            {/* Total Fee */}
-            <tr>
-              <td className="p-4 font-semibold text-slate-700 flex items-center gap-1.5">
-                <DollarSign className="w-4 h-4 text-amber-500" /> Total Degree Fee
-              </td>
-              {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-200 text-slate-900 font-bold font-mono">
-                  {p.fee_lakhs == null ? (
-                    <span className="text-slate-400 font-normal">Not verified</span>
-                  ) : (
-                    `₹${p.fee_lakhs} Lakhs`
-                  )}
-                </td>
-              ))}
-            </tr>
-
-            {/* Placement Rate */}
-            <tr>
-              <td className="p-4 font-semibold text-slate-700 flex items-center gap-1.5">
-                <Briefcase className="w-4 h-4 text-emerald-600" /> Placement Consistency
-              </td>
-              {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-200 font-mono">
-                  {p.placement_rate_pct == null ? (
-                    <span className="text-slate-400 font-normal">—</span>
-                  ) : (
-                    <span className="text-emerald-700 font-bold">{p.placement_rate_pct}%</span>
-                  )}
-                </td>
-              ))}
-            </tr>
-
-            {/* Starting Salary */}
-            <tr>
-              <td className="p-4 font-semibold text-slate-700 flex items-center gap-1.5">
-                <Award className="w-4 h-4 text-blue-600" /> Median Year-1 Salary
-              </td>
-              {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-200 text-slate-900 font-bold font-mono">
-                  {p.median_salary_lpa == null ? (
-                    <span className="text-slate-400 font-normal">—</span>
-                  ) : (
-                    `₹${p.median_salary_lpa} LPA`
-                  )}
-                </td>
-              ))}
-            </tr>
-
-            {/* Payback Horizon */}
-            <tr>
-              <td className="p-4 font-semibold text-slate-700">Net Payback Horizon</td>
-              {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-200 text-slate-700 font-mono">
-                  {p.payback_years == null ? "—" : `${p.payback_years} Years`}
-                </td>
-              ))}
-            </tr>
-
-            {/* 20-Year NPV */}
-            <tr className="bg-emerald-50/50">
-              <td className="p-4 font-bold text-emerald-800">20-Year Net Present Value (NPV)</td>
-              {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-200 text-emerald-700 font-extrabold text-base font-mono">
-                  {p.npv_20yr_lakhs == null ? "—" : `₹${p.npv_20yr_lakhs} Lakhs`}
-                </td>
-              ))}
-            </tr>
-
-            {/* AI Risk */}
-            <tr>
-              <td className="p-4 font-semibold text-slate-700 flex items-center gap-1.5">
-                <ShieldAlert className="w-4 h-4 text-rose-500" /> AI Automation Risk
-              </td>
-              {programs.map((p) => (
-                <td key={p.id} className="p-4 border-l border-slate-200 font-mono">
-                  {p.ai_risk_pct == null ? (
-                    <span className="text-slate-400">—</span>
-                  ) : (
-                    <span className={`font-bold ${p.ai_risk_pct > 30 ? "text-amber-600" : "text-emerald-600"}`}>
-                      {p.ai_risk_pct}%
-                    </span>
-                  )}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* ── Synthetic Control Counterfactual Verdict Suite ──────────────── */}
-      <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-semibold mb-1">
-              <Scale className="w-3 h-3 text-slate-500" /> Econometric Counterfactual Engine (Abadie Standard)
-            </div>
-            <h3 className="text-base font-bold text-slate-950">Pairwise Counterfactual Delta Evaluation</h3>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedPair[0]}
-              onChange={(e) => setSelectedPair([Number(e.target.value), selectedPair[1]])}
-              className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-slate-400"
-            >
-              {programs.map((p, idx) => (
-                <option key={p.id} value={idx}>
-                  {p.college} ({p.name})
-                </option>
-              ))}
-            </select>
-
-            <span className="text-xs text-slate-400 font-bold">VS</span>
-
-            <select
-              value={selectedPair[1]}
-              onChange={(e) => setSelectedPair([selectedPair[0], Number(e.target.value)])}
-              className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-slate-400"
-            >
-              {programs.map((p, idx) => (
-                <option key={p.id} value={idx}>
-                  {p.college} ({p.name})
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={handleRunCounterfactual}
-              disabled={loading}
-              className="px-3.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition-all flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {loading ? <Sparkles className="w-3.5 h-3.5 animate-spin" /> : <Activity className="w-3.5 h-3.5" />}
-              Run Econometric Analysis
-            </button>
-          </div>
+    <div className="space-y-5">
+      {/* Side-by-side comparison matrix. `panel` + a separate scrolling region:
+          the overflow lives on an inner wrapper rather than on the panel
+          itself, because `.panel` declares `overflow: hidden`. */}
+      <div className="panel">
+        <div className="panel-head">
+          <span className="panel-title">Comparison matrix</span>
+          <span className="num text-[10px] t-faint">
+            {programs.length} programme{programs.length === 1 ? "" : "s"}
+          </span>
         </div>
 
-        {counterfactual ? (
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="flex items-center justify-between text-xs text-slate-700 font-semibold">
-              <span className="text-slate-900 font-bold">
-                {counterfactual.strategic_winner
-                  ? `🏆 Strategic Verdict Winner: ${counterfactual.strategic_winner}`
-                  : "🏆 Strategic Verdict Winner: not determinable"}
-              </span>
-              <span className="font-mono text-emerald-700 font-bold">20-Year NPV Delta</span>
+        {/* Wide layout. `min-w` plus `overflow-x-auto`, so the matrix stays a
+            matrix on a laptop and scrolls rather than crushing six columns into
+            375px. */}
+        <div className="hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[720px] border-collapse text-left">
+            <caption className="sr-only">
+              College and programme comparison on total fee, placement rate,
+              median year-1 salary, net payback horizon, 20-year net present
+              value and AI automation risk. A dash means the figure is not
+              measured, not that it is zero.
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col" className="panel-title w-[22%] px-4 py-3 text-left">
+                  Metric
+                </th>
+                {programs.map((p) => (
+                  <th
+                    key={p.id}
+                    scope="col"
+                    className="border-l px-4 py-3 text-left align-top"
+                    style={{ borderColor: "var(--divider)" }}
+                  >
+                    <span className="block text-[11px] font-medium t-muted">
+                      {p.college}
+                    </span>
+                    <span className="mt-0.5 block text-[15px] font-bold leading-snug t-text">
+                      {p.name}
+                    </span>
+                    <span className="badge badge-blue mt-1.5">Tier {p.tier}</span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {METRIC_ROWS.map((row) => {
+                const RowIcon = row.Icon;
+                return (
+                  <tr
+                    key={row.key}
+                    style={{ borderTop: "1px solid var(--border-subtle)" }}
+                  >
+                    <th
+                      scope="row"
+                      className="px-4 py-3 text-left align-middle text-[12px] font-semibold t-muted"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <RowIcon size={13} aria-hidden="true" style={{ color: row.iconColor }} />
+                        <span className="capitalize">{row.label}</span>
+                      </span>
+                    </th>
+                    {programs.map((p) => {
+                      const raw = row.value(p);
+                      const missing = raw === NO_DATA;
+                      return (
+                        <td
+                          key={p.id}
+                          className="border-l px-4 py-3 align-middle"
+                          style={{ borderColor: "var(--divider)" }}
+                        >
+                          {missing ? (
+                            <Na />
+                          ) : (
+                            <span className={`num text-[13px] font-semibold ${TONE_CLASS[row.tone(p)]}`}>
+                              {raw}
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Narrow layout. Below `md` a six-column matrix is unreadable at any
+            legible type size, so each programme becomes its own block and the
+            same six metrics stack as label/value rows. Same data, one column. */}
+        <div className="divide-y md:hidden" style={{ borderColor: "var(--divider)" }}>
+          {programs.map((p) => (
+            <div key={p.id} className="panel-pad">
+              <div className="mb-3.5">
+                <p className="text-[11px] font-medium t-muted">{p.college}</p>
+                <p className="mt-0.5 text-[15px] font-bold leading-snug t-text">
+                  {p.name}
+                </p>
+                <span className="badge badge-blue mt-1.5">Tier {p.tier}</span>
+              </div>
+              <dl className="space-y-2.5">
+                {METRIC_ROWS.map((row) => {
+                  const RowIcon = row.Icon;
+                  const raw = row.value(p);
+                  const missing = raw === NO_DATA;
+                  return (
+                    <div
+                      key={row.key}
+                      className="flex items-baseline justify-between gap-3"
+                    >
+                      <dt className="flex items-center gap-1.5">
+                        <RowIcon size={12} aria-hidden="true" style={{ color: row.iconColor }} />
+                        <span className="metric-label">{row.label}</span>
+                      </dt>
+                      <dd className="shrink-0 text-right">
+                        {missing ? (
+                          <Na />
+                        ) : (
+                          <span className={`num text-[13px] font-semibold ${TONE_CLASS[row.tone(p)]}`}>
+                            {raw}
+                          </span>
+                        )}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
             </div>
-            <p className="text-sm text-slate-700 leading-relaxed font-medium">
-              {counterfactual.counterfactual_verdict}
-            </p>
+          ))}
+        </div>
+      </div>
+
+      {/* A dash needs explaining once per surface, not six times in the cells. */}
+      <UnmeasuredNote what="Any figure shown as a dash">
+        Each column is drawn from the programme index. Where a college has not
+        published a figure, or the index has not verified one, the cell is left
+        as a dash. It is not estimated, and it is never zero.
+      </UnmeasuredNote>
+
+      {/* Econometric counterfactual panel */}
+      <div className="panel">
+        <div className="panel-head">
+          <span className="panel-title flex items-center gap-2">
+            <Scale size={12} aria-hidden="true" />
+            Pairwise counterfactual delta
+          </span>
+          <span className="num text-[10px] t-faint">Abadie standard</span>
+        </div>
+
+        <div className="panel-pad">
+          <div className="flex flex-col gap-3.5 md:flex-row md:items-end md:justify-between">
+            <div className="min-w-0">
+              <p className="text-[15px] font-bold leading-snug t-text">
+                Run the econometric analysis
+              </p>
+              <p className="body-p mt-1.5">
+                Pick two programmes and the engine returns the modelled 20-year
+                NPV difference between them.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              <label className="min-w-0 flex-1 sm:flex-none">
+                <span className="sr-only">First programme</span>
+                <select
+                  value={selectedPair[0]}
+                  onChange={(e) => setSelectedPair([Number(e.target.value), selectedPair[1]])}
+                  className="form-input form-select !py-2 text-[12px]"
+                >
+                  {programs.map((p, idx) => (
+                    <option key={p.id} value={idx}>
+                      {p.college} ({p.name})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <span aria-hidden="true" className="num hidden text-[11px] font-bold t-faint sm:inline">
+                vs
+              </span>
+
+              <label className="min-w-0 flex-1 sm:flex-none">
+                <span className="sr-only">Second programme</span>
+                <select
+                  value={selectedPair[1]}
+                  onChange={(e) => setSelectedPair([selectedPair[0], Number(e.target.value)])}
+                  className="form-input form-select !py-2 text-[12px]"
+                >
+                  {programs.map((p, idx) => (
+                    <option key={p.id} value={idx}>
+                      {p.college} ({p.name})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button
+                type="button"
+                onClick={handleRunCounterfactual}
+                disabled={loading}
+                className="btn-primary flex-shrink-0 !py-2 !px-3.5 !text-xs disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner" aria-hidden="true" />
+                    Running
+                  </>
+                ) : (
+                  <>
+                    <Activity size={13} aria-hidden="true" />
+                    Run analysis
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        ) : (
-          <p className="text-xs text-slate-500 italic">
-            Select two programs above and click &quot;Run Econometric Analysis&quot; to calculate the counterfactual career NPV delta.
-          </p>
-        )}
+
+          {/* Fixed minimum height so the panel does not resize under the
+              reader when the verdict lands. */}
+          <div
+            className="mt-4 min-h-[104px] border-t pt-4"
+            style={{ borderColor: "var(--divider)" }}
+          >
+            {loading ? (
+              <div className="space-y-2.5" aria-busy="true">
+                <Skeleton className="h-3.5 w-1/2" />
+                <Skeleton className="h-3.5 w-full" delay={70} />
+                <Skeleton className="h-3.5 w-4/5" delay={110} />
+                <span className="sr-only" role="status" aria-live="polite">
+                  Running the counterfactual analysis.
+                </span>
+              </div>
+            ) : counterfactual ? (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2.5">
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold t-text">
+                    <Trophy size={13} style={{ color: "var(--amber)" }} aria-hidden="true" />
+                    {counterfactual.strategic_winner
+                      ? `Strategic verdict winner: ${counterfactual.strategic_winner}`
+                      : "Strategic verdict winner: not determinable"}
+                  </span>
+                  <span className="flex items-baseline gap-2">
+                    <span className="metric-label">20-year NPV delta</span>
+                    {/* The previous version printed this label and then no
+                        number under it at all. The delta is in the response, so
+                        it is rendered; when the engine declines to produce one,
+                        the label sits above a dash rather than above nothing. */}
+                    {counterfactual.npv_delta_20yr_inr == null ? (
+                      <span className="num-na">{NO_DATA}</span>
+                    ) : (
+                      <span className="num text-[13px] font-semibold t-text">
+                        {formatInr(counterfactual.npv_delta_20yr_inr)}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <p className="body-p">{counterfactual.counterfactual_verdict}</p>
+              </div>
+            ) : (
+              <Notice tone="info">
+                No verdict yet. Choose two programmes and run the analysis to see
+                the modelled 20-year NPV difference between them.
+              </Notice>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

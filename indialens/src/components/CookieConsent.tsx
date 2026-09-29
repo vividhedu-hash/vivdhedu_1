@@ -245,9 +245,16 @@ function Toggle({
       >
         <span
           className={[
-            "absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white transition-all",
+            "absolute top-0.5 h-[18px] w-[18px] rounded-full transition-all",
+            // `--text-inverse`, not `bg-white`. The knob is white on the
+            // accent when the toggle is on, and ink on the chip when it is
+            // off — in dark mode a hard white knob on the dark chip is a
+            // bright disc that reads as "on" for a switch that is off.
             checked ? "left-[22px]" : "left-0.5",
           ].join(" ")}
+          style={{
+            background: checked ? "var(--text-inverse)" : "var(--text-primary)",
+          }}
         />
       </button>
     </div>

@@ -1,26 +1,45 @@
-import { AIModeStudio } from "@/components/AIModeStudio";
-import { Shield, CheckCircle, AlertTriangle, BookOpen, ArrowRight, ExternalLink } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
+import { Shield, AlertTriangle, BookOpen, ArrowRight } from "lucide-react";
+import { AIModeStudio } from "@/components/AIModeStudio";
+import { PageHeader } from "@/components/PageHeader";
 
-export const metadata = {
-  title: "AI Mode — Gemini + Search Grounding",
+export const metadata: Metadata = {
+  title: "AI Mode — grounded search",
   description:
-    "Gemini 2.5 Flash with live Google Search grounding — cited answers to India education & career questions. No invented data.",
+    "Ask an India higher-education question and get an answer grounded in live web sources, with every citation shown. Nothing is asserted that a source does not support.",
 };
 
+/**
+ * Worked questions.
+ *
+ * These are questions a student would actually ask, not marketing copy, and
+ * none of them is presented as having been answered — the page ships with the
+ * engine unconnected, so any phrasing that implied a stored result would be a
+ * claim about a capability that is not currently reachable. Each is a prompt
+ * the user can run, not an excerpt from a run.
+ */
 const EXAMPLE_QUESTIONS = [
   "What is the realistic salary trajectory for NIT Trichy ECE vs IIT Bombay CSE over 20 years?",
-  "How does AI automation risk differ between CA-ICAI and CFA+MBA career paths?",
+  "How does AI automation risk differ between CA-ICAI and CFA + MBA career paths?",
   "Is a ₹22L private engineering degree worth it when NIT seats are available at ₹6L?",
-  "What is the actual placement rate at VIT Vellore CSE — after removing off-campus figures?",
+  "What is the published placement rate at VIT Vellore CSE, after removing off-campus figures?",
   "How does LSE Economics 2027 compare to Ashoka University for Indian students on a ₹50L budget?",
 ];
 
+/**
+ * What this is not.
+ *
+ * The claims here are about the *product's design*, and each one is checkable
+ * against the running code rather than being a promise. They belong on the page
+ * because a citation-first surface that will not state its own limits is not
+ * asking for trust, it is demanding it.
+ */
 const NOT_THIS = [
-  "A chatbot that makes up placement statistics",
-  "An AI that invents salary figures with no sources",
-  "A college aggregator paid ₹2,500/lead to recommend private colleges",
-  "A service that hides conflict-of-interest disclosures",
+  "A chatbot that generates placement statistics",
+  "An answer that states a fee, rank or salary no source supports",
+  "A college aggregator paid per lead to recommend a private college",
+  "A ranking that any institution can pay to move",
 ];
 
 export default function AdvisorPage({
@@ -29,95 +48,118 @@ export default function AdvisorPage({
   searchParams: { token?: string };
 }) {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900">
-      {/* ── Citation Standard Bar */}
-      <div className="bg-white border-b border-slate-200 py-2.5">
-        <div className="container-lg">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-emerald-600 shrink-0">
-              <Shield size={14} />
-            </span>
-            <span className="text-xs text-slate-600">
-              <strong className="text-slate-900 font-semibold">Gemini 2.5 Flash + Google Search grounding.</strong>{" "}
-              Every claim requires a live source. No invented ranks, packages, or cutoffs. Verified program IDs attached only when in the database.
-            </span>
-          </div>
+    <div className="page-shell">
+      {/* ── Standard bar ────────────────────────────────────────── */}
+      <div className="status-strip">
+        <div className="container-xl flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <Shield size={13} style={{ color: "var(--teal)" }} aria-hidden="true" />
+          <span className="t-muted">
+            <strong className="t-text">Every claim requires a live source.</strong>{" "}
+            Where a source does not support a number, the answer says it is
+            unverified rather than filling the gap.
+          </span>
         </div>
       </div>
 
-      <div className="container-lg pt-10 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8 items-start">
-          {/* ── LEFT: Header + Studio */}
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold mb-3">
-              <Shield className="w-3.5 h-3.5" />
-              Live Search Grounding · Zero Sycophancy
-            </div>
-            <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-950 tracking-tight mb-3">
-              Ask with sources.
-              <br />
-              Map the path.
-            </h1>
-            <p className="text-base text-slate-600 mb-8 max-w-xl leading-relaxed">
-              Same mechanism as Google AI Mode: Gemini searches live, then we verify and ground citations against official data.
-            </p>
+      <div className="container-xl page-header">
+        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
+          {/* ── Main ─────────────────────────────────────────────── */}
+          <div className="min-w-0">
+            <PageHeader
+              kicker="AI Mode"
+              eyebrow={
+                <span className="badge badge-purple">
+                  <Shield size={10} aria-hidden="true" />
+                  Search-grounded · no uncited answers
+                </span>
+              }
+              title={
+                <>
+                  Ask with sources.
+                  <br />
+                  Map the path.
+                </>
+              }
+              lead="A question box wired to a search-grounded engine, and a set of gates that only pass on what a live source actually supports. Catalogue programme IDs are attached only when they exist in our index."
+            />
 
-            <AIModeStudio initialToken={searchParams.token} />
+            <div className="mt-9">
+              <AIModeStudio initialToken={searchParams.token} />
+            </div>
           </div>
 
-          {/* ── RIGHT: Sidebar */}
-          <div className="sticky top-24 space-y-4">
-            {/* What this IS NOT */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle size={14} className="text-amber-600" />
-                <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-600">
-                  Not This
-                </p>
+          {/* ── Sidebar ──────────────────────────────────────────── */}
+          <aside className="space-y-4 lg:sticky lg:top-[74px]">
+            <div className="panel">
+              <div className="panel-head">
+                <span className="panel-title flex items-center gap-2">
+                  <AlertTriangle size={12} aria-hidden="true" />
+                  Not this
+                </span>
               </div>
-              {NOT_THIS.map((item) => (
-                <div key={item} className="flex items-start gap-2 mb-2.5">
-                  <span className="text-rose-500 text-xs shrink-0 mt-0.5">✕</span>
-                  <span className="text-xs text-slate-600 leading-relaxed">{item}</span>
-                </div>
-              ))}
+              <div className="panel-pad-sm">
+                <ul className="space-y-2">
+                  {NOT_THIS.map((item) => (
+                    <li key={item} className="flex items-start gap-2">
+                      <span
+                        aria-hidden="true"
+                        className="mt-0.5 shrink-0 text-[11px]"
+                        style={{ color: "var(--red)" }}
+                      >
+                        ✕
+                      </span>
+                      <span className="text-[12px] leading-relaxed t-muted">
+                        {item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
-            {/* Profile connector */}
-            <div className="bg-rose-50/50 border border-rose-200 rounded-2xl p-5 shadow-sm">
-              <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-rose-600 mb-1.5">
-                For personalised answers
-              </p>
-              <p className="text-xs text-slate-600 leading-relaxed mb-3">
-                Build your profile first. The AI advisor uses your exact budget, psychometric traits, and target programs to ground its answers.
-              </p>
-              <Link
-                href="/onboard"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-950 hover:underline"
-              >
-                Build my OS profile
-                <ArrowRight size={12} />
-              </Link>
-            </div>
-
-            {/* Example questions */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <BookOpen size={14} className="text-slate-400" />
-                <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                  Example Questions
-                </p>
+            <div className="panel">
+              <div className="panel-head">
+                <span className="panel-title">Personalised answers</span>
               </div>
-              {EXAMPLE_QUESTIONS.map((q) => (
-                <div
-                  key={q}
-                  className="py-2 border-b border-slate-100 last:border-0 text-xs text-slate-600 leading-snug cursor-pointer hover:text-slate-950 transition"
+              <div className="panel-pad-sm">
+                <p className="text-[12px] leading-relaxed t-muted">
+                  Build your profile first. The advisor grounds its answers in
+                  your budget, psychometric traits and target programmes.
+                </p>
+                <Link
+                  href="/onboard"
+                  className="btn-secondary mt-3.5 inline-flex w-full items-center justify-center gap-2"
                 >
-                  "{q.length > 65 ? q.slice(0, 63) + "…" : q}"
-                </div>
-              ))}
+                  Build my profile
+                  <ArrowRight size={13} aria-hidden="true" />
+                </Link>
+              </div>
             </div>
-          </div>
+
+            <div className="panel">
+              <div className="panel-head">
+                <span className="panel-title flex items-center gap-2">
+                  <BookOpen size={12} aria-hidden="true" />
+                  Try asking
+                </span>
+              </div>
+              <div className="panel-pad-sm">
+                <ul className="space-y-1.5">
+                  {EXAMPLE_QUESTIONS.map((q) => (
+                    <li
+                      key={q}
+                      className="border-b py-2 last:border-0"
+                      style={{ borderColor: "var(--border-subtle)" }}
+                    >
+                      <span className="text-[12px] leading-snug t-muted">
+                        &ldquo;{q.length > 72 ? q.slice(0, 70) + "…" : q}&rdquo;
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </aside>
         </div>
       </div>
     </div>

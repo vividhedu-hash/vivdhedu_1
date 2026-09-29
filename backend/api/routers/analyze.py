@@ -10,7 +10,6 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from datetime import datetime
-import secrets
 import json
 import logging
 from typing import Dict, Any
@@ -18,6 +17,7 @@ from typing import Dict, Any
 from ..db.database import get_db
 from ..schemas import StudentProfile
 from ..config import settings
+from ..session_policy import new_report_token
 
 # `email` lives at api/services/email.py, i.e. package `api.services`. This
 # file is `api.routers.analyze`, so a relative `..services.email` is the correct
@@ -351,7 +351,7 @@ async def analyze(
     db: AsyncSession = Depends(get_db),
 ):
     """Multi-Directional & Multi-Scenario ROI Analysis."""
-    token = secrets.token_urlsafe(16)
+    token = new_report_token()
     now = datetime.utcnow()
 
     # Load ML models

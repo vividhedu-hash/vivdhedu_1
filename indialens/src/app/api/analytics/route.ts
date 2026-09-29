@@ -60,7 +60,7 @@ const ENDPOINT_LABELS: Record<string, string> = {
  * hop further away, so the guard belongs here rather than only in the
  * engine.
  */
-function missingCounterfactualInputs(payload: Record<string, any>): string[] {
+function missingCounterfactualInputs(payload: Record<string, unknown>): string[] {
   const missing: string[] = [];
   for (const side of ["program_a", "program_b"] as const) {
     const prog = payload[side];
@@ -68,8 +68,9 @@ function missingCounterfactualInputs(payload: Record<string, any>): string[] {
       missing.push(`${side}`);
       continue;
     }
-    const cost = Number(prog.total_cost_of_degree_inr);
-    const salary = Number(prog.y5_p50);
+    const record = prog as Record<string, unknown>;
+    const cost = Number(record.total_cost_of_degree_inr);
+    const salary = Number(record.y5_p50);
     if (!Number.isFinite(cost) || cost <= 0) missing.push(`${side}.total_cost_of_degree_inr`);
     if (!Number.isFinite(salary) || salary <= 0) missing.push(`${side}.y5_p50`);
   }
@@ -77,7 +78,7 @@ function missingCounterfactualInputs(payload: Record<string, any>): string[] {
 }
 
 export async function POST(request: Request) {
-  let body: Record<string, any>;
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
@@ -88,10 +89,11 @@ export async function POST(request: Request) {
   }
 
   const { type, ...payload } = body ?? {};
+  const engineType = typeof type === "string" ? type : "";
 
   // [AI-CoLab: Cursor] Data corrections from FeedbackForm are acknowledged and
   // logged server-side (durable queueing requires the backend/DB).
-  if (type === "data_correction") {
+  if (engineType === "data_correction") {
     console.info("[analytics] data correction received:", JSON.stringify(payload));
     return NextResponse.json({
       status: "logged",
@@ -104,14 +106,14 @@ export async function POST(request: Request) {
   // An absent or misspelled `type` used to fall through to the DCF endpoint
   // and then to the DCF mock, so a typo silently produced a 20-year NPV.
   // A wrong route should be a wrong route.
-  const targetPath = type ? ENDPOINT_MAP[type as string] : undefined;
+  const targetPath = ENDPOINT_MAP[engineType];
   if (!targetPath) {
     return NextResponse.json(
       {
         error: "unknown_analytics_type",
         _source: "unavailable",
-        reason: type
-          ? `No analytics engine is mapped to "${type}".`
+        reason: engineType
+          ? `No analytics engine is mapped to "${engineType}".`
           : "Request is missing the required `type` field.",
         supported: Object.keys(ENDPOINT_MAP),
       },
@@ -119,7 +121,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (type === "counterfactual") {
+  if (engineType === "counterfactual") {
     const missing = missingCounterfactualInputs(payload);
     if (missing.length > 0) {
       return NextResponse.json(
@@ -161,7 +163,7 @@ export async function POST(request: Request) {
     {
       error: "backend_unavailable",
       _source: "unavailable",
-      engine: ENDPOINT_LABELS[type as string] ?? String(type),
+      engine: ENDPOINT_LABELS[engineType] ?? engineType,
       reason:
         "The analytics engine did not respond, so no figure is available for " +
         "this request. We do not substitute a modelled stand-in for a " +

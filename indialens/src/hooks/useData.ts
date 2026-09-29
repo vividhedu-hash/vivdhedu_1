@@ -49,7 +49,14 @@ export function useColleges(query: CollegesQuery = {}) {
 
     try {
       const resp = await fetch(`/api/colleges?${params.toString()}`);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      if (!resp.ok) {
+        // 503 carries a reason string from `unavailablePayload`. Surfacing it
+        // beats `HTTP 503`, which tells a user nothing they can act on.
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(
+          typeof body.error === "string" ? body.error : `HTTP ${resp.status}`,
+        );
+      }
       const data: CollegesResponse = await resp.json();
       setResponse(data);
     } catch (err) {
@@ -75,26 +82,54 @@ export function useCollege(id: string) {
   const [data, setData] = useState<CollegeDegreeRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Whether the page could not be loaded at all, as opposed to the id simply
+   * not being in the index.
+   *
+   * The endpoint used to return a bare 404 for both, so this hook could only
+   * produce "HTTP 404" and the page's single empty state said "This programme
+   * is not in the index" — a factual claim about the catalogue, made by a
+   * request that never managed to check it. The 503 branch is what lets the
+   * page say "we could not check" instead.
+   */
+  const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
     setIsLoading(true);
     setError(null);
+    setUnavailable(false);
 
     fetch(`/api/colleges/${id}`)
-      .then((r) => {
+      .then(async (r) => {
+        if (r.status === 503) {
+          const body = await r.json().catch(() => ({}));
+          throw Object.assign(
+            new Error(
+              typeof body.error === "string"
+                ? body.error
+                : "The data store did not answer.",
+            ),
+            { unavailable: true },
+          );
+        }
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then((d) => { if (!cancelled) setData(d); })
-      .catch((e) => { if (!cancelled) setError(e.message); })
+      .catch((e) => {
+        if (cancelled) return;
+        setData(null);
+        setError(e.message);
+        setUnavailable(Boolean(e?.unavailable));
+      })
       .finally(() => { if (!cancelled) setIsLoading(false); });
 
     return () => { cancelled = true; };
   }, [id]);
 
-  return { data, isLoading, error };
+  return { data, isLoading, error, unavailable };
 }
 
 /**
@@ -102,12 +137,25 @@ export function useCollege(id: string) {
  * Falls back to computed mock stats if API unavailable.
  */
 export interface PlatformStats {
-  programs_indexed: number;
-  data_points_collected: number;
-  median_roi_pct: number;
+  /**
+   * All figures are `number | null`. Null means unknown — the index was
+   * unreachable — which is distinct from `0` ("we measured zero programmes").
+   * The 503 branch of the endpoint returns all-null, so a component can render
+   * an honest dash without having to infer the failure from a sentinel.
+   */
+  programs_indexed: number | null;
+  /**
+   * Dropped from the endpoint entirely: it was a constant (18500 on the
+   * database path, 15420 on the mock path) counting nothing. Kept in the type
+   * as optional so a component reading it still compiles; it is now always
+   * `undefined`.
+   */
+  data_points_collected?: number | null;
+  median_roi_pct: number | null;
   last_updated: string | null;
-  model_version: string;
-  _source: "database" | "mock";
+  /** null when the source is unknown. Never `"v2.0-live"` for seed data. */
+  model_version: string | null;
+  _source: "database" | "mock" | "unavailable";
 }
 
 export function usePlatformStats() {

@@ -48,9 +48,9 @@ const CHANNELS = [
 
 export default function ContactPage() {
   return (
-    <div className="bg-[#F8FAFC] text-zinc-950">
+    <div className="t-bg t-text">
       {/* ── Header ───────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-slate-200/80 px-5 py-14">
+      <section className="relative overflow-hidden border-b t-border/80 px-5 py-14">
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="h-64 w-[560px] rounded-full bg-gradient-to-tr from-rose-100/45 via-purple-100/20 to-blue-100/25 blur-[100px]" />
         </div>
@@ -59,10 +59,10 @@ export default function ContactPage() {
             <span className="h-[1.5px] w-2.5 bg-rose-600" />
             Get in touch
           </p>
-          <h1 className="mt-4 text-[clamp(2.2rem,5vw,3.2rem)] font-extrabold leading-[1.06] tracking-[-0.04em] text-zinc-950">
+          <h1 className="mt-4 text-[clamp(2.2rem,5vw,3.2rem)] font-extrabold leading-[1.06] tracking-[-0.04em] t-text">
             Talk to a person.
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-zinc-600">
+          <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed t-muted">
             Support, corrections, privacy requests, or a question about what the
             numbers mean. {BRAND.name} is operated from India, and every message
             is read by the team rather than a ticket router.
@@ -74,23 +74,23 @@ export default function ContactPage() {
       <section className="px-5 py-14">
         <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1fr_420px] lg:items-start">
           <div className="order-2 lg:order-1">
-            <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight text-zinc-950">
+            <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight t-text">
               Other ways to reach us
             </h2>
-            <p className="mt-2 text-[13px] leading-relaxed text-zinc-600">
+            <p className="mt-2 text-[13px] leading-relaxed t-muted">
               If one of these is more direct than the form, use it — it reaches
               the same inbox.
             </p>
             <div className="mt-6 space-y-4">
               {CHANNELS.map((c) => (
-                <div key={c.title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+                <div key={c.title} className="rounded-2xl border t-border t-surface p-5 shadow-xs">
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
                       <c.icon size={15} />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-[14px] font-bold text-zinc-950">{c.title}</h3>
-                      <p className="mt-1 text-[13px] leading-relaxed text-zinc-600">{c.body}</p>
+                      <h3 className="text-[14px] font-bold t-text">{c.title}</h3>
+                      <p className="mt-1 text-[13px] leading-relaxed t-muted">{c.body}</p>
                       <a
                         href={c.action.href}
                         className="mt-2.5 inline-block break-all text-[13px] font-semibold text-rose-600 underline underline-offset-2 hover:text-rose-700"
@@ -103,10 +103,10 @@ export default function ContactPage() {
               ))}
             </div>
 
-            <div className="mt-6 flex items-start gap-2.5 rounded-xl border border-slate-200 bg-white p-4">
-              <Clock size={15} className="mt-0.5 flex-shrink-0 text-zinc-400" />
-              <p className="text-[12px] leading-relaxed text-zinc-500">
-                <strong className="font-semibold text-zinc-700">Response time.</strong>{" "}
+            <div className="mt-6 flex items-start gap-2.5 rounded-xl border t-border t-surface p-4">
+              <Clock size={15} className="mt-0.5 flex-shrink-0 t-faint" />
+              <p className="text-[12px] leading-relaxed t-muted">
+                <strong className="font-semibold t-text">Response time.</strong>{" "}
                 We aim to reply within two working days. Deletion and access
                 requests are handled first and completed within 30 days, usually
                 much sooner. The product is free during launch and there is no
@@ -122,23 +122,23 @@ export default function ContactPage() {
       </section>
 
       {/* ── Entity ───────────────────────────────────────────────── */}
-      <section className="border-t border-slate-200/80 px-5 py-10">
+      <section className="border-t t-border/80 px-5 py-10">
         <div className="mx-auto max-w-5xl">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-            <h2 className="text-[13px] font-bold uppercase tracking-wider text-zinc-400">
+          <div className="rounded-2xl border t-border t-surface p-5 shadow-xs">
+            <h2 className="text-[13px] font-bold uppercase tracking-wider t-faint">
               Registered details
             </h2>
             <dl className="mt-3 grid gap-4 sm:grid-cols-3">
               <div>
-                <dt className="text-[11px] font-mono text-zinc-400">Operated by</dt>
-                <dd className="mt-0.5 text-[13px] font-medium text-zinc-900">{BRAND.legalEntity}</dd>
+                <dt className="text-[11px] font-mono t-faint">Operated by</dt>
+                <dd className="mt-0.5 text-[13px] font-medium t-text">{BRAND.legalEntity}</dd>
               </div>
               <div>
-                <dt className="text-[11px] font-mono text-zinc-400">Jurisdiction</dt>
-                <dd className="mt-0.5 text-[13px] font-medium text-zinc-900">{BRAND.jurisdiction}</dd>
+                <dt className="text-[11px] font-mono t-faint">Jurisdiction</dt>
+                <dd className="mt-0.5 text-[13px] font-medium t-text">{BRAND.jurisdiction}</dd>
               </div>
               <div>
-                <dt className="text-[11px] font-mono text-zinc-400">Support email</dt>
+                <dt className="text-[11px] font-mono t-faint">Support email</dt>
                 <dd className="mt-0.5 text-[13px] font-medium">
                   <a href={mailtoLink()} className="break-all text-rose-600 underline underline-offset-2 hover:text-rose-700">
                     {BRAND.supportEmail}
@@ -146,7 +146,7 @@ export default function ContactPage() {
                 </dd>
               </div>
             </dl>
-            <p className="mt-4 border-t border-slate-100 pt-4 text-[12px] leading-relaxed text-zinc-500">
+            <p className="mt-4 border-t t-border-subtle pt-4 text-[12px] leading-relaxed t-muted">
               These terms are governed by the laws of India, and data protection
               matters are handled under the Digital Personal Data Protection Act,
               2023. Full details are in the{" "}

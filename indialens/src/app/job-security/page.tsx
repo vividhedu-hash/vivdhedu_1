@@ -97,8 +97,8 @@ function JobSecurityCard({ result, sourceNote }: { result: JobSecurityResult; so
   const breakdown = result.role_breakdown ?? null;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100 flex flex-wrap items-start justify-between gap-3">
+    <div className="rounded-2xl border t-border t-surface shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b t-border-subtle flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
             AI Resilience Index
@@ -129,14 +129,14 @@ function JobSecurityCard({ result, sourceNote }: { result: JobSecurityResult; so
         </div>
       </div>
 
-      <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+      <div className="px-5 py-4 border-b t-border-subtle bg-slate-50/60">
         <p className="text-[11px] text-slate-500 leading-relaxed">
           <Info size={11} className="inline mr-1 -mt-0.5" />
           {sourceNote}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-slate-100 border-b border-slate-100">
+      <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-slate-100 border-b t-border-subtle">
         <Metric label="5y layoff risk" value={pct(displacement?.layoff_probability_5y_pct)} />
         <Metric label="10y layoff risk" value={pct(displacement?.layoff_probability_10y_pct)} />
         <Metric label="Disruption" value={pct(result.base_disruption_pct)} />
@@ -162,7 +162,7 @@ function JobSecurityCard({ result, sourceNote }: { result: JobSecurityResult; so
         </div>
 
         {upskill && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+          <div className="rounded-xl border t-border bg-slate-50 p-3.5">
             <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
               <Target size={12} /> Upskilling estimate to 2035
             </p>
@@ -267,7 +267,7 @@ function TaskList({
  */
 function EvaluationPrompt() {
   return (
-    <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center">
+    <div className="rounded-2xl border-2 border-dashed t-border t-surface p-12 text-center">
       <ShieldCheck size={26} className="mx-auto text-slate-300 mb-3" />
       <p className="text-sm font-semibold text-slate-700">No profession evaluated yet</p>
       <p className="text-xs text-slate-500 mt-1.5 max-w-sm mx-auto leading-relaxed">
@@ -377,9 +377,9 @@ export default function JobSecurityPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 pb-24">
+    <div className="min-h-screen t-bg text-slate-900 pb-24">
       {/* ── Honesty banner ── */}
-      <div className="bg-white border-b border-slate-200 py-2.5">
+      <div className="t-surface border-b t-border py-2.5">
         <div className="container-lg">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-amber-600 shrink-0">
@@ -412,7 +412,7 @@ export default function JobSecurityPage() {
         </p>
 
         {/* ── Controls ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm mb-8">
+        <div className="rounded-2xl border t-border t-surface p-5 sm:p-6 shadow-sm mb-8">
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
               <label
@@ -425,7 +425,7 @@ export default function JobSecurityPage() {
                 id="js-field"
                 value={field}
                 onChange={(e) => setField(e.target.value)}
-                className="mt-1.5 w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-slate-400"
+                className="mt-1.5 w-full t-surface border t-border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:t-border-focus"
               >
                 {FIELDS.map((f) => (
                   <option key={f.value} value={f.value}>
@@ -446,7 +446,7 @@ export default function JobSecurityPage() {
                 id="js-tier"
                 value={tier}
                 onChange={(e) => setTier(e.target.value)}
-                className="mt-1.5 w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-slate-400"
+                className="mt-1.5 w-full t-surface border t-border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:t-border-focus"
               >
                 {TIERS.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -497,7 +497,7 @@ export default function JobSecurityPage() {
                 value={professionInput}
                 onChange={(e) => setProfessionInput(e.target.value)}
                 placeholder="…or any profession: 'school teacher', 'chartered accountant'"
-                className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-slate-400"
+                className="flex-1 t-surface border t-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:t-border-focus"
                 aria-label="Profession name"
               />
               <button
@@ -520,7 +520,7 @@ export default function JobSecurityPage() {
                   void runProfessionEvaluation(p);
                 }}
                 disabled={loading}
-                className="px-2.5 py-1 rounded-full border border-slate-200 text-[11px] text-slate-600 hover:border-slate-400 hover:text-slate-900 transition disabled:opacity-50"
+                className="px-2.5 py-1 rounded-full border t-border text-[11px] text-slate-600 hover:t-border-focus hover:text-slate-900 transition disabled:opacity-50"
               >
                 {p}
               </button>
@@ -530,7 +530,7 @@ export default function JobSecurityPage() {
 
         {/* ── Result ── */}
         {loading && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center mb-8">
+          <div className="rounded-2xl border t-border t-surface p-12 text-center mb-8">
             <Loader2 size={22} className="mx-auto text-slate-400 animate-spin mb-3" />
             <p className="text-xs text-slate-500">Running the resilience model…</p>
           </div>
@@ -560,7 +560,7 @@ export default function JobSecurityPage() {
           </div>
 
           {matrixLoading && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
+            <div className="rounded-2xl border t-border t-surface p-10 text-center">
               <Loader2 size={20} className="mx-auto text-slate-400 animate-spin mb-2" />
               <p className="text-xs text-slate-500">Loading safety matrix…</p>
             </div>
@@ -582,10 +582,10 @@ export default function JobSecurityPage() {
           )}
 
           {!matrixLoading && !matrixError && rows.length > 0 && (
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="rounded-2xl border t-border t-surface shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs min-w-[680px]">
-                  <thead className="bg-slate-50 border-b border-slate-200">
+                  <thead className="bg-slate-50 border-b t-border">
                     <tr>
                       {(
                         [
@@ -609,7 +609,7 @@ export default function JobSecurityPage() {
                     {rows.map(([name, row]) => (
                       <tr
                         key={name}
-                        className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70 cursor-pointer"
+                        className="border-b t-border-subtle last:border-0 hover:bg-slate-50/70 cursor-pointer"
                         onClick={() => {
                           setProfessionInput(name);
                           void runProfessionEvaluation(name);
@@ -637,7 +637,7 @@ export default function JobSecurityPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/60">
+              <div className="px-4 py-3 border-t t-border-subtle bg-slate-50/60">
                 <p className="text-[10px] text-slate-500 leading-relaxed">
                   Click any row for its task-level breakdown. Scores are curated priors held in{" "}
                   <code className="font-mono">ml/nextgen_engine.py</code>; the 5y/10y columns are that
@@ -661,7 +661,7 @@ export default function JobSecurityPage() {
               <li>· Your adaptability score is self-reported and moves the result by 3.5 points.</li>
             </ul>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="rounded-2xl border t-border t-surface p-5">
             <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-2">
               Model it alongside
             </p>

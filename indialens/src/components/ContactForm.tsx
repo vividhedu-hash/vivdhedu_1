@@ -118,12 +118,12 @@ export function ContactForm() {
             <Check size={14} strokeWidth={3} />
           </span>
           <div>
-            <p className="text-[15px] font-semibold text-zinc-950">
+            <p className="text-[15px] font-semibold t-text">
               Message received.
             </p>
-            <p className="mt-1 text-[13px] leading-relaxed text-zinc-600">
+            <p className="mt-1 text-[13px] leading-relaxed t-muted">
               We have logged it against{" "}
-              <span className="font-mono text-zinc-900">{sent}</span> and a
+              <span className="font-mono t-text">{sent}</span> and a
               person will reply. If it is urgent, or you would rather not wait,
               email{" "}
               <a
@@ -144,7 +144,7 @@ export function ContactForm() {
     <form
       onSubmit={handleSubmit(onSubmit)}
       noValidate
-      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7"
+      className="rounded-2xl border t-border t-surface p-6 shadow-sm sm:p-7"
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -288,9 +288,9 @@ export function ContactForm() {
         )}
       </button>
 
-      <p className="mt-3 text-center text-[11px] leading-relaxed text-zinc-400">
+      <p className="mt-3 text-center text-[11px] leading-relaxed t-faint">
         We use your message to reply and for nothing else. See the{" "}
-        <a href="/privacy" className="underline underline-offset-2 hover:text-zinc-600">
+        <a href="/privacy" className="underline underline-offset-2 hover:t-muted">
           privacy policy
         </a>
         .

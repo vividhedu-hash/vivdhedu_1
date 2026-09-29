@@ -1,76 +1,59 @@
+import { Skeleton, SkeletonStatus } from "@/components/Skeleton";
+
 /**
  * /job-security loading boundary.
  *
- * Mirrors the page's real shape: the amber honesty banner, headline, the
- * three-control panel, then the wide 12-row matrix table — the table is what
- * the page is, so the skeleton previews a table rather than a spinner.
+ * Mirrors the page's real shape: headline, a three-control panel, then the wide
+ * matrix the page exists to show. The table is what the page is, so the
+ * skeleton previews a table rather than a spinner.
  */
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 pb-24">
-      <div className="bg-white border-b border-slate-200 py-2.5">
-        <div className="container-lg flex items-center gap-3">
-          <div className="w-3.5 h-3.5 rounded-full bg-amber-200 animate-pulse" />
-          <div className="h-3 w-full max-w-2xl rounded bg-slate-100 animate-pulse" />
+    <div className="page-shell">
+      <div className="container-xl page-header">
+        <div className="max-w-2xl">
+          <Skeleton className="h-2.5 w-28" />
+          <Skeleton className="mt-4 h-9 w-4/5" delay={60} />
+          <Skeleton className="mt-3 h-4 w-full" delay={110} />
+          <Skeleton className="mt-2 h-4 w-3/4" delay={140} />
         </div>
-      </div>
 
-      <div className="container-lg pt-10 pb-16">
-        <div className="h-6 w-56 rounded-full bg-amber-100 animate-pulse" />
-        <div className="mt-4 h-9 w-3/4 max-w-xl rounded-lg bg-slate-200/80 animate-pulse" />
-        <div className="mt-3 h-4 w-1/2 max-w-md rounded bg-slate-200/60 animate-pulse" />
-
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
-          <div className="grid sm:grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i}>
-                <div className="h-2.5 w-16 rounded bg-slate-100 animate-pulse" />
-                <div className="mt-2 h-9 rounded-lg bg-slate-100 animate-pulse" />
+        <div className="panel panel-pad mt-8">
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="metric-cell">
+                <Skeleton className="h-2 w-20" delay={180 + i * 50} />
+                <Skeleton className="mt-2 h-9 w-full rounded-lg" delay={210 + i * 50} />
               </div>
             ))}
           </div>
-          <div className="mt-4 flex items-center gap-2.5">
-            <div className="h-10 w-40 rounded-lg bg-slate-100 animate-pulse" />
-            <div className="h-10 flex-1 rounded-lg bg-slate-100 animate-pulse" />
-          </div>
-          <div className="mt-3 flex gap-1.5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-6 w-28 rounded-full bg-slate-100 animate-pulse" />
-            ))}
-          </div>
         </div>
 
-        <div className="mt-8 rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12">
-          <div className="h-6 w-6 mx-auto rounded-full bg-slate-100 animate-pulse" />
-          <div className="mt-3 h-3.5 w-48 mx-auto rounded bg-slate-100 animate-pulse" />
-          <div className="mt-2 h-2.5 w-72 max-w-full mx-auto rounded bg-slate-100/70 animate-pulse" />
-        </div>
-
-        <div className="mt-12 h-5 w-64 rounded bg-slate-200/80 animate-pulse" />
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-200 flex gap-6">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-2.5 w-20 rounded bg-slate-100 animate-pulse" />
-            ))}
-          </div>
-          {Array.from({ length: 12 }).map((_, row) => (
-            <div
-              key={row}
-              className="flex items-center gap-4 px-4 py-3.5 border-b border-slate-50 last:border-0"
-              style={{ animationDelay: `${row * 40}ms` }}
-            >
-              <div className="h-3 w-44 rounded bg-slate-100 animate-pulse" />
-              <div className="h-3 w-8 ml-auto rounded bg-slate-100 animate-pulse" />
-              <div className="h-3 w-12 rounded bg-slate-100/70 animate-pulse" />
-              <div className="h-3 w-12 rounded bg-slate-100/70 animate-pulse" />
-              <div className="h-5 w-28 rounded-full bg-slate-100 animate-pulse" />
+        <div className="panel mt-8">
+          <div className="panel-head">
+            <div className="flex flex-1 gap-6">
+              <Skeleton className="h-2.5 w-40" delay={340} />
+              <Skeleton className="h-2.5 w-16" delay={370} />
+              <Skeleton className="h-2.5 w-16" delay={400} />
             </div>
-          ))}
+          </div>
+          <div className="panel-pad-sm">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 border-b py-3.5 last:border-0"
+                style={{ borderColor: "var(--border-subtle)" }}
+              >
+                <Skeleton className="h-3 w-44" delay={430 + i * 45} />
+                <Skeleton className="h-2.5 w-14" delay={450 + i * 45} />
+                <Skeleton className="h-2.5 flex-1 rounded-full" delay={470 + i * 45} />
+                <Skeleton className="h-2.5 w-14" delay={490 + i * 45} />
+              </div>
+            ))}
+          </div>
         </div>
 
-        <p className="mt-10 text-center text-[11px] font-mono text-slate-400">
-          Loading the 12-profession safety matrix…
-        </p>
+        <SkeletonStatus label="Loading exposure data" />
       </div>
     </div>
   );

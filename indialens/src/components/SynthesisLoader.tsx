@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Check, Loader2, ShieldCheck, HelpCircle, AlertTriangle } from "lucide-react";
+import { Check, Loader2, HelpCircle, Cpu } from "lucide-react";
+import { Notice } from "./Notice";
 
 export interface SynthesisLoaderProps {
   /**
@@ -15,6 +16,22 @@ export interface SynthesisLoaderProps {
   apiUrl?: string;
   profileData: Record<string, any>;
 }
+
+/**
+ * The four synthesis steps, as data.
+ *
+ * The step list was four hand-written blocks, each with its own ternary chain
+ * for the icon, the label colour, and the badge colour — twelve conditionals
+ * for what is really one piece of state (`currentStep >= n`). Rendering them
+ * from a list makes "is step 3 active" a single comparison per step, and means a
+ * copy fix is a one-line change instead of four.
+ */
+const STEPS = [
+  { n: 1, label: "Understanding you", done: "Your answers", pending: "Queued" },
+  { n: 2, label: "Mapping your goals", done: "Calibrated", pending: "Queued" },
+  { n: 3, label: "Finding your options", done: "Synthesized", pending: "Synthesizing" },
+  { n: 4, label: "Building your roadmap", done: "Finalized", pending: "Queued" },
+];
 
 export const SynthesisLoader: React.FC<SynthesisLoaderProps> = ({
   studentName,
@@ -88,129 +105,121 @@ export const SynthesisLoader: React.FC<SynthesisLoaderProps> = ({
   }, [currentStep, apiToken, apiError, onComplete]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-zinc-950 font-sans">
-      {/* Top Bar matching Screen 08 */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-slate-200/80 bg-white">
+    <div className="t-bg t-text flex min-h-screen flex-col font-sans">
+      {/* Top bar */}
+      <header
+        className="t-surface flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3"
+        style={{ borderColor: "var(--divider)" }}
+      >
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center text-white font-bold text-[10px]">
-            OS
-          </div>
-          <span className="font-bold text-sm text-zinc-900 tracking-tight">VividhEdu</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-600 inline-block ml-0.5" />
+          <span className="pulse-dot-rose" aria-hidden="true" />
+          <span className="mono text-[11px] font-semibold t-muted">
+            Building your profile
+          </span>
         </div>
 
-        <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200/60 text-rose-700 font-mono text-[11px] font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
-            <span>Engine v4.2 Active</span>
-          </div>
-          <span className="text-zinc-300">|</span>
-          <div className="flex items-center gap-1 text-zinc-500 cursor-pointer hover:text-zinc-800">
-            <HelpCircle size={13} />
+        <div className="flex items-center gap-2.5">
+          <span className="badge badge-rose">Engine v4.2 active</span>
+          <span className="hidden items-center gap-1.5 text-[11px] t-faint sm:flex">
+            <HelpCircle size={12} aria-hidden="true" />
             <span>Support</span>
-          </div>
+          </span>
         </div>
       </header>
 
-      {/* Main Center Container */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-lg mx-auto w-full text-center">
-        {/* Animated Concentric Circle Target with Pulsing Red Dot */}
-        <div className="w-16 h-16 rounded-full border border-rose-200 bg-rose-50/50 flex items-center justify-center mb-6 relative">
-          <div className="w-10 h-10 rounded-full border border-rose-300 flex items-center justify-center">
-            <div className="w-3.5 h-3.5 rounded-full bg-rose-600 relative">
-              <span className="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-75" />
-            </div>
+      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-4 py-10 text-center">
+        {/* Progress geometry. The three concentric rings are a static target,
+            not a spinner — they do not loop, so they say "this is a fixed
+            process with a fixed end" rather than "an indeterminate wait". The
+            single `animate-ping` dot is the one permitted indefinite motion:
+            it is the live status dot. */}
+        <div className="relative mb-6 flex h-16 w-16 items-center justify-center" aria-hidden="true">
+          <div
+            className="absolute inset-0 rounded-full border"
+            style={{ borderColor: "color-mix(in srgb, var(--accent) 28%, transparent)" }}
+          />
+          <div
+            className="absolute inset-2.5 rounded-full border"
+            style={{ borderColor: "color-mix(in srgb, var(--accent) 45%, transparent)" }}
+          />
+          <div className="relative h-3 w-3">
+            <span
+              className="absolute inset-0 animate-ping rounded-full opacity-70"
+              style={{ background: "var(--accent)" }}
+            />
+            <span
+              className="relative block h-3 w-3 rounded-full"
+              style={{ background: "var(--accent)" }}
+            />
           </div>
         </div>
 
-        {/* Title */}
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-950 tracking-tight mb-2">
-          Building your starting point...
+        <p className="kicker-web mb-3 justify-center">Synthesis</p>
+        <h1 className="page-title-sm text-balance">
+          Building your starting point
         </h1>
-        <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto mb-8 leading-relaxed">
-          Synthesizing your academic profile, priority weights, and tier-1 admissions benchmarks into a deterministic roadmap.
+        <p className="section-lead mt-3 text-center">
+          Combining the answers you gave with the programme data we hold into a
+          deterministic roadmap.
         </p>
 
-        {/* White Card Container */}
-        <div className="w-full bg-white rounded-xl border border-slate-200 p-5 shadow-sm text-left mb-4">
-          <div className="space-y-3.5">
-            {/* Step 1 */}
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                  currentStep >= 1 ? "bg-rose-50 text-rose-600 border border-rose-200" : "bg-slate-100 text-zinc-400"
-                }`}>
-                  <Check size={10} />
-                </div>
-                <span className="font-semibold text-zinc-800">1. Understanding you</span>
-              </div>
-              {/* Was a static "Verified" badge. Nothing was verified — the step
-                  animation below is a setTimeout, and the only thing that had
-                  been confirmed is that the student pressed a button. It now
-                  names the thing that actually happened. */}
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                Your answers
-              </span>
-            </div>
-
-            {/* Step 2 */}
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                  currentStep >= 2 ? "bg-rose-50 text-rose-600 border border-rose-200" : "bg-slate-100 text-zinc-400"
-                }`}>
-                  {currentStep >= 2 ? <Check size={10} /> : <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />}
-                </div>
-                <span className={`font-semibold ${currentStep >= 2 ? "text-zinc-800" : "text-zinc-400"}`}>
-                  2. Mapping your goals
-                </span>
-              </div>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
-                currentStep >= 2 ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-slate-50 text-zinc-400 border-slate-200"
-              }`}>
-                Calibrated
-              </span>
-            </div>
-
-            {/* Step 3 */}
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                  currentStep >= 3 ? "bg-rose-50 text-rose-600 border border-rose-200" : "bg-slate-100 text-zinc-400"
-                }`}>
-                  {currentStep >= 3 ? <Loader2 size={10} className="animate-spin text-rose-600" /> : <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />}
-                </div>
-                <span className={`font-semibold ${currentStep >= 3 ? "text-zinc-800" : "text-zinc-400"}`}>
-                  3. Finding your options
-                </span>
-              </div>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border flex items-center gap-1 ${
-                currentStep >= 3 ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-slate-50 text-zinc-400 border-slate-200"
-              }`}>
-                {currentStep >= 3 && <span className="w-1 h-1 rounded-full bg-rose-600 animate-pulse" />}
-                <span>{currentStep >= 4 ? "Synthesized" : "Synthesizing"}</span>
-              </span>
-            </div>
-
-            {/* Step 4 */}
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                  currentStep >= 4 ? "bg-rose-50 text-rose-600 border border-rose-200" : "bg-slate-100 text-zinc-400"
-                }`}>
-                  {currentStep >= 4 ? <Check size={10} /> : <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />}
-                </div>
-                <span className={`font-semibold ${currentStep >= 4 ? "text-zinc-800" : "text-zinc-400"}`}>
-                  4. Building your roadmap
-                </span>
-              </div>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
-                currentStep >= 4 ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-slate-50 text-zinc-400 border-slate-200"
-              }`}>
-                {currentStep >= 4 ? "Finalized" : "Queued"}
-              </span>
-            </div>
+        {/* Step list */}
+        <div className="panel mt-8 w-full text-left">
+          <div className="panel-head">
+            <span className="panel-title flex items-center gap-2">
+              <Cpu size={12} aria-hidden="true" />
+              Analysis steps
+            </span>
+            <span className="num text-[10px] t-faint" aria-live="polite">
+              Step {currentStep} of 4
+            </span>
           </div>
+
+          <ol className="panel-pad space-y-3.5">
+            {STEPS.map((step) => {
+              const reached = currentStep >= step.n;
+              // Step 3 is the one in flight until step 4 lands, so it gets the
+              // spinner while running and the check once complete.
+              const inFlight = step.n === 3 && currentStep === 3;
+              return (
+                <li
+                  key={step.n}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <span
+                      className={`num flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${
+                        reached
+                          ? "border-line/10 bg-accent-dim text-accent"
+                          : "border-line/10 bg-chip text-ink-3"
+                      }`}
+                    >
+                      {inFlight ? (
+                        <Loader2 size={11} className="animate-spin text-accent" aria-hidden="true" />
+                      ) : reached ? (
+                        <Check size={11} aria-hidden="true" />
+                      ) : (
+                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                      )}
+                    </span>
+                    <span
+                      className={`num text-[12px] ${reached ? "font-semibold t-text" : "t-faint"}`}
+                    >
+                      {step.n}. {step.label}
+                    </span>
+                  </span>
+
+                  <span
+                    className={`epistemic-tag flex-shrink-0 ${
+                      reached ? "tag-match" : "tag-ui"
+                    }`}
+                  >
+                    {reached ? step.done : step.pending}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
 
           {/* Subcard.
               This said "Processed 4,200 program outcomes across 18 cohorts"
@@ -219,42 +228,56 @@ export const SynthesisLoader: React.FC<SynthesisLoaderProps> = ({
               or scored here. A percentage presented next to a volume reads as
               a measured pass rate, so a student would conclude their report was
               built from 4,200 outcomes. It now states which inputs were used. */}
-          <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
-            <div className="flex items-center gap-1.5 text-zinc-600">
+          <div
+            className="flex items-center justify-between gap-3 border-t px-4 py-3"
+            style={{ borderColor: "var(--divider)" }}
+          >
+            <span className="flex min-w-0 items-center gap-1.5 text-[11px] t-muted">
               <span
-                className={`w-1.5 h-1.5 rounded-full ${apiError ? "bg-rose-500" : "bg-zinc-300"}`}
+                aria-hidden="true"
+                className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                style={{
+                  background: apiError ? "var(--red)" : "var(--text-tertiary)",
+                }}
               />
-              <span>
+              <span className="truncate">
                 {apiError
                   ? "Could not reach the analysis service"
                   : "Matching your answers against the programme data we hold"}
               </span>
-            </div>
-            <span className="font-bold text-zinc-900">{apiError ? "—" : "1 request"}</span>
+            </span>
+            <span className={`num flex-shrink-0 text-[11px] font-semibold ${apiError ? "num-na" : "t-text"}`}>
+              {apiError ? "—" : "1 request"}
+            </span>
           </div>
         </div>
 
         {/* An honest failure state. There is no report to open without a token,
             so continuing into a "report ready" screen would be a lie. */}
         {apiError && (
-          <div className="w-full max-w-md mb-4 flex items-start gap-2.5 px-3.5 py-3 rounded-xl border border-rose-200 bg-rose-50 text-[12px] text-rose-900">
-            <AlertTriangle size={15} className="mt-0.5 shrink-0" />
-            <p className="leading-relaxed">
-              We could not build your report just now. Your answers have not been lost — go back
-              and try again, and if it keeps happening the service is genuinely down rather than
-              silently producing an empty report.
-            </p>
-          </div>
+          <Notice tone="error" className="mt-4 w-full max-w-md text-left">
+            We could not build your report just now. Your answers have not been
+            lost. Go back and try again, and if it keeps happening the service
+            is genuinely down rather than silently producing an empty report.
+          </Notice>
         )}
 
-        {/* Timer message */}
-        <p className="text-xs text-zinc-400 font-mono flex items-center gap-1.5">
-          <span>⏱</span>
-          <span>Finalizing your personal operating system in {countdown} seconds...</span>
-        </p>
+        {/* Countdown. Suppressed once the request has already failed — counting
+            down to something that will not arrive is a promise this screen
+            cannot keep. */}
+        {!apiError && (
+          <p className="mono mt-5 flex items-center gap-1.5 text-[11px] t-faint">
+            <span>Finishing in {countdown}s</span>
+          </p>
+        )}
+        <span className="sr-only" role="status" aria-live="polite">
+          {apiError
+            ? "Report generation failed."
+            : `Building your profile. Step ${currentStep} of 4.`}
+        </span>
       </main>
 
-      {/* Bottom Telemetry Bar matching Screen 08.
+      {/* Bottom telemetry bar.
           This claimed "Deterministic Synthesis Protocol · Zero Synthetic
           Hallucination Threshold" and "Session ID: OS-90214-EXEC · Secure
           Enclave 256-bit". The session id was a literal — identical for every
@@ -263,12 +286,21 @@ export const SynthesisLoader: React.FC<SynthesisLoaderProps> = ({
           Threshold" is not a quantity, and this very screen sits in a codebase
           full of synthetic values. Both are replaced with the request's real
           correlation id, shown only once the server has issued one. */}
-      <footer className="px-6 py-3 border-t border-slate-200 bg-white/70 text-[11px] font-mono text-zinc-400 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+      <footer
+        className="t-surface mono flex flex-wrap items-center justify-between gap-3 border-t px-5 py-2.5 text-[10px] t-faint"
+        style={{ borderColor: "var(--divider)" }}
+      >
+        <span className="flex items-center gap-2">
+          <span
+            aria-hidden="true"
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ background: apiError ? "var(--red)" : "var(--accent)" }}
+          />
           <span>Analysis request sent to /api/analyze</span>
-        </div>
-        <div>{apiToken ? `Report ${apiToken.slice(0, 8)}…` : "No report id yet"}</div>
+        </span>
+        <span className="num">
+          {apiToken ? `Report ${apiToken.slice(0, 8)}…` : "No report id yet"}
+        </span>
       </footer>
     </div>
   );

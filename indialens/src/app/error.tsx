@@ -15,6 +15,11 @@ import { BRAND } from "@/lib/brand";
  * against the server log by that digest. Showing the real message in dev but
  * an opaque id in prod is the intended split — a thrown message is often a
  * fragment of a SQL string or a file path.
+ *
+ * This is the *root* boundary and so is deliberately plainer than
+ * `components/RouteError`, which every individual route uses. They share the
+ * same frame, the same primary/secondary button pair and the same
+ * reference-id treatment, so a failure looks the same wherever it surfaces.
  */
 export default function Error({
   error,
@@ -32,51 +37,53 @@ export default function Error({
   const isDev = process.env.NODE_ENV !== "production";
 
   return (
-    <div className="min-h-[70vh] bg-[#F8FAFC] text-zinc-950 flex items-center justify-center px-4 py-20">
-      <div className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
-        <div className="w-11 h-11 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center mb-5">
-          <AlertTriangle size={18} className="text-rose-600" />
+    <div className="t-bg t-text flex min-h-[70vh] items-center justify-center px-4 py-20">
+      <div className="t-surface t-border t-shadow-card w-full max-w-lg rounded-2xl border p-8">
+        <div
+          className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl"
+          style={{ background: "var(--red-dim)", border: "1px solid var(--red-dim)" }}
+          aria-hidden="true"
+        >
+          <AlertTriangle size={18} style={{ color: "var(--red)" }} />
         </div>
 
         <p className="kicker-web mb-2">Something broke</p>
-        <h1 className="text-xl font-bold tracking-tight text-zinc-950">
+        <h1 role="alert" className="text-xl font-bold tracking-tight t-text">
           This page failed to load
         </h1>
-        <p className="mt-2 text-sm text-slate-500 leading-relaxed">
-          The error is contained to this route — the rest of {BRAND.name} is still up. Retrying
-          usually clears it. If it does not, the underlying failure is in the server log.
+        <p className="mt-2 text-sm leading-relaxed t-muted">
+          The error is contained to this route — the rest of {BRAND.name} is
+          still up. Retrying usually clears it. If it does not, the underlying
+          failure is in the server log.
         </p>
 
-        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="font-mono text-[11px] uppercase tracking-wider text-slate-400 mb-2">
+        <div
+          className="mt-5 rounded-xl border p-4"
+          style={{ background: "var(--bg-chip)", borderColor: "var(--border-subtle)" }}
+        >
+          <p className="metric-label mb-2">
             {isDev ? "Error" : "Reference"}
           </p>
-          <p className="font-mono text-[12px] leading-relaxed text-slate-700 break-words">
+          <p className="num break-words text-[12px] leading-relaxed t-muted">
             {isDev ? error.message || "No message." : (error.digest ?? "unavailable")}
           </p>
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2.5">
-          <button
-            onClick={() => reset()}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-zinc-950 hover:bg-zinc-800 active:scale-[0.99] text-white text-sm font-semibold rounded-xl transition"
-          >
-            <RotateCcw size={14} />
+          <button type="button" onClick={() => reset()} className="btn-primary">
+            <RotateCcw size={14} aria-hidden="true" />
             Try again
           </button>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-zinc-800 text-sm font-semibold rounded-xl transition"
-          >
-            <Home size={14} />
+          <Link href="/" className="btn-secondary">
+            <Home size={14} aria-hidden="true" />
             Home
           </Link>
           <Link
             href="/explore"
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-zinc-600 hover:text-zinc-950 text-sm font-medium rounded-xl transition"
+            className="btn-ghost inline-flex items-center gap-2"
           >
-            <Compass size={14} />
-            Explore programs
+            <Compass size={14} aria-hidden="true" />
+            Browse programmes
           </Link>
         </div>
       </div>
