@@ -57,6 +57,11 @@ function toCompareItem(r: CollegeDegreeRecord) {
 export default async function ComparePage() {
   let programs: ReturnType<typeof toCompareItem>[] = [];
   let isLive = false;
+  // Distinguishes "the index is down" from "we are showing the demo dataset".
+  // The lead paragraph below already handles the down case; without this the
+  // page could not tell the reader that the rows on screen, if any, are seed
+  // data rather than a real index.
+  let isSeed = false;
 
   try {
     const listed = await fetchCollegeList({
@@ -65,6 +70,7 @@ export default async function ComparePage() {
     });
     programs = listed.data.map(toCompareItem);
     isLive = listed.source === "database";
+    isSeed = listed.source === "mock";
   } catch {
     // The index is unreachable. The table renders its own empty state rather
     // than being given substitute rows.
@@ -97,6 +103,17 @@ export default async function ComparePage() {
             </>
           }
         />
+
+        {/* Provenance of the rows below. A comparison matrix is the page most
+            likely to be screenshotted and shared, so a reader who is looking
+            at sample data needs to be told before they act on it. */}
+        {isSeed && (
+          <Notice tone="warn" title="Comparing the demo dataset" className="mt-5">
+            The live index is unreachable, so these rows come from the bundled
+            sample data. The fees, placement rates and salaries are illustrative
+            and do not describe real institutions.
+          </Notice>
+        )}
 
         {/* The export covers the whole active index, not just the four rows
             above. Stating that is the difference between "download this table"

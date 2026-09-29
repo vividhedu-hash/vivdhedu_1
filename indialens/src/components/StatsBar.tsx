@@ -6,11 +6,28 @@ import { usePlatformStats } from "@/hooks/useData";
 export function StatsBar() {
   const { stats, isLoading } = usePlatformStats();
 
-  const programsIndexed   = stats?.programs_indexed      ?? null;
-  const dataPoints        = stats?.data_points_collected ?? null;
-  const medianRoi         = stats?.median_roi_pct        ?? null;
-  const lastUpdated       = stats?.last_updated;
-  const isLive            = stats?._source === "database";
+  // Every figure is `number | null` and null means UNKNOWN, not zero. The
+  // 503 branch of the stats endpoint returns all-null, so this bar now renders
+  // a row of dashes in place of a row of numbers. Previously the endpoint's
+  // failure path returned seed figures tagged `model_version: "v2.0-live"`,
+  // and the bar's `isLive` check was `stats?._source === "database"` — so the
+  // numbers were real-looking but the badge said SEED, which is a softer lie
+  // than an outage deserves and an inconsistent one.
+  const programsIndexed = stats?.programs_indexed ?? null;
+  const dataPoints = stats?.data_points_collected ?? null;
+  const medianRoi = stats?.median_roi_pct ?? null;
+  const lastUpdated = stats?.last_updated;
+
+  const isDatabase = stats?._source === "database";
+  const isMock = stats?._source === "mock";
+  const isUnavailable = stats?._source === "unavailable";
+
+  // A seed dataset is not a healthy system. Reporting it in the same green as
+  // live data is the failure this bar is supposed to surface, so seed and
+  // unavailable both render amber, and they say different things: one is
+  // "these numbers are illustrative", the other is "there are no numbers".
+  const accent = isDatabase ? "#22C55E" : "#F59E0B";
+  const sourceLabel = isDatabase ? "LIVE" : isMock ? "SAMPLE" : "UNAVAILABLE";
 
   const lastUpdatedLabel = (() => {
     if (!lastUpdated) return null;
@@ -58,7 +75,10 @@ export function StatsBar() {
                 {isLoading ? "—" : medianRoi !== null ? `${medianRoi}` : "—"}
               </span>{" "}
               median ROI score
-              {/* Live / seed indicator */}
+              {/* Live / sample indicator. Before the guard, this was a two-way
+                  `isLive` ternary, so an outage and a sample dataset shared
+                  the amber SEED badge — a system with no data behind it
+                  announcing itself as merely "not quite live". */}
               {!isLoading && (
                 <span
                   style={{
@@ -67,21 +87,31 @@ export function StatsBar() {
                     fontWeight: 700,
                     padding: "1px 6px",
                     borderRadius: 99,
-                    background: isLive ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)",
-                    color: isLive ? "#22C55E" : "#F59E0B",
-                    border: `1px solid ${isLive ? "rgba(34,197,94,0.25)" : "rgba(245,158,11,0.25)"}`,
+                    background: isDatabase ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)",
+                    color: accent,
+                    border: `1px solid ${isDatabase ? "rgba(34,197,94,0.25)" : "rgba(245,158,11,0.25)"}`,
                     letterSpacing: "0.06em",
                   }}
                 >
-                  {isLive ? "LIVE" : "SEED"}
+                  {sourceLabel}
                 </span>
               )}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="pulse-dot" />
-            <span style={{ color: isLive ? "#22C55E" : "#F59E0B", fontSize: 11, fontWeight: 600 }}>
-              {lastUpdatedLabel ? `Updated ${lastUpdatedLabel}` : isLive ? "Live data" : "Seed data — connecting to DB"}
+            {/* The pulse dot is a health claim. It only animates when the
+                database actually answered. */}
+            <span className={isDatabase ? "pulse-dot" : ""} />
+            <span style={{ color: accent, fontSize: 11, fontWeight: 600 }}>
+              {isUnavailable
+                ? "Index unavailable — no figures to show"
+                : isMock
+                  ? "Sample data — not live"
+                  : lastUpdatedLabel
+                    ? `Updated ${lastUpdatedLabel}`
+                    : isDatabase
+                      ? "Live data"
+                      : "Connecting to DB"}
             </span>
           </div>
         </div>

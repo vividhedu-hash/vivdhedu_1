@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Search, Lock, RefreshCw, SearchX } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { Notice } from "@/components/Notice";
 import type { CollegeDegreeRecord, DegreeField } from "@/lib/mock-data";
 import { finiteOrNull, compareNullableAsc, compareNullableDesc, NO_DATA } from "@/lib/mock-data";
 import { GroundedAnswer } from "@/components/GroundedAnswer";
@@ -75,20 +76,46 @@ export default function ExplorePage() {
   const [live, setLive] = useState<GroundedPayload | null>(null);
   const [liveState, setLiveState] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
   const [liveNote, setLiveNote] = useState("");
+  /** The server's explanation for a 503, shown verbatim in the error state. */
+  const [loadReason, setLoadReason] = useState<string | null>(null);
+  /**
+   * Provenance of the rows, from the endpoint's `_source` field.
+   *
+   * Without this the table rendered identically whether it was showing real
+   * index rows or the sample dataset, so a reader had no way to tell. The
+   * endpoint already tagged every response; the component just never read it.
+   */
+  const [jsonSource, setJsonSource] = useState<"database" | "mock" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setIsLoading(true);
       setLoadError(false);
+      setLoadReason(null);
       try {
         const res  = await fetch("/api/colleges?per_page=100", { cache: "no-store" });
-        if (!res.ok) throw new Error(`API ${res.status}`);
+        if (!res.ok) {
+          // The 503 body carries a reason from `unavailablePayload`. Reading it
+          // turns "HTTP 503" into an explanation, which is the difference
+          // between a page that looks broken and one that says what happened.
+          const body = await res.json().catch(() => ({}));
+          throw new Error(
+            typeof body.error === "string" ? body.error : `HTTP ${res.status}`,
+          );
+        }
         const json = await res.json();
-        if (!cancelled) setData(Array.isArray(json.data) ? json.data : []);
+        if (!cancelled) {
+          setData(Array.isArray(json.data) ? json.data : []);
+          setJsonSource(json._source === "mock" ? "mock" : "database");
+        }
       } catch (err) {
         console.error(err);
-        if (!cancelled) { setData([]); setLoadError(true); }
+        if (!cancelled) {
+          setData([]);
+          setLoadError(true);
+          setLoadReason(err instanceof Error ? err.message : null);
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -212,6 +239,21 @@ export default function ExplorePage() {
           and 20-year placement trajectory. Where a source has not published a figure, the index
           says so rather than estimating one.
         </p>
+        {/* The lead above describes the index in general terms, which stays true
+            even when it is unreachable. This notice covers the specific
+            "right now" case, where rows on screen would be the sample
+            dataset. The old code had no way to say this: the list arrived from
+            MOCK_DATA with no provenance reaching the component. */}
+        {data.length > 0 && jsonSource === "mock" && (
+          <Notice
+            tone="warn"
+            title="Showing the sample dataset, not live data"
+            className="max-w-2xl mb-6"
+          >
+            The live index could not be reached. The programmes below come from
+            the bundled demo data and do not describe real institutions.
+          </Notice>
+        )}
         <Link href="/analyze" className="btn-primary inline-flex">
           Analyze a specific degree
         </Link>
@@ -287,14 +329,27 @@ export default function ExplorePage() {
             Loading program index…
           </div>
         ) : loadError ? (
+          /* A fetch failure, not an empty index. The distinction is load-bearing:
+             the empty-filter state below asserts "the index loaded and nothing
+             matched", which is a different and false claim when the request
+             never succeeded. */
           <div className="bg-surface border border-line/10 rounded-xl text-center py-14 px-8">
-            <p className="text-ink-2 mb-5 text-sm">The program index could not be loaded. Please try again.</p>
-            <button
-              className="btn-secondary inline-flex items-center gap-2"
-              onClick={() => setReloadKey((k) => k + 1)}
-            >
-              <RefreshCw size={13} /> Retry
-            </button>
+            <p className="t-text font-bold mb-2">The programme index is unavailable</p>
+            <p className="t-muted mb-5 text-sm max-w-md mx-auto leading-relaxed">
+              {loadReason ??
+                "The index could not be reached. This is a fetch failure rather than an empty result — we are not showing a partial list in its place."}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <button
+                className="btn-secondary inline-flex items-center gap-2"
+                onClick={() => setReloadKey((k) => k + 1)}
+              >
+                <RefreshCw size={13} /> Retry
+              </button>
+              <Link href="/methodology" className="btn-ghost inline-flex items-center gap-2">
+                <Lock size={13} /> How this data is sourced
+              </Link>
+            </div>
           </div>
         ) : (
           <>

@@ -40,7 +40,7 @@ export default function CollegeDetailPage() {
   const params = useParams();
   const id = params?.id as string;
 
-  const { data: record, isLoading, error } = useCollege(id);
+  const { data: record, isLoading, error, unavailable } = useCollege(id);
   const { response: similarResp } = useColleges({
     field: record?.degree?.field,
     per_page: 6,
@@ -57,16 +57,32 @@ export default function CollegeDetailPage() {
   }
 
   if (!record) {
+    /* Two failures, one null. `unavailable` is true when the request itself
+       failed, which is not the same claim as "this id is not in the index" —
+       the old code collapsed them, so an outage told every visitor their
+       programme did not exist. */
     return (
       <div className="page-shell">
         <div className="container-xl page-section">
           <EmptyState
-            title="This programme is not in the index"
-            hint={
-              error ||
-              "We could not match that identifier against the live programme index. It may have been renamed, or the index may be briefly unreachable."
+            icon={unavailable ? Database : undefined}
+            title={
+              unavailable
+                ? "This programme could not be loaded"
+                : "This programme is not in the index"
             }
-            action={{ label: "Browse the index", href: "/explore" }}
+            hint={
+              unavailable
+                ? error ||
+                  "The data store did not answer, so we could not check whether this programme exists. That is a fetch failure, not a missing record — retry in a moment."
+                : error ||
+                  "We could not match that identifier against the live programme index. It may have been renamed, or the index may be briefly unreachable."
+            }
+            action={
+              unavailable
+                ? { label: "Retry", onClick: () => window.location.reload() }
+                : { label: "Browse the index", href: "/explore" }
+            }
             secondaryAction={{ label: "Methodology", href: "/methodology" }}
           />
         </div>

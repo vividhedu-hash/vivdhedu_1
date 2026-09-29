@@ -5,9 +5,11 @@ import {
   Zap, Sliders, ChevronRight, Compass,
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { Notice } from "@/components/Notice";
 import { CollegeCard } from "@/components/CollegeCard";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { fetchCollegeList } from "../lib/live-colleges";
+import type { CollegeDegreeRecord } from "@/lib/mock-data";
 import { APP_URL, BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
@@ -166,17 +168,25 @@ const SCORE_FACTORS = [
 ];
 
 export default async function LandingPage() {
-  let SAMPLE: any[] = [];
+  let SAMPLE: CollegeDegreeRecord[] = [];
+  // `indexUnavailable` is a third state alongside live and seed. Without it
+  // the status bar had only two strings to choose from, and "not live" fell
+  // through to "Calibrated Engine · Index loading" — a reassuring label for a
+  // page with no data behind it.
   let isLive = false;
-  let totalCount: number | undefined;
+  let indexUnavailable = false;
+  let totalCount: number | null = null;
 
   try {
     const featured = await fetchCollegeList({ per_page: 3, sort_by: "compositeScore" });
-    SAMPLE       = featured.data;
-    isLive       = featured.source === "database";
-    totalCount   = featured.total;
+    SAMPLE           = featured.data;
+    isLive           = featured.source === "database";
+    indexUnavailable = featured.source === "unavailable";
+    totalCount       = featured.total;
   } catch {
-    // Supabase unreachable at build time — fall back to empty display
+    // A thrown error is the same user-visible situation as an unreachable
+    // source: there is no index to read.
+    indexUnavailable = true;
   }
 
   return (
@@ -184,13 +194,46 @@ export default async function LandingPage() {
       <OrganizationJsonLd />
 
       {/* ── SYSTEM STATUS BAR ─────────────────────────────────── */}
+      {/*
+        This bar is the single most dishonest element the guard uncovered. It
+        was a hardcoded green pulsing dot plus "System Online" with a
+        two-way ternary underneath, and the two available branches were
+        "Supabase Connected" and "Calibrated Engine". Neither was reachable
+        when the index was down: the second string means "the engine is
+        calibrated", and it rendered unconditionally alongside a live-looking
+        green dot.
+
+        Now the dot colour, the pulse, and the wording are all derived from the
+        same fact — whether the index answered. An unreachable index gets an
+        amber static dot and the word "Unavailable", which is a claim we can
+        actually support, rather than a green pulse that asserts a healthy
+        system. `isLive` alone is not enough: seed data is also "not live" but
+        is not an outage, and collapsing them would misdescribe local dev.
+      */}
       <div className="border-b border-line/10 bg-elevated/70 backdrop-blur-md py-2 px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-sys-green inline-block animate-pulse" />
+            <span
+              className={`w-1.5 h-1.5 rounded-full inline-block ${
+                indexUnavailable ? "bg-sys-amber" : "bg-sys-green animate-pulse"
+              }`}
+            />
             <span className="font-mono text-[11px] text-ink-2">
-              System Online · {isLive ? "Supabase Connected" : "Calibrated Engine"} ·{" "}
-              {totalCount ? `${totalCount} programmes indexed` : "Index loading"}
+              {indexUnavailable ? (
+                <>
+                  Index unavailable — programme data could not be loaded
+                </>
+              ) : isLive ? (
+                <>
+                  System Online · Supabase Connected ·{" "}
+                  {totalCount != null ? `${totalCount} programmes indexed` : "Index loading"}
+                </>
+              ) : (
+                <>
+                  Demo dataset — not live data ·{" "}
+                  {totalCount != null ? `${totalCount} sample programmes` : "Index loading"}
+                </>
+              )}
             </span>
           </div>
           <div className="hidden sm:flex items-center gap-5 text-[11px] text-ink-3 font-mono">
@@ -386,9 +429,15 @@ export default async function LandingPage() {
                     {totalCount ?? "—"}
                   </div>
                   <p className="text-[11px] text-ink-2 mt-2 leading-relaxed">
-                    {totalCount
-                      ? "Read from the live database at request time, not a figure typed into a marketing page."
-                      : "The index is unreachable right now, so we are not quoting a number."}
+                    {/* `!= null` rather than truthiness: a genuine count of 0
+                        is a real reading and should say so. The old truthy
+                        test would have described an empty-but-reachable index
+                        as "unreachable". */}
+                    {totalCount == null
+                      ? "The index is unreachable right now, so we are not quoting a number."
+                      : isLive
+                        ? "Read from the live database at request time, not a figure typed into a marketing page."
+                        : "Counted from the bundled demo dataset, not from the live index."}
                   </p>
                 </div>
 
@@ -423,7 +472,11 @@ export default async function LandingPage() {
             <div>
               <p className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent mb-3">
                 <span className="w-2.5 h-[1.5px] bg-accent" />
-                From the live index
+                {/* Was hardcoded "From the live index". With the mock guard in
+                    place this section is reached in two different states, and
+                    the label is a claim about the provenance of the cards
+                    directly beneath it — so it follows the actual source. */}
+                {isLive ? "From the live index" : "From the demo dataset"}
               </p>
               <h2 className="text-[clamp(1.8rem,3.5vw,2.4rem)] font-bold tracking-tight text-ink">
                 Same ₹15L fee. Very different outcomes.
@@ -437,15 +490,39 @@ export default async function LandingPage() {
             </Link>
           </div>
 
+          {/* A provenance warning sits directly above the cards, not in a
+              footer, because the cards look identical either way. The reader
+              has to be told before they read a composite score off a card, not
+              after. `warn` is the correct tone: degraded but usable. */}
+          {!isLive && !indexUnavailable && (
+            <Notice
+              tone="warn"
+              title="These are sample programmes, not live data"
+              className="mb-6"
+            >
+              The live index could not be reached, so this page is showing the
+              bundled demo dataset. The scores, fees and placement rates below
+              are illustrative and do not describe real institutions. Set{" "}
+              <code className="mono">ALLOW_MOCK_FALLBACK=0</code> to hide them
+              entirely and show only the unavailable state.
+            </Notice>
+          )}
+
           {SAMPLE.length === 0 ? (
             /* The preview strip is a sample of the index, not the index. When
                the preview fetch fails, the count is the honest thing to show —
-               and it stays live rather than being replaced with a guess. */
+               and it stays live rather than being replaced with a guess. The
+               `totalCount != null` test is what keeps an outage (null) from
+               being rendered as a count of zero. */
             <EmptyState
               icon={Compass}
-              title={totalCount ? `${totalCount} programmes in the live index` : "The programme index is unavailable"}
+              title={
+                totalCount != null
+                  ? `${totalCount} programmes in the live index`
+                  : "The programme index is unavailable"
+              }
               hint={
-                totalCount
+                totalCount != null
                   ? "We could not load a preview of the index on this page, but the full index is intact. Open it to browse every programme we hold live data for."
                   : "The index could not be reached. This is a fetch failure, not an empty index — retry, or come back shortly."
               }
