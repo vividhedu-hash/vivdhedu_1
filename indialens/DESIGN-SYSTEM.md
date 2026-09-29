@@ -96,7 +96,100 @@ idiomatic way to get a hairline that works in both themes.
 Never hardcode a hex value in `tailwind.config.ts` — that is precisely how the
 two systems diverged. Never write a hex literal into a component.
 
-## Component classes
+## THE DESIGN LANGUAGE
+
+*This section is the contract for restyling work. If a page disagrees with it,
+the page is wrong, not this section.*
+
+The product models itself on actuarial and financial-terminal software —
+Bloomberg, Stripe dashboard, Linear. Four words describe the target: **dense,
+calm, precise, honest.** Concretely, that resolves to six rules.
+
+### 1. The page owns the background; chrome is chrome
+
+`<body>` and every route use `t-bg`. The navbar and footer are `t-surface`.
+A page never wraps itself in `bg-surface` — several did, which made the whole
+document read as one large card and destroyed the separation between the page
+and the furniture around it. `page-shell` is the page frame.
+
+### 2. Numbers are typography
+
+This is a data product. Every figure is:
+
+- **tabular** — `.num*` / `.metric*` set `font-variant-numeric: tabular-nums`,
+  so a column of scores can be scanned. A column of proportional figures cannot.
+- **mono, at one of six sizes** — `.num-0` … `.num-5`, or `.metric` /
+  `.metric-lg` / `.metric-xl`. There is no seventh size. Score displays that
+  drifted between pages were the clearest symptom of the template look.
+- **self-describing** — `Metric` takes a `caption` naming the provenance. A
+  number with no stated source is the thing the methodology page warns against.
+- **visibly absent when unmeasured** — `null` renders `—` in `.num-na`, muted
+  and letter-spaced, never in red, never as `0`, never tweened. A red dash
+  would assert "this is the worst reading", which is a different claim.
+  `<Metric value={null} />` is the standard way to express it.
+
+A range is drawn as a range: `.range` puts the point in primary ink and the
+interval beside it in tertiary. A confidence band is `.ci-track` + `.ci-fill`,
+where the unfilled portion *is* the epistemics.
+
+### 3. Depth is a hairline, not a shadow
+
+`--shadow-card` is near-zero and cards should stay at their resting value.
+Interactive cards (`--interactive`) lift on hover; **data panels never do**. A
+wall of floating, hovering cards reads as a marketing page, and this is a
+terminal. Separation comes from a 1px `--border` and surface tone.
+
+Three surfaces, and the distinction is not cosmetic:
+
+| Class | For |
+| --- | --- |
+| `.card` | interactive — lifts on hover |
+| `.card-elevated` / `.panel-raised` | one emphasised card, static |
+| `.panel` | the default for **data** — flat, hairline, no lift |
+
+`.panel-head` / `.panel-title` is the only internal header a data panel has.
+
+### 4. Rhythm is a 4-step scale, and there is one page header
+
+Sections are `page-section` (96px) or `page-section-tight` (64px). Horizontal
+gutters are `container-xl` (1280) or `container-lg`/`container-md` for prose.
+Page padding-top and headline size are **not** per-page values: they come from
+`.page-header` and `.page-title`. Drift between page headers was the single
+biggest tell that this was a set of pages rather than a product.
+
+### 5. Motion explains a state change, and nothing else
+
+Exactly three are permitted, all defined in the `MOTION SYSTEM` block of
+`globals.css`:
+
+1. **Entry** — `Reveal` / `RevealGroup`, a 10px fade-up, once, staggered.
+2. **Value** — `useCountUp`, a figure counting to its new value.
+3. **Reveal** — chart series fading in from zero.
+
+Bounce, elastic, overshoot, and gratuitous looping are banned. The two status
+dots pulse forever because a live indicator that does not move is not one.
+
+Reduced motion is honoured **three** ways, and all three are needed: the global
+CSS rule collapses durations while still firing `animationend`; `.reveal`
+forces its *end* state (a collapsed animation that ends on `opacity: 0` would
+leave content permanently invisible); and `prefersReducedMotion()` short-circuits
+the JS tween, which no CSS rule can reach.
+
+Motion only ever **adds**. The `opacity: 0` start state lives in a class that
+only JS adds, so no-JS, failed hydration and crawlers all get the real page.
+
+### 6. States are shared components, never hand-rolled
+
+`EmptyState` (always names the next action; distinguishes "nothing yet" from
+"nothing matched"), `RouteError` (a failure is stated as a failure), the
+`Skeleton*` family, `Notice` (tone vocabulary is semantic: an unconnected
+optional integration is `warn`, **not** `error` — see §7), and `UnmeasuredNote`.
+
+A loading state is a skeleton, never a spinner. A spinner implies the wait is
+short, which is a lie on a 45s grounded-LLM budget, and it tells the user
+nothing about what is coming, so the page jumps when the data lands.
+
+## COMPONENT CLASSES
 
 Prefer these over re-implementing them:
 
@@ -109,6 +202,28 @@ Prefer these over re-implementing them:
 `.kicker-web` `.kicker-accent` `.lead-p` `.body-p` `.mono`
 `.selection-card` `.goal-chip` `.domain-chip`
 `.skeleton` `.spinner`
+
+**Page frame** — `page-shell` `page-section` `page-section-tight` `page-band`
+`page-band-alt` `page-header` `page-header-sm` `page-title` `page-title-sm`
+`section-title` `section-lead` `prose-measure`
+
+**Data** — `num-0`…`num-5` `num-na` `num-roll` `metric` `metric-lg`
+`metric-xl` `metric-label` `metric-cell` `metric-cell-row` `range`
+`range-point` `range-band` `ci-track` `ci-fill`
+
+**Panels** — `panel` `panel-pad` `panel-pad-sm` `panel-pad-lg` `panel-head`
+`panel-title` `panel-body` `panel-body-sm` `panel-raised` `notice`
+`notice-{accent,warn,err,ok}` `notice-icon` `status-strip`
+
+**Motion** — `reveal` `reveal-stagger` `is-in` `num-roll`
+(`animate-fade-in` `animate-slide-up` remain for legacy call sites)
+
+**Components** — `PageHeader` `SectionHeader` `SectionRule` (PageHeader.tsx) ·
+`Reveal` `RevealGroup` (Reveal.tsx) · `Metric` `useCountUp`
+`prefersReducedMotion` (lib/motion.ts) · `Notice` `UnmeasuredNote` (Notice.tsx)
+
+**Note on `.card`:** `.card` is interactive and lifts on hover. Use `.panel`
+for data. If a data block is currently `.card`, it is wrong — switch it.
 
 ## Accessibility baseline
 
@@ -127,6 +242,54 @@ Prefer these over re-implementing them:
 - **Every data surface** has three states: loading (skeleton, not a spinner),
   empty (`EmptyState`, which requires a next action), and error (`error.tsx`
   with a retry). A spinner is only correct for an action the user just took.
+
+## AI MODE: SHIPPED, NOT YET CONNECTED
+
+`/advisor` is a real, finished, reachable feature. Its upstream — a
+search-grounded engine via OpenRouter, optionally Gemini — is **not connected**,
+because no key has been supplied. The route, the nav link and the page all stay.
+
+The distinction the interface is built around, because collapsing it is the
+failure this product exists to avoid:
+
+| Condition | Signal | Treatment |
+| --- | --- | --- |
+| **Not connected** | `503` with `integration_unavailable` / `backend_unavailable` / `sonar_unavailable` | `<AIUnavailable>` — "not connected yet", the backend's own reason, and what still works |
+| **Upstream failed** | `502`, timeout, anything else | `<Notice tone="warn">` — something *is* configured and did not answer |
+| **Not measured** | no key, no gap — the data simply is not published | `<UnmeasuredNote>` |
+
+Claiming "your question could not be answered" when the real state is "nothing
+is listening" is a false claim about a live product. Claiming the key is
+missing when the key is present and the provider is down is the same error in
+the other direction. So the two are told apart by **status and payload shape**,
+never guessed.
+
+`AIModeStudio` probes `GET /api/v1/ai/status` once on mount and drives the whole
+surface from the result. While the probe is in flight the form is present but
+disabled, so a user cannot type into a box already known to be unusable. A
+`503` from any AI call re-runs the probe so the surface settles into the
+unavailable state rather than showing a stale form.
+
+**Never rendered in the unavailable state:** a sample answer, a cached
+response, an illustrative citation, or a "here is what we would have said". A
+canned response on a citation-first surface is indistinguishable from a real
+one once it is on screen.
+
+## AI Mode: SHIPPED, NOT YET CONNECTED — continued
+
+Same rule applies to any other surface gated on a key the owner has not
+supplied (Tavily, Gemini, the `data.gov.in` key, Resend for report email). Each
+fails closed in the backend already; the frontend's job is to name the state
+rather than to show a generic failure. Nothing that genuinely works has been
+disabled.
+
+## Measurement of the debt
+
+To measure the debt at any time:
+
+```sh
+rg -o "bg-\[#[0-9a-fA-F]+|text-\[#[0-9a-fA-F]+|bg-white|text-zinc-[0-9]+|border-slate-[0-9]+" src | wc -l
+```
 
 ## Migration state
 
@@ -150,11 +313,6 @@ and render correctly only in the default light theme:
 `compare` `contact` `global` `job-security` `marketplace` `methodology`
 `portfolio-builder` `psychometric` `report/[token]` `terms` `admin` and the
 ~30 shared components under `components/`.
-
-Migration order for the next pass, by traffic: `about` → `contact` →
-`methodology` → `terms` → `marketplace` → `portfolio-builder` → `advisor` →
-`global` → `psychometric` → `college/[id]` → `report/[token]` →
-`career-trajectory` → `job-security` → `compare` → `admissions` → `admin`.
 
 **Do not apply a site-wide `data-theme` flip until this list is empty.** That is
 the whole reason the dark theme is opt-in rather than default: a dark-mode

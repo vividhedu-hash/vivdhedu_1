@@ -110,7 +110,12 @@ export function AuthModal() {
       // The backdrop is presentational; the dialog is named and described so a
       // screen reader announces what opened rather than just "dialog".
       onClick={() => setIsAuthModalOpen(false)}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+      // A token scrim, not `bg-black/85`. A hardcoded black scrim is opaque
+      // in both themes: in light mode it is an unnaturally heavy black wall
+      // over a white page, and in dark mode it is indistinguishable from the
+      // page. `--bg-overlay` at 72% gives the same separation in each palette.
+      style={{ background: "color-mix(in srgb, var(--bg) 72%, transparent)" }}
     >
       <div
         ref={panelRef}
@@ -121,69 +126,76 @@ export function AuthModal() {
         // Click inside must not bubble to the backdrop and close the dialog
         // mid-sign-in.
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-md p-6 bg-[#0A0A0A] border border-white/[0.1] rounded-2xl shadow-2xl text-[#F5F5F7]"
+        className="t-elevated t-border t-shadow-lg relative w-full max-w-md rounded-2xl border p-6 t-text"
       >
         {/* Close Button */}
         <button
           type="button"
           onClick={() => setIsAuthModalOpen(false)}
           aria-label="Close sign in"
-          className="absolute top-4 right-4 p-1.5 text-[#86868B] hover:text-[#F5F5F7] rounded-lg hover:bg-white/[0.06] transition"
+          className="t-faint hover:t-text absolute right-4 top-4 rounded-lg p-1.5 transition-colors"
+          style={{ borderRadius: "var(--r-sm)" }}
         >
           <X size={18} aria-hidden="true" />
         </button>
 
         {/* Brand Header */}
-        <div className="flex items-center gap-2.5 mb-2">
-          <div className="w-7 h-7 rounded-lg bg-[#E11D48] flex items-center justify-center">
-            <Zap size={14} className="text-white" aria-hidden="true" />
+        <div className="mb-2 flex items-center gap-2.5">
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-lg"
+            style={{ background: "var(--accent)" }}
+            aria-hidden="true"
+          >
+            <Zap size={14} style={{ color: "var(--text-inverse)" }} />
           </div>
-          <span className="font-extrabold text-base tracking-tight text-[#F5F5F7]">
+          <span className="text-base font-extrabold tracking-tight t-text">
             {BRAND.name}
           </span>
         </div>
 
-        <h2
-          id="auth-modal-title"
-          className="text-xl font-bold tracking-tight text-white mb-1"
-        >
+        <h2 id="auth-modal-title" className="mb-1 text-xl font-bold tracking-tight t-text">
           Sign in to {BRAND.name}
         </h2>
-        <p id="auth-modal-desc" className="text-xs text-slate-400 mb-5 leading-relaxed">
+        <p id="auth-modal-desc" className="mb-5 text-xs leading-relaxed t-muted">
           Sign in to keep your saved reports and open them on any device. Without an account, a
           report is reachable only by its link.
         </p>
 
         {errorMessage && (
-          <div role="alert" className="p-3 mb-4 text-xs text-rose-400 bg-rose-950/40 border border-rose-800 rounded-lg">
+          <div role="alert" className="notice notice-err mb-4">
             {errorMessage}
           </div>
         )}
 
         {otpSent ? (
-          <div className="p-4 mb-4 text-xs text-emerald-300 bg-emerald-950/40 border border-emerald-800 rounded-xl flex items-start gap-2.5">
-            <CheckCircle2 size={18} className="text-emerald-400 shrink-0 mt-0.5" />
+          <div className="notice notice-ok mb-4">
+            <CheckCircle2 size={17} className="notice-icon" style={{ color: "var(--green)" }} />
             <div>
-              <p className="font-semibold text-emerald-200">Magic Link Dispatched</p>
-              <p className="mt-1 text-slate-300 leading-relaxed">
-                Check your inbox at <span className="font-mono text-emerald-300">{email}</span> and click the link to instantly verify your session.
+              <p className="t-text font-semibold">Magic link sent</p>
+              <p className="mt-1 leading-relaxed t-muted">
+                Check your inbox at <span className="num">{email}</span> and click the link to
+                verify your session.
               </p>
             </div>
           </div>
         ) : null}
 
         {/* Social OAuth Buttons */}
-        <div className="space-y-2.5 mb-4">
-          {/* Google OAuth Button */}
+        <div className="mb-4 space-y-2.5">
+          {/* Google OAuth Button.
+              The four brand fills in the inline SVG are Google's own marks and
+              are deliberately left literal — they are a third party's identity
+              and have nothing to do with this product's palette. */}
           <button
+            type="button"
             onClick={handleGoogleLogin}
             disabled={oauthLoading !== null}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-white text-slate-900 font-semibold text-xs rounded-xl hover:bg-slate-100 transition shadow-md disabled:opacity-60"
+            className="btn-secondary w-full disabled:opacity-60"
           >
             {oauthLoading === "google" ? (
-              <Loader2 size={16} className="animate-spin text-slate-700" />
+              <Loader2 size={16} className="spinner" aria-hidden="true" />
             ) : (
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   fill="#4285F4"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -202,30 +214,31 @@ export function AuthModal() {
                 />
               </svg>
             )}
-            {oauthLoading === "google" ? "Redirecting to Google..." : "Continue with Google"}
+            {oauthLoading === "google" ? "Redirecting to Google…" : "Continue with Google"}
           </button>
 
           {/* GitHub OAuth Button */}
           <button
+            type="button"
             onClick={handleGithubLogin}
             disabled={oauthLoading !== null}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-slate-800 hover:bg-slate-750 text-white font-semibold text-xs rounded-xl border border-slate-700 transition shadow-sm disabled:opacity-60"
+            className="btn-secondary w-full disabled:opacity-60"
           >
             {oauthLoading === "github" ? (
-              <Loader2 size={16} className="animate-spin text-slate-300" />
+              <Loader2 size={16} className="spinner" aria-hidden="true" />
             ) : (
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+              <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
               </svg>
             )}
-            {oauthLoading === "github" ? "Redirecting to GitHub..." : "Continue with GitHub"}
+            {oauthLoading === "github" ? "Redirecting to GitHub…" : "Continue with GitHub"}
           </button>
         </div>
 
-        <div className="flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-slate-800" />
-          <span className="text-[11px] font-mono text-slate-500 uppercase">Or Passwordless Email</span>
-          <div className="flex-1 h-px bg-slate-800" />
+        <div className="my-4 flex items-center gap-3">
+          <div className="h-px flex-1" style={{ background: "var(--divider)" }} />
+          <span className="metric-label">Or a one-time email link</span>
+          <div className="h-px flex-1" style={{ background: "var(--divider)" }} />
         </div>
 
         {/* Email Form */}
@@ -234,8 +247,8 @@ export function AuthModal() {
             {/* `htmlFor`/`id` pairing: a <label> wrapping nothing gives a
                 screen reader an unassociated text node instead of a field
                 label, and clicking the label does not focus the input. */}
-            <label htmlFor="auth-name" className="block text-[11px] font-mono text-slate-400 mb-1">
-              Your Name (Optional)
+            <label htmlFor="auth-name" className="form-label">
+              Your name (optional)
             </label>
             <input
               id="auth-name"
@@ -245,16 +258,20 @@ export function AuthModal() {
               placeholder="e.g. Arjun Sharma"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-[#0077C8]"
+              className="form-input text-[13px]"
             />
           </div>
 
           <div>
-            <label htmlFor="auth-email" className="block text-[11px] font-mono text-slate-400 mb-1">
-              Institutional or Personal Email
+            <label htmlFor="auth-email" className="form-label">
+              Institutional or personal email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-2.5 text-slate-500" size={14} />
+              <Mail
+                className="t-faint absolute left-3 top-1/2 -translate-y-1/2"
+                size={14}
+                aria-hidden="true"
+              />
               <input
                 id="auth-email"
                 name="email"
@@ -263,13 +280,14 @@ export function AuthModal() {
                 autoComplete="email"
                 ref={emailRef}
                 aria-describedby="auth-email-hint"
+                aria-invalid={!!errorMessage}
                 placeholder="student@college.edu or name@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-[#0077C8]"
+                className="form-input pl-9 text-[13px]"
               />
             </div>
-            <p id="auth-email-hint" className="mt-1.5 text-[11px] text-slate-500">
+            <p id="auth-email-hint" className="mt-1.5 text-[11px] t-faint">
               We send a one-time sign-in link. No password is created or stored.
             </p>
           </div>
@@ -277,20 +295,25 @@ export function AuthModal() {
           <button
             type="submit"
             disabled={isSubmitting || oauthLoading !== null}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0077C8] hover:bg-[#0077C8]/90 text-white font-semibold text-xs rounded-xl transition shadow-lg shadow-blue-900/20 disabled:opacity-50"
+            className="btn-accent w-full disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting ? "Authenticating..." : "Send Magic Session Key"}
+            {isSubmitting ? "Authenticating…" : "Send my sign-in link"}
             <ArrowRight size={13} aria-hidden="true" />
           </button>
         </form>
 
         {/* Trust Badges */}
-        <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono">
-          <span className="flex items-center gap-1">
-            <Lock size={11} className="text-emerald-400" aria-hidden="true" /> Encrypted in transit
+        <div
+          className="mt-6 flex items-center justify-between border-t pt-4"
+          style={{ borderColor: "var(--divider)" }}
+        >
+          <span className="mono flex items-center gap-1 text-[11px] t-faint">
+            <Lock size={11} style={{ color: "var(--green)" }} aria-hidden="true" />
+            Encrypted in transit
           </span>
-          <span className="flex items-center gap-1">
-            <ShieldCheck size={11} className="text-[#0077C8]" aria-hidden="true" /> No ads, no data sold
+          <span className="mono flex items-center gap-1 text-[11px] t-faint">
+            <ShieldCheck size={11} style={{ color: "var(--teal)" }} aria-hidden="true" />
+            No ads, no data sold
           </span>
         </div>
       </div>

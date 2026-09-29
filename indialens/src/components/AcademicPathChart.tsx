@@ -1,14 +1,32 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { GitBranch } from "lucide-react";
+import { EmptyState } from "./EmptyState";
 import type { PathEdge, PathNode } from "../lib/grounded";
 
+/**
+ * The academic path — a layered graph of choice nodes returned by the
+ * intelligence payload.
+ *
+ * Colour notes, since this is the component where a hex is most tempting:
+ *
+ *  - The five node-kind colours are CSS custom properties. They were five
+ *    hand-picked literals, tuned against a near-black panel, and they could not
+ *    theme: on the light canvas the same five hues meant something different,
+ *    so "exam vs. program" was carried by colours that shifted with the theme.
+ *    The token set — purple / green / amber / accent / text-tertiary — is the
+ *    same five roles.
+ *  - Edges and labels use `--border` and `--text-tertiary` respectively, which
+ *    is what a hairline is for. The previous pair existed only because the
+ *    drawing surface was hardcoded near-black.
+ */
 const KIND_COLOR: Record<string, string> = {
-  exam: "#818cf8",
-  program: "#34d399",
-  skill: "#fbbf24",
-  role: "#fb7185",
-  gate: "#94a3b8",
+  exam: "var(--purple)",
+  program: "var(--green)",
+  skill: "var(--amber)",
+  role: "var(--accent)",
+  gate: "var(--text-tertiary)",
 };
 
 export function AcademicPathChart({
@@ -46,84 +64,127 @@ export function AcademicPathChart({
 
   const selected = nodes.find((n) => n.id === active);
 
+  // An engine that returned a token but no path has measured nothing. Rendering
+  // an empty axis band here would read as "the path has no steps", which is a
+  // different claim from "no path was produced".
   if (!nodes.length) {
-    return <p className="text-sm text-slate-500">No path nodes returned.</p>;
+    return (
+      <EmptyState
+        variant="inline"
+        icon={GitBranch}
+        title="No academic path returned"
+        hint="This run produced no path nodes, so nothing is drawn. An empty path is not a recommendation that the route is closed — the engine returned no steps to draw."
+        action={{ label: "Run a new grounded search", href: "/advisor" }}
+      />
+    );
   }
 
   return (
-    <div className="space-y-3">
-      <svg
-        viewBox={`0 0 ${layout.width} ${layout.height}`}
-        className="w-full h-auto rounded-xl border border-slate-800 bg-slate-950"
-        role="img"
-        aria-label="Academic choice path"
-      >
-        {edges.map((e, i) => {
-          const a = layout.pos.get(e.from);
-          const b = layout.pos.get(e.to);
-          if (!a || !b) return null;
-          const midY = (a.y + b.y) / 2;
-          return (
-            <g key={`${e.from}-${e.to}-${i}`}>
-              <path
-                d={`M ${a.x} ${a.y + 18} C ${a.x} ${midY}, ${b.x} ${midY}, ${b.x} ${b.y - 18}`}
-                fill="none"
-                stroke="#334155"
-                strokeWidth="1.5"
-              />
-              {e.label ? (
-                <text x={(a.x + b.x) / 2} y={midY} fill="#64748b" fontSize="10" textAnchor="middle">
-                  {e.label}
+    <div className="min-w-0 space-y-3">
+      <div className="t-bg t-border min-w-0 overflow-x-auto rounded-xl border p-2">
+        <svg
+          viewBox={`0 0 ${layout.width} ${layout.height}`}
+          className="h-auto w-full"
+          role="img"
+          aria-label="Academic choice path"
+        >
+          {edges.map((e, i) => {
+            const a = layout.pos.get(e.from);
+            const b = layout.pos.get(e.to);
+            if (!a || !b) return null;
+            const midY = (a.y + b.y) / 2;
+            return (
+              <g key={`${e.from}-${e.to}-${i}`}>
+                <path
+                  d={`M ${a.x} ${a.y + 18} C ${a.x} ${midY}, ${b.x} ${midY}, ${b.x} ${b.y - 18}`}
+                  fill="none"
+                  stroke="var(--border)"
+                  strokeWidth="1.5"
+                />
+                {e.label ? (
+                  <text
+                    x={(a.x + b.x) / 2}
+                    y={midY}
+                    fill="var(--text-tertiary)"
+                    fontSize="10"
+                    textAnchor="middle"
+                    className="mono"
+                  >
+                    {e.label}
+                  </text>
+                ) : null}
+              </g>
+            );
+          })}
+          {nodes.map((n) => {
+            const p = layout.pos.get(n.id);
+            if (!p) return null;
+            const color = KIND_COLOR[n.kind || ""] || "var(--text-tertiary)";
+            const on = active === n.id;
+            return (
+              <g
+                key={n.id}
+                transform={`translate(${p.x}, ${p.y})`}
+                className="cursor-pointer"
+                onClick={() => setActive(n.id)}
+              >
+                <rect
+                  x={-86}
+                  y={-22}
+                  width={172}
+                  height={44}
+                  rx={10}
+                  fill={on ? "var(--bg-chip)" : "var(--bg-elevated)"}
+                  stroke={color}
+                  strokeWidth={on ? 2 : 1}
+                />
+                <text
+                  textAnchor="middle"
+                  y={-4}
+                  fill={color}
+                  fontSize="9"
+                  fontWeight="600"
+                  className="mono"
+                  letterSpacing="0.08em"
+                >
+                  {(n.kind || "step").toUpperCase()}
                 </text>
-              ) : null}
-            </g>
-          );
-        })}
-        {nodes.map((n) => {
-          const p = layout.pos.get(n.id);
-          if (!p) return null;
-          const color = KIND_COLOR[n.kind || ""] || "#94a3b8";
-          const on = active === n.id;
-          return (
-            <g
-              key={n.id}
-              transform={`translate(${p.x}, ${p.y})`}
-              className="cursor-pointer"
-              onClick={() => setActive(n.id)}
-            >
-              <rect
-                x={-86}
-                y={-22}
-                width={172}
-                height={44}
-                rx={10}
-                fill={on ? "#1e293b" : "#0f172a"}
-                stroke={color}
-                strokeWidth={on ? 2 : 1}
-              />
-              <text textAnchor="middle" y={-4} fill={color} fontSize="9" fontWeight="600">
-                {(n.kind || "step").toUpperCase()}
-              </text>
-              <text textAnchor="middle" y={12} fill="#e2e8f0" fontSize="11" fontWeight="600">
-                {n.label.length > 22 ? `${n.label.slice(0, 21)}…` : n.label}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-      {selected && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4 text-sm text-slate-300">
-          <p className="text-white font-semibold">{selected.label}</p>
-          {selected.note && <p className="mt-1 text-slate-400">{selected.note}</p>}
+                <text
+                  textAnchor="middle"
+                  y={12}
+                  fill="var(--text-primary)"
+                  fontSize="11"
+                  fontWeight="600"
+                >
+                  {n.label.length > 22 ? `${n.label.slice(0, 21)}…` : n.label}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {selected ? (
+        <div className="t-elevated t-border rounded-xl border p-4">
+          <p className="text-[14px] font-semibold t-text">{selected.label}</p>
+          {selected.note && (
+            <p className="mt-1 text-[12px] leading-relaxed t-muted">
+              {selected.note}
+            </p>
+          )}
           {selected.catalog_program_id && (
             <a
               href={`/college/${selected.catalog_program_id}`}
-              className="mt-2 inline-block text-xs text-indigo-300 hover:text-indigo-200"
+              className="t-accent mt-2 inline-block text-[12px] font-medium"
             >
               Open catalog program
             </a>
           )}
         </div>
+      ) : (
+        <p className="text-[11px] t-faint">
+          Select a node to see its note and any catalogue programme attached to it.
+        </p>
       )}
     </div>
   );

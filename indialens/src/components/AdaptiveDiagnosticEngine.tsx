@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { TraitRadarChart } from "./TraitRadarChart";
 import { MicroDilemmaCard, DilemmaItem, Option } from "./MicroDilemmaCard";
 import { PointAllocator } from "./PointAllocator";
+import { Notice } from "./Notice";
+import { Skeleton } from "./Skeleton";
+import { MetricRow } from "./Metric";
 import {
-  GraduationCap, DollarSign, MapPin, Target, Sparkles, Brain,
-  ChevronRight, Loader2, CheckCircle2, ShieldCheck, Activity
+  ChevronRight, Activity, ShieldCheck, Check, Loader2
 } from "lucide-react";
 
 // 20-item graded IRT bank — 5 items per trait, b: easy(-1.2) → vhard(+1.5)
@@ -383,7 +385,7 @@ export function AdaptiveDiagnosticEngine() {
         </div>
 
         {/* Confidence Meter */}
-        <div className="text-left sm:text-right min-w-[200px] bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs">
+        <div className="text-left sm:text-right min-w-[200px] t-surface border t-border rounded-2xl p-3.5 shadow-2xs">
           <div className="flex items-center justify-between gap-2 mb-1.5">
             <span className="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
               <Activity className="w-3.5 h-3.5 text-rose-600" /> Model Accuracy
@@ -403,8 +405,8 @@ export function AdaptiveDiagnosticEngine() {
 
       {/* PHASE 1: Fast Demographic Setup */}
       {phase === 1 && (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm">
-          <div className="mb-8 pb-6 border-b border-slate-100">
+        <div className="t-surface border t-border rounded-3xl p-6 sm:p-10 shadow-sm">
+          <div className="mb-8 pb-6 border-b t-border-subtle">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-950 mb-2 font-serif">
               Start with the Baseline Profile
             </h2>
@@ -422,7 +424,7 @@ export function AdaptiveDiagnosticEngine() {
               <select
                 value={stream}
                 onChange={(e) => setStream(e.target.value)}
-                className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-slate-400"
+                className="w-full p-3.5 rounded-xl bg-slate-50 border t-border text-slate-900 text-sm font-medium focus:outline-none focus:t-border-focus"
               >
                 {STREAMS.map((s) => (
                   <option key={s} value={s}>
@@ -461,7 +463,7 @@ export function AdaptiveDiagnosticEngine() {
                 type="number"
                 value={tenthPct}
                 onChange={(e) => setTenthPct(e.target.value)}
-                className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-slate-400"
+                className="w-full p-3.5 rounded-xl bg-slate-50 border t-border text-slate-900 text-sm font-medium focus:outline-none focus:t-border-focus"
               />
             </div>
 
@@ -474,16 +476,16 @@ export function AdaptiveDiagnosticEngine() {
                 type="number"
                 value={twelfthPct}
                 onChange={(e) => setTwelfthPct(e.target.value)}
-                className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-slate-400"
+                className="w-full p-3.5 rounded-xl bg-slate-50 border t-border text-slate-900 text-sm font-medium focus:outline-none focus:t-border-focus"
               />
             </div>
           </div>
 
-          <div className="flex justify-end pt-4 border-t border-slate-100">
+          <div className="flex justify-end pt-4 border-t t-border-subtle">
             <button
               type="button"
               onClick={startAdaptiveTest}
-              className="px-8 py-3.5 rounded-xl bg-[#09090B] hover:bg-[#27272A] text-white text-sm font-bold flex items-center gap-2 shadow-sm transition-colors"
+              className="btn-primary px-8 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2"
             >
               Start the Assessment <ChevronRight className="w-4 h-4" />
             </button>
@@ -508,7 +510,7 @@ export function AdaptiveDiagnosticEngine() {
           <div className="lg:col-span-4 space-y-4">
             <TraitRadarChart traits={currentTraits} archetype={archetype} />
 
-            <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+            <div className="t-surface border t-border rounded-3xl p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 <span className="text-xs font-bold text-slate-900">
@@ -537,7 +539,7 @@ export function AdaptiveDiagnosticEngine() {
 
       {/* PHASE 4: Submitting & Loading */}
       {phase === 4 && (
-        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center shadow-sm">
+        <div className="t-surface border t-border rounded-3xl p-12 text-center shadow-sm">
           {submitError ? (
             <>
               <h2 className="text-xl font-bold text-rose-600 mb-2 font-serif">

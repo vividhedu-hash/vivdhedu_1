@@ -84,7 +84,7 @@ export default function AdmissionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900">
+    <div className="min-h-screen t-bg text-slate-900">
       <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Admissions odds</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">Where this rank actually lands</h1>
@@ -95,7 +95,7 @@ export default function AdmissionsPage() {
         </p>
 
         <form
-          className="mt-8 grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:grid-cols-2"
+          className="mt-8 grid gap-4 rounded-2xl border t-border t-surface p-5 sm:grid-cols-2"
           onSubmit={(event) => {
             event.preventDefault();
             void evaluate();
@@ -103,27 +103,27 @@ export default function AdmissionsPage() {
         >
           <label className="text-sm">
             <span className="mb-1 block font-medium">Expected rank</span>
-            <input className="w-full rounded-lg border border-slate-300 px-3 py-2" value={rank} onChange={(e) => setRank(e.target.value)} inputMode="numeric" required />
+            <input className="w-full rounded-lg border t-border px-3 py-2" value={rank} onChange={(e) => setRank(e.target.value)} inputMode="numeric" required />
           </label>
           <label className="text-sm">
             <span className="mb-1 block font-medium">Exam</span>
-            <select className="w-full rounded-lg border border-slate-300 px-3 py-2" value={exam} onChange={(e) => setExam(e.target.value)}>
+            <select className="w-full rounded-lg border t-border px-3 py-2" value={exam} onChange={(e) => setExam(e.target.value)}>
               {EXAMS.map((item) => <option key={item}>{item}</option>)}
             </select>
           </label>
           <label className="text-sm">
             <span className="mb-1 block font-medium">Category</span>
-            <select className="w-full rounded-lg border border-slate-300 px-3 py-2" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <select className="w-full rounded-lg border t-border px-3 py-2" value={category} onChange={(e) => setCategory(e.target.value)}>
               {CATEGORIES.map((item) => <option key={item}>{item}</option>)}
             </select>
           </label>
           <label className="text-sm">
             <span className="mb-1 block font-medium">Home state</span>
-            <input className="w-full rounded-lg border border-slate-300 px-3 py-2" value={homeState} onChange={(e) => setHomeState(e.target.value)} required />
+            <input className="w-full rounded-lg border t-border px-3 py-2" value={homeState} onChange={(e) => setHomeState(e.target.value)} required />
           </label>
           <label className="text-sm sm:col-span-2">
             <span className="mb-1 block font-medium">Budget, INR</span>
-            <input className="w-full rounded-lg border border-slate-300 px-3 py-2" value={budget} onChange={(e) => setBudget(e.target.value)} inputMode="numeric" required />
+            <input className="w-full rounded-lg border t-border px-3 py-2" value={budget} onChange={(e) => setBudget(e.target.value)} inputMode="numeric" required />
           </label>
           <div className="sm:col-span-2">
             <button type="submit" disabled={running} className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
@@ -152,7 +152,7 @@ export default function AdmissionsPage() {
           return (
             <section key={key} className="mt-6">
               <h2 className="text-lg font-semibold text-slate-950">{TIER_LABEL[key]} ({rows.length})</h2>
-              <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-2xl border t-border t-surface">
                 {rows.map((row) => (
                   <li key={`${row.college}-${row.degree}-${row.exam}`} className="px-4 py-3 text-sm">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">

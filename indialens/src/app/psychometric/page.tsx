@@ -1,8 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Brain, ChevronRight, Shield, AlertTriangle, CheckCircle, RotateCcw, TrendingUp, Star, Users, Zap, Globe, FlaskConical, Building2, Heart, Palette, Anchor, MessageSquare, Activity, Calculator } from "lucide-react";
 import Link from "next/link";
+import {
+  Brain, Shield, AlertTriangle, Zap, Globe, FlaskConical,
+  Building2, Heart, Palette, Anchor, MessageSquare, Activity, Calculator,
+} from "lucide-react";
+import { finiteOrNull } from "@/lib/mock-data";
+import { PageHeader, SectionHeader } from "@/components/PageHeader";
+import { Notice } from "@/components/Notice";
+import { Skeleton } from "@/components/Skeleton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PsychItem {
@@ -60,39 +67,48 @@ interface FinalReport {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+/**
+ * Trait label → CSS custom property, not a hex.
+ *
+ * These were eight hardcoded light-palette hexes drawn as inline
+ * `backgroundColor` on a bar. A dark-mode visitor got the light palette's
+ * colour on a black surface, which reads as a different colour entirely.
+ * `var(--red)` / `var(--accent)` etc. resolve per theme, so a bar means the
+ * same thing in both — and the palette is now the one in `globals.css`.
+ */
 const TRAITS = [
-  { key: "risk",      label: "Risk Appetite",     color: "#ef4444" },
-  { key: "value",     label: "ROI Orientation",   color: "#f59e0b" },
-  { key: "autonomy",  label: "Autonomy Drive",    color: "#8b5cf6" },
-  { key: "ai_adapt",  label: "AI Adaptability",   color: "#06b6d4" },
-  { key: "openness",  label: "Intellectual Openness", color: "#10b981" },
-  { key: "diligence", label: "Diligence",         color: "#3b82f6" },
-  { key: "social",    label: "Social Drive",      color: "#ec4899" },
-  { key: "security",  label: "Security Need",     color: "#6b7280" },
+  { key: "risk",        label: "Risk Appetite",         color: "var(--red)" },
+  { key: "value",       label: "ROI Orientation",       color: "var(--amber)" },
+  { key: "autonomy",    label: "Autonomy Drive",        color: "var(--purple)" },
+  { key: "ai_adapt",    label: "AI Adaptability",       color: "var(--teal)" },
+  { key: "openness",    label: "Intellectual Openness", color: "var(--green)" },
+  { key: "diligence",   label: "Diligence",             color: "var(--blue)" },
+  { key: "social",      label: "Social Drive",          color: "var(--accent)" },
+  { key: "security",    label: "Security Need",         color: "var(--text-tertiary)" },
 ];
 
 const ARCHETYPE_ICONS: Record<string, React.ReactNode> = {
-  VENTURE_BUILDER:    <Zap className="w-8 h-8" />,
-  TECHNOLOGIST:       <Brain className="w-8 h-8" />,
-  IRR_OPTIMIZER:      <Calculator className="w-8 h-8" />,
-  GLOBAL_ARBITRAGEUR: <Globe className="w-8 h-8" />,
-  RESEARCH_INNOVATOR: <FlaskConical className="w-8 h-8" />,
-  ENTERPRISE_OPERATOR:<Building2 className="w-8 h-8" />,
-  PEOPLE_LEADER:      <Users className="w-8 h-8" />,
-  CREATIVE_DISRUPTOR: <Palette className="w-8 h-8" />,
-  STABILITY_ANCHOR:   <Anchor className="w-8 h-8" />,
-  POLICY_AGENT:       <MessageSquare className="w-8 h-8" />,
-  CLINICAL_SPECIALIST:<Heart className="w-8 h-8" />,
-  FINANCIAL_ENGINEER: <Activity className="w-8 h-8" />,
+  VENTURE_BUILDER:     <Zap className="h-8 w-8" />,
+  TECHNOLOGIST:        <Brain className="h-8 w-8" />,
+  IRR_OPTIMIZER:       <Calculator className="h-8 w-8" />,
+  GLOBAL_ARBITRAGEUR:  <Globe className="h-8 w-8" />,
+  RESEARCH_INNOVATOR:  <FlaskConical className="h-8 w-8" />,
+  ENTERPRISE_OPERATOR: <Building2 className="h-8 w-8" />,
+  PEOPLE_LEADER:       <Heart className="h-8 w-8" />,
+  CREATIVE_DISRUPTOR:  <Palette className="h-8 w-8" />,
+  STABILITY_ANCHOR:    <Anchor className="h-8 w-8" />,
+  POLICY_AGENT:        <MessageSquare className="h-8 w-8" />,
+  CLINICAL_SPECIALIST: <Heart className="h-8 w-8" />,
+  FINANCIAL_ENGINEER:  <Activity className="h-8 w-8" />,
 };
 
 const TRAIT_TYPE_LABELS: Record<string, string> = {
-  SJT:  "Situation",
-  PAIR: "Preference",
-  FREQ: "Self-Report",
-  LOSS: "Economic",
-  TIME: "Time Preference",
-  MATH: "Quantitative",
+  SJT:   "Situation",
+  PAIR:  "Preference",
+  FREQ:  "Self-Report",
+  LOSS:  "Economic",
+  TIME:  "Time Preference",
+  MATH:  "Quantitative",
   VALID: "Consistency",
 };
 
@@ -387,48 +403,49 @@ export default function PsychometricPage() {
 
   if (!sessionState && phase === "intro") {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col items-center justify-center p-6">
-        <div className="max-w-2xl w-full text-center space-y-8">
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-slate-200 shadow-sm">
-              <span className="font-mono font-bold text-xl text-slate-950">IL</span>
-            </div>
-          </div>
-          <div className="text-rose-600 uppercase tracking-widest text-xs font-mono font-semibold">
-            3PL Item Response Theory · Adaptive Diagnostic
-          </div>
-          <h1 className="font-serif text-4xl md:text-5xl font-bold text-slate-950">
-            Your psychometric baseline.
-          </h1>
-          <p className="text-slate-600 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
-            An adaptive IRT engine — not a personality quiz. 12–15 calibrated items with SE &lt; 0.28 convergence criterion.
-          </p>
+      <div className="page-shell">
+        <div className="container-md page-header">
+          <PageHeader
+            align="center"
+            kicker="3PL Item Response Theory · Adaptive diagnostic"
+            eyebrow={
+              <span className="badge badge-rose">
+                <Shield size={10} aria-hidden="true" />
+                Adaptive · 12&ndash;15 calibrated items
+              </span>
+            }
+            title="Your psychometric baseline."
+            lead="An adaptive IRT engine — not a personality quiz. 12–15 calibrated items, stopped when the standard error on the trait estimate falls below 0.28."
+          />
 
-          <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto text-left mt-8">
-            <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="text-sm font-semibold text-slate-900">3PL IRT Model</div>
-              <div className="text-xs text-slate-500 mt-0.5">Parameters: a, b, c</div>
+          <div className="panel mt-2">
+            <div className="panel-head">
+              <span className="panel-title">Engine specification</span>
             </div>
-            <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="text-sm font-semibold text-slate-900">Adaptive Item Selection</div>
-              <div className="text-xs text-slate-500 mt-0.5">Maximum Fisher Info</div>
-            </div>
-            <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="text-sm font-semibold text-slate-900">Bayesian Convergence</div>
-              <div className="text-xs text-slate-500 mt-0.5">Standard Error &lt; 0.28</div>
-            </div>
-            <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="text-sm font-semibold text-slate-900">8 Career Archetypes</div>
-              <div className="text-xs text-slate-500 mt-0.5">Sovereign trait vector</div>
+            <div className="panel-pad">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {[
+                  { head: "3PL IRT model", sub: "Parameters: a, b, c" },
+                  { head: "Adaptive item selection", sub: "Maximum Fisher information" },
+                  { head: "Bayesian convergence", sub: "Standard error < 0.28" },
+                  { head: "8 career archetypes", sub: "Sovereign trait vector" },
+                ].map((spec) => (
+                  <div
+                    key={spec.head}
+                    className="t-chip rounded-lg border p-4"
+                    style={{ borderColor: "var(--border-subtle)" }}
+                  >
+                    <div className="text-[14px] font-semibold t-text">{spec.head}</div>
+                    <div className="mono mt-0.5 text-[12px] t-muted">{spec.sub}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="pt-8">
-            <button
-              onClick={startSession}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-slate-950 hover:bg-slate-800 text-white rounded-xl font-bold transition shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              Begin Diagnostic &mdash;&gt;
+          <div className="mt-8 flex justify-center">
+            <button type="button" onClick={startSession} className="btn-primary">
+              <span>Begin diagnostic</span>
             </button>
           </div>
         </div>
@@ -440,42 +457,65 @@ export default function PsychometricPage() {
     const currentTrait = TRAITS.find(t => t.key === currentItem.trait)?.label || currentItem.trait;
 
     return (
-      <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-          <div className="h-2 bg-slate-100 rounded-full mb-8 overflow-hidden">
-            <div 
-              className="h-full bg-rose-600 transition-all duration-300 rounded-full"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-          
-          <div className="font-mono text-slate-400 text-xs mb-4 uppercase tracking-wider font-semibold">
-            Item {itemsCompleted + 1} · Trait: {currentTrait}
-          </div>
+      <div className="page-shell">
+        <div className="container-md py-10 md:py-16">
+          <div className="panel">
+            <div className="panel-head">
+              <span className="panel-title">
+                Item <span className="num">{itemsCompleted + 1}</span>
+              </span>
+              <span className="num text-[11px] t-faint">{currentTrait}</span>
+            </div>
 
-          <h2 className="font-serif text-2xl md:text-3xl leading-relaxed mb-8 text-slate-950 font-bold">
-            {currentItem.text}
-          </h2>
-
-          <div className="space-y-3">
-            {currentItem.options.map((opt, i) => (
+            <div className="panel-pad">
+              {/* Progress. The track is a data surface, not decoration, so it
+                  carries `aria` state rather than being a bare coloured bar. */}
               <div
-                key={i}
-                onClick={() => handleAnswer(i)}
-                className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 
-                  ${isAnimating ? "opacity-50 pointer-events-none" : "hover:border-slate-400 hover:shadow-sm border-slate-200 bg-slate-50/50 hover:bg-white text-slate-800"}
-                `}
+                className="ci-track mb-7"
+                role="progressbar"
+                aria-label="Diagnostic progress"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progressPct}
               >
-                <div className="flex items-start gap-3">
-                  <span className="font-mono text-slate-400 font-bold mt-0.5">{String.fromCharCode(65 + i)}.</span>
-                  <span className="text-sm font-medium leading-relaxed">{opt.text}</span>
-                </div>
+                <div
+                  className="ci-fill"
+                  style={{ width: `${progressPct}%`, background: "var(--accent)" }}
+                />
               </div>
-            ))}
-          </div>
 
-          <div className="mt-8 text-center font-mono text-xs text-slate-400">
-            Convergence: SE({currentItem.trait}) &rarr; 0.28
+              <h2 className="page-title-sm mb-7 whitespace-pre-line">
+                {currentItem.text}
+              </h2>
+
+              <div className="space-y-2.5">
+                {currentItem.options.map((opt, i) => (
+                  /* A real `<button>`, not a `div` with onClick: the answer
+                     options were previously unreachable by keyboard and had no
+                     focus ring at all. Same handler, same order, same options. */
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleAnswer(i)}
+                    disabled={isAnimating}
+                    className="selection-card flex w-full items-start gap-3 text-left disabled:opacity-50"
+                  >
+                    <span className="num mt-0.5 font-bold t-faint" aria-hidden="true">
+                      {String.fromCharCode(65 + i)}.
+                    </span>
+                    <span className="text-[14px] font-medium leading-relaxed t-text">
+                      {opt.text}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="mt-7 text-center">
+                <span className="num text-[11px] t-faint">
+                  Convergence: SE({currentItem.trait}) &rarr; 0.28
+                </span>
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -483,131 +523,218 @@ export default function PsychometricPage() {
   }
 
   if (report && phase === "result") {
-    let score = Math.round(report.primary_archetype?.probability_pct ?? 0);
-    if (score > 100) {
+    /**
+     * The headline confidence figure.
+     *
+     * A missing `probability_pct` used to coerce to `0`, which drew an empty
+     * ring and stamped "0" on the page — an assertion of no confidence rather
+     * than an unmeasured one. It is now `null` and renders the unmeasured
+     * state. When a number *is* present the original arithmetic is unchanged.
+     */
+    const reportedProbability = finiteOrNull(report.primary_archetype?.probability_pct);
+    let score: number | null = reportedProbability == null ? null : Math.round(reportedProbability);
+    if (score != null && score > 100) {
       const vals = Object.values(report.trait_percentiles ?? {});
-      score = Math.round(vals.reduce((a,b)=>a+b,0) / Math.max(1, vals.length));
+      score = Math.round(vals.reduce((a, b) => a + b, 0) / Math.max(1, vals.length));
       if (score > 100) score = 100;
     }
     const circum = 2 * Math.PI * 40;
-    const strokeDasharray = `${(score / 100) * circum} ${circum}`;
+    const strokeDasharray = `${((score ?? 0) / 100) * circum} ${circum}`;
+    const ringColor = score == null ? "var(--text-tertiary)" : "var(--accent)";
 
     return (
-      <div className="min-h-screen bg-[#F8FAFC] text-slate-900 p-6 md:p-12">
-        <div className="max-w-4xl mx-auto space-y-10">
-          
-          <div className="flex flex-col md:flex-row items-center gap-8 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="relative w-[100px] h-[100px] flex items-center justify-center shrink-0">
-              <svg width="100" height="100" className="transform -rotate-90">
-                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#E2E8F0" strokeWidth="8" />
-                <circle 
-                  cx="50" cy="50" r="40" 
-                  fill="transparent" 
-                  stroke="#E11D48" 
-                  strokeWidth="8" 
-                  strokeDasharray={strokeDasharray}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center flex-col">
-                <span className="text-2xl font-black text-slate-950">{score}</span>
-              </div>
-            </div>
-            
-            <div>
-              <div className="inline-block px-3 py-1 rounded-full bg-rose-50 text-rose-600 text-xs font-mono mb-3 border border-rose-200 uppercase tracking-widest font-semibold">
-                Primary Archetype
-              </div>
-              <h2 className="font-serif text-3xl font-bold text-slate-950 mb-2 flex items-center gap-3">
-                <span className="text-4xl">{report.primary_archetype.emoji}</span>
-                {report.primary_archetype.label}
-              </h2>
-              <p className="text-slate-600 leading-relaxed text-base max-w-2xl">
-                {report.primary_archetype.description}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-8">
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="inline-block px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-mono mb-3 border border-purple-200 uppercase tracking-widest font-semibold">
-                  Secondary Archetype
-                </div>
-                <div className="flex items-center gap-4 mt-2">
-                  <span className="text-3xl">{report.secondary_archetype.emoji}</span>
-                  <div>
-                    <h3 className="font-bold text-base text-slate-900">{report.secondary_archetype.label}</h3>
-                    <p className="text-slate-500 font-mono text-sm">{report.secondary_archetype.probability_pct}% match</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="font-mono text-slate-500 uppercase tracking-widest text-xs mb-6 font-semibold">Trait Dimensions</h3>
-                <div className="space-y-5">
-                  {TRAITS.map(t => {
-                    const val = report.trait_percentiles?.[t.key] ?? 50;
-                    return (
-                      <div key={t.key}>
-                        <div className="flex justify-between text-sm mb-2">
-                          <span className="text-slate-700 font-medium">{t.label}</span>
-                          <span className="font-mono text-slate-500 font-bold">{val}th</span>
-                        </div>
-                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full rounded-full transition-all duration-1000"
-                            style={{ width: `${val}%`, backgroundColor: t.color }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-8">
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-full flex flex-col justify-between">
-                <div>
-                  <h3 className="font-mono text-slate-500 uppercase tracking-widest text-xs mb-6 font-semibold">Career Alignments</h3>
-                  <div className="flex flex-wrap gap-2 mb-8">
-                    {report.primary_archetype.career_paths.map(cp => (
-                      <span key={cp} className="px-3 py-1.5 bg-slate-50 text-slate-800 rounded-lg text-xs font-medium border border-slate-200">
-                        {cp}
-                      </span>
-                    ))}
+      <div className="page-shell">
+        <div className="container-xl page-header-sm">
+          {/* Primary archetype */}
+          <div className="panel">
+            <div className="panel-pad">
+              <div className="flex flex-col items-center gap-7 md:flex-row">
+                <div
+                  className="relative flex h-[100px] w-[100px] flex-shrink-0 items-center justify-center"
+                  role="img"
+                  aria-label={
+                    score == null
+                      ? "Archetype confidence not measured"
+                      : `Archetype confidence ${score} out of 100`
+                  }
+                >
+                  <svg width="100" height="100" style={{ transform: "rotate(-90deg)" }} aria-hidden="true">
+                    <circle
+                      cx="50" cy="50" r="40"
+                      fill="none" stroke="var(--bg-chip)" strokeWidth="8"
+                    />
+                    <circle
+                      cx="50" cy="50" r="40"
+                      fill="none"
+                      stroke={ringColor}
+                      strokeWidth="8"
+                      strokeDasharray={strokeDasharray}
+                      strokeLinecap="round"
+                      opacity={score == null ? 0.35 : 1}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    {score == null ? (
+                      <span className="num-na text-2xl leading-none">&mdash;</span>
+                    ) : (
+                      <span className="metric-lg t-text">{score}</span>
+                    )}
                   </div>
                 </div>
 
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-900 leading-relaxed font-medium">
-                    {report.primary_archetype.caution}
+                <div className="min-w-0 text-center md:text-left">
+                  <span className="badge badge-rose">Primary archetype</span>
+                  <h2 className="mt-3 flex items-center justify-center gap-3 text-[26px] font-bold t-text md:justify-start">
+                    <span className="text-3xl" aria-hidden="true">
+                      {report.primary_archetype.emoji}
+                    </span>
+                    {report.primary_archetype.label}
+                  </h2>
+                  <p className="lead-p mt-2.5">
+                    {report.primary_archetype.description}
+                  </p>
+                  <p className="num mt-2.5 text-[11px] t-faint">
+                    {score == null
+                      ? "Confidence not reported by the engine"
+                      : `Posterior ${score}% · ${report.items_completed} items completed`}
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 border-t border-slate-200">
-            <Link href="/workspace" className="px-8 py-3 bg-slate-950 hover:bg-slate-800 text-white rounded-xl font-bold transition shadow-sm w-full sm:w-auto text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
-              Take to Workspace &mdash;&gt;
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="space-y-6">
+              <div className="panel">
+                <div className="panel-head">
+                  <span className="panel-title">Secondary archetype</span>
+                </div>
+                <div className="panel-pad">
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl" aria-hidden="true">
+                      {report.secondary_archetype.emoji}
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-[15px] font-bold t-text">
+                        {report.secondary_archetype.label}
+                      </h3>
+                      <p className="num text-[12px] t-muted">
+                        <span className="num-1">{report.secondary_archetype.probability_pct}</span>% match
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="panel">
+                <div className="panel-head">
+                  <span className="panel-title">Trait dimensions</span>
+                  <span className="num text-[11px] t-faint">Percentile vs reference cohort</span>
+                </div>
+                <div className="panel-pad">
+                  <div className="space-y-5">
+                    {TRAITS.map((t) => {
+                      /**
+                       * No percentile in the report is drawn as an empty track
+                       * with a dash, not as the 50th. The previous `?? 50`
+                       * invented a cohort position the engine never produced.
+                       */
+                      const val = finiteOrNull(report.trait_percentiles?.[t.key]);
+                      return (
+                        <div key={t.key}>
+                          <div className="mb-2 flex items-baseline justify-between gap-3">
+                            <span className="text-[13px] font-medium t-muted">
+                              {t.label}
+                            </span>
+                            <span
+                              className={`text-[12px] font-bold t-text ${val == null ? "num-na" : "num"}`}
+                            >
+                              {val == null ? "—" : `${val}th`}
+                            </span>
+                          </div>
+                          <div className="ci-track">
+                            {val != null && (
+                              <div
+                                className="ci-fill"
+                                style={{ width: `${val}%`, background: t.color }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="panel flex flex-col">
+              <div className="panel-head">
+                <span className="panel-title">Career alignments</span>
+              </div>
+              <div className="panel-pad flex flex-1 flex-col">
+                <div className="flex flex-wrap gap-2">
+                  {report.primary_archetype.career_paths.length === 0 ? (
+                    <span className="num-na text-[13px]">No career paths reported</span>
+                  ) : (
+                    report.primary_archetype.career_paths.map((cp) => (
+                      <span
+                        key={cp}
+                        className="t-chip rounded-lg border px-3 py-1.5 text-[12px] font-medium t-text"
+                        style={{ borderColor: "var(--border-subtle)" }}
+                      >
+                        {cp}
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                <div className="mt-6">
+                  <Notice tone="warn" icon={AlertTriangle} title="Stated caution">
+                    {report.primary_archetype.caution}
+                  </Notice>
+                </div>
+
+                <Notice tone="info" className="mt-4" title="How to read this">
+                  A trait percentile is a position against the engine&apos;s reference
+                  cohort, not a measurement of ability. An archetype posterior is the
+                  engine&apos;s probability for the label, not a prediction about a career.
+                </Notice>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-col gap-2.5 sm:flex-row">
+            <Link href="/workspace" className="btn-primary">
+              Take it to workspace
             </Link>
-            <button onClick={handleRestart} className="px-8 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-semibold transition w-full sm:w-auto">
-              Retake Diagnostic
+            <button type="button" onClick={handleRestart} className="btn-secondary">
+              Retake diagnostic
             </button>
           </div>
-          
         </div>
       </div>
     );
   }
 
+  // Awaiting the next adaptive item from the engine. A skeleton, not a
+  // spinner: this is a data fetch, and a spinner promises a wait it cannot
+  // know the length of while telling the reader nothing about what is coming.
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col items-center justify-center p-6">
-      <div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin mb-4" />
-      <p className="font-mono text-sm text-slate-500">Calibrating the adaptive engine…</p>
+    <div className="page-shell">
+      <div className="container-md py-16">
+        <div className="mx-auto max-w-xl" role="status" aria-live="polite">
+          <span className="sr-only">Calibrating the adaptive engine…</span>
+          <Skeleton className="h-2.5 w-28" />
+          <Skeleton className="mt-5 h-8 w-4/5" delay={60} />
+          <div className="mt-8 space-y-3">
+            <Skeleton className="h-14" delay={100} />
+            <Skeleton className="h-14" delay={160} />
+            <Skeleton className="h-14" delay={220} />
+            <Skeleton className="h-14" delay={280} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

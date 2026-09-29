@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Database, AlertTriangle, Users } from "lucide-react";
+import { ArrowRight, Database, ShieldCheck, Scale } from "lucide-react";
 import { WaitlistForm } from "@/components/WaitlistForm";
+import { PageHeader, SectionHeader } from "@/components/PageHeader";
+import { RevealGroup } from "@/components/Reveal";
 import { APP_URL, BRAND, mailtoLink } from "@/lib/brand";
 
 export const dynamic = "force-static";
@@ -58,37 +60,65 @@ const LIMITATIONS = [
   { title: "It is not advice", body: "Nothing here is financial, investment, legal, or admissions advice. Talk to a qualified counsellor, and to a financial adviser before you take on debt to fund a degree." },
 ];
 
+const AUDIENCE = [
+  { who: "A student choosing", body: "You have shortlists, not a decision. The gap between a good college and a ruinous one is rarely obvious from the brochure, and the debt that funds it is invisible on the page." },
+  { who: "A parent funding", body: "You are underwriting four to six years of cost against an outcome nobody can promise. You want the downside case, not the brochure median, and you want it in rupees." },
+  { who: "A counsellor advising", body: "You are running the same analysis for many students, and the honest answer is usually a distribution rather than a winner. That is what the tooling gives you." },
+];
+
+const COMMITMENTS = [
+  { title: "No invented precision", body: "When a figure is not measured we say so. A missing value is displayed as missing, never backfilled with something plausible. An estimate that looks certain is worse than one that admits its uncertainty." },
+  { title: "No pay-to-rank", body: "We do not accept payment from a college, university, or programme in exchange for its score or its position. Rankings funded by the ranked are marketing, and the whole point of this product is that a ranking is not the answer." },
+  { title: "Open methodology", body: "The weights, the formulas, and the assumptions are published. If our reasoning is wrong, you should be able to see exactly where and disagree with it in specifics rather than in general." },
+];
+
 function SourceTable() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th className="min-w-[180px]">Source</th>
-            <th>What we take from it</th>
-            <th className="w-40">Collection</th>
-          </tr>
-        </thead>
-        <tbody>
-          {DATA_SOURCES.map((s) => (
-            <tr key={s.name}>
-              <td className="font-medium text-zinc-900">{s.name}</td>
-              <td className="text-zinc-600">{s.what}</td>
-              <td>
-                <span
-                  className={`inline-block rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold ${
-                    s.state === "Automated"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-amber-200 bg-amber-50 text-amber-700"
-                  }`}
-                >
-                  {s.state}
-                </span>
-              </td>
+    <div className="panel">
+      <div className="panel-head">
+        <span className="panel-title flex items-center gap-2">
+          <Database size={12} aria-hidden="true" />
+          Source register
+        </span>
+        <span className="num num-0 t-faint">
+          {DATA_SOURCES.length} sources
+        </span>
+      </div>
+      {/* Horizontal scroll rather than a card layout below `md`: the source
+          name, what it feeds, and its collection state are three genuinely
+          different column types, and re-flowing them into stacked cards
+          loses the comparison the table exists to make. */}
+      <div className="overflow-x-auto">
+        <table className="data-table">
+          <caption className="sr-only">
+            Data sources, what each one feeds, and how it is collected
+          </caption>
+          <thead>
+            <tr>
+              <th className="min-w-[180px]">Source</th>
+              <th>What we take from it</th>
+              <th className="w-40">Collection</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {DATA_SOURCES.map((s) => (
+              <tr key={s.name}>
+                <td className="font-medium t-text">{s.name}</td>
+                <td className="t-muted">{s.what}</td>
+                <td>
+                  <span
+                    className={`badge ${
+                      s.state === "Automated" ? "badge-green" : "badge-amber"
+                    }`}
+                  >
+                    {s.state === "Automated" ? "Automated" : "Needs credentials"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -96,101 +126,85 @@ function SourceTable() {
 
 export default function AboutPage() {
   return (
-    <div className="bg-[#F8FAFC] text-zinc-950">
-      {/* ── Hero ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-slate-200/80 px-5 py-16">
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="h-72 w-[600px] rounded-full bg-gradient-to-tr from-rose-100/45 via-purple-100/25 to-blue-100/30 blur-[100px]" />
-        </div>
-        <div className="relative mx-auto max-w-3xl">
-          <p className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-rose-600">
-            <span className="h-[1.5px] w-2.5 bg-rose-600" />
-            What this is
-          </p>
-          <h1 className="mt-4 text-[clamp(2.2rem,5vw,3.4rem)] font-extrabold leading-[1.06] tracking-[-0.04em] text-zinc-950">
-            A degree is an asset.
-            <br />
-            <span className="font-light text-zinc-400">Most people price it like a receipt.</span>
-          </h1>
-          <p className="mt-6 text-[16px] leading-relaxed text-zinc-600">
-            Rankings describe institutions. Brochures describe the best year a
-            department ever had. Neither one tells you what the next four years
-            of your life cost, or what happens if the salary does not arrive.
-            {BRAND.name} models the degree <em>as you</em> hold it: your budget,
-            your loan appetite, your risk tolerance, your tolerance for a bad
-            year.
-          </p>
-        </div>
-      </section>
+    <div className="page-shell">
+      {/* ── Page header ─────────────────────────────────────────── */}
+      <div className="container-xl page-header">
+        <PageHeader
+          kicker="What this is"
+          title={
+            <>
+              A degree is an asset.
+              <br />
+              <span className="t-faint">Most people price it like a receipt.</span>
+            </>
+          }
+          lead={`Rankings describe institutions. Brochures describe the best year a department ever had. Neither one tells you what the next four years of your life cost, or what happens if the salary does not arrive. ${BRAND.name} models the degree as you hold it: your budget, your loan appetite, your risk tolerance, your tolerance for a bad year.`}
+        />
+      </div>
 
       {/* ── Who it is for ────────────────────────────────────────── */}
-      <section className="border-b border-slate-200/80 px-5 py-14">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex items-center gap-2.5">
-            <Users size={17} className="text-rose-600" />
-            <h2 className="text-[clamp(1.6rem,3.5vw,2.2rem)] font-bold tracking-tight text-zinc-950">
-              Who it is for
-            </h2>
-          </div>
-          <div className="mt-7 grid gap-5 md:grid-cols-3">
-            {[
-              { who: "A student choosing", body: "You have shortlists, not a decision. The gap between a good college and a ruinous one is rarely obvious from the brochure, and the debt that funds it is invisible on the page." },
-              { who: "A parent funding", body: "You are underwriting four to six years of cost against an outcome nobody can promise. You want the downside case, not the brochure median, and you want it in rupees." },
-              { who: "A counsellor advising", body: "You are running the same analysis for many students, and the honest answer is usually a distribution rather than a winner. That is what the tooling gives you." },
-            ].map((item) => (
-              <div key={item.who} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-                <h3 className="text-[14px] font-bold text-zinc-950">{item.who}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-zinc-600">{item.body}</p>
+      <section className="page-band page-section-tight">
+        <div className="container-xl">
+          <SectionHeader kicker="Audience" title="Who it is for" />
+          <RevealGroup className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {AUDIENCE.map((item) => (
+              <div key={item.who} className="panel panel-pad">
+                <h3 className="text-[14px] font-bold t-text">{item.who}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed t-muted">{item.body}</p>
               </div>
             ))}
-          </div>
+          </RevealGroup>
         </div>
       </section>
 
       {/* ── What it does ────────────────────────────────────────── */}
-      <section className="border-b border-slate-200/80 px-5 py-14">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="text-[clamp(1.6rem,3.5vw,2.2rem)] font-bold tracking-tight text-zinc-950">
-            What it actually does
-          </h2>
-          <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-zinc-600">
-            Eight working parts, not a pitch deck. The{" "}
-            <Link href="/methodology" className="font-semibold text-rose-600 underline underline-offset-2 hover:text-rose-700">
-              methodology
-            </Link>{" "}
-            sets out the mathematics behind each one.
-          </p>
-          <div className="mt-7 grid gap-4 sm:grid-cols-2">
+      <section className="page-band page-section">
+        <div className="container-xl">
+          <SectionHeader
+            kicker="Capabilities"
+            title="What it actually does"
+            lead={
+              <>
+                <span className="num">{CAPABILITIES.length}</span> working parts,
+                not a pitch deck. The{" "}
+                <Link
+                  href="/methodology"
+                  className="font-semibold text-accent underline underline-offset-2"
+                >
+                  methodology
+                </Link>{" "}
+                sets out the mathematics behind each one.
+              </>
+            }
+          />
+          <RevealGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {CAPABILITIES.map((cap) => (
-              <div key={cap.name} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-                <h3 className="text-[14px] font-bold text-zinc-950">{cap.name}</h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-zinc-600">{cap.body}</p>
+              <div key={cap.name} className="panel panel-pad">
+                <h3 className="text-[14px] font-bold t-text">{cap.name}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed t-muted">{cap.body}</p>
               </div>
             ))}
-          </div>
+          </RevealGroup>
         </div>
       </section>
 
       {/* ── Data sources ─────────────────────────────────────────── */}
-      <section className="border-b border-slate-200/80 px-5 py-14">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex items-center gap-2.5">
-            <Database size={17} className="text-rose-600" />
-            <h2 className="text-[clamp(1.6rem,3.5vw,2.2rem)] font-bold tracking-tight text-zinc-950">
-              Where the numbers come from
-            </h2>
-          </div>
-          <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-zinc-600">
-            Public and institutional sources, collected on a schedule. Where a
-            source needs an API credential that has not been provisioned, we
-            say so rather than implying the feed is running.
-          </p>
-          <div className="mt-7"><SourceTable /></div>
-          <p className="mt-4 text-[12px] leading-relaxed text-zinc-500">
+      <section className="page-band page-section">
+        <div className="container-xl">
+          <SectionHeader
+            kicker="Provenance"
+            title="Where the numbers come from"
+            lead="Public and institutional sources, collected on a schedule. Where a source needs an API credential that has not been provisioned, we say so rather than implying the feed is running."
+          />
+          <SourceTable />
+          <p className="mt-4 text-[12px] leading-relaxed t-faint">
             Institution-reported figures are reproduced as published. Colleges
             report those numbers to NIRF and to their own stakeholders, and they
             are not independently audited by us. If a record looks wrong, you can{" "}
-            <Link href="/explore" className="font-semibold text-rose-600 underline underline-offset-2 hover:text-rose-700">
+            <Link
+              href="/explore"
+              className="font-semibold text-accent underline underline-offset-2"
+            >
               flag a correction
             </Link>{" "}
             and it enters our review queue.
@@ -199,87 +213,80 @@ export default function AboutPage() {
       </section>
 
       {/* ── Principles ───────────────────────────────────────────── */}
-      <section className="border-b border-slate-200/80 px-5 py-14">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="text-[clamp(1.6rem,3.5vw,2.2rem)] font-bold tracking-tight text-zinc-950">
-            Three commitments
-          </h2>
-          <div className="mt-7 grid gap-5 md:grid-cols-3">
-            {[
-              { title: "No invented precision", body: "When a figure is not measured we say so. A missing value is displayed as missing, never backfilled with something plausible. An estimate that looks certain is worse than one that admits its uncertainty." },
-              { title: "No pay-to-rank", body: "We do not accept payment from a college, university, or programme in exchange for its score or its position. Rankings funded by the ranked are marketing, and the whole point of this product is that a ranking is not the answer." },
-              { title: "Open methodology", body: "The weights, the formulas, and the assumptions are published. If our reasoning is wrong, you should be able to see exactly where and disagree with it in specifics rather than in general." },
-            ].map((item) => (
-              <div key={item.title} className="rounded-2xl border-l-2 border-rose-500 bg-white p-5 shadow-xs">
-                <h3 className="text-[14px] font-bold text-zinc-950">{item.title}</h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-zinc-600">{item.body}</p>
+      <section className="page-band page-section">
+        <div className="container-xl">
+          <SectionHeader kicker="Principles" title="Three commitments" />
+          <RevealGroup className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {COMMITMENTS.map((item) => (
+              <div
+                key={item.title}
+                className="card-accent border-line/10"
+              >
+                <ShieldCheck size={14} style={{ color: "var(--accent)" }} aria-hidden="true" />
+                <h3 className="mt-2.5 text-[14px] font-bold t-text">{item.title}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed t-muted">{item.body}</p>
               </div>
             ))}
-          </div>
+          </RevealGroup>
         </div>
       </section>
 
       {/* ── Limitations ──────────────────────────────────────────── */}
-      <section className="border-b border-slate-200/80 px-5 py-14">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex items-center gap-2.5">
-            <AlertTriangle size={17} className="text-amber-500" />
-            <h2 className="text-[clamp(1.6rem,3.5vw,2.2rem)] font-bold tracking-tight text-zinc-950">
-              What it cannot do
-            </h2>
-          </div>
-          <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-zinc-600">
-            The limits are part of the product, not a footnote. If any of these
-            would change your decision, weigh them yourself.
-          </p>
-          <div className="mt-7 grid gap-4 md:grid-cols-2">
+      <section className="page-band page-section">
+        <div className="container-xl">
+          <SectionHeader
+            kicker="Limits"
+            title="What it cannot do"
+            lead="The limits are part of the product, not a footnote. If any of these would change your decision, weigh them yourself."
+          />
+          <RevealGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {LIMITATIONS.map((item) => (
-              <div key={item.title} className="rounded-2xl border border-amber-200/70 bg-amber-50/40 p-5">
-                <h3 className="text-[14px] font-bold text-zinc-950">{item.title}</h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-zinc-600">{item.body}</p>
+              <div key={item.title} className="panel panel-pad">
+                <h3 className="text-[14px] font-bold t-text">{item.title}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed t-muted">{item.body}</p>
               </div>
             ))}
-          </div>
+          </RevealGroup>
         </div>
       </section>
 
       {/* ── Waitlist ─────────────────────────────────────────────── */}
-      <section className="px-5 py-16">
-        <div className="mx-auto grid max-w-4xl gap-8 lg:grid-cols-[1fr_400px] lg:items-start">
-          <div>
-            <h2 className="text-[clamp(1.7rem,3.5vw,2.3rem)] font-bold tracking-tight text-zinc-950">
-              Try it before you judge it
-            </h2>
-            <p className="mt-3 text-[14px] leading-relaxed text-zinc-600">
-              Everything described on this page is free during launch and needs
-              no account for a first report. Run your own case and see whether the
-              output is worth trusting for your situation — that is the only
-              evaluation that counts.
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/onboard"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-black px-6 py-3 text-[14px] font-semibold text-white transition-all hover:bg-zinc-800 active:scale-[0.98]"
-              >
-                Start your free analysis
-                <ArrowRight size={14} />
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-[14px] font-medium text-zinc-800 transition-all hover:bg-slate-50"
-              >
-                Read the pricing
-              </Link>
+      <section className="page-band page-section">
+        <div className="container-xl">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+            <div>
+              <SectionHeader kicker="Evaluate" title="Try it before you judge it" />
+              <p className="body-p max-w-xl">
+                Everything described on this page is free during launch and needs
+                no account for a first report. Run your own case and see whether the
+                output is worth trusting for your situation — that is the only
+                evaluation that counts.
+              </p>
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                <Link href="/onboard" className="btn-primary">
+                  Start your free analysis
+                  <ArrowRight size={14} aria-hidden="true" />
+                </Link>
+                <Link href="/pricing" className="btn-secondary">
+                  Read the pricing
+                </Link>
+              </div>
+              <div className="mt-7 flex items-start gap-2.5">
+                <Scale size={14} className="mt-0.5 flex-shrink-0 t-faint" aria-hidden="true" />
+                <p className="text-[12px] leading-relaxed t-faint">
+                  Questions about the data or the method?{" "}
+                  <a
+                    href={mailtoLink("Question about your data")}
+                    className="font-semibold text-accent underline underline-offset-2"
+                  >
+                    Email us
+                  </a>{" "}
+                  and a person will reply.
+                </p>
+              </div>
             </div>
-            <p className="mt-6 text-[12px] leading-relaxed text-zinc-500">
-              Questions about the data or the method?{" "}
-              <a href={mailtoLink("Question about your data")} className="font-semibold text-rose-600 underline underline-offset-2 hover:text-rose-700">
-                Email us
-              </a>{" "}
-              and a person will reply.
-            </p>
+            <WaitlistForm source="about" />
           </div>
-          <WaitlistForm source="about" />
         </div>
       </section>
     </div>

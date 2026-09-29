@@ -9,14 +9,16 @@ import {
   Calculator,
   Info,
   RefreshCw,
-  Loader2,
-  CircleAlert,
   ExternalLink,
   GlobeX,
   FilterX,
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { NO_DATA, finiteOrNull } from "@/lib/mock-data";
+import { PageHeader, SectionHeader } from "@/components/PageHeader";
+import { Notice, UnmeasuredNote } from "@/components/Notice";
+import { Metric } from "@/components/Metric";
+import { Skeleton, SkeletonStatus, SkeletonCards } from "@/components/Skeleton";
 
 /*
  * Every number on this page comes from the FastAPI v2 global router
@@ -100,11 +102,20 @@ const usd = (n: number | null) => (n == null ? NO_DATA : `$${Math.round(n).toLoc
 const inrLakhs = (n: number | null) => (n == null ? NO_DATA : `₹${(n / 100000).toFixed(1)} L`);
 const pct = (n: number | null, digits = 1) => (n == null ? NO_DATA : `${(n * 100).toFixed(digits)}%`);
 
+/**
+ * Visa survival → a CLASS, not a colour string.
+ *
+ * It returned light-palette hex-derived classes (`text-emerald-700`) that do
+ * not exist in the dark theme, where a dark-mode visitor got a near-black
+ * green on a near-black surface. The system tokens are the same meaning in
+ * both. A null survival rate is `text-ink-3` — grey, never red, because an
+ * unmeasured probability is not a low one.
+ */
 function visaTone(prob: number | null): string {
-  if (prob == null) return "text-slate-400";
-  if (prob >= 0.9) return "text-emerald-700";
-  if (prob >= 0.6) return "text-amber-700";
-  return "text-rose-700";
+  if (prob == null) return "text-ink-3";
+  if (prob >= 0.9) return "text-sys-green";
+  if (prob >= 0.6) return "text-sys-amber";
+  return "text-sys-red";
 }
 
 export default function GlobalDegreesPage() {
@@ -270,309 +281,424 @@ export default function GlobalDegreesPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Header Section */}
-        <div className="border-b border-slate-200 pb-8 mb-10">
-          <div className="flex items-center gap-2 text-rose-600 text-xs uppercase tracking-widest font-mono font-semibold mb-2">
-            <Globe className="w-4 h-4" />
-            <span>Cross-Border Actuarial Valuation Hub · Section 10 Specification</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950">
-            Global Degree Valuation & Visa Arbitrage
-          </h1>
-          <p className="mt-3 text-base text-slate-600 max-w-3xl leading-relaxed">
-            Each card below is priced by the server-side engine: 20-year cross-border Net Present
-            Value, STEM OPT H-1B retention probability, and city-level cost-of-living tax drag.
-            Where a program has not been valued, this page says so instead of estimating.
-          </p>
+  const cityEntries = useMemo(
+    () => Object.entries(benchmarks?.cities ?? {}),
+    [benchmarks],
+  );
 
-          {/* Actuarial KPI Ribbon — every figure is a live registry value or a
+  const clearFilters = () => {
+    setSelectedCountry("All");
+    setSelectedTier("All");
+    setStemOnly(false);
+  };
+
+  return (
+    <div className="page-shell">
+      <div className="container-xl page-header">
+        <PageHeader
+          kicker="Cross-border actuarial valuation hub · Section 10"
+          eyebrow={
+            <span className="badge badge-rose">
+              <Globe size={10} aria-hidden="true" />
+              Engine-priced · 20-year NPV
+            </span>
+          }
+          title="Global Degree Valuation & Visa Arbitrage"
+          lead="Each programme below is priced by the server-side engine: 20-year cross-border net present value, STEM OPT H-1B retention probability, and city-level cost-of-living tax drag. Where a programme has not been valued, this page says so instead of estimating."
+        >
+          {/* Actuarial KPI ribbon — every figure is a live registry value or a
               median over registry rows. FX comes from the engine's own rate
               table, not a constant in this file. */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
-              <span className="text-xs font-mono text-slate-500 uppercase">Programs in registry</span>
-              <div className="text-2xl font-bold text-slate-950 mt-1">
-                {isLoading ? NO_DATA : programs.length}
-              </div>
-              <span className="text-[11px] text-slate-400">
-                {registrySource ? `Source: ${registrySource.replace(/_/g, " ")}` : "Awaiting registry"}
+          <div className="panel">
+            <div className="panel-head">
+              <span className="panel-title">Registry rollup</span>
+              <span className="num text-[11px] t-faint">
+                {registrySource
+                  ? registrySource.replace(/_/g, " ")
+                  : isLoading
+                    ? "loading"
+                    : "no source reported"}
               </span>
             </div>
-            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
-              <span className="text-xs font-mono text-slate-500 uppercase">Median visa survival</span>
-              <div className={`text-2xl font-bold mt-1 ${visaTone(rollup.medianVisaSurvival)}`}>
-                {isLoading ? NO_DATA : rollup.medianVisaSurvival == null ? NO_DATA : pct(rollup.medianVisaSurvival, 1)}
-              </div>
-              <span className="text-[11px] text-slate-400">
-                {rollup.measured > 0 ? `Median of ${rollup.measured} registry rows` : "No visa data loaded"}
-              </span>
-            </div>
-            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
-              <span className="text-xs font-mono text-slate-500 uppercase">USD → INR</span>
-              <div className="text-2xl font-bold text-amber-600 mt-1">
-                {isLoading ? NO_DATA : rollup.usdRate == null ? NO_DATA : `₹${rollup.usdRate.toFixed(2)}`}
-              </div>
-              <span className="text-[11px] text-slate-400">Engine FX table · /global/city-benchmarks</span>
-            </div>
-            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
-              <span className="text-xs font-mono text-slate-500 uppercase">EUR → INR</span>
-              <div className="text-2xl font-bold text-amber-600 mt-1">
-                {isLoading ? NO_DATA : rollup.eurRate == null ? NO_DATA : `₹${rollup.eurRate.toFixed(2)}`}
-              </div>
-              <span className="text-[11px] text-slate-400">Engine FX table · /global/city-benchmarks</span>
+            <div className="panel-pad">
+              {isLoading ? (
+                <>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-4">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div key={i} className="metric-cell">
+                        <Skeleton className="h-2.5 w-20" />
+                        <Skeleton className="mt-2 h-7 w-24" />
+                      </div>
+                    ))}
+                  </div>
+                  <SkeletonStatus label="Loading the program registry" />
+                </>
+              ) : (
+                <div className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-4">
+                  <Metric
+                    label="Programs in registry"
+                    value={programs.length}
+                    format={(v) => String(v)}
+                    caption="Rows returned by /global/programs"
+                  />
+                  <Metric
+                    label="Median visa survival"
+                    value={rollup.medianVisaSurvival}
+                    format={(v) => pct(v, 1)}
+                    caption={
+                      rollup.measured > 0
+                        ? `Median of ${rollup.measured} registry rows`
+                        : "No row carries a survival rate"
+                    }
+                    tone={
+                      rollup.medianVisaSurvival == null
+                        ? "default"
+                        : rollup.medianVisaSurvival >= 0.9
+                          ? "good"
+                          : rollup.medianVisaSurvival >= 0.6
+                            ? "warn"
+                            : "bad"
+                    }
+                  />
+                  <Metric
+                    label="USD → INR"
+                    value={rollup.usdRate}
+                    format={(v) => `₹${v.toFixed(2)}`}
+                    caption="Engine FX table · /global/city-benchmarks"
+                  />
+                  <Metric
+                    label="EUR → INR"
+                    value={rollup.eurRate}
+                    format={(v) => `₹${v.toFixed(2)}`}
+                    caption="Engine FX table · /global/city-benchmarks"
+                  />
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        </PageHeader>
+      </div>
 
-        {/* Filter Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200 p-4 rounded-2xl shadow-sm mb-8">
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="text-xs font-mono text-slate-500 uppercase">Country:</label>
-            {countries.map((c) => (
-              <button
-                key={c}
-                onClick={() => setSelectedCountry(c)}
-                disabled={isLoading}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-40 ${
-                  selectedCountry === c
-                    ? "bg-slate-950 text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
-              >
-                {c}
+      <div className="container-xl pb-16">
+        {/* Filter bar */}
+        <div className="panel">
+          <div className="panel-head">
+            <span className="panel-title">Filters</span>
+            {(selectedCountry !== "All" || selectedTier !== "All" || stemOnly) && (
+              <button type="button" onClick={clearFilters} className="btn-ghost">
+                Clear all
               </button>
-            ))}
+            )}
           </div>
+          <div className="panel-pad space-y-3.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="metric-label mr-1">Country</span>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by country">
+                {countries.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-pressed={selectedCountry === c}
+                    onClick={() => setSelectedCountry(c)}
+                    disabled={isLoading}
+                    className={`domain-chip ${selectedCountry === c ? "selected" : ""}`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="text-xs font-mono text-slate-500 uppercase">Tier:</label>
-            {tiers.map((t) => (
-              <button
-                key={t}
-                onClick={() => setSelectedTier(t)}
-                disabled={isLoading}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-40 ${
-                  selectedTier === t
-                    ? "bg-slate-950 text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="metric-label mr-1">Tier</span>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by global tier">
+                {tiers.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    aria-pressed={selectedTier === t}
+                    onClick={() => setSelectedTier(t)}
+                    disabled={isLoading}
+                    className={`domain-chip ${selectedTier === t ? "selected" : ""}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="stem"
-              checked={stemOnly}
-              onChange={(e) => setStemOnly(e.target.checked)}
-              className="rounded bg-white border-slate-300 text-slate-950 focus:ring-0"
-            />
-            <label htmlFor="stem" className="text-xs font-mono text-slate-600 cursor-pointer">
-              STEM OPT Designated Only
-            </label>
+            <div className="flex items-center gap-2.5">
+              <input
+                type="checkbox"
+                id="stem"
+                checked={stemOnly}
+                onChange={(e) => setStemOnly(e.target.checked)}
+                className="h-4 w-4 rounded border-line accent-[var(--accent)]"
+              />
+              <label htmlFor="stem" className="cursor-pointer text-[13px] t-muted">
+                STEM OPT designated only
+              </label>
+            </div>
+
+            {!isLoading && (
+              <p className="num text-[11px] t-faint">
+                {filteredPrograms.length} of {programs.length} programme
+                {programs.length === 1 ? "" : "s"} shown
+              </p>
+            )}
           </div>
         </div>
 
         {/* Grid states: loading → error → empty → data */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <Loader2 className="w-6 h-6 animate-spin mb-3" />
-            <p className="text-sm font-mono">Loading global program registry…</p>
+          <div className="mt-6">
+            <SkeletonCards count={6} />
+            <SkeletonStatus label="Loading global program registry" />
           </div>
         ) : loadError ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-sm">
-            <CircleAlert className="w-6 h-6 text-rose-600 mx-auto mb-3" />
-            <p className="text-sm text-slate-700">{loadError}</p>
-            <p className="text-xs text-slate-500 mt-1">
-              Programs are not substituted from a local list, because a list that is not the engine&apos;s
-              registry would look priced when it is not.
-            </p>
-            <button
-              onClick={() => setReloadKey((k) => k + 1)}
-              className="mt-5 inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-white rounded-xl px-4 py-2.5 text-xs font-semibold transition"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Retry</span>
-            </button>
+          <div className="panel mt-6">
+            <div className="panel-head">
+              <span className="panel-title">Registry unavailable</span>
+            </div>
+            <div className="panel-pad">
+              <Notice tone="error" title="The registry could not be loaded">
+                {loadError} Programmes are not substituted from a local list, because a list
+                that is not the engine&apos;s registry would look priced when it is not.
+              </Notice>
+              <button
+                type="button"
+                onClick={() => setReloadKey((k) => k + 1)}
+                className="btn-secondary mt-4"
+              >
+                <RefreshCw size={13} aria-hidden="true" />
+                <span>Retry</span>
+              </button>
+            </div>
           </div>
         ) : filteredPrograms.length === 0 ? (
           /* Same distinction as the marketplace: an empty registry is a fact
              about the data, an empty filter result is a fact about the query. */
-          <EmptyState
-            icon={programs.length === 0 ? GlobeX : FilterX}
-            title={
-              programs.length === 0
-                ? "The program registry returned no programs"
-                : "No programs match these filters"
-            }
-            hint={
-              programs.length === 0
-                ? "No global programme records are published yet. We would rather show this than display illustrative figures, which would be indistinguishable from real valuations."
-                : "Programmes exist in the registry, but none match the country, tier, and field you have selected."
-            }
-            action={
-              programs.length > 0
-                ? {
-                    label: "Clear filters",
-                    onClick: () => {
-                      setSelectedCountry("All");
-                      setSelectedTier("All");
-                      setStemOnly(false);
-                    },
-                  }
-                : { label: "Browse the program index", href: "/explore" }
-            }
-            secondaryAction={programs.length > 0 ? { label: "How we value degrees", href: "/methodology" } : undefined}
-          />
+          <div className="mt-6">
+            <EmptyState
+              icon={programs.length === 0 ? GlobeX : FilterX}
+              title={
+                programs.length === 0
+                  ? "The program registry returned no programs"
+                  : "No programs match these filters"
+              }
+              hint={
+                programs.length === 0
+                  ? "No global programme records are published yet. We would rather show this than display illustrative figures, which would be indistinguishable from real valuations."
+                  : "Programmes exist in the registry, but none match the country, tier, and field you have selected."
+              }
+              action={
+                programs.length > 0
+                  ? { label: "Clear filters", onClick: clearFilters }
+                  : { label: "Browse the program index", href: "/explore" }
+              }
+              secondaryAction={
+                programs.length > 0
+                  ? { label: "How we value degrees", href: "/methodology" }
+                  : undefined
+              }
+            />
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {filteredPrograms.map((p) => {
               const key = PROGRAM_KEY(p);
               const state = npv[key]?.status ?? "idle";
               const result = npv[key]?.status === "ready" ? npv[key].data : null;
               const reason = npv[key]?.status === "unavailable" ? npv[key].reason : null;
+              const visaProb = finiteOrNull(p.visa_survival_prob);
               // The engine falls back to a generic national index for a city it
-                  // has not indexed (nextgen_engine.py:769). Say so, because the
-                  // resulting NPV is then less precise than the number suggests.
+              // has not indexed (nextgen_engine.py:769). Say so, because the
+              // resulting NPV is then less precise than the number suggests.
               const cityIndexed = benchmarks ? Boolean(benchmarks.cities?.[p.city]) : null;
 
               return (
-                <div
-                  key={key}
-                  className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[11px] font-mono uppercase px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                        {p.global_tier}
-                      </span>
-                      <span className={`text-[11px] font-mono font-semibold ${visaTone(finiteOrNull(p.visa_survival_prob))}`}>
-                        {finiteOrNull(p.visa_survival_prob) == null
-                          ? "Visa survival: —"
-                          : `Visa survival: ${pct(finiteOrNull(p.visa_survival_prob), 0)}`}
+                <div key={key} className="panel flex flex-col">
+                  <div className="panel-pad flex-1">
+                    <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                      <span className="badge badge-blue">{p.global_tier}</span>
+                      <span className={`num text-[11px] font-semibold ${visaTone(visaProb)}`}>
+                        Visa survival{" "}
+                        {visaProb == null ? (
+                          <span className="num-na">{NO_DATA}</span>
+                        ) : (
+                          pct(visaProb, 0)
+                        )}
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-slate-950 leading-tight">{p.university_name}</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">{p.city}, {p.country}</p>
-                    <div className="text-xs text-slate-700 font-medium mt-2 bg-slate-50 border border-slate-100 p-2 rounded-xl">
+                    <h3 className="text-[15px] font-bold leading-tight t-text">
+                      {p.university_name}
+                    </h3>
+                    <p className="mt-0.5 text-[12px] t-muted">
+                      {p.city}, {p.country}
+                    </p>
+                    <div
+                      className="t-chip mt-2.5 rounded-lg border p-2 text-[12px] font-medium t-text"
+                      style={{ borderColor: "var(--border-subtle)" }}
+                    >
                       {p.degree_name} in {p.major}
                     </div>
 
                     {/* Registry facts only. No client-side FX, no client-side
                         tax, no client-side rent model — the card shows what was
                         ingested and nothing derived. */}
-                    <div className="mt-4 grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-3">
-                      <div>
-                        <span className="text-slate-400 font-mono text-[11px]">Annual Tuition (Y1):</span>
-                        <div className="text-slate-900 font-bold font-mono">{usd(finiteOrNull(p.annual_tuition_usd))}</div>
-                        <span className="text-[10px] text-slate-500">Living: {usd(finiteOrNull(p.living_cost_annual_usd))}/yr</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 font-mono text-[11px]">Median Salary (Y1):</span>
-                        <div className="text-emerald-700 font-bold font-mono">{usd(finiteOrNull(p.median_salary_usd_y1))}</div>
-                        <span className="text-[10px] text-slate-500">Y5: {usd(finiteOrNull(p.median_salary_usd_y5))}</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 bg-slate-50 border border-slate-200 p-3 rounded-xl text-[11px] space-y-1.5">
-                      <div className="flex justify-between items-center text-slate-600">
-                        <span>Visa pathway:</span>
-                        <span className="text-slate-950 font-semibold text-right">{p.visa_type || NO_DATA}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-slate-500">
-                        <span>Effective tax rate:</span>
-                        <span className="font-mono text-slate-700">
-                          {finiteOrNull(p.effective_tax_rate) == null ? NO_DATA : pct(finiteOrNull(p.effective_tax_rate), 1)}
+                    <div
+                      className="mt-4 grid grid-cols-2 gap-3 border-t pt-3.5"
+                      style={{ borderColor: "var(--border-subtle)" }}
+                    >
+                      <div className="metric-cell">
+                        <span className="metric-label">Annual tuition · Y1</span>
+                        <span className="num text-[13px] font-bold t-text">
+                          {usd(finiteOrNull(p.annual_tuition_usd))}
+                        </span>
+                        <span className="num text-[10px] t-faint">
+                          Living {usd(finiteOrNull(p.living_cost_annual_usd))}/yr
                         </span>
                       </div>
-                      {cityIndexed === false && (
-                        <div className="flex items-start gap-1.5 text-amber-700">
-                          <AlertTriangle className="w-3 h-3 mt-px shrink-0" />
-                          <span>
-                            {p.city} is not in the engine&apos;s city cost-of-living index, so the model applies a
-                            generic national tax and rent assumption.
-                          </span>
-                        </div>
-                      )}
+                      <div className="metric-cell">
+                        <span className="metric-label">Median salary · Y1</span>
+                        <span className="num text-[13px] font-bold text-sys-green">
+                          {usd(finiteOrNull(p.median_salary_usd_y1))}
+                        </span>
+                        <span className="num text-[10px] t-faint">
+                          Y5 {usd(finiteOrNull(p.median_salary_usd_y5))}
+                        </span>
+                      </div>
                     </div>
 
+                    <dl
+                      className="mt-3 space-y-1.5"
+                    >
+                      <div className="metric-cell-row">
+                        <dt className="metric-label">Visa pathway</dt>
+                        <dd className="num text-[11px] t-text">
+                          {p.visa_type || <span className="num-na">{NO_DATA}</span>}
+                        </dd>
+                      </div>
+                      <div className="metric-cell-row">
+                        <dt className="metric-label">Effective tax rate</dt>
+                        <dd className="num text-[11px] t-text">
+                          {pct(finiteOrNull(p.effective_tax_rate), 1)}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    {cityIndexed === false && (
+                      <div className="mt-3">
+                        <Notice tone="warn" icon={AlertTriangle}>
+                          {p.city} is not in the engine&apos;s city cost-of-living index, so the
+                          model applies a generic national tax and rent assumption.
+                        </Notice>
+                      </div>
+                    )}
+
+                    {state === "loading" && (
+                      <div className="mt-3 space-y-2" role="status" aria-live="polite">
+                        <Skeleton className="h-2.5 w-32" />
+                        <Skeleton className="h-2.5 w-full" />
+                        <Skeleton className="h-2.5 w-2/3" />
+                        <span className="sr-only">Running the NPV model…</span>
+                      </div>
+                    )}
+
                     {state === "ready" && result && (
-                      <div className="mt-3 border border-slate-300 bg-white p-3 rounded-xl text-[11px] space-y-1.5">
-                        <div className="flex items-center gap-1.5 text-slate-950 font-bold">
-                          <Calculator className="w-3.5 h-3.5 text-rose-600" />
-                          <span>20-Year Engine NPV</span>
-                        </div>
-                        <div className="flex justify-between text-slate-600">
-                          <span>Total investment</span>
-                          <span className="font-mono">{inrLakhs(result.total_investment_inr)}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-600">
-                          <span>Net annual savings (Y1)</span>
-                          <span className="font-mono">{inrLakhs(result.net_annual_savings_y1_inr)}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-600">
-                          <span>Tax drag applied</span>
-                          <span className="font-mono">{result.effective_tax_drag_pct}%</span>
-                        </div>
-                        <div className="flex justify-between text-slate-950 font-bold border-t border-slate-200 pt-1.5">
-                          <span>NPV (20y, discounted)</span>
-                          <span className="font-mono">{inrLakhs(result.npv_20y_inr)}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-500">
-                          <span>ROI multiple</span>
-                          <span className="font-mono">{result.roi_multiple}×</span>
-                        </div>
-                        <div className="pt-1 text-slate-700 italic">{result.verdict}</div>
+                      <div
+                        className="t-elevated mt-3.5 rounded-lg border p-3.5"
+                        style={{ borderColor: "var(--border)" }}
+                      >
+                        <span className="metric-label flex items-center gap-1.5">
+                          <Calculator size={12} style={{ color: "var(--accent)" }} aria-hidden="true" />
+                          20-year engine NPV
+                        </span>
+                        <dl className="mt-2.5 space-y-1.5">
+                          <div className="metric-cell-row">
+                            <dt className="t-muted text-[11px]">Total investment</dt>
+                            <dd className="num text-[12px] t-text">
+                              {inrLakhs(result.total_investment_inr)}
+                            </dd>
+                          </div>
+                          <div className="metric-cell-row">
+                            <dt className="t-muted text-[11px]">Net annual savings · Y1</dt>
+                            <dd className="num text-[12px] t-text">
+                              {inrLakhs(result.net_annual_savings_y1_inr)}
+                            </dd>
+                          </div>
+                          <div className="metric-cell-row">
+                            <dt className="t-muted text-[11px]">Tax drag applied</dt>
+                            <dd className="num text-[12px] t-text">
+                              <span className="num-1">{result.effective_tax_drag_pct}</span>%
+                            </dd>
+                          </div>
+                          <div
+                            className="metric-cell-row border-t pt-1.5"
+                            style={{ borderColor: "var(--border-subtle)" }}
+                          >
+                            <dt className="text-[11px] font-semibold t-text">NPV · 20y discounted</dt>
+                            <dd className="num text-[13px] font-bold t-text">
+                              {inrLakhs(result.npv_20y_inr)}
+                            </dd>
+                          </div>
+                          <div className="metric-cell-row">
+                            <dt className="metric-label">ROI multiple</dt>
+                            <dd className="num text-[12px] t-text">
+                              <span className="num-1">{result.roi_multiple}</span>×
+                            </dd>
+                          </div>
+                        </dl>
+                        <p className="body-p mt-2.5 italic">{result.verdict}</p>
                       </div>
                     )}
 
                     {state === "unavailable" && reason && (
-                      <div className="mt-3 border border-amber-200 bg-amber-50 text-amber-900 p-3 rounded-xl text-[11px] leading-relaxed">
-                        <strong className="block mb-0.5">No valuation available</strong>
+                      <UnmeasuredNote className="mt-3.5" what="20-year NPV">
                         {reason}
-                      </div>
+                      </UnmeasuredNote>
                     )}
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-                    <span className="text-[11px] font-mono text-slate-500">
-                      {state === "loading" ? "Running model…" : `Visa: ${p.visa_type || NO_DATA}`}
+                  <div
+                    className="flex flex-wrap items-center justify-between gap-3 border-t px-[22px] py-3"
+                    style={{ borderColor: "var(--border-subtle)" }}
+                  >
+                    <span className="num text-[11px] t-faint">
+                      {state === "loading"
+                        ? "Running model…"
+                        : `Visa: ${p.visa_type || NO_DATA}`}
                     </span>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       {p.website_url && (
                         <a
                           href={p.website_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[11px] text-slate-500 hover:text-slate-900 flex items-center gap-1"
+                          className="btn-ghost num text-[11px]"
                         >
                           <span>Source</span>
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink size={12} aria-hidden="true" />
                         </a>
                       )}
                       <Link
                         href={`/analyze?country=${encodeURIComponent(p.country)}`}
-                        className="text-xs text-slate-500 hover:text-slate-950 hover:underline font-semibold flex items-center gap-1"
+                        className="btn-ghost num text-[11px]"
                       >
                         <span>Analyze</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <ArrowRight size={12} aria-hidden="true" />
                       </Link>
                       <button
+                        type="button"
                         onClick={() => void modelNpv(p)}
                         disabled={state === "loading"}
-                        className="bg-slate-950 hover:bg-slate-800 disabled:bg-slate-300 text-white rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-1.5 transition"
+                        className="btn-primary"
                       >
                         {state === "loading" ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span className="spinner" aria-hidden="true" />
                         ) : (
-                          <Calculator className="w-3.5 h-3.5" />
+                          <Calculator size={13} aria-hidden="true" />
                         )}
                         <span>{state === "ready" ? "Re-run NPV" : "Model NPV"}</span>
                       </button>
@@ -587,55 +713,127 @@ export default function GlobalDegreesPage() {
         {/* Spatial cost-of-living index — published values only. The previous
             copy of this panel asserted a "300% higher capital accumulation
             rate" from a worked example nobody could audit. */}
-        <div className="mt-12 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <h3 className="text-base font-bold text-slate-950 flex items-center gap-2">
-            <Calculator className="w-4 h-4 text-rose-600" />
-            <span>City Cost-of-Living Index applied by the NPV engine</span>
-          </h3>
-          <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-            The cross-border NPV model draws a city&apos;s effective tax rate, median rent and residual
-            living cost from this index. A destination absent from it falls back to a generic national
-            assumption, which is flagged on the program card above.
-          </p>
-
-          {!benchmarks ? (
-            <p className="text-xs text-slate-400 font-mono mt-4">
-              {isLoading ? "Loading city index…" : "City cost-of-living index unavailable."}
-            </p>
-          ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-left text-slate-400 font-mono uppercase text-[10px]">
-                    <th className="py-2 pr-4 font-semibold">City</th>
-                    <th className="py-2 pr-4 font-semibold">Tax rate</th>
-                    <th className="py-2 pr-4 font-semibold">Median rent / mo</th>
-                    <th className="py-2 pr-4 font-semibold">Living / mo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(benchmarks.cities ?? {}).map(([city, entry]) => (
-                    <tr key={city} className="border-t border-slate-100">
-                      <td className="py-2 pr-4 font-semibold text-slate-900">{city}</td>
-                      <td className="py-2 pr-4 font-mono text-slate-700">{(entry.tax_rate * 100).toFixed(1)}%</td>
-                      <td className="py-2 pr-4 font-mono text-slate-700">${entry.monthly_rent.toLocaleString()}</td>
-                      <td className="py-2 pr-4 font-mono text-slate-700">${entry.monthly_living.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          <p className="text-[11px] text-slate-500 mt-4 flex items-start gap-1.5">
-            <Info className="w-3.5 h-3.5 mt-px shrink-0 text-slate-400" />
-            <span>
-              Visa survival is the engine&apos;s H-1B lottery math (1 − (1 − 0.25)ⁿ over the OPT attempts a
-              program buys), not an observed approval rate. Treat it as a structural hazard, not a promise.
+        <div className="panel mt-12">
+          <div className="panel-head">
+            <span className="panel-title flex items-center gap-2">
+              <Calculator size={12} aria-hidden="true" />
+              City cost-of-living index applied by the NPV engine
             </span>
-          </p>
+          </div>
+          <div className="panel-pad">
+            <p className="body-p">
+              The cross-border NPV model draws a city&apos;s effective tax rate, median rent and
+              residual living cost from this index. A destination absent from it falls back to a
+              generic national assumption, which is flagged on the programme card above.
+            </p>
+
+            {!benchmarks ? (
+              isLoading ? (
+                <div className="mt-4 space-y-2" role="status" aria-live="polite">
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-4/5" />
+                  <Skeleton className="h-3 w-2/3" />
+                  <span className="sr-only">Loading the city index…</span>
+                </div>
+              ) : (
+                <UnmeasuredNote
+                  className="mt-4"
+                  what="City cost-of-living index"
+                >
+                  The engine&apos;s city benchmarks endpoint did not return an index, so no tax
+                  rate, rent or living figure is shown. The NPV cards above fall back to a
+                  generic national assumption for any city it cannot price.
+                </UnmeasuredNote>
+              )
+            ) : cityEntries.length === 0 ? (
+              <EmptyState
+                variant="bare"
+                title="The city index is empty"
+                hint="The engine returned the endpoint but no city rows, so the tax and rent assumptions behind the NPV figures above cannot be shown."
+              />
+            ) : (
+              <>
+                {/* Desktop table */}
+                <div className="mt-4 hidden overflow-x-auto md:block">
+                  <table className="data-table w-full">
+                    <thead>
+                      <tr>
+                        <th className="text-left">City</th>
+                        <th className="text-left">Tax rate</th>
+                        <th className="text-left">Median rent / mo</th>
+                        <th className="text-left">Living / mo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cityEntries.map(([city, entry]) => (
+                        <tr key={city}>
+                          <td className="font-semibold t-text">{city}</td>
+                          <td className="num num-1 t-muted">
+                            {(entry.tax_rate * 100).toFixed(1)}%
+                          </td>
+                          <td className="num t-muted">
+                            ${entry.monthly_rent.toLocaleString()}
+                          </td>
+                          <td className="num t-muted">
+                            ${entry.monthly_living.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile cards */}
+                <div className="mt-4 grid grid-cols-1 gap-2.5 md:hidden">
+                  {cityEntries.map(([city, entry]) => (
+                    <div
+                      key={city}
+                      className="t-chip rounded-lg border p-3"
+                      style={{ borderColor: "var(--border-subtle)" }}
+                    >
+                      <div className="mb-2 text-[13px] font-semibold t-text">{city}</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="metric-cell">
+                          <span className="metric-label">Tax</span>
+                          <span className="num text-[12px] t-text">
+                            {(entry.tax_rate * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="metric-cell">
+                          <span className="metric-label">Rent</span>
+                          <span className="num text-[12px] t-text">
+                            ${entry.monthly_rent.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="metric-cell">
+                          <span className="metric-label">Living</span>
+                          <span className="num text-[12px] t-text">
+                            ${entry.monthly_living.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <Notice tone="info" className="mt-5" icon={Info}>
+              Visa survival is the engine&apos;s H-1B lottery math (1 &minus; (1 &minus; 0.25)ⁿ
+              over the OPT attempts a programme buys), not an observed approval rate. Treat it
+              as a structural hazard, not a promise.
+            </Notice>
+          </div>
         </div>
-      </main>
+
+        <div className="mt-10">
+          <SectionHeader
+            kicker="How to read these cards"
+            title="Nothing on this page is computed in the browser"
+            lead="Cost, salary, FX, tax drag and the visa hazard all come from the engine's own registry and model. A figure the engine did not return is drawn as a dash."
+          />
+        </div>
+      </div>
     </div>
   );
 }

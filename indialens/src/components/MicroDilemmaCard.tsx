@@ -7,7 +7,7 @@ export interface Option {
   label: string;
   score: number;
   value_bias?: number;
-  risk_bias?: number;
+ risk_bias?: number;
   autonomy_bias?: number;
   ai_bias?: number;
 }
@@ -17,7 +17,7 @@ export interface DilemmaItem {
   trait: string;
   prompt: string;
   options: Option[];
-  is_generative?: boolean;
+ is_generative?: boolean;
 }
 
 interface MicroDilemmaCardProps {
@@ -27,6 +27,26 @@ interface MicroDilemmaCardProps {
   totalItems: number;
 }
 
+/**
+ * One adaptive-assessment scenario and its four options.
+ *
+ * Behaviour is untouched — the same 1–4 key handler, the same `onSelect`, the
+ * same props. The prompt lost its serif face, which was the single largest
+ * outlier in the product's typography: one serif prompt inside an otherwise
+ * Inter-and-mono surface, and the reason `/advisor` and
+ * `/career-trajectory` were flagged in DESIGN-SYSTEM.md as reading like a
+ * different website. It is `.page-title-sm` now, which is the size the rest of
+ * the product uses for a question at the top of a panel.
+ *
+ * The options are `.selection-card` — the shared interactive-card treatment,
+ * which is the correct class here because these genuinely are clickable and
+ * genuinely do change on hover. The numbered key chip is the affordance for the
+ * keyboard shortcut, so it is `aria-hidden` (the shortcut is announced in the
+ * header instead) and it inverts to the accent on hover/focus, as it did.
+ *
+ * The progress read-out is `.num`, because "1 of 8" is a figure and the position
+ * in the run is the one thing a candidate checks before every answer.
+ */
 export function MicroDilemmaCard({ item, onSelect, itemIndex, totalItems }: MicroDilemmaCardProps) {
   // Keyboard listener for 1, 2, 3, 4
   useEffect(() => {
@@ -43,51 +63,57 @@ export function MicroDilemmaCard({ item, onSelect, itemIndex, totalItems }: Micr
   }, [item, onSelect]);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm transition-all duration-300">
-      {/* Top badges */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+    <section className="panel min-w-0">
+      <div className="panel-head">
+        <span className="flex flex-wrap items-center gap-2">
           {item.is_generative ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-              <Sparkles className="w-3.5 h-3.5" /> Personalised scenario
+            <span className="badge badge-purple">
+              <Sparkles size={10} aria-hidden="true" />
+              Personalised scenario
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-              <Zap className="w-3.5 h-3.5" /> Adaptive Scenario
+            <span className="badge badge-rose">
+              <Zap size={10} aria-hidden="true" />
+              Adaptive scenario
             </span>
           )}
-
-          <span className="text-xs font-mono text-slate-400 font-semibold">
+          {/* `tag-match` rather than a status badge: the position in the run is
+              a match between where you are and how long the run is, not a
+              health state. */}
+          <span className="epistemic-tag tag-match num">
             {itemIndex} of {totalItems}
           </span>
-        </div>
-
-        <div className="flex items-center gap-1 text-xs text-slate-400 font-mono">
-          <Key className="w-3.5 h-3.5" /> Keys 1–4
-        </div>
+        </span>
+        <span className="num flex items-center gap-1 text-[10px] t-faint">
+          <Key size={11} aria-hidden="true" />
+          Keys 1&ndash;4
+        </span>
       </div>
 
-      {/* Scenario Question Prompt */}
-      <h2 className="text-xl sm:text-2xl font-bold text-slate-950 mb-6 leading-relaxed font-serif">
-        {item.prompt}
-      </h2>
+      <div className="panel-pad-lg">
+        <h2 className="page-title-sm mb-6 text-balance">{item.prompt}</h2>
 
-      {/* Options List */}
-      <div className="space-y-3">
-        {item.options.map((opt, idx) => (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => onSelect(opt)}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-400 hover:bg-slate-100/70 text-slate-800 text-sm font-medium text-left transition-all duration-150 group"
-          >
-            <div className="w-7 h-7 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-700 shadow-2xs group-hover:bg-[#09090B] group-hover:text-white group-hover:border-[#09090B] transition-colors shrink-0">
-              {idx + 1}
-            </div>
-            <span className="leading-snug flex-1">{opt.label}</span>
-          </button>
-        ))}
+        <div className="space-y-2.5">
+          {item.options.map((opt, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => onSelect(opt)}
+              className="selection-card group flex w-full items-center gap-3.5 text-left"
+            >
+              <span
+                aria-hidden="true"
+                className="num flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-line/10 bg-elevated text-[12px] font-bold text-ink-2 transition-colors group-hover:border-ink group-hover:bg-ink group-hover:text-bg"
+              >
+                {idx + 1}
+              </span>
+              <span className="min-w-0 flex-1 text-[14px] leading-snug t-text">
+                {opt.label}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

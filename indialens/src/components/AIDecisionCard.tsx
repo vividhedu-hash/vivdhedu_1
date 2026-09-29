@@ -1,5 +1,9 @@
 import React from 'react';
-import { Sparkles, Plus, MessageSquare, AlertCircle, Compass } from 'lucide-react';
+import { Sparkles, Plus, MessageSquare, Compass } from 'lucide-react';
+import { EmptyState } from "./EmptyState";
+import { Notice } from "./Notice";
+import { MetricRow } from "./Metric";
+import { Skeleton } from "./Skeleton";
 import { NO_DATA } from '../lib/mock-data';
 
 export interface DeltaMetric {
@@ -37,6 +41,23 @@ export interface AIDecisionCardProps {
   onAskFollowUp?: () => void;
 }
 
+/**
+ * The advisor's answer surface.
+ *
+ * Restyled to the token system with no change to what it reports. The
+ * structural decision worth naming: this is a **readout**, not a link, so the
+ * frame is `.panel` — flat, hairline, no hover lift. It was a white rounded
+ * box with a `transition-all` that implied it was interactive.
+ *
+ * The three states are the shared ones, in the same order the workspace page
+ * asks for them: an `EmptyState` before a question exists, a `Skeleton` shaped
+ * like the answer while the engine is thinking, and a `Notice tone="error"`
+ * when it did not answer. The previous error block was a hand-rolled rose
+ * panel, and the previous loading block was a `pulse` on a box with two grey
+ * rectangles — which is what a skeleton is, so it is now the shared
+ * `Skeleton` and it no longer pulses the whole card, which made the
+ * surrounding text flicker for the whole duration of a long advisor call.
+ */
 export const AIDecisionCard: React.FC<AIDecisionCardProps> = ({
   result,
   onAddToRoadmap,
@@ -46,40 +67,42 @@ export const AIDecisionCard: React.FC<AIDecisionCardProps> = ({
 }) => {
   if (!result) {
     return (
-      <div className="flex items-center justify-center p-12 rounded-2xl border-2 border-dashed border-slate-200 bg-white text-slate-400 text-sm text-center leading-relaxed">
-        Ask a question to run a grounded decision analysis.
-        <br />
-        <span className="text-xs text-slate-400">
-          Answers come from the advisor engine with sources attached.
-        </span>
-      </div>
+      <EmptyState
+        variant="inline"
+        title="No decision analysis yet"
+        hint="Ask a question above and the advisor engine will answer it with its sources attached. Nothing is generated until you ask."
+      />
     );
   }
 
   if (result.loading) {
     return (
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm animate-pulse space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-purple-600 animate-spin" />
-            <span className="text-xs font-bold text-slate-800">Decision Engine</span>
-          </div>
+      <div className="panel" aria-busy="true">
+        <div className="panel-head">
+          <span className="panel-title flex items-center gap-2">
+            <Sparkles size={12} style={{ color: "var(--purple)" }} aria-hidden="true" />
+            Decision engine
+          </span>
+          <span className="num text-[10px] t-faint">In flight</span>
         </div>
-        <div className="h-20 bg-slate-100 rounded-xl" />
-        <div className="h-24 bg-slate-100 rounded-xl" />
+        <div className="panel-pad space-y-3.5">
+          <Skeleton className="h-3.5 w-2/3" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-3.5 w-4/5" delay={70} />
+          <Skeleton className="h-16 w-full" delay={110} />
+        </div>
+        <span className="sr-only" role="status" aria-live="polite">
+          The advisor is answering.
+        </span>
       </div>
     );
   }
 
   if (result.error) {
     return (
-      <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-rose-800 flex items-start gap-3">
-        <AlertCircle size={20} className="text-rose-600 flex-shrink-0 mt-0.5" />
-        <div className="text-xs">
-          <span className="font-bold block">The advisor did not answer</span>
-          <span className="leading-relaxed">{result.error}</span>
-        </div>
-      </div>
+      <Notice tone="error" title="The advisor did not answer">
+        <p className="leading-relaxed">{result.error}</p>
+      </Notice>
     );
   }
 
@@ -92,130 +115,143 @@ export const AIDecisionCard: React.FC<AIDecisionCardProps> = ({
   // `deltaMetrics` is the only quantified output we actually have, so that
   // is what renders. Nothing is filled in when it is missing.
   const hasDeltas = result.deltaMetrics.length > 0;
+  const hasConfidence =
+    typeof result.confidence === "number" && result.confidence > 0;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm transition-all">
-      {/* Top Meta Bar */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <Sparkles size={16} className="text-purple-600" />
-          <h3 className="text-xs font-bold text-slate-900 tracking-tight">
-            Decision Engine
-          </h3>
+    <div className="panel">
+      {/* Top meta bar — the standard internal panel header. */}
+      <div className="panel-head">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="panel-title flex items-center gap-2">
+            <Sparkles size={12} style={{ color: "var(--purple)" }} aria-hidden="true" />
+            Decision engine
+          </span>
           {result.verified ? (
-            <span className="text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full">
-              Grounded
-            </span>
+            <span className="epistemic-tag tag-evidence">Grounded</span>
           ) : (
-            <span className="text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">
-              Unverified source
-            </span>
+            /* Amber, and it is the `warn` half of the vocabulary: an
+               ungrounded answer is a degraded one, not a failed one. */
+            <span className="epistemic-tag tag-gap">Unverified source</span>
           )}
-        </div>
-        <span className="font-mono text-xs text-slate-400">
-          {result.simulationMs > 0 ? `Query runtime: ${(result.simulationMs / 1000).toFixed(2)}s` : "—"}
         </span>
-      </div>
-
-      {/* Recommendation */}
-      <div className="mt-4 bg-slate-50 border border-slate-100 rounded-xl p-4">
-        <div className="flex items-start gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#E11D48] flex-shrink-0 mt-1" />
-          <div>
-            <h4 className="text-xs font-bold text-slate-950">
-              {result.recommendation
-                ? result.recommendation.startsWith("Recommendation:")
-                  ? result.recommendation
-                  : `Recommendation: ${result.recommendation}`
-                : "No recommendation returned"}
-            </h4>
-            {result.rationale ? (
-              <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">{result.rationale}</p>
-            ) : (
-              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                The engine returned no rationale for this answer.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Confidence — reported only when the engine supplied one */}
-      <div className="mt-3 flex items-center gap-2 text-[11px] font-mono text-slate-500">
-        <span>Engine confidence</span>
-        <span className="font-bold text-slate-900">
-          {typeof result.confidence === "number" && result.confidence > 0
-            ? `${result.confidence}/100`
+        <span className="num whitespace-nowrap text-[10px] t-faint">
+          {result.simulationMs > 0
+            ? `Runtime ${(result.simulationMs / 1000).toFixed(2)}s`
             : NO_DATA}
         </span>
       </div>
 
-      {/* Delta metrics — straight from the engine, never a placeholder pair */}
-      {hasDeltas && (
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {result.deltaMetrics.map((m) => (
-            <div
-              key={m.label}
-              className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 flex items-center justify-between gap-2"
-            >
-              <div className="min-w-0">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
-                  {m.label}
-                </span>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm font-bold font-mono text-slate-950 truncate">
-                    {m.from} → {m.to}
+      <div className="panel-pad">
+        {/* Recommendation — a raised block, because it is the one thing on
+            this surface the reader came for. */}
+        <div
+          className="t-elevated rounded-xl border p-4"
+          style={{ borderColor: "var(--border-subtle)" }}
+        >
+          <div className="flex items-start gap-2.5">
+            <span
+              aria-hidden="true"
+              className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full"
+              style={{ background: "var(--accent)" }}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-bold leading-snug t-text">
+                {result.recommendation
+                  ? result.recommendation.startsWith("Recommendation:")
+                    ? result.recommendation
+                    : `Recommendation: ${result.recommendation}`
+                  : "No recommendation returned"}
+              </p>
+              {result.rationale ? (
+                <p className="body-p mt-2">{result.rationale}</p>
+              ) : (
+                <p className="mt-2 text-[12px] leading-relaxed t-faint">
+                  The engine returned no rationale for this answer.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Confidence — reported only when the engine supplied one, and drawn
+            in `.num-na` when it did not, so a missing value never reads as a
+            low one. */}
+        <div className="mt-3.5 border-t pt-3.5" style={{ borderColor: "var(--divider)" }}>
+          <MetricRow label="Engine confidence" hint="Self-reported by the advisor engine, out of 100">
+            <span className={`num text-[12px] font-semibold ${hasConfidence ? "t-text" : "num-na"}`}>
+              {hasConfidence ? `${result.confidence}/100` : NO_DATA}
+            </span>
+          </MetricRow>
+        </div>
+
+        {/* Delta metrics — straight from the engine, never a placeholder pair. */}
+        {hasDeltas && (
+          <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+            {result.deltaMetrics.map((m) => (
+              <div
+                key={m.label}
+                className="t-chip rounded-xl border p-3.5"
+                style={{ borderColor: "var(--border-subtle)" }}
+              >
+                <span className="metric-label">{m.label}</span>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  <span className="num metric truncate text-ink">
+                    {m.from} &rarr; {m.to}
                   </span>
                   <span
-                    className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded border ${
-                      m.positive
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        : "bg-rose-50 text-rose-700 border-rose-200"
-                    }`}
+                    className={`delta-pill ${m.positive ? "delta-pill-green" : "delta-pill-red"}`}
                   >
                     {m.delta}
                   </span>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      {/* Action Footer */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mt-6 pt-4 border-t border-slate-100">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => result.primaryAction && onAddToRoadmap?.(result.primaryAction)}
-            disabled={!result.primaryAction}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-950 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-xs font-semibold transition-colors shadow-sm"
-          >
-            <Plus size={14} />
-            Add to Roadmap
-          </button>
-          <button
-            onClick={() => onExploreLabs?.()}
-            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors inline-flex items-center gap-1.5"
-          >
-            <Compass size={13} />
-            Explore programs
-          </button>
-          <button
-            onClick={() => onSaveAnalysis?.()}
-            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors"
-          >
-            Save Analysis
-          </button>
-        </div>
-
-        <button
-          onClick={() => onAskFollowUp?.()}
-          disabled={!onAskFollowUp}
-          className="text-xs text-slate-500 hover:text-slate-900 font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
+        {/* Action footer */}
+        <div
+          className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t pt-4"
+          style={{ borderColor: "var(--divider)" }}
         >
-          <MessageSquare size={13} />
-          <span>Ask follow-up</span>
-        </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => result.primaryAction && onAddToRoadmap?.(result.primaryAction)}
+              disabled={!result.primaryAction}
+              className="btn-primary !py-2 !px-4 !text-xs disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Plus size={13} aria-hidden="true" />
+              Add to roadmap
+            </button>
+            <button
+              type="button"
+              onClick={() => onExploreLabs?.()}
+              className="btn-secondary !py-2 !px-3.5 !text-xs"
+            >
+              <Compass size={13} aria-hidden="true" />
+              Explore programmes
+            </button>
+            <button
+              type="button"
+              onClick={() => onSaveAnalysis?.()}
+              className="btn-secondary !py-2 !px-3.5 !text-xs"
+            >
+              Save analysis
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onAskFollowUp?.()}
+            disabled={!onAskFollowUp}
+            className="btn-ghost !py-2 !text-xs disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <MessageSquare size={13} aria-hidden="true" />
+            <span>Ask follow-up</span>
+          </button>
+        </div>
       </div>
     </div>
   );

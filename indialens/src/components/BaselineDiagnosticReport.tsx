@@ -7,17 +7,17 @@ import {
   Sliders,
   Target,
   ArrowRight,
-  Edit3,
-  Bookmark,
-  HelpCircle,
+      Edit3,
   Check,
-  AlertTriangle
 } from "lucide-react";
+import { Notice, UnmeasuredNote } from "./Notice";
+import { Metric, MetricRow } from "./Metric";
+import { NO_DATA } from "../lib/mock-data";
 
 interface BaselineDiagnosticProps {
   token: string;
   wizardData: Record<string, any>;
-  onEnterWorkspace: () => void;
+      onEnterWorkspace: () => void;
   /** Result of persisting the student's own name and report link. */
   saveNotice?: string | null;
 }
@@ -27,7 +27,7 @@ const STAGE_LABELS: Record<string, string> = {
   class_11_12: "Class 11–12",
   college: "College",
   gap_other: "Gap year / Other",
-};
+    };
 
 const BUDGET_LABELS: Record<string, string> = {
   lt_15k: "< $15k / yr",
@@ -37,7 +37,7 @@ const BUDGET_LABELS: Record<string, string> = {
 };
 
 const GEOGRAPHY_LABELS: Record<string, string> = {
-  domestic: "Domestic Only",
+      domestic: "Domestic Only",
   us_canada: "US / Canada",
   uk_europe: "UK & Europe",
   singapore: "Singapore / Global Hubs",
@@ -47,7 +47,7 @@ const FOCUS_LABELS: Record<string, string> = {
   research_preprint: "Publish a research preprint",
   standardized_testing: "Boost standardized testing",
   mentorship: "Secure a mentorship",
-};
+    };
 
 /**
  * Human labels for the discipline ids, which are stored as machine keys.
@@ -57,7 +57,7 @@ const FOCUS_LABELS: Record<string, string> = {
 const DISCIPLINE_LABELS: Record<string, string> = {
   behavioral_econ: "Behavioral Economics",
   venture_finance: "Venture Finance",
-  quant_trading: "Quantitative Trading",
+      quant_trading: "Quantitative Trading",
   applied_econometrics: "Applied Econometrics",
   ml_ai: "Machine Learning / AI",
   distributed_systems: "Distributed Systems",
@@ -67,7 +67,7 @@ const DISCIPLINE_LABELS: Record<string, string> = {
   neuroscience: "Neuroscience",
   astrophysics: "Astrophysics",
   genomics: "Genomics",
-  public_policy: "Public Policy & Law",
+      public_policy: "Public Policy & Law",
   cog_psych: "Cognitive Psychology",
   industrial_design: "Industrial Design",
   philosophy_mind: "Philosophy of Mind",
@@ -77,7 +77,7 @@ const GOAL_LABELS: Record<string, string> = {
   college_discovery: "Find the right college",
   career_choice: "Choose a career",
   profile_building: "Build my profile",
-  internships: "Find internships",
+      internships: "Find internships",
   research: "Explore research",
   projects: "Start a project",
   confused: "Not sure yet",
@@ -87,7 +87,7 @@ const WEIGHT_LABELS: Record<string, string> = {
   career_outcomes: "Career outcomes",
   cost_affordability: "Cost & Affordability",
   prestige: "Prestige & Alumni",
-  academic_rigor: "Learning & Rigor",
+      academic_rigor: "Learning & Rigor",
   location: "Location & Environment",
   flexibility: "Flexibility & Minor Options",
   opportunities: "Curated Opportunities",
@@ -98,6 +98,27 @@ const listOr = (items: unknown, labels: Record<string, string>, empty: string): 
   return items.map((v) => labels[String(v)] ?? String(v));
 };
 
+/**
+ * The onboarding summary — a read-back of the student's own answers.
+ *
+ * ## What this screen is, structurally
+ *
+ * Four `.panel` blocks on a `.page-shell` canvas, one page header, one action
+ * bar. It was a `min-h-screen bg-[#F8FAFC]` wrapper with a black logo square,
+ * a fake "Stage 09 / 10" progress chip, and a hand-rolled header and footer
+ * that both duplicated chrome the app shell already provides. The chrome is
+ * gone: this is a full-bleed step, and the app shell owns the navbar.
+ *
+ * ## Why the cards are panels, not cards
+ *
+ * Nothing in here is clickable. They were `.card`-shaped, which lifts on hover,
+ * so a static read-back behaved like four links. `.panel` is flat with a
+ * hairline, which is what a data surface is.
+ *
+ * The big honesty note in the original file is preserved below because it is
+ * the reason several of these blocks say "not set" rather than showing
+ * something: this screen once rendered an entirely invented student.
+ */
 export const BaselineDiagnosticReport: React.FC<BaselineDiagnosticProps> = ({
   token,
   wizardData,
@@ -117,60 +138,40 @@ export const BaselineDiagnosticReport: React.FC<BaselineDiagnosticProps> = ({
   const weights: [string, number][] = Object.entries(
     (wizardData?.weights ?? {}) as Record<string, number>,
   )
-    .filter(([, v]) => typeof v === "number" && Number.isFinite(v))
-    .sort((a, b) => b[1] - a[1]);
+       .filter(([, v]) => typeof v === "number" && Number.isFinite(v))
+       .sort((a, b) => b[1] - a[1]);
+
+  const targetField =
+    typeof wizardData?.targetField === "string" ? wizardData.targetField.trim() : "";
+  const stageIsSet = stages[0] !== "Not set";
+  const budget = BUDGET_LABELS[String(wizardData?.budgetBand)];
+  const focus = FOCUS_LABELS[String(wizardData?.immediateFocus)];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-zinc-950 font-sans">
-      {/* Top Bar matching Screen 09 */}
-      <header className="px-6 py-3.5 flex items-center justify-between border-b border-slate-200/80 bg-white">
-        <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center text-white font-bold text-[10px]">
-            OS
+    <div className="page-shell flex min-h-screen flex-col justify-between">
+      <main className="container-xl page-header flex-1">
+        {/* One page header, the same composition every route uses. The old
+            bespoke block used `text-zinc-950` at three different sizes. */}
+        <div>
+          <div className="mb-5 flex flex-wrap items-center gap-2.5">
+            <span className="badge badge-teal">
+              <Check size={10} aria-hidden="true" />
+              Report ready
+            </span>
           </div>
-          <span className="font-bold text-sm text-zinc-900 tracking-tight">VividhEdu</span>
-          <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-zinc-600 font-semibold">
-            Stage 09 / 10
-          </span>
-        </div>
-
-        <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-1 text-zinc-500 cursor-pointer hover:text-zinc-800">
-            <HelpCircle size={13} />
-            <span>Support</span>
-          </div>
-          <span className="text-zinc-300">|</span>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-zinc-600 font-medium">
-            <Check size={12} className="text-emerald-600" />
-            <span>Report ready</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8">
-        <div className="mb-6">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200/60 text-rose-700 text-[10px] font-bold font-mono tracking-wider uppercase mb-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
-            <span>REPORT READY</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-950 tracking-tight mb-1.5">
+          <h1 className="page-title">
             {name ? `Here’s what we recorded, ${name.split(/\s+/)[0]}.` : "Here’s what we recorded."}
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 max-w-2xl leading-relaxed">
-            This is a summary of the answers you gave. Everything below is what you told us — we
-            have not filled in anything you did not say.
+          <p className="section-lead mt-4">
+            This is a summary of the answers you gave. Everything below is what
+            you told us — we have not filled in anything you did not say.
           </p>
         </div>
 
         {saveNotice && (
-          <div
-            role="status"
-            className="mb-4 flex items-start gap-2.5 px-3.5 py-3 rounded-xl border border-amber-300 bg-amber-50 text-[12px] text-amber-900"
-          >
-            <AlertTriangle size={15} className="mt-0.5 shrink-0" />
-            <p className="leading-relaxed">{saveNotice}</p>
-          </div>
+          <Notice tone="warn" className="mt-6">
+            {saveNotice}
+          </Notice>
         )}
 
         {/*
@@ -209,158 +210,190 @@ export const BaselineDiagnosticReport: React.FC<BaselineDiagnosticProps> = ({
           would be a measurement we do not have one, the card says so instead of
           printing a plausible figure.
         */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          {/* Card 1: ACADEMIC HORIZON — the student's own stage and disciplines */}
-          <div className="p-5 rounded-xl border border-slate-200 bg-white relative">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Compass size={14} className="text-zinc-400" />
-                <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">
-                  ACADEMIC HORIZON
-                </span>
-              </div>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                {stages[0]}
+        <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Academic horizon — the student's own stage and disciplines. */}
+          <section className="panel min-w-0">
+            <div className="panel-head">
+              <span className="panel-title flex items-center gap-2">
+                <Compass size={12} aria-hidden="true" />
+                Academic horizon
+              </span>
+              <span className={`badge ${stageIsSet ? "badge-rose" : "badge-amber"}`}>
+                {stageIsSet ? stages[0] : "Not set"}
               </span>
             </div>
-            <span className="text-[11px] text-zinc-400 block mb-1">Interests you picked</span>
-            <h3 className="font-bold text-base text-zinc-900 mb-3 break-words">
-              {wizardData?.targetField?.trim() || "No target field given"}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {disciplines.map((d) => (
-                <span
-                  key={d}
-                  className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-50 text-zinc-700 border border-slate-200"
-                >
-                  • {d}
-                </span>
-              ))}
+            <div className="panel-pad">
+              <span className="metric-label">Interests you picked</span>
+              <h2 className="mt-1.5 text-[16px] font-bold leading-snug t-text">
+                {targetField || "No target field given"}
+              </h2>
+              <div className="mt-3.5 flex flex-wrap gap-1.5">
+                {disciplines.map((d) => (
+                  <span
+                    key={d}
+                    className="t-chip rounded-md border px-2 py-1 text-[11px] font-medium t-muted"
+                    style={{ borderColor: "var(--border-subtle)" }}
+                  >
+                    {d}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          </section>
 
           {/*
-            Card 2 used to be the AI Resilience Score. It is kept as a card —
+            Card 2 used to be the AI Resilience Score. It is kept as a panel —
             it is a real product concept — but it reports the one thing we can
             actually say: that no measurement exists yet, and where to get one.
           */}
-          <div className="p-5 rounded-xl border border-slate-200 bg-white">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Shield size={14} className="text-rose-500" />
-                <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">
-                  AI RESILIENCE
-                </span>
-              </div>
-              <span className="text-[10px] font-mono text-zinc-400">Not measured</span>
+          <section className="panel min-w-0">
+            <div className="panel-head">
+              <span className="panel-title flex items-center gap-2">
+                <Shield size={12} style={{ color: "var(--accent)" }} aria-hidden="true" />
+                AI resilience
+              </span>
+              <span className="num text-[10px] num-na">Not measured</span>
             </div>
-            <div className="flex items-baseline justify-between mb-2">
-              <span className="text-xs text-zinc-500">Trait-based score</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-extrabold text-zinc-300 font-mono">—</span>
-                <span className="text-xs text-zinc-300 font-mono">/100</span>
-              </div>
-            </div>
-            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
-              <div className="h-full bg-slate-200 rounded-full" />
-            </div>
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 text-[11px] text-zinc-600 leading-relaxed">
-              This number comes from the 40-item psychometric assessment, not from onboarding.
-              <a
-                href="/psychometric"
-                className="underline underline-offset-2 ml-1 font-medium text-rose-700 hover:text-rose-800"
-              >
-                Take the assessment
-              </a>{" "}
-              and it will be measured.
-            </div>
-          </div>
+            <div className="panel-pad">
+              <MetricRow label="Trait-based score" hint="From the psychometric assessment, out of 100">
+                <span className="num metric num-na">{NO_DATA}</span>
+                <span className="num text-[11px] num-na">/100</span>
+              </MetricRow>
 
-          {/* Card 3: the student's own decision weights, ranked */}
-          <div className="p-5 rounded-xl border border-slate-200 bg-white">
-            <div className="flex items-center gap-2 mb-3">
-              <Sliders size={14} className="text-zinc-400" />
-              <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">
-                YOUR DECISION WEIGHTS
+              <div className="mt-3.5">
+                <Notice tone="info">
+                  This figure comes from the psychometric assessment, not from
+                  onboarding, so it is not measured at this point.{" "}
+                  <a
+                    href="/psychometric"
+                    className="t-accent font-medium underline underline-offset-2"
+                  >
+                    Take the assessment
+                  </a>{" "}
+                  and it will be measured.
+                </Notice>
+              </div>
+            </div>
+          </section>
+
+          {/* The student's own decision weights, ranked. */}
+          <section className="panel min-w-0">
+            <div className="panel-head">
+              <span className="panel-title flex items-center gap-2">
+                <Sliders size={12} aria-hidden="true" />
+                Your decision weights
               </span>
             </div>
-            <h4 className="text-xs font-bold text-zinc-900 mb-3">
-              {weights.length ? "Ranked as you set them" : "Not set"}
-            </h4>
-            {weights.length ? (
-              <div className="space-y-3 text-xs">
-                {weights.slice(0, 3).map(([key, value], i) => (
-                  <div key={key}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-4 h-4 rounded-full bg-black text-white text-[10px] font-mono font-bold flex items-center justify-center">
-                          {i + 1}
-                        </span>
-                        <span className="text-zinc-700">{WEIGHT_LABELS[key] ?? key}</span>
+            <div className="panel-pad">
+              <h3 className="text-[13px] font-bold t-text">
+                {weights.length ? "Ranked as you set them" : "Not set"}
+              </h3>
+
+              {weights.length ? (
+                <div className="mt-3.5 space-y-3.5">
+                  {weights.slice(0, 3).map(([key, value], i) => {
+                    const pct = Math.max(0, Math.min(100, value));
+                    return (
+                      <div key={key}>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span
+                              aria-hidden="true"
+                              className="num flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-ink text-[10px] font-bold text-bg"
+                            >
+                              {i + 1}
+                            </span>
+                            <span className="truncate text-[12px] t-muted">
+                              {WEIGHT_LABELS[key] ?? key}
+                            </span>
+                          </span>
+                          <span className="num flex-shrink-0 text-[12px] font-semibold t-text">
+                            {value}%
+                          </span>
+                        </div>
+                        {/* `.ci-track` / `.ci-fill`, the shared confidence-band
+                            geometry. Here the unfilled remainder is the share
+                            of the ceiling the weight did not claim, which is
+                            the honest reading for a 0–100 slider. */}
+                        <div className="ci-track mt-1.5">
+                          <div
+                            className="ci-fill"
+                            style={{ width: `${pct}%`, background: "var(--text-primary)" }}
+                          />
+                        </div>
                       </div>
-                      <span className="font-mono font-bold text-zinc-900">{value}%</span>
-                    </div>
-                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-zinc-800"
-                        style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-                {weights.length > 3 && (
-                  <p className="text-[11px] text-zinc-400 pt-1">
-                    + {weights.length - 3} more you set
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-[11px] text-zinc-400">No weights were set during onboarding.</p>
-            )}
-          </div>
-
-          {/* Card 4: the student's own goals and constraints */}
-          <div className="p-5 rounded-xl border border-slate-200 bg-white flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Target size={14} className="text-zinc-400" />
-                <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">
-                  EXECUTION SCOPE
-                </span>
-              </div>
-              <span className="text-[11px] text-zinc-400 block mb-1">You came here to</span>
-              <h4 className="font-bold text-sm text-zinc-900 mb-3">{goals.join(" · ")}</h4>
-            </div>
-
-            <div>
-              <span className="text-[11px] text-zinc-400 block mb-1.5">Parameters you set</span>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/80">
-                  <span className="text-[10px] text-zinc-400 block">Budget</span>
-                  <span className="font-bold text-[11px] text-zinc-900 block leading-tight mt-0.5">
-                    {BUDGET_LABELS[String(wizardData?.budgetBand)] ?? "Not set"}
-                  </span>
+                    );
+                  })}
+                  {weights.length > 3 && (
+                    <p className="num text-[11px] t-faint">
+                      +{weights.length - 3} more you set
+                    </p>
+                  )}
                 </div>
-                <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/80">
-                  <span className="text-[10px] text-zinc-400 block">Regions</span>
-                  <span className="font-bold text-[11px] text-zinc-900 block leading-tight mt-0.5">
-                    {geography.join(", ")}
-                  </span>
-                </div>
-                <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/80">
-                  <span className="text-[10px] text-zinc-400 block">Next focus</span>
-                  <span className="font-bold text-[11px] text-zinc-900 block leading-tight mt-0.5">
-                    {FOCUS_LABELS[String(wizardData?.immediateFocus)] ?? "Not set"}
-                  </span>
-                </div>
-              </div>
-              {institutions[0] !== "Not set" && (
-                <p className="text-[11px] text-zinc-400 mt-2.5">
-                  Institutions you named: {institutions.join(", ")}
+              ) : (
+                <p className="body-p mt-3.5">
+                  No weights were set during onboarding.
                 </p>
               )}
             </div>
-          </div>
+          </section>
+
+          {/* The student's own goals and constraints. */}
+          <section className="panel flex min-w-0 flex-col">
+            <div className="panel-head">
+              <span className="panel-title flex items-center gap-2">
+                <Target size={12} aria-hidden="true" />
+                Execution scope
+              </span>
+            </div>
+            <div className="panel-pad flex flex-1 flex-col">
+              <span className="metric-label">You came here to</span>
+              <h3 className="mt-1.5 text-[14px] font-bold leading-snug t-text">
+                {goals.join(" · ")}
+              </h3>
+
+              <div className="mt-4 grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-3">
+                {/* Each parameter is a `Metric` so an unset one renders as the
+                    unmeasured dash rather than as a plausible-looking string. */}
+                <Metric
+                  label="Budget"
+                  value={budget ? 1 : null}
+                  format={() => budget}
+                  className="t-chip rounded-lg border p-2.5"
+                />
+                <Metric
+                  label="Regions"
+                  value={geography[0] !== "Not set" ? 1 : null}
+                  format={() => geography.join(", ")}
+                  className="t-chip rounded-lg border p-2.5"
+                />
+                <Metric
+                  label="Next focus"
+                  value={focus ? 1 : null}
+                  format={() => focus}
+                  className="t-chip rounded-lg border p-2.5"
+                />
+              </div>
+
+              <div className="mt-auto">
+                {institutions[0] !== "Not set" ? (
+                  <p className="body-p mt-3.5">
+                    <span className="t-text">Institutions you named: </span>
+                    {institutions.join(", ")}
+                  </p>
+                ) : (
+                  <div className="mt-3.5">
+                    <UnmeasuredNote what="Dream institutions">
+                      No institution was named during onboarding. That is
+                      perfectly normal at this stage — it is not a gap in your
+                      profile, it is simply the one thing you have not decided
+                      yet.
+                    </UnmeasuredNote>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
         </div>
 
         {/*
@@ -373,22 +406,27 @@ export const BaselineDiagnosticReport: React.FC<BaselineDiagnosticProps> = ({
         */}
       </main>
 
-      {/* Bottom Actions matching Screen 09 */}
-      <footer className="px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-between">
+      {/* Action bar */}
+      <footer
+        className="t-surface sticky bottom-0 flex flex-wrap items-center justify-between gap-3 border-t px-5 py-3.5"
+        style={{ borderColor: "var(--divider)" }}
+      >
         <button
-          onClick={() => window.location.href = "/onboard"}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-zinc-700 hover:bg-slate-50 transition dashed-ring cursor-pointer"
+          type="button"
+          onClick={() => { window.location.href = "/onboard"; }}
+          className="btn-secondary"
         >
-          <Edit3 size={13} />
+          <Edit3 size={13} aria-hidden="true" />
           <span>Edit my inputs</span>
         </button>
 
         <button
+          type="button"
           onClick={onEnterWorkspace}
-          className="flex items-center gap-2.5 px-6 py-2 rounded-lg bg-black text-white text-xs font-semibold hover:bg-zinc-800 transition dashed-ring cursor-pointer"
+          className="btn-primary"
         >
           <span>See my report</span>
-          <ArrowRight size={14} className="text-rose-500" />
+          <ArrowRight size={14} style={{ color: "var(--accent)" }} aria-hidden="true" />
         </button>
       </footer>
     </div>

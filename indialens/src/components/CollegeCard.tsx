@@ -16,24 +16,32 @@ interface CollegeCardProps {
 const TIER_LABELS: Record<number, string> = { 1: "Tier 1", 2: "Tier 2", 3: "Tier 3" };
 
 const AI_RISK_CLASS: Record<string, string> = {
-  Low:       "badge-green",
-  Medium:    "badge-amber",
-  High:      "badge-red",
-  "Very High":"badge-red",
+  Low:        "badge-green",
+  Medium:     "badge-amber",
+  High:       "badge-red",
+  "Very High": "badge-red",
 };
 
-const AI_RISK_COLOR: Record<string, string> = {
-  Low:       "#30D158",
-  Medium:    "#FF9F0A",
-  High:      "#FF453A",
-  "Very High":"#FF453A",
+/**
+ * The accent bar under a card is coloured by AI-exposure band.
+ *
+ * These were four hardcoded hexes (`#30D158` / `#FF9F0A` / `#FF453A`). They are
+ * now the `--green` / `--amber` / `--red` tokens, so the bar carries the same
+ * meaning in dark mode — previously a dark-mode visitor saw the *light*
+ * palette's amber on black, which reads dimmer and more olive than intended.
+ */
+const AI_RISK_TOKEN: Record<string, string> = {
+  Low:        "var(--green)",
+  Medium:     "var(--amber)",
+  High:       "var(--red)",
+  "Very High": "var(--red)",
 };
 
 export function CollegeCard({ record, rank, compact = false }: CollegeCardProps) {
   const { college, degree, roi, salary, placement, meta } = record;
-  const riskColor = AI_RISK_COLOR[meta?.aiRiskLabel] ?? "#FF9F0A";
+  const riskToken = AI_RISK_TOKEN[meta?.aiRiskLabel] ?? "var(--amber)";
   // A missing composite score must never be drawn as 0/100 — that reads as
-  // "the worst program on the list" rather than "not measured".
+  // "the worst programme on the list" rather than "not measured".
   const composite = finiteOrNull(roi?.compositeScore);
   const ciLow = finiteOrNull(roi?.confidenceIntervalLow);
   const ciHigh = finiteOrNull(roi?.confidenceIntervalHigh);
@@ -41,46 +49,44 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
   const medianY10 = finiteOrNull(salary?.year10?.p50);
 
   return (
-    <Link href={`/college/${record.id}`} className="block group">
-      <div
-        className="bg-white border border-slate-200/90 rounded-2xl p-5 transition-all duration-200 hover:border-slate-300 hover:-translate-y-1 hover:shadow-md shadow-xs"
-      >
+    <Link href={`/college/${record.id}`} className="group block h-full focus-visible:outline-none">
+      <div className="card-interactive h-full">
         {/* Score ring + info row */}
         <div className="flex items-start gap-4">
           <ScoreRing score={composite} size={68} strokeWidth={4.5} />
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <div className="flex items-center gap-1.5">
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 flex items-start justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-1.5">
                 {rank && (
-                  <span className="text-[11px] font-mono font-bold text-rose-600">
+                  <span className="num text-[11px] font-bold t-accent">
                     #{rank}
                   </span>
                 )}
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-mono">
+                <span className="truncate font-mono text-[10px] font-semibold uppercase tracking-wider t-faint">
                   {college.shortName}
                 </span>
               </div>
               <DataFreshnessBadge days={meta?.dataFreshnessDays ?? 0} />
             </div>
 
-            <h3 className="font-semibold leading-snug truncate text-[15px] text-zinc-900 group-hover:text-rose-600 transition-colors">
+            <h3 className="truncate text-[15px] font-semibold leading-snug t-text transition-colors group-hover:t-accent">
               {degree.shortName}
             </h3>
 
-            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <span className={`badge ${AI_RISK_CLASS[meta?.aiRiskLabel] ?? "badge-amber"}`}>
-                AI Risk: {meta?.aiRiskLabel ?? "—"}
+                AI risk {meta?.aiRiskLabel ?? NO_DATA}
               </span>
               <span className="badge badge-blue">{TIER_LABELS[college.tier]}</span>
-              <span className="text-[11px] text-zinc-400 font-mono">{college.city}</span>
+              <span className="num text-[11px] t-faint">{college.city}</span>
             </div>
           </div>
         </div>
 
         {/* Stats row */}
         {!compact && (
-          <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-100">
+          <div className="mt-4 grid grid-cols-3 gap-3 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
             <StatBlock
               icon={<TrendingUp size={11} />}
               label="Median Y1"
@@ -103,22 +109,23 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
           </div>
         )}
 
-        {/* Confidence bar */}
-        <div className="mt-4 flex items-center gap-2">
-          <div className="flex-1 h-[2px] bg-slate-100 rounded-full overflow-hidden">
-            {/* No bar at all when unscored — a zero-width bar would read as "0". */}
+        {/* Confidence bar. No bar at all when unscored — a zero-width bar would
+            read as "0", which is the one thing this figure must not say. */}
+        <div className="mt-4 flex items-center gap-2.5">
+          <div className="ci-track flex-1">
             {composite != null && (
               <div
-                className="h-full rounded-full transition-all"
+                className="ci-fill"
                 style={{
                   width: `${composite}%`,
-                  background: `linear-gradient(90deg, ${riskColor}80, ${riskColor})`,
+                  background: `linear-gradient(90deg, ${riskToken}, ${riskToken})`,
+                  opacity: 0.85,
                 }}
               />
             )}
           </div>
-          <span className="text-[10px] font-mono text-zinc-400 whitespace-nowrap">
-            CI: {ciLow ?? NO_DATA}–{ciHigh ?? NO_DATA}
+          <span className="num whitespace-nowrap text-[10px] t-faint" title="Confidence interval around the composite score">
+            CI {ciLow ?? NO_DATA}&ndash;{ciHigh ?? NO_DATA}
           </span>
         </div>
       </div>
@@ -127,13 +134,18 @@ export function CollegeCard({ record, rank, compact = false }: CollegeCardProps)
 }
 
 function StatBlock({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  // `NO_DATA` is an em dash; it gets the muted unmeasured treatment rather than
+  // being rendered in primary ink as though it were a reading.
+  const isMissing = value === NO_DATA;
   return (
-    <div>
-      <div className="flex items-center gap-1 mb-1 text-zinc-400">
+    <div className="min-w-0">
+      <div className="mb-1 flex items-center gap-1 t-faint">
         {icon}
-        <span className="text-[9px] font-mono uppercase tracking-wider">{label}</span>
+        <span className="metric-label">{label}</span>
       </div>
-      <span className="font-mono font-bold text-[13px] text-zinc-900">{value}</span>
+      <span className={`num text-[13px] font-bold ${isMissing ? "num-na" : "t-text"}`}>
+        {value}
+      </span>
     </div>
   );
 }

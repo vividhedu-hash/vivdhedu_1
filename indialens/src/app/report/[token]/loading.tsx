@@ -1,63 +1,63 @@
+import { Skeleton, SkeletonStatus } from "@/components/Skeleton";
+
 /**
  * /report/[token] loading boundary.
  *
- * Shaped after the report's real header: an expiry strip, then a two-column
- * title block, then the score ring + trajectory panels that open the page. The
- * report is on the dark "actuarial" system.
+ * Shaped after the report's real composition: the expiry strip, a two-column
+ * title block, then the score panel beside the trajectory panels the report
+ * opens with. Built from the shared `Skeleton` primitive so it themes in both
+ * palettes and honours `prefers-reduced-motion`.
  */
 export default function Loading() {
   return (
-    <div style={{ padding: "40px 0 80px" }}>
-      <div
-        className="glass-card mb-8 p-4 flex flex-wrap gap-4 items-center justify-between"
-        style={{ borderLeft: "4px solid #4F6EF7" }}
-      >
-        <div className="h-3.5 w-56 rounded bg-white/[0.06] animate-pulse" />
-        <div className="flex gap-3">
-          <div className="h-8 w-28 rounded-lg bg-white/[0.06] animate-pulse" />
-          <div className="h-8 w-28 rounded-lg bg-white/[0.06] animate-pulse" />
+    <div className="page-shell">
+      <div className="container-xl page-header">
+        <div className="panel panel-pad-sm mb-7 flex flex-wrap items-center justify-between gap-4">
+          <Skeleton className="h-3 w-56" delay={40} />
+          <div className="flex gap-3">
+            <Skeleton className="h-8 w-28 rounded-full" delay={80} />
+            <Skeleton className="h-8 w-28 rounded-full" delay={110} />
+          </div>
+        </div>
+
+        <div className="flex flex-col items-start justify-between gap-5 md:flex-row md:items-start">
+          <div className="min-w-0 flex-1">
+            <Skeleton className="h-2.5 w-24" delay={140} />
+            <Skeleton className="mt-4 h-8 w-4/5" delay={180} />
+            <Skeleton className="mt-3 h-3 w-3/5" delay={220} />
+          </div>
+          <Skeleton className="h-12 w-full rounded-full md:w-56" delay={250} />
         </div>
       </div>
 
-      <div className="container-lg" style={{ maxWidth: 820 }}>
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
-          <div className="flex-1 min-w-0">
-            <div className="h-3 w-24 rounded bg-white/[0.06] animate-pulse" />
-            <div className="mt-3 h-8 w-4/5 rounded-lg bg-white/[0.09] animate-pulse" />
-            <div className="mt-3 h-3 w-3/5 rounded bg-white/[0.04] animate-pulse" />
-          </div>
-          <div className="w-full md:w-56 h-12 rounded-xl bg-white/[0.06] animate-pulse" />
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="md:w-1/3 shrink-0">
-            <div className="rounded-2xl border border-white/[0.08] bg-[#0A0A0A] p-6 flex flex-col items-center">
-              <div className="w-36 h-36 rounded-full border-[10px] border-white/[0.05] animate-pulse" />
-              <div className="mt-5 h-3 w-28 rounded bg-white/[0.06] animate-pulse" />
+      <div className="container-xl page-section-tight">
+        <div className="flex flex-col gap-6 md:flex-row">
+          <div className="w-full shrink-0 md:w-1/3">
+            <div className="panel flex flex-col items-center p-6">
+              <Skeleton className="h-32 w-32 rounded-full" delay={200} />
+              <Skeleton className="mt-5 h-3 w-28" delay={260} />
               <div className="mt-6 w-full space-y-3">
-                <div className="h-2.5 w-full rounded-full bg-white/[0.04] animate-pulse" />
-                <div className="h-2.5 w-4/5 rounded-full bg-white/[0.04] animate-pulse" />
+                <Skeleton className="h-2.5 w-full rounded-full" delay={300} />
+                <Skeleton className="h-2.5 w-4/5 rounded-full" delay={330} />
               </div>
             </div>
           </div>
 
-          <div className="flex-1 min-w-0 space-y-6">
+          <div className="min-w-0 flex-1 space-y-5">
             {[0, 1].map((i) => (
-              <div
-                key={i}
-                className="rounded-2xl border border-white/[0.08] bg-[#0A0A0A] p-6"
-                style={{ animationDelay: `${i * 110}ms` }}
-              >
-                <div className="h-4 w-44 rounded bg-white/[0.07] animate-pulse" />
-                <div className="mt-5 h-28 rounded-xl bg-white/[0.03] animate-pulse" />
+              <div key={i} className="panel">
+                <div className="panel-head">
+                  <Skeleton className="h-2.5 w-44" delay={180 + i * 100} />
+                </div>
+                <div className="panel-pad">
+                  <Skeleton className="h-28 w-full rounded-xl" delay={230 + i * 100} />
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="mt-12 text-center text-[11px] font-mono text-[#48484A]">
-          Loading your personalized report…
-        </p>
+        <SkeletonStatus label="Loading report" />
       </div>
     </div>
   );

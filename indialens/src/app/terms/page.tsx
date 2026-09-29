@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Scale, AlertTriangle } from "lucide-react";
+import { Scale } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { Notice } from "@/components/Notice";
 import { APP_URL, BRAND, mailtoLink } from "@/lib/brand";
 
 export const dynamic = "force-static";
@@ -15,6 +17,13 @@ export const metadata: Metadata = {
 
 const LAST_UPDATED = "27 September 2026";
 
+/**
+ * A clause.
+ *
+ * `id` is the clause number and doubles as the anchor, so the numbering in the
+ * sidebar and the numbering in the body are literally the same value — they
+ * used to be two separate literals and could drift.
+ */
 function Section({
   id,
   title,
@@ -26,11 +35,10 @@ function Section({
 }) {
   return (
     <section id={id} className="scroll-mt-24">
-      <h2 className="text-lg font-bold tracking-tight text-zinc-950">
-        <span className="font-mono text-[11px] text-rose-600">{id}.</span>{" "}
-        {title}
+      <h2 className="text-[17px] font-bold tracking-tight t-text">
+        <span className="num text-[12px] t-accent">{id}.</span> {title}
       </h2>
-      <div className="mt-3 space-y-3 text-[14px] leading-relaxed text-zinc-600">
+      <div className="mt-3 space-y-3 text-[14px] leading-relaxed t-muted">
         {children}
       </div>
     </section>
@@ -56,51 +64,55 @@ const TOC = [
 
 export default function TermsPage() {
   return (
-    <div className="bg-[#F8FAFC] text-zinc-950">
-      <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-4xl px-5 py-12">
-          <div className="flex items-center gap-2.5">
-            <Scale size={18} className="text-rose-600" />
-            <h1 className="text-3xl font-black tracking-tight text-zinc-950">
-              Terms of Use
-            </h1>
-          </div>
-          <p className="mt-2 text-[13px] font-mono text-zinc-500">
-            {BRAND.name} · Last updated {LAST_UPDATED}
-          </p>
-          <p className="mt-5 max-w-2xl text-[14px] leading-relaxed text-zinc-600">
-            These terms govern your use of {BRAND.name}. The short version: this
-            is a modelling tool that produces estimates, it is not a
-            professional adviser, and you are responsible for your own
-            decisions. The longer version follows.
-          </p>
-        </div>
+    <div className="page-shell">
+      {/* ── Page header ─────────────────────────────────────────── */}
+      <div className="container-xl page-header">
+        <PageHeader
+          kicker="Legal"
+          eyebrow={
+            <span className="flex flex-wrap items-center gap-2.5">
+              <span className="badge badge-rose">
+                <Scale size={10} aria-hidden="true" />
+                Terms of Use
+              </span>
+              <span className="num num-0 t-faint">
+                Last updated {LAST_UPDATED}
+              </span>
+            </span>
+          }
+          title="Terms of Use"
+          lead={`These terms govern your use of ${BRAND.name}. The short version: this is a modelling tool that produces estimates, it is not a professional adviser, and you are responsible for your own decisions. The longer version follows.`}
+        />
       </div>
 
-      <div className="mx-auto max-w-4xl px-5 py-12">
-        <div className="grid gap-10 lg:grid-cols-[220px_1fr]">
-          <nav className="lg:sticky lg:top-24 lg:self-start">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-              On this page
-            </p>
-            <ol className="mt-3 space-y-1.5">
+      <div className="container-lg page-section-tight">
+        <div className="grid gap-10 lg:grid-cols-[212px_minmax(0,1fr)] lg:gap-12">
+          {/* TOC */}
+          <nav aria-label="On this page" className="panel panel-pad-sm lg:sticky lg:top-[74px] lg:self-start">
+            <p className="panel-title mb-3">On this page</p>
+            <ol className="space-y-0.5">
               {TOC.map((item) => (
                 <li key={item.id}>
-                  <a href={`#${item.id}`} className="block text-[13px] text-zinc-500 transition-colors hover:text-zinc-950">
-                    {item.id}. {item.title}
+                  <a
+                    href={`#${item.id}`}
+                    className="flex gap-2 rounded-sm px-2 py-1.5 text-[12px] leading-snug t-muted transition-colors hover:bg-chip hover:t-text"
+                  >
+                    <span className="num num-0 t-faint">{item.id}</span>
+                    <span>{item.title}</span>
                   </a>
                 </li>
               ))}
             </ol>
           </nav>
 
-          <div className="space-y-10">
+          {/* Clauses */}
+          <div className="min-w-0 space-y-9">
             <Section id="1" title="Agreement">
               <p>
                 By using {BRAND.name} you accept these terms. If you do not
                 accept them, do not use the service. The service is operated
                 from India as{" "}
-                <strong className="font-semibold text-zinc-900">{BRAND.legalEntity}</strong>.
+                <strong className="font-semibold t-text">{BRAND.legalEntity}</strong>.
               </p>
               <p>
                 You must be at least 18 years old, or have the involvement of a
@@ -116,12 +128,12 @@ export default function TermsPage() {
                 assessment, admissions information, and related tools.
               </p>
               <p>
-                <strong className="font-semibold text-zinc-900">
+                <strong className="font-semibold t-text">
                   The service is currently free.
                 </strong>{" "}
                 There is no subscription, no usage cap, and no payment method
                 enabled. Any pricing described on the{" "}
-                <Link href="/pricing" className="font-semibold text-rose-600 underline underline-offset-2">
+                <Link href="/pricing" className="font-semibold text-accent underline underline-offset-2">
                   pricing page
                 </Link>{" "}
                 for future tiers is indicative and does not constitute an offer
@@ -132,19 +144,16 @@ export default function TermsPage() {
             </Section>
 
             <Section id="3" title="Not advice">
-              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
-                <p className="flex items-start gap-2 text-[13px] font-semibold text-amber-900">
-                  <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
-                  This is the most important clause on this page.
-                </p>
-                <p className="mt-2 text-[13px] leading-relaxed text-amber-900/90">
-                  {BRAND.name} is a decision-support tool. It is{" "}
-                  <strong>not</strong> financial advice, investment advice,
-                  legal advice, tax advice, or admissions advice, and nothing in
-                  the service should be read as a recommendation to take or
-                  avoid any particular course of action.
-                </p>
-              </div>
+              <Notice
+                tone="warn"
+                title="This is the most important clause on this page."
+              >
+                {BRAND.name} is a decision-support tool. It is{" "}
+                <strong>not</strong> financial advice, investment advice, legal
+                advice, tax advice, or admissions advice, and nothing in the
+                service should be read as a recommendation to take or avoid any
+                particular course of action.
+              </Notice>
               <p>
                 Outputs are computed from public data and the assumptions you
                 supply. They do not account for your complete financial
@@ -175,7 +184,7 @@ export default function TermsPage() {
               </ul>
               <p>
                 The{" "}
-                <Link href="/methodology" className="font-semibold text-rose-600 underline underline-offset-2">
+                <Link href="/methodology" className="font-semibold text-accent underline underline-offset-2">
                   methodology
                 </Link>{" "}
                 sets out the mathematics. Reading it is strongly encouraged before
@@ -239,9 +248,8 @@ export default function TermsPage() {
             <Section id="9" title="No warranty">
               <p>
                 The service is provided{" "}
-                <strong className="font-semibold text-zinc-900">as is</strong>{" "}
-                and{" "}
-                <strong className="font-semibold text-zinc-900">as available</strong>,
+                <strong className="font-semibold t-text">as is</strong> and{" "}
+                <strong className="font-semibold t-text">as available</strong>,
                 without warranties of any kind, whether express or implied,
                 including fitness for a particular purpose, accuracy, and
                 non-infringement. We do not warrant that the service will be
@@ -287,7 +295,7 @@ export default function TermsPage() {
                 page with an updated date. Continued use after a change constitutes
                 acceptance. You may stop using the service at any time, and you
                 may request deletion of your data at any time as described in the{" "}
-                <Link href="/privacy" className="font-semibold text-rose-600 underline underline-offset-2">
+                <Link href="/privacy" className="font-semibold text-accent underline underline-offset-2">
                   privacy policy
                 </Link>
                 .
@@ -303,7 +311,7 @@ export default function TermsPage() {
               </p>
               <p>
                 Questions about these terms:{" "}
-                <a href={mailtoLink("Terms question")} className="font-semibold text-rose-600 underline underline-offset-2">
+                <a href={mailtoLink("Terms question")} className="font-semibold text-accent underline underline-offset-2">
                   {BRAND.supportEmail}
                 </a>
                 .

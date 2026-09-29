@@ -57,31 +57,48 @@ export default function AuthCallbackPage() {
   }, [router]);
 
   return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
-      <div className="w-full max-w-sm p-8 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl backdrop-blur-xl">
+    <div className="t-bg t-text flex min-h-[70vh] flex-col items-center justify-center p-6 text-center">
+      <div className="t-surface t-border t-shadow-md w-full max-w-sm rounded-2xl border p-8">
         {error ? (
           <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-              <AlertCircle size={24} />
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-xl"
+              style={{ background: "var(--red-dim)", border: "1px solid var(--red-dim)" }}
+              aria-hidden="true"
+            >
+              <AlertCircle size={24} style={{ color: "var(--red)" }} />
             </div>
-            <h2 className="text-base font-bold text-white">Authentication Failed</h2>
-            <p className="text-xs text-rose-300 leading-relaxed">{error}</p>
-            <p className="text-[11px] text-slate-500 mt-2">Redirecting to home in a moment...</p>
+            <h2 role="alert" className="text-base font-bold t-text">
+              Authentication failed
+            </h2>
+            <p className="text-xs leading-relaxed" style={{ color: "var(--red)" }}>
+              {error}
+            </p>
+            <p className="mt-2 text-[11px] t-faint">
+              Returning you to the home page…
+            </p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#002F6C] border border-[#0077C8]/40 flex items-center justify-center text-[#0077C8]">
-              <Loader2 size={24} className="animate-spin" />
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-xl"
+              style={{ background: "var(--accent-dim)", border: "1px solid var(--accent-dim)" }}
+              aria-hidden="true"
+            >
+              <Loader2 size={24} className="spinner" style={{ color: "var(--accent)" }} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Finalizing Sign-In</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Synchronizing your Career OS and intelligence tokens...
+              <h2 className="text-base font-bold t-text">Finalising sign-in</h2>
+              <p className="mt-1 text-xs t-muted">
+                Syncing your profile and report tokens…
               </p>
             </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 mt-2">
-              <ShieldCheck size={13} />
-              <span>Supabase Authenticated</span>
+            <div
+              className="mono mt-2 flex items-center gap-1.5 text-[11px]"
+              style={{ color: "var(--green)" }}
+            >
+              <ShieldCheck size={13} aria-hidden="true" />
+              <span>Identity verified</span>
             </div>
           </div>
         )}
