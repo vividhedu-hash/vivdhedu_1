@@ -22,6 +22,8 @@ DAG topology:
 from __future__ import annotations
 
 import logging
+import os
+import sys
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -106,247 +108,80 @@ def _update_scrape_run(run_id: str, status: str, stats: dict, config: dict):
         conn.close()
 
 
-def task_scrape_nirf(**context):
-    """Scrape NIRF rankings."""
-    import asyncio
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+# ── Scraping ─────────────────────────────────────────────────────────
+#
+# These were nine near-identical task functions, each of which:
+#
+#   * imported `indialens.scrapers.*` — a package that does not exist here.
+#     The real path is `scrapers.*`, so every task died at import, before a
+#     single HTTP request, and Airflow reported the DAG as failed while the
+#     underlying cause stayed buried in the task log.
+#   * built its engine with no pgbouncer-safe arguments. Against a Supabase
+#     pooled connection the first query raises, so the same task would have
+#     failed on the connection even with the import fixed.
+#   * hardcoded `status="success"` on the way out, whatever the scraper had
+#     actually done. `base_scraper` raises `ScrapeYieldedNothing` on a
+#     zero-row run precisely to prevent that, and the DAG was overriding it.
+#
+# There is now one task. It delegates to `scripts/run_scrapers.py`, which owns
+# connection setup, per-source isolation, credential preflight and the
+# dry-run/commit split — one implementation to keep correct whether it is
+# invoked from Airflow, from cron, or by hand.
+#
+# The runner is loaded by path rather than by name because the Airflow image
+# is not guaranteed to have `backend/` on sys.path as a package root.
 
+
+def _load_runner():
+    import importlib.util
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    # airflow/dags/ -> backend/
+    backend_root = os.path.abspath(os.path.join(here, "..", ".."))
+    if backend_root not in sys.path:
+        sys.path.insert(0, backend_root)
+
+    runner_path = os.path.join(backend_root, "scripts", "run_scrapers.py")
+    spec = importlib.util.spec_from_file_location("indialens_run_scrapers", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def task_scrape_all(**context):
+    """Run the scraper pipeline for this cycle.
+
+    One task rather than nine. The sources are already isolated from each other
+    inside the runner, so fanning them out across Airflow tasks bought
+    parallelism the polite rate limits could not use, and cost nine copies of
+    the same connection and import bugs.
+    """
     config = get_config()
-    run_id = _create_scrape_run("nirf", config)
-    context["task_instance"].xcom_push(key="nirf_run_id", value=run_id)
 
-    async def _run():
-        engine = create_async_engine(config["database_url"].replace("postgresql://", "postgresql+asyncpg://"))
-        async_session = async_sessionmaker(engine, class_=AsyncSession)
-        async with async_session() as session:
-            from indialens.scrapers.nirf_scraper import NIRFScraper
-            scraper = NIRFScraper(db=session, run_id=run_id)
-            stats = await scraper.run()
-            return stats
+    # The Airflow Variable is the source of truth for the connection string, so
+    # the DAG does not silently fall back to a local .env.
+    if config.get("database_url"):
+        os.environ["DATABASE_URL"] = config["database_url"]
 
-    stats = asyncio.run(_run())
-    _update_scrape_run(run_id, "success", {
-        "scraped": stats.records_scraped,
-        "updated": stats.records_updated,
-        "flagged": stats.records_flagged,
-    }, config)
+    runner = _load_runner()
+    argv = ["--commit", "--strict"]
+    dag_run = context.get("dag_run")
+    conf = getattr(dag_run, "conf", None) or {}
+    if isinstance(conf, dict) and conf.get("only"):
+        argv += ["--only", *conf["only"]]
 
-    logger.info(f"[NIRF] ✓ scraped={stats.records_scraped} updated={stats.records_updated} flagged={stats.records_flagged}")
-    return {"run_id": run_id, "stats": stats.__dict__}
+    logger.info("[scrape] invoking runner: %s", " ".join(argv))
+    exit_code = runner.main(argv)
 
-
-def task_scrape_ambitionbox(**context):
-    """Scrape AmbitionBox salary data."""
-    import asyncio
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-
-    config = get_config()
-    run_id = _create_scrape_run("ambitionbox", config)
-    context["task_instance"].xcom_push(key="ambitionbox_run_id", value=run_id)
-
-    async def _run():
-        engine = create_async_engine(config["database_url"].replace("postgresql://", "postgresql+asyncpg://"))
-        async_session = async_sessionmaker(engine, class_=AsyncSession)
-        async with async_session() as session:
-            from indialens.scrapers.ambitionbox_scraper import AmbitionBoxScraper
-            scraper = AmbitionBoxScraper(db=session, run_id=run_id)
-            return await scraper.run()
-
-    stats = asyncio.run(_run())
-    _update_scrape_run(run_id, "success", {
-        "scraped": stats.records_scraped,
-        "updated": stats.records_updated,
-        "flagged": stats.records_flagged,
-    }, config)
-    return {"run_id": run_id, "stats": stats.__dict__}
+    if exit_code not in (0, 3):
+        raise RuntimeError(
+            f"scraper pipeline returned {exit_code} — check scrape_runs for the "
+            f"per-source outcome. 0 means at least one source ingested rows, "
+            f"3 means every source was skipped for missing credentials."
+        )
+    return {"exit_code": exit_code}
 
 
-def task_scrape_naukri(**context):
-    """Scrape Naukri.com job postings."""
-    import asyncio
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-
-    config = get_config()
-    run_id = _create_scrape_run("naukri", config)
-    context["task_instance"].xcom_push(key="naukri_run_id", value=run_id)
-
-    async def _run():
-        engine = create_async_engine(config["database_url"].replace("postgresql://", "postgresql+asyncpg://"))
-        async_session = async_sessionmaker(engine, class_=AsyncSession)
-        async with async_session() as session:
-            from indialens.scrapers.naukri_scraper import NaukriScraper
-            scraper = NaukriScraper(db=session, run_id=run_id)
-            return await scraper.run()
-
-    stats = asyncio.run(_run())
-    _update_scrape_run(run_id, "success", {
-        "scraped": stats.records_scraped,
-        "updated": stats.records_updated,
-        "flagged": stats.records_flagged,
-    }, config)
-    return {"run_id": run_id, "stats": stats.__dict__}
-
-
-def task_scrape_reddit(**context):
-    """Extract salary signals from Reddit."""
-    import asyncio
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-
-    config = get_config()
-    run_id = _create_scrape_run("reddit", config)
-    context["task_instance"].xcom_push(key="reddit_run_id", value=run_id)
-
-    async def _run():
-        engine = create_async_engine(config["database_url"].replace("postgresql://", "postgresql+asyncpg://"))
-        async_session = async_sessionmaker(engine, class_=AsyncSession)
-        async with async_session() as session:
-            from indialens.scrapers.reddit_scraper import RedditScraper
-
-            class MockSettings:
-                reddit_client_id = config["reddit_client_id"]
-                reddit_client_secret = config["reddit_client_secret"]
-                reddit_user_agent = "IndiaLensBot/1.0"
-
-            scraper = RedditScraper(db=session, run_id=run_id, settings=MockSettings())
-            return await scraper.run()
-
-    stats = asyncio.run(_run())
-    _update_scrape_run(run_id, "success", {
-        "scraped": stats.records_scraped,
-        "updated": stats.records_updated,
-        "flagged": stats.records_flagged,
-    }, config)
-    return {"run_id": run_id, "stats": stats.__dict__}
-
-
-def task_scrape_worldbank(**context):
-    """Scrape World Bank macroeconomic indicators."""
-    import asyncio
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-
-    config = get_config()
-    run_id = _create_scrape_run("worldbank", config)
-    context["task_instance"].xcom_push(key="worldbank_run_id", value=run_id)
-
-    async def _run():
-        engine = create_async_engine(config["database_url"].replace("postgresql://", "postgresql+asyncpg://"))
-        async_session = async_sessionmaker(engine, class_=AsyncSession)
-        async with async_session() as session:
-            from indialens.scrapers.worldbank_scraper import WorldBankScraper
-            scraper = WorldBankScraper(db=session, run_id=run_id)
-            return await scraper.run()
-
-    stats = asyncio.run(_run())
-    _update_scrape_run(run_id, "success", {
-        "scraped": stats.records_scraped,
-        "updated": stats.records_updated,
-        "flagged": stats.records_flagged,
-    }, config)
-    return {"run_id": run_id, "stats": stats.__dict__}
-
-
-def task_scrape_plfs(**context):
-    """Ingest PLFS labour force data."""
-    import asyncio
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-
-    config = get_config()
-    run_id = _create_scrape_run("plfs", config)
-    context["task_instance"].xcom_push(key="plfs_run_id", value=run_id)
-
-    async def _run():
-        engine = create_async_engine(config["database_url"].replace("postgresql://", "postgresql+asyncpg://"))
-        async_session = async_sessionmaker(engine, class_=AsyncSession)
-        async with async_session() as session:
-            from indialens.scrapers.plfs_scraper import PLFSScraper
-            scraper = PLFSScraper(db=session, run_id=run_id)
-            return await scraper.run()
-
-    stats = asyncio.run(_run())
-    _update_scrape_run(run_id, "success", {
-        "scraped": stats.records_scraped,
-        "updated": stats.records_updated,
-        "flagged": stats.records_flagged,
-    }, config)
-    return {"run_id": run_id, "stats": stats.__dict__}
-
-
-def task_scrape_internshala(**context):
-    """Scrape Internshala stipends & job demand."""
-    import asyncio
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-
-    config = get_config()
-    run_id = _create_scrape_run("internshala", config)
-    context["task_instance"].xcom_push(key="internshala_run_id", value=run_id)
-
-    async def _run():
-        engine = create_async_engine(config["database_url"].replace("postgresql://", "postgresql+asyncpg://"))
-        async_session = async_sessionmaker(engine, class_=AsyncSession)
-        async with async_session() as session:
-            from indialens.scrapers.internshala_scraper import InternshalaScraper
-            scraper = InternshalaScraper(db=session, run_id=run_id)
-            return await scraper.run()
-
-    stats = asyncio.run(_run())
-    _update_scrape_run(run_id, "success", {
-        "scraped": stats.records_scraped,
-        "updated": stats.records_updated,
-        "flagged": stats.records_flagged,
-    }, config)
-    return {"run_id": run_id, "stats": stats.__dict__}
-
-
-def task_scrape_indeed(**context):
-    """Scrape Indeed job volumes and salaries."""
-    import asyncio
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-
-    config = get_config()
-    run_id = _create_scrape_run("indeed", config)
-    context["task_instance"].xcom_push(key="indeed_run_id", value=run_id)
-
-    async def _run():
-        engine = create_async_engine(config["database_url"].replace("postgresql://", "postgresql+asyncpg://"))
-        async_session = async_sessionmaker(engine, class_=AsyncSession)
-        async with async_session() as session:
-            from indialens.scrapers.indeed_scraper import IndeedScraper
-            scraper = IndeedScraper(db=session, run_id=run_id)
-            return await scraper.run()
-
-    stats = asyncio.run(_run())
-    _update_scrape_run(run_id, "success", {
-        "scraped": stats.records_scraped,
-        "updated": stats.records_updated,
-        "flagged": stats.records_flagged,
-    }, config)
-    return {"run_id": run_id, "stats": stats.__dict__}
-
-
-def task_scrape_placement(**context):
-    """Scrape official college placement stats."""
-    import asyncio
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-
-    config = get_config()
-    run_id = _create_scrape_run("college_placement", config)
-    context["task_instance"].xcom_push(key="placement_run_id", value=run_id)
-
-    async def _run():
-        engine = create_async_engine(config["database_url"].replace("postgresql://", "postgresql+asyncpg://"))
-        async_session = async_sessionmaker(engine, class_=AsyncSession)
-        async with async_session() as session:
-            from indialens.scrapers.college_placement_scraper import CollegePlacementScraper
-            scraper = CollegePlacementScraper(db=session, run_id=run_id)
-            return await scraper.run()
-
-    stats = asyncio.run(_run())
-    _update_scrape_run(run_id, "success", {
-        "scraped": stats.records_scraped,
-        "updated": stats.records_updated,
-        "flagged": stats.records_flagged,
-    }, config)
-    return {"run_id": run_id, "stats": stats.__dict__}
 
 
 def task_anomaly_report(**context):
@@ -512,64 +347,17 @@ with DAG(
     start = EmptyOperator(task_id="start")
 
     # Parallel scrape tasks
-    scrape_nirf = PythonOperator(
-        task_id="scrape_nirf",
-        python_callable=task_scrape_nirf,
+    # One task, not nine. Each of the nine it replaces had its own copy of the
+    # engine construction, the import path and the status write, and all three
+    # of those copies were wrong. Per-source isolation now lives in the
+    # runner, so a single task gets the same fault containment with one place
+    # to maintain.
+    all_scrapers = PythonOperator(
+        task_id="scrape_all",
+        python_callable=task_scrape_all,
         pool="scraper_pool",
+        execution_timeout=timedelta(hours=3),
     )
-
-    scrape_ambitionbox = PythonOperator(
-        task_id="scrape_ambitionbox",
-        python_callable=task_scrape_ambitionbox,
-        pool="scraper_pool",
-    )
-
-    scrape_naukri = PythonOperator(
-        task_id="scrape_naukri",
-        python_callable=task_scrape_naukri,
-        pool="scraper_pool",
-    )
-
-    scrape_reddit = PythonOperator(
-        task_id="scrape_reddit",
-        python_callable=task_scrape_reddit,
-        pool="scraper_pool",
-    )
-
-    scrape_worldbank = PythonOperator(
-        task_id="scrape_worldbank",
-        python_callable=task_scrape_worldbank,
-        pool="scraper_pool",
-    )
-
-    scrape_plfs = PythonOperator(
-        task_id="scrape_plfs",
-        python_callable=task_scrape_plfs,
-        pool="scraper_pool",
-    )
-
-    scrape_internshala = PythonOperator(
-        task_id="scrape_internshala",
-        python_callable=task_scrape_internshala,
-        pool="scraper_pool",
-    )
-
-    scrape_indeed = PythonOperator(
-        task_id="scrape_indeed",
-        python_callable=task_scrape_indeed,
-        pool="scraper_pool",
-    )
-
-    scrape_placement = PythonOperator(
-        task_id="scrape_placement",
-        python_callable=task_scrape_placement,
-        pool="scraper_pool",
-    )
-
-    all_scrapers = [
-        scrape_nirf, scrape_ambitionbox, scrape_naukri, scrape_reddit,
-        scrape_worldbank, scrape_plfs, scrape_internshala, scrape_indeed, scrape_placement
-    ]
 
     anomaly_report = PythonOperator(
         task_id="anomaly_report",

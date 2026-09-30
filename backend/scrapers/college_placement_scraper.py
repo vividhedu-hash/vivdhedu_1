@@ -24,6 +24,30 @@ COLLEGES = {
     "AIIMS Delhi": "https://www.aiims.edu"
 }
 
+# VERIFIED 2026-09-30, from outside the deployment network. These URLs are a
+# decade of institutional drift, and the list above was never checked:
+#
+#   IIT Bombay   404
+#   IIT Delhi    no response (connection failed)
+#   IIT Madras   502
+#   BITS Pilani  404
+#   IIM Ahmedabad 404
+#   AIIMS Delhi  no response (connection failed)
+#   NIT Trichy   200, but the TLS handshake failed from this host, so whether
+#                its page actually contains the "highest ... LPA" phrasing the
+#                regex requires is still unconfirmed.
+#
+# So the source currently returns 0 records, and `base_scraper` correctly
+# refuses to call that a success. Re-verify each URL before trusting any output
+# from this scraper, and prefer the PDF the placements office publishes over
+# the HTML summary page where one exists — the PDFs are far more stable and
+# this class already handles them.
+#
+# The regex below is also narrow on purpose: it only fires when a document
+# actually states a highest package. That is why a 404-heavy source yields
+# nothing rather than plausible-looking numbers, which is the correct
+# behaviour and should not be "fixed" by widening the match.
+
 class CollegePlacementScraper(BaseScraper):
     SOURCE_NAME = "college_placement"
     REQUEST_DELAY = 1.0
