@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { getSupabaseClient } from "./supabase-client";
 import { clearBrowserSession } from "./consent";
-import { RETURN_TO_KEY } from "./session-policy";
+import { RETURN_TO_KEY, getStoredReportToken } from "./session-policy";
+import { linkReportToAccount } from "./profile-store";
 
 /**
  * Supabase Auth is the single source of truth for "is this browser signed in".
@@ -141,6 +142,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const supabase = getSupabaseClient();
 
+    // Helper to link unassociated local reports when user signs in
+    const syncLocalReport = (sessionUser: any, sessionToken: string) => {
+      if (typeof window !== "undefined" && sessionUser?.id && sessionToken) {
+        const pendingToken = getStoredReportToken();
+        if (pendingToken) {
+          linkReportToAccount({
+            accessToken: sessionToken,
+            userId: sessionUser.id,
+            reportToken: pendingToken,
+            title: "Degree ROI Analysis",
+          }).catch(() => {});
+        }
+      }
+    };
+
     // 1. Initial session hydration — Supabase's session is the only thing that
     //    can produce a signed-in user. Anything else is treated as signed out.
     supabase.auth
@@ -149,10 +165,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           setUser(mapSupabaseUser(session.user));
           setToken(session.access_token);
+          syncLocalReport(session.user, session.access_token);
         } else {
           setUser(null);
           setToken(null);
-          clearStoredTokens();
         }
       })
       .catch((err) => {
@@ -161,7 +177,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("[Auth] Session fetch failed; treating as signed out:", err);
         setUser(null);
         setToken(null);
-        clearStoredTokens();
       })
       .finally(() => {
         setIsLoading(false);
@@ -170,14 +185,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 2. Real-time auth state listener
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(mapSupabaseUser(session.user));
         setToken(session.access_token);
+        syncLocalReport(session.user, session.access_token);
       } else {
         setUser(null);
         setToken(null);
-        clearStoredTokens();
+        if (event === "SIGNED_OUT") {
+          clearStoredTokens();
+        }
       }
       setIsLoading(false);
     });
@@ -286,6 +304,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       try {
+        let linked = false;
+        if (token) {
+          linked = await linkReportToAccount({
+            accessToken: token,
+            userId: user.id,
+            reportToken,
+            title: title || "Degree ROI Analysis",
+          });
+        }
+
         const res = await fetch("/api/report/save", {
           method: "POST",
           headers: {
@@ -298,7 +326,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             user_id: user.id,
           }),
         });
-        return res.ok;
+        return linked || res.ok;
       } catch (err) {
         console.error("[Auth] Saving report failed:", err);
         return false;

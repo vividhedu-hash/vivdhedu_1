@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { consumeReturnTo } from "@/lib/auth-context";
+import { getStoredReportToken } from "@/lib/session-policy";
+import { linkReportToAccount, readLocalProfile, saveProfile } from "@/lib/profile-store";
 import { Loader2, AlertCircle, ShieldCheck } from "lucide-react";
 
 /**
@@ -32,15 +34,41 @@ export default function AuthCallbackPage() {
         // route is returned to rather than dropped on the landing page.
         const next = safeNext(urlParams.get("next") ?? consumeReturnTo() ?? "/");
 
+        let currentSession = null;
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
             throw exchangeError;
           }
+          currentSession = data.session;
         } else {
           // If hash tokens were delivered (implicit flow)
-          const { error: sessionError } = await supabase.auth.getSession();
+          const { data, error: sessionError } = await supabase.auth.getSession();
           if (sessionError) throw sessionError;
+          currentSession = data.session;
+        }
+
+        // Sync pending report token and local draft profile to the account
+        if (currentSession?.access_token && currentSession?.user?.id) {
+          const pendingReportToken = getStoredReportToken();
+          if (pendingReportToken) {
+            await linkReportToAccount({
+              accessToken: currentSession.access_token,
+              userId: currentSession.user.id,
+              reportToken: pendingReportToken,
+              title: "Degree ROI Analysis",
+            }).catch(() => {});
+          }
+
+          const localDraft = readLocalProfile(currentSession.user.id);
+          if (localDraft?.fullName?.trim()) {
+            await saveProfile({
+              accessToken: currentSession.access_token,
+              userId: currentSession.user.id,
+              email: currentSession.user.email || "",
+              fullName: localDraft.fullName.trim(),
+            }).catch(() => {});
+          }
         }
 
         router.replace(next);

@@ -11,6 +11,7 @@ import {
   RETURN_TO_KEY,
   THEME_KEY,
   type ConsentChoice,
+  decodeConsent,
   encodeConsent,
   readConsentCookie,
 } from "./session-policy";
@@ -19,7 +20,32 @@ export type ConsentCategories = { functional: boolean; analytics: boolean };
 
 export function readConsent(): ConsentChoice | null {
   if (typeof document === "undefined") return null;
-  return readConsentCookie(document.cookie);
+  const cookieChoice = readConsentCookie(document.cookie);
+  if (cookieChoice) {
+    // Keep localStorage synchronized
+    try {
+      window.localStorage.setItem(CONSENT_COOKIE, encodeConsent(cookieChoice));
+    } catch {}
+    return cookieChoice;
+  }
+
+  // Resilient fallback to localStorage if cookie was blocked, wiped by ITP, or not sent
+  try {
+    const rawLocal = window.localStorage.getItem(CONSENT_COOKIE);
+    if (rawLocal) {
+      const localChoice = decodeConsent(rawLocal);
+      if (localChoice) {
+        // Restore to cookie so server/edge can also read it
+        const secure = window.location.protocol === "https:" ? "; Secure" : "";
+        document.cookie = `${CONSENT_COOKIE}=${encodeConsent(localChoice)}; Path=/; Max-Age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${secure}`;
+        return localChoice;
+      }
+    }
+  } catch {
+    // Private browsing mode
+  }
+
+  return null;
 }
 
 /** Necessary storage is always on — it is not a switch, it is the sign-in. */
@@ -43,8 +69,15 @@ export function writeConsent(choice: ConsentCategories): ConsentChoice {
     analytics: choice.analytics,
     decidedAt: Math.floor(Date.now() / 1000),
   };
+  const encoded = encodeConsent(saved);
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${CONSENT_COOKIE}=${encodeConsent(saved)}; Path=/; Max-Age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${secure}`;
+  document.cookie = `${CONSENT_COOKIE}=${encoded}; Path=/; Max-Age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${secure}`;
+  try {
+    window.localStorage.setItem(CONSENT_COOKIE, encoded);
+  } catch {
+    /* private mode */
+  }
+
   if (!saved.functional) {
     try { window.localStorage.removeItem(THEME_KEY); } catch { /* private mode */ }
   }
@@ -57,15 +90,18 @@ export function openCookieSettings(): void {
 }
 
 /**
- * Drops tab- and leftover-session data. Does not touch the consent cookie
+ * Drops temporary tab- and leftover-session data. Does not touch the consent choice
  * or the Supabase session blob — signOut owns that blob.
  */
-export function clearBrowserSession(): void {
+export function clearBrowserSession(includeReportToken: boolean = false): void {
   try {
     window.localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
   } catch { /* private mode */ }
   try {
     window.sessionStorage.removeItem(RETURN_TO_KEY);
-    window.sessionStorage.removeItem(REPORT_TOKEN_KEY);
+    if (includeReportToken) {
+      window.sessionStorage.removeItem(REPORT_TOKEN_KEY);
+      window.localStorage.removeItem(REPORT_TOKEN_KEY);
+    }
   } catch { /* private mode */ }
 }

@@ -131,7 +131,7 @@ export default function OnboardPage() {
   );
 
   const handleEnterWorkspace = () => {
-    router.push(reportToken ? `/workspace?token=${reportToken}` : "/workspace");
+    router.push("/workspace");
   };
 
   // A returning student should arrive with their own answers already in the

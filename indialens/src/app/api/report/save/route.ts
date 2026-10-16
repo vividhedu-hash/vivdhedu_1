@@ -32,15 +32,22 @@ export async function POST(request: NextRequest) {
       }),
     }).catch(() => null);
 
-    // Also update in-memory cache
-    reportStore.set(token, {
-      token,
-      created_at: new Date().toISOString(),
-      expires_at: expiresAt,
-      student_input: profileData,
-      results: resultsData,
-      _source: "database",
-    });
+    // If caller is authenticated, also link to user_saved_reports under RLS
+    const authHeader = request.headers.get("authorization");
+    if (authHeader && body.user_id) {
+      await fetchSupabaseRest("user_saved_reports", {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          Prefer: "resolution=ignore-duplicates,return=minimal",
+        },
+        body: JSON.stringify({
+          user_id: body.user_id,
+          report_token: token,
+          title: body.title || "Degree ROI Analysis",
+        }),
+      }).catch(() => null);
+    }
 
     return NextResponse.json({ status: "saved", token, _source: "supabase" });
   } catch {

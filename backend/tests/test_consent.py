@@ -24,6 +24,13 @@ def test_explicit_opt_in_is_read():
     assert state.has_decision is True
 
 
+def test_quoted_cookie_is_read():
+    state = parse_consent('"2.1.1.1750000000"')
+    assert state.analytics is True
+    assert state.functional is True
+    assert state.has_decision is True
+
+
 def test_necessary_only_disables_optional_storage():
     state = parse_consent("2.0.0.1750000000")
     assert state.necessary is True

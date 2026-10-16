@@ -75,7 +75,7 @@ def parse_consent(raw: str | None) -> ConsentState:
     if not raw:
         return NO_DECISION
 
-    match = _CONSENT_RE.match(raw.strip())
+    match = _CONSENT_RE.match(raw.strip().strip('"'))
     if not match:
         return NO_DECISION
 

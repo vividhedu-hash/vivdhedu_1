@@ -31,6 +31,7 @@ import { useAuth } from "@/lib/auth-context";
 import { NO_DATA, finiteOrNull } from "@/lib/mock-data";
 import { BRAND } from "@/lib/brand";
 import { fetchOwnedReports, fetchStoredProfile, type ReportLink } from "@/lib/profile-store";
+import { getStoredReportToken } from "@/lib/session-policy";
 
 /**
  * The workspace previously rendered a hardcoded persona.
@@ -155,22 +156,48 @@ function WorkspaceView() {
     opportunities: 50,
   });
 
+  const [userReports, setUserReports] = useState<ReportLink[] | null>(null);
+
+  useEffect(() => {
+    if (!user?.id || !authToken) {
+      setUserReports(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const rows = await fetchOwnedReports(authToken, user.id).catch(() => [] as ReportLink[]);
+      if (!cancelled) setUserReports(rows);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, authToken]);
+
+  // Derive the active report token: strictly prioritize the authenticated user's own reports.
+  // A foreign token pasted into the URL will NEVER override the logged-in user's own data.
+  const activeToken = (() => {
+    if (userReports && userReports.length > 0) {
+      if (token && userReports.some((r) => r.report_token === token)) {
+        return token;
+      }
+      return userReports[0].report_token;
+    }
+    return token ?? getStoredReportToken() ?? undefined;
+  })();
+
   /**
-   * Hydrate from a saved report token, if one was supplied.
+   * Hydrate from the active report token belonging to this user or device.
    *
    * Everything read here is optional and coerced with `finiteOrNull`: a
    * report that lacks a trait vector must leave the panel empty, not
-   * substitute a midpoint. The previous version read `?.ai_adapt ?? 0.78` and
-   * multiplied by 100, which printed 78 for any report that did not carry the
-   * field — the same number as the hardcoded default, arrived at by a
-   * different route, and equally unfounded.
+   * substitute a midpoint.
    */
   useEffect(() => {
-    if (!token) return;
+    if (!activeToken) return;
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/report/${encodeURIComponent(token)}`, {
+        const res = await fetch(`/api/report/${encodeURIComponent(activeToken)}`, {
           signal: AbortSignal.timeout(6000),
         });
         if (!res.ok || cancelled) return;
@@ -230,7 +257,7 @@ function WorkspaceView() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [activeToken]);
 
   const handleAsk = useCallback(
     async (overrideQ?: string) => {
@@ -383,30 +410,6 @@ function WorkspaceView() {
   const displayName =
     accountName || user?.full_name?.trim() || user?.email?.split("@")[0] || "there";
 
-  /*
-   * The account's own reports, read back from `user_saved_reports`.
-   *
-   * `null` is "not loaded yet" and is deliberately distinct from `[]` ("loaded
-   * and there are none"). Collapsing them would make the empty state flash
-   * before the fetch resolves, which is how a panel ends up telling someone
-   * they have no reports before it has actually looked.
-   */
-  const [userReports, setUserReports] = useState<ReportLink[] | null>(null);
-
-  useEffect(() => {
-    if (!user?.id || !authToken) {
-      setUserReports(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const rows = await fetchOwnedReports(authToken, user.id).catch(() => [] as ReportLink[]);
-      if (!cancelled) setUserReports(rows);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id, authToken]);
   const initials = (
     displayName === "there" ? "?" : displayName
   )

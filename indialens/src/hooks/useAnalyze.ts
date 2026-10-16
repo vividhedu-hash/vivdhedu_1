@@ -7,7 +7,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { REPORT_TOKEN_KEY } from "@/lib/session-policy";
+import { REPORT_TOKEN_KEY, setStoredReportToken } from "@/lib/session-policy";
 
 export interface StudentProfilePayload {
   tenth_pct?: number;
@@ -108,9 +108,9 @@ export function useAnalyze(): UseAnalyzeReturn {
       const data: AnalyzeResult = await resp.json();
       setResult(data);
 
-      // Persist token for sharing / direct URL
+      // Persist token for sharing / direct URL across sessions
       if (data.token && typeof window !== "undefined") {
-        sessionStorage.setItem(REPORT_TOKEN_KEY, data.token);
+        setStoredReportToken(data.token);
       }
 
       return data;

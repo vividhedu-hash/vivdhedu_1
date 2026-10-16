@@ -48,8 +48,12 @@ export function CookieConsent() {
 
   useEffect(() => {
     const existing = readConsent();
-    if (!existing) setVisible(true);
-    else applyExisting(existing);
+    if (!existing) {
+      setVisible(true);
+    } else {
+      setVisible(false);
+      applyExisting(existing);
+    }
 
     const open = () => {
       const current = readConsent();

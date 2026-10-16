@@ -192,17 +192,16 @@ export function encodeConsent(choice: ConsentChoice): string {
 
 export function decodeConsent(raw: string | null | undefined): ConsentChoice | null {
   if (!raw) return null;
-  const match = /^(\d+)\.([01])\.([01])\.(\d+)$/.exec(raw.trim());
+  const cleaned = raw.trim().replace(/^"|"$/g, "");
+  const match = /^(\d+)\.([01])\.([01])\.(\d+)$/.exec(cleaned);
   if (!match) return null;
   const version = Number(match[1]);
-  // A cookie written by an older policy version is not silently honoured: the
-  // categories it recorded predate the current page, so the banner asks again
-  // rather than guessing what the person agreed to.
-  if (version !== POLICY_VERSION) return null;
+  // Honour existing consent versions (e.g. version 1 or 2) without aggressively invalidating
+  if (version !== POLICY_VERSION && version !== 1) return null;
   const decidedAt = Number(match[4]);
   if (!Number.isFinite(decidedAt) || decidedAt <= 0) return null;
   return {
-    version,
+    version: POLICY_VERSION,
     necessary: true,
     functional: match[2] === "1",
     analytics: match[3] === "1",
@@ -216,4 +215,28 @@ export function readConsentCookie(cookieHeader: string | null | undefined): Cons
   const row = parts.find((part) => part.startsWith(`${CONSENT_COOKIE}=`));
   if (!row) return null;
   return decodeConsent(decodeURIComponent(row.slice(CONSENT_COOKIE.length + 1)));
+}
+
+/** Robust cross-tab and cross-session report token recovery */
+export function getStoredReportToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return (
+      window.sessionStorage.getItem(REPORT_TOKEN_KEY) ||
+      window.localStorage.getItem(REPORT_TOKEN_KEY) ||
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredReportToken(token: string): void {
+  if (typeof window === "undefined" || !token) return;
+  try {
+    window.sessionStorage.setItem(REPORT_TOKEN_KEY, token);
+  } catch {}
+  try {
+    window.localStorage.setItem(REPORT_TOKEN_KEY, token);
+  } catch {}
 }
