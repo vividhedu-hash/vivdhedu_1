@@ -84,6 +84,7 @@ class GeminiAdvisorService:
             "longitudinal_memory": {
                 "user_stated_question": student_profile.get("question", "What is the optimal path for my budget and caliber?"),
                 "preferred_cities": student_profile.get("preferred_cities", ["Bengaluru", "Pune", "NCR"]),
+                "person_prompt_block": student_profile.get("person_context") or None,
             },
         }
 
@@ -165,6 +166,9 @@ class GeminiAdvisorService:
 
 === STRUCTURED INJECTED CONTEXT PACKET (GROUND TRUTH) ===
 {json.dumps(context_packet, indent=2)}
+
+=== PERSON MEMORY (do not contradict; do not invent missing biography) ===
+{student_profile.get("person_context") or "No person-memory packet on this call."}
 
 === STUDENT QUERY ===
 "{user_question}"

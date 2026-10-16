@@ -9,6 +9,7 @@ import { BRAND } from "@/lib/brand";
 
 const PLATFORM_LINKS = [
   { href: "/workspace",        label: "Decision Workspace"      },
+  { href: "/you",              label: "For You graph"           },
   { href: "/onboard",          label: "Calibration Onboarding"  },
   { href: "/explore",          label: "Program Asset Index"      },
   { href: "/psychometric",     label: "3PL IRT Assessment"       },

@@ -13,6 +13,7 @@ import {
   type GroundedPayload,
   type IntelligencePayload,
 } from "../lib/grounded";
+import { usePersonMemory } from "@/lib/person-memory-context";
 
 const FIELDS = [
   { value: "engineering-cs", label: "Engineering — CS / AI" },
@@ -69,6 +70,7 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
   const [intelError, setIntelError] = useState<string | null>(null);
   const [building, setBuilding] = useState(false);
 
+  const { packet, track, remember } = usePersonMemory();
   const [engineState, setEngineState] = useState<EngineState>("checking");
   const [engineName, setEngineName] = useState("");
   const [probe, setProbe] = useState<{ status?: number; reason?: string }>({});
@@ -118,9 +120,11 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
     if (q.length < 3) return;
     setAsking(true);
     setModeError(null);
+    track({ signal: "ask", text: q, path: "/advisor" });
+    remember({ key: "target_field", value: field, confidence: 0.75, source: "ai-mode" });
     const { ok, status, data } = await postAi<
       GroundedPayload | { detail?: { reason?: string } }
-    >("/api/v1/ai/mode", { query: q, context: profile });
+    >("/api/v1/ai/mode", { query: q, context: profile, person_context: packet.prompt_block });
     setAsking(false);
     if (!ok) {
       setMode(null);
@@ -142,6 +146,7 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
       token: token || undefined,
       profile,
       question: query || undefined,
+      person_context: packet.prompt_block,
     });
     setBuilding(false);
     if (!ok) {

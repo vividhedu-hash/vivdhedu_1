@@ -32,6 +32,7 @@ import { NO_DATA, finiteOrNull } from "@/lib/mock-data";
 import { BRAND } from "@/lib/brand";
 import { fetchOwnedReports, fetchStoredProfile, type ReportLink } from "@/lib/profile-store";
 import { getStoredReportToken } from "@/lib/session-policy";
+import { usePersonMemory } from "@/lib/person-memory-context";
 
 /**
  * The workspace previously rendered a hardcoded persona.
@@ -119,6 +120,7 @@ function WorkspaceView() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? undefined;
   const { user, token: authToken, logout } = useAuth();
+  const { packet, track } = usePersonMemory();
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -264,6 +266,7 @@ function WorkspaceView() {
       const q = (overrideQ ?? question).trim();
       if (!q) return;
 
+      track({ signal: "ask", text: q, path: "/workspace" });
       setNotice(null);
       setDecisionResult({
         simulationMs: 0,
@@ -286,6 +289,7 @@ function WorkspaceView() {
           body: JSON.stringify({
             question: q,
             profile_token: token,
+            person_context: packet.prompt_block,
             context: {
               // Only measured values are forwarded. The advisor prompt
               // previously received `ai_resilience_score: 78` because the page
@@ -340,7 +344,7 @@ function WorkspaceView() {
         });
       }
     },
-    [question, token, authToken, telemetry.aiResilienceScore, telemetry.primaryGap, telemetry.sprintLabel]
+    [question, token, authToken, telemetry.aiResilienceScore, telemetry.primaryGap, telemetry.sprintLabel, packet.prompt_block, track]
   );
 
   const toggleRoadmapItem = (id: string) => {

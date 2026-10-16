@@ -214,6 +214,14 @@ except Exception as e:
     MOUNT_FAILURES["student_state_router"] = f"{type(e).__name__}: {e}"
     logger.error("[Main] Student-state router NOT mounted: %s", e, exc_info=True)
 
+try:
+    from .routers import person as person_router
+    app.include_router(person_router.router, prefix="/api/v1", tags=["person"])
+    logger.info("[Main] Person-memory router mounted at /api/v1/person")
+except Exception as e:
+    MOUNT_FAILURES["person_router"] = f"{type(e).__name__}: {e}"
+    logger.error("[Main] Person-memory router NOT mounted: %s", e, exc_info=True)
+
 # Week 3: ML management endpoints
 try:
     from .routers import ml as ml_router

@@ -6,6 +6,7 @@ import { OnboardWizard, type WizardData } from "@/components/OnboardWizard";
 import { SynthesisLoader } from "@/components/SynthesisLoader";
 import { BaselineDiagnosticReport } from "@/components/BaselineDiagnosticReport";
 import { useAuth } from "@/lib/auth-context";
+import { usePersonMemory } from "@/lib/person-memory-context";
 import {
   clearLocalProfile,
   linkReportToAccount,
@@ -52,6 +53,7 @@ const EXAMPLE_NAME = "Sample Student";
 export default function OnboardPage() {
   const router = useRouter();
   const { user, token, isLoading } = useAuth();
+  const { remember, track } = usePersonMemory();
   const [phase, setPhase] = useState<Phase>("wizard");
   const [wizardData, setWizardData] = useState<WizardData | null>(null);
   const [reportToken, setReportToken] = useState<string>("");
@@ -67,6 +69,24 @@ export default function OnboardPage() {
     // for the report token that only arrives after synthesis. If the student
     // navigates away mid-synthesis they should still have their own name on
     // their account.
+    if (!isExampleProfile(data)) {
+      remember({ key: "full_name", value: data.fullName, confidence: 0.95, source: "onboard" });
+      if (data.stage) remember({ key: "stage", value: data.stage, confidence: 0.9, source: "onboard" });
+      if (data.targetField) remember({ key: "target_field", value: data.targetField, confidence: 0.9, source: "onboard" });
+      if (data.budgetBand) remember({ key: "budget_band", value: data.budgetBand, confidence: 0.9, source: "onboard" });
+      if (data.immediateFocus) remember({ key: "immediate_focus", value: data.immediateFocus, confidence: 0.88, source: "onboard" });
+      track({
+        signal: "explicit",
+        path: "/onboard",
+        text: [data.targetField, ...(data.goals || [])].filter(Boolean).join(" "),
+        entities: [
+          ...(data.goals || []).map((g) => ({ kind: "goal" as const, entity_id: g, label: g })),
+          ...(data.disciplines || []).map((d) => ({ kind: "topic" as const, entity_id: d, label: d })),
+          ...(data.dreamInstitutions || []).map((d) => ({ kind: "college" as const, entity_id: d, label: d })),
+        ],
+      });
+    }
+
     if (user && token && !isExampleProfile(data)) {
       void saveProfile({
         accessToken: token,

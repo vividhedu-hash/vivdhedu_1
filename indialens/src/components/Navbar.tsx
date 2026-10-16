@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Compass, Brain, Zap, ShoppingBag, Sparkles,
   Menu, X, UserRound, LogOut, Lock, Route, Shield, GraduationCap,
-  MoreHorizontal, ChevronDown,
+  MoreHorizontal, ChevronDown, Fingerprint,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -41,11 +41,12 @@ const NAV_LINKS: NavLink[] = [
   { href: "/admissions",   label: "Admissions",   icon: <GraduationCap size={13} />, desc: "Odds from stored cutoffs",    priority: 2 },
   { href: "/workspace",    label: "Workspace",    icon: <Zap size={13} />,          desc: "Your decision OS",            priority: 3, highlight: true, requiresAuth: true },
   { href: "/pricing",      label: "Pricing",      icon: <TagIcon />,               desc: "Free during launch",         priority: 4 },
-  { href: "/marketplace",  label: "Marketplace",  icon: <ShoppingBag size={13} />,  desc: "Matched courses & programs",  priority: 5 },
-  { href: "/advisor",      label: "AI Mode",      icon: <Sparkles size={13} />,    desc: "Gemini + Search grounding",   priority: 6 },
-  { href: "/psychometric", label: "Psychometric", icon: <Brain size={13} />,        desc: "IRT adaptive diagnostic",     priority: 7, requiresAuth: true },
-  { href: "/career-trajectory", label: "Career path", icon: <Route size={13} />,   desc: "Markov state distribution",   priority: 8 },
-  { href: "/job-security", label: "Job security", icon: <Shield size={13} />,      desc: "AI exposure by profession",   priority: 9 },
+  { href: "/you",          label: "For You",      icon: <Fingerprint size={13} />, desc: "Your interest graph",        priority: 5 },
+  { href: "/marketplace",  label: "Marketplace",  icon: <ShoppingBag size={13} />,  desc: "Matched courses & programs",  priority: 6 },
+  { href: "/advisor",      label: "AI Mode",      icon: <Sparkles size={13} />,    desc: "Gemini + Search grounding",   priority: 7 },
+  { href: "/psychometric", label: "Psychometric", icon: <Brain size={13} />,        desc: "IRT adaptive diagnostic",     priority: 8, requiresAuth: true },
+  { href: "/career-trajectory", label: "Career path", icon: <Route size={13} />,   desc: "Markov state distribution",   priority: 9 },
+  { href: "/job-security", label: "Job security", icon: <Shield size={13} />,      desc: "AI exposure by profession",   priority: 10 },
 ];
 
 /** Shown in the bar from `md` up; everything else collapses into "More". */

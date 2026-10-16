@@ -33,17 +33,20 @@ class AdvisorRequest(BaseModel):
     preferred_cities: List[str] = Field(default_factory=lambda: ["Bengaluru", "NCR"])
     top_programs: List[Dict[str, Any]] = Field(default_factory=list)
     question: Optional[str] = None
+    person_context: Optional[str] = Field(None, max_length=8000)
 
 
 class ModeRequest(BaseModel):
     query: str = Field(..., min_length=3, max_length=2000)
     context: Optional[Dict[str, Any]] = None
+    person_context: Optional[str] = Field(None, max_length=8000)
 
 
 class IntelligenceRequest(BaseModel):
     token: Optional[str] = None
     profile: Dict[str, Any] = Field(default_factory=dict)
     question: Optional[str] = None
+    person_context: Optional[str] = Field(None, max_length=8000)
 
 
 class PsychometricsRequest(BaseModel):
@@ -75,6 +78,8 @@ async def ai_mode(payload: ModeRequest):
     extra = ""
     if payload.context:
         extra = f"\nStudent context (user-stated): {payload.context}\n"
+    if payload.person_context:
+        extra += f"\nPERSON MEMORY (do not contradict; do not invent missing biography):\n{payload.person_context}\n"
     prompt = f"""Answer this India higher-education / career question with live web evidence.
 
 Question: {payload.query}
@@ -98,9 +103,12 @@ async def create_personal_intelligence(
 ):
     """Psychometric + catalog + Search-grounded academic path for one student."""
     try:
+        profile = dict(payload.profile or {})
+        if payload.person_context:
+            profile["person_context"] = payload.person_context
         return await build_personal_intelligence(
             db=db,
-            profile=payload.profile,
+            profile=profile,
             token=payload.token,
             question=payload.question,
         )
@@ -129,6 +137,8 @@ async def consult_ai_advisor(payload: AdvisorRequest):
     }
     if payload.question:
         student_profile["question"] = payload.question
+    if payload.person_context:
+        student_profile["person_context"] = payload.person_context
     try:
         return await gemini_advisor_service.generate_career_advice(
             student_profile=student_profile,

@@ -48,6 +48,7 @@ export const metadata: Metadata = {
 
 import { AppShell } from "@/components/AppShell";
 import { CookieConsent } from "@/components/CookieConsent";
+import { PersonMemoryProvider } from "@/lib/person-memory-context";
 
 export default function RootLayout({
   children,
@@ -91,9 +92,11 @@ export default function RootLayout({
       <body className="t-bg t-text antialiased selection:bg-[var(--accent-dim)] selection:text-[var(--text-primary)]">
         <PostHogProvider>
           <AuthProvider>
-            <AppShell>{children}</AppShell>
-            <AuthModal />
-            <CookieConsent />
+            <PersonMemoryProvider>
+              <AppShell>{children}</AppShell>
+              <AuthModal />
+              <CookieConsent />
+            </PersonMemoryProvider>
           </AuthProvider>
         </PostHogProvider>
       </body>

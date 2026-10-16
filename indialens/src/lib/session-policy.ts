@@ -12,6 +12,7 @@
  *   - `indialens_report_token` → `hooks/useAnalyze.ts:113`
  *   - `vividhedu_auth_return_to` → `lib/auth-context.tsx` sign-in redirect
  *   - `il-theme`               → `lib/theme-context.tsx` (functional gate)
+ *   - `vividhedu:person-memory:v1` → `lib/person-memory.ts` (functional gate)
  *   - `vividhedu_consent`      → `lib/consent.ts:39`
  *   - `ph_*_posthog`           → posthog-js default, only after opt-in
  *
@@ -50,6 +51,8 @@ export const LEGACY_ACCESS_TOKEN_KEY = "vividhedu_auth_token";
 export const RETURN_TO_KEY = "vividhedu_auth_return_to";
 export const REPORT_TOKEN_KEY = "indialens_report_token";
 export const THEME_KEY = "il-theme";
+export const PERSON_MEMORY_STORAGE_KEY = "vividhedu:person-memory:v1";
+export const PERSON_ANON_STORAGE_KEY = "vividhedu:person-anon:v1";
 
 export type StorageCategory = "necessary" | "functional" | "analytics";
 
@@ -137,6 +140,25 @@ export const STORAGE_POLICY: StorageRecord[] = [
     duration: "Until you turn functional storage off, or clear site data.",
     purpose:
       "Light or dark theme. Not written unless you allow functional storage.",
+  },
+  {
+    name: PERSON_MEMORY_STORAGE_KEY,
+    store: "localStorage",
+    category: "functional",
+    party: "First-party",
+    duration: "Until you turn functional storage off, forget the graph, or clear site data.",
+    purpose:
+      "Your interest graph and stated facts, used to personalize advisor prompts. " +
+      "Keyed by your account id when signed in. Not written unless you allow functional storage.",
+  },
+  {
+    name: PERSON_ANON_STORAGE_KEY,
+    store: "localStorage",
+    category: "functional",
+    party: "First-party",
+    duration: "Until you turn functional storage off, or clear site data.",
+    purpose:
+      "A random handle so an unsigned-in graph can survive a refresh. It is not an email and not shared.",
   },
   {
     name: "ph_*_posthog",

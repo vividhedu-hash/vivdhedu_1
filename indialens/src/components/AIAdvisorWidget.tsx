@@ -6,6 +6,7 @@ import { GroundedAnswer } from "./GroundedAnswer";
 import { Notice } from "./Notice";
 import { SkeletonText, SkeletonStatus } from "./Skeleton";
 import { aiErrorMessage, postAi, type GroundedPayload } from "../lib/grounded";
+import { usePersonMemory } from "@/lib/person-memory-context";
 
 interface AIAdvisorWidgetProps {
   initialBudget?: number;
@@ -54,6 +55,7 @@ export default function AIAdvisorWidget({
   const [budget, setBudget] = useState(initialBudget);
  const [field, setField] = useState(initialField);
   const [risk, setRisk] = useState("medium");
+  const { packet, track, remember } = usePersonMemory();
   const [loading, setLoading] = useState(false);
   const [payload, setPayload] = useState<GroundedPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +63,8 @@ export default function AIAdvisorWidget({
   async function consult() {
     setLoading(true);
     setError(null);
+    remember({ key: "target_field", value: field, confidence: 0.8, source: "advisor" });
+    track({ signal: "ask", text: `advisor consult ${field}`, path: "/advisor" });
     const { ok, status, data } = await postAi<GroundedPayload | { detail?: { reason?: string } }>(
    "/api/v1/ai/advisor",
       {
@@ -69,6 +73,7 @@ export default function AIAdvisorWidget({
         risk_tolerance: risk,
         preferred_cities: ["Bengaluru", "NCR", "Hyderabad"],
         top_programs: [],
+        person_context: packet.prompt_block,
       },
     );
     setLoading(false);

@@ -172,6 +172,9 @@ The Project Actuarial Evaluated Programs (ONLY these may appear as catalog_progr
 Prior Quantitative Analysis & Monte Carlo Results (may be empty):
 {json.dumps(stored.get("results") or {}, default=str)[:3000]}
 
+Person memory packet (do not contradict; do not invent missing biography):
+{(merged_profile.get("person_context") or "none")}
+
 Focus Question: {question or "What is the optimal strategic degree and career pathway?"}
 
 INSTRUCTIONS FOR REASONING & SEARCH GROUNDING:

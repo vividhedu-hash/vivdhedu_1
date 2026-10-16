@@ -32,10 +32,11 @@ interface WorkspaceRecommendation {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { question, profile_token, context } = body as {
+    const { question, profile_token, context, person_context } = body as {
       question: string;
       profile_token?: string;
       context?: Record<string, any>;
+      person_context?: string;
     };
 
     if (!question?.trim()) {
@@ -52,6 +53,9 @@ Student context:
 - Primary Gap: ${context?.primary_gap ?? "not specified"}
 - Active Sprint: ${context?.sprint_label ?? "not specified"}
 - Report Token: ${profile_token ?? "demo"}
+
+Person memory (do not contradict; do not invent missing biography):
+${person_context || "No person-memory packet on this call."}
 
 Student question: "${question}"
 
@@ -89,6 +93,7 @@ Do NOT output any text outside the JSON.`;
           risk_tolerance: "medium",
           preferred_cities: ["Bengaluru", "NCR", "London"],
           top_programs: [],
+          person_context: person_context || undefined,
         }),
         signal: AbortSignal.timeout(6_000),
       });

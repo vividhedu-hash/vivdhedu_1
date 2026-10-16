@@ -6,6 +6,8 @@ import {
   CONSENT_MAX_AGE_SECONDS,
   LEGACY_ACCESS_TOKEN_KEY,
   OPEN_COOKIE_SETTINGS_EVENT,
+  PERSON_ANON_STORAGE_KEY,
+  PERSON_MEMORY_STORAGE_KEY,
   POLICY_VERSION,
   REPORT_TOKEN_KEY,
   RETURN_TO_KEY,
@@ -80,6 +82,15 @@ export function writeConsent(choice: ConsentCategories): ConsentChoice {
 
   if (!saved.functional) {
     try { window.localStorage.removeItem(THEME_KEY); } catch { /* private mode */ }
+    try {
+      window.localStorage.removeItem(PERSON_ANON_STORAGE_KEY);
+      const drop: string[] = [];
+      for (let i = 0; i < window.localStorage.length; i += 1) {
+        const key = window.localStorage.key(i);
+        if (key && key.startsWith(`${PERSON_MEMORY_STORAGE_KEY}:`)) drop.push(key);
+      }
+      drop.forEach((key) => window.localStorage.removeItem(key));
+    } catch { /* private mode */ }
   }
   window.dispatchEvent(new CustomEvent(CONSENT_EVENT, { detail: saved }));
   return saved;
