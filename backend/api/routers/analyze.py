@@ -533,11 +533,15 @@ async def save_report(
         raise HTTPException(status_code=400, detail="token required")
 
     profile = payload.get("profile_parsed") or payload.get("student_input") or payload.get("profile") or {}
-    results = {
-        "recommendations": payload.get("recommendations", []),
-        "pathways": payload.get("pathways", {}),
-        "flags": payload.get("flags", []),
-    }
+    raw_results = payload.get("results")
+    if isinstance(raw_results, dict) and raw_results:
+        results = raw_results
+    else:
+        results = {
+            "recommendations": payload.get("recommendations", []),
+            "pathways": payload.get("pathways", {}),
+            "flags": payload.get("flags", []),
+        }
     model = payload.get("model_version") or settings.current_model_version
 
     try:
@@ -641,16 +645,37 @@ async def get_report(token: str, db: AsyncSession = Depends(get_db)):
         if isinstance(results_data, str):
             results_data = json.loads(results_data)
 
+        profile_data = row_dict.get("profile_data", {})
+        if isinstance(profile_data, str):
+            profile_data = json.loads(profile_data)
+
         recommendations = results_data.get("recommendations", []) if isinstance(results_data, dict) else results_data
         pathways = results_data.get("pathways", {}) if isinstance(results_data, dict) else {}
 
+        try:
+            await db.execute(
+                text(
+                    "UPDATE student_reports SET viewed_count = COALESCE(viewed_count, 0) + 1 "
+                    "WHERE token = :token"
+                ),
+                {"token": token},
+            )
+            await db.commit()
+        except Exception:
+            logger.warning("[Analyze] viewed_count bump failed for token=%s", token, exc_info=True)
+
         return {
             "token": token,
-            "profile_parsed": row_dict.get("profile_data", {}),
+            "created_at": row_dict.get("generated_at"),
+            "generated_at": row_dict.get("generated_at"),
+            "expires_at": row_dict.get("expires_at"),
+            "student_input": profile_data,
+            "profile_parsed": profile_data,
+            "results": results_data if isinstance(results_data, dict) else {"recommendations": recommendations},
             "recommendations": recommendations,
             "pathways": pathways,
             "model_version": row_dict.get("model_version", settings.current_model_version),
-            "generated_at": row_dict.get("generated_at"),
+            "_source": "database",
         }
     except HTTPException:
         raise

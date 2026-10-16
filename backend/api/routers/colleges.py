@@ -343,6 +343,37 @@ async def list_colleges(
         raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
 
 
+@router.get("/colleges/stats")
+async def college_stats(db: AsyncSession = Depends(get_db)):
+    """Headline catalogue coverage. Counts come from Postgres, not PostgREST."""
+    try:
+        total_r = await db.execute(text("SELECT COUNT(*) FROM programs p WHERE p.is_active = TRUE"))
+        total = int(total_r.scalar() or 0)
+        scores_r = await db.execute(text("""
+            SELECT r.composite_score
+            FROM programs p
+            JOIN roi_scores r ON r.program_id = p.id AND r.is_current = TRUE
+            WHERE p.is_active = TRUE AND r.composite_score IS NOT NULL
+        """))
+        measured = sorted(
+            float(row[0]) for row in scores_r if row[0] is not None and math.isfinite(float(row[0]))
+        )
+        median = measured[len(measured) // 2] if measured else None
+        return {
+            "programs_indexed": total,
+            "median_roi_pct": median,
+            "programs_with_score": len(measured),
+            "programs_without_score": total - len(measured),
+            "last_updated": datetime.utcnow().isoformat(),
+            "model_version": settings.current_model_version,
+            "_source": "database",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})
+
+
 @router.get("/colleges/roi-index")
 async def get_college_roi_index(
     db: AsyncSession = Depends(get_db),

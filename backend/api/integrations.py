@@ -71,7 +71,12 @@ INTEGRATIONS: Dict[str, Dict[str, Any]] = {
     "github_oauth": {
         "required_env": ["GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"],
         "optional": True,
-        "docs": "https://github.com/settings/developers — backend OAuth routes. The browser signs in via Supabase, so an empty pair here does not break the web sign-in button.",
+        "docs": "https://github.com/settings/developers — retired minting routes. Browser sign-in is Supabase Auth.",
+    },
+    "supabase_jwt": {
+        "required_env": ["SUPABASE_URL"],
+        "optional": True,
+        "docs": "Project URL used to verify browser access tokens (JWKS at /auth/v1/.well-known/jwks.json). Set SUPABASE_JWT_SECRET as well for legacy HMAC projects.",
     },
 }
 
@@ -95,6 +100,8 @@ def _env_value(name: str) -> str:
         "GOOGLE_CLIENT_SECRET": getattr(settings, "google_client_secret", "") or "",
         "GITHUB_CLIENT_ID": getattr(settings, "github_client_id", "") or "",
         "GITHUB_CLIENT_SECRET": getattr(settings, "github_client_secret", "") or "",
+        "SUPABASE_URL": getattr(settings, "supabase_url", "") or "",
+        "SUPABASE_JWT_SECRET": getattr(settings, "supabase_jwt_secret", "") or "",
     }
     return (mapping.get(name) or "").strip()
 

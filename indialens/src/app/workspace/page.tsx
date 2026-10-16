@@ -279,7 +279,10 @@ function WorkspaceView() {
       try {
         const res = await fetch("/api/workspace/recommend", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
           body: JSON.stringify({
             question: q,
             profile_token: token,
@@ -337,7 +340,7 @@ function WorkspaceView() {
         });
       }
     },
-    [question, token, telemetry.aiResilienceScore, telemetry.primaryGap, telemetry.sprintLabel]
+    [question, token, authToken, telemetry.aiResilienceScore, telemetry.primaryGap, telemetry.sprintLabel]
   );
 
   const toggleRoadmapItem = (id: string) => {

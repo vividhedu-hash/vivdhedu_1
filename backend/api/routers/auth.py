@@ -29,10 +29,12 @@ try:
     from ..config import settings
     from ..db.database import get_db
     from ..oauth import IdentityVerificationError, VerifiedIdentity, verify_google_id_token
+    from ..supabase_jwt import decode_session_token
 except ImportError:
     from ..config import settings
     from ..db.database import get_db
     from ..oauth import IdentityVerificationError, VerifiedIdentity, verify_google_id_token
+    from ..supabase_jwt import decode_session_token
 
 logger = logging.getLogger(__name__)
 
@@ -152,14 +154,101 @@ def create_access_token(user_id: str, email: str, is_premium: bool) -> str:
 
 
 def decode_access_token(token: str) -> Dict[str, Any]:
+    """Decode a Bearer token. Prefers a verified Supabase JWT, else HS256."""
     secret = settings.jwt_secret or settings.secret_key
     try:
-        payload = jwt.decode(token, secret, algorithms=[settings.jwt_algorithm])
+        payload, _kind = decode_session_token(
+            token,
+            jwt_secret=secret,
+            jwt_algorithm=settings.jwt_algorithm,
+            supabase_url=settings.supabase_url,
+            supabase_jwt_secret=settings.supabase_jwt_secret,
+            supabase_audience=settings.supabase_jwt_audience,
+        )
         return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired")
-    except jwt.PyJWTError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid authentication token: {e}")
+    except IdentityVerificationError as exc:
+        detail = str(exc)
+        code = (
+            status.HTTP_401_UNAUTHORIZED
+            if "expired" not in detail.lower()
+            else status.HTTP_401_UNAUTHORIZED
+        )
+        raise HTTPException(status_code=code, detail=detail) from exc
+
+
+async def _load_user_row(session: AsyncSession, user_id: Any) -> Optional[Dict[str, Any]]:
+    q = text(
+        "SELECT id, email, full_name, avatar_url, is_premium, premium_tier, "
+        "premium_until, created_at FROM users WHERE id = :id"
+    )
+    res = await session.execute(q, {"id": str(user_id)})
+    row = res.mappings().first()
+    return dict(row) if row else None
+
+
+async def _upsert_supabase_user(session: AsyncSession, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure ``public.users.id`` equals the Supabase ``auth.uid()`` (JWT sub)."""
+    user_id = str(payload.get("sub") or "").strip()
+    email = (payload.get("email") or payload.get("user_metadata", {}).get("email") or "").strip().lower()
+    meta = payload.get("user_metadata") if isinstance(payload.get("user_metadata"), dict) else {}
+    name = meta.get("full_name") or meta.get("name") or payload.get("full_name")
+    avatar = meta.get("avatar_url") or meta.get("picture") or payload.get("avatar_url")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token subject is missing")
+
+    existing = await _load_user_row(session, user_id)
+    if existing:
+        return existing
+
+    if email:
+        by_email = await session.execute(
+            text(
+                "SELECT id, email, full_name, avatar_url, is_premium, premium_tier, "
+                "premium_until, created_at FROM users WHERE email = :email"
+            ),
+            {"email": email},
+        )
+        row = by_email.mappings().first()
+        if row:
+            # Legacy backend-minted UUID for this mailbox. Keep that row so FK
+            # history is not orphaned; student-state still keys off this id.
+            logger.warning(
+                "[Auth] Supabase sub %s maps to existing users.id %s by email",
+                user_id,
+                row["id"],
+            )
+            return dict(row)
+
+    await session.execute(
+        text(
+            """
+            INSERT INTO users (id, email, full_name, avatar_url, oauth_provider, oauth_id, is_premium, premium_tier)
+            VALUES (:id, :email, :name, :avatar, 'supabase', :sub, FALSE, 'free')
+            ON CONFLICT (id) DO UPDATE SET
+                email = COALESCE(EXCLUDED.email, users.email),
+                full_name = COALESCE(EXCLUDED.full_name, users.full_name),
+                avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
+                updated_at = NOW()
+            """
+        ),
+        {
+            "id": user_id,
+            "email": email or f"{user_id}@users.supabase",
+            "name": name,
+            "avatar": avatar,
+            "sub": user_id,
+        },
+    )
+    created = await _load_user_row(session, user_id)
+    if not created:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "error": "database_unavailable",
+                "message": "Could not persist your profile. Please try again shortly.",
+            },
+        )
+    return created
 
 
 async def get_current_user(
@@ -172,18 +261,25 @@ async def get_current_user(
             detail="Missing or malformed Authorization header (Expected: Bearer <token>)",
         )
     token = authorization.split(" ")[1]
-    payload = decode_access_token(token)
+    secret = settings.jwt_secret or settings.secret_key
+    try:
+        payload, kind = decode_session_token(
+            token,
+            jwt_secret=secret,
+            jwt_algorithm=settings.jwt_algorithm,
+            supabase_url=settings.supabase_url,
+            supabase_jwt_secret=settings.supabase_jwt_secret,
+            supabase_audience=settings.supabase_jwt_audience,
+        )
+    except IdentityVerificationError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+
     user_id = payload.get("sub")
 
-    # The profile is read from the database rather than rebuilt from the token's
-    # claims. A bare `except Exception` used to answer here with a "Demo User"
-    # profile assembled from the caller's own token, which meant any database
-    # outage silently turned into a successful authentication with an invented
-    # name. A dependency that is unavailable is a 503, not a signed-in user.
     try:
-        q = text("SELECT id, email, full_name, avatar_url, is_premium, premium_tier, premium_until, created_at FROM users WHERE id = :id")
-        res = await session.execute(q, {"id": user_id})
-        user = res.mappings().first()
+        if kind == "supabase":
+            return await _upsert_supabase_user(session, payload)
+        user = await _load_user_row(session, user_id)
     except HTTPException:
         raise
     except Exception as exc:
@@ -204,12 +300,34 @@ async def get_current_user(
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
+def _oauth_minting_retired() -> None:
+    """The API no longer mints its own Google/GitHub session tokens.
+
+    Two Google logins used to create two ``users`` rows: one with
+    ``auth.uid()`` (browser) and one with a fresh uuid4 (this router). Student
+    state keyed off the second id, so a signed-in browser was anonymous here.
+    Sign in through Supabase Auth and send that access token.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail={
+            "error": "oauth_minting_retired",
+            "message": (
+                "This API no longer issues its own OAuth session tokens. "
+                "Sign in through the web app (Supabase Auth) and send that "
+                "access token as Authorization: Bearer."
+            ),
+        },
+    )
+
+
 @router.get("/google/url")
 async def get_google_oauth_url(redirect_uri: Optional[str] = None):
     """
     Returns the Google OAuth 2.0 authorization redirect URL.
     Configure GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI in your environment.
     """
+    _oauth_minting_retired()
     client_id = settings.google_client_id or "GOOGLE_CLIENT_ID_NOT_CONFIGURED"
     effective_redirect = redirect_uri or settings.google_redirect_uri
     scope = "openid email profile"
@@ -247,6 +365,7 @@ async def google_oauth_callback(
     forgot to set it handed every caller a working token for the same shared
     fake account.
     """
+    _oauth_minting_retired()
     identity = None
 
     if payload.id_token:
@@ -513,6 +632,7 @@ async def get_github_oauth_url(redirect_uri: Optional[str] = None):
     the code-for-token exchange. So the client id is safe to expose here; the
     secret never is.
     """
+    _oauth_minting_retired()
     if not settings.github_client_id:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -553,6 +673,7 @@ async def github_oauth_callback(
     endpoint leaves `email` null unless the account has a public address, so
     trusting that field alone would reject most legitimate users.
     """
+    _oauth_minting_retired()
     if not settings.github_client_id or not settings.github_client_secret:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

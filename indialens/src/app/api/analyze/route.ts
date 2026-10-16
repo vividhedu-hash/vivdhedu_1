@@ -1,9 +1,8 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { MOCK_DATA, finiteOrNull } from "../../../lib/mock-data";
-import { fetchBackend } from "../../../lib/backend";
+import { fetchBackend, proxyRequestHeaders } from "../../../lib/backend";
 import { reportStore } from "../../../lib/report-store";
-import { fetchSupabaseRest } from "../../../lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -41,9 +40,9 @@ export async function POST(request: Request) {
 
   const resp = await fetchBackend("/api/analyze", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...proxyRequestHeaders(request) },
     body: JSON.stringify(profile),
-    timeoutMs: 1000,
+    timeoutMs: 45_000,
   });
   if (resp?.ok) {
     const data = await resp.json();
@@ -318,24 +317,20 @@ export async function POST(request: Request) {
 
   const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
 
-  // Persist directly into Supabase student_reports table
-  await fetchSupabaseRest("student_reports", {
+  await fetchBackend("/api/analyze/save", {
     method: "POST",
-    // RLS scopes SELECT on student_reports to the matching token, and PostgREST
-    // issues a follow-up SELECT when the request sets
-    // `Prefer: return=representation` (which fetchSupabaseRest always does).
-    // Without this header that SELECT is denied and the insert fails with
-    // 42501 even though the INSERT policy itself is fine.
-    reportToken: token,
+    headers: { "Content-Type": "application/json", ...proxyRequestHeaders(request) },
     body: JSON.stringify({
       token,
-      profile_data: profile,
-      results_data: payload,
+      student_input: profile,
+      profile_parsed: profile,
+      results: payload,
+      recommendations: payload.recommendations,
+      pathways: payload.pathways,
+      flags: payload.flags,
       model_version: payload.model_version,
-      generated_at: payload.generated_at,
-      viewed_count: 0,
-      expires_at: expiresAt,
     }),
+    timeoutMs: 8000,
   }).catch(() => null);
 
   reportStore.set(token, {
@@ -358,35 +353,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "token required" }, { status: 400 });
   }
 
-  // 1. Fast in-memory check
   const cached = reportStore.get(token);
   if (cached) return NextResponse.json(cached);
 
-  // 2. Direct Supabase Query
-  try {
-    const rows = await fetchSupabaseRest<any[]>(
-      `student_reports?token=eq.${encodeURIComponent(token)}&limit=1`,
-      { timeoutMs: 3000, reportToken: token },
-    );
-    if (rows && Array.isArray(rows) && rows.length > 0) {
-      const row = rows[0];
-      const savedReport = {
-        token: row.token,
-        created_at: row.generated_at,
-        expires_at: row.expires_at,
-        student_input: row.profile_data,
-        results: row.results_data,
-        _source: "database" as const,
-      };
-      reportStore.set(token, savedReport);
-      return NextResponse.json(savedReport);
-    }
-  } catch {
-    // continue
-  }
-
-  // 3. Fallback
-  const resp = await fetchBackend(`/api/analyze/${encodeURIComponent(token)}`, { timeoutMs: 1500 });
+  const resp = await fetchBackend(`/api/analyze/report/${encodeURIComponent(token)}`, { timeoutMs: 8000 });
   if (resp?.ok) return NextResponse.json(await resp.json());
   if (resp?.status === 404) {
     return NextResponse.json({ error: "Report not found" }, { status: 404 });

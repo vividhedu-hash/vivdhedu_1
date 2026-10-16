@@ -46,6 +46,33 @@ export function allowMockFallback(): boolean {
   return process.env.NODE_ENV !== "production";
 }
 
+/**
+ * Optional PostgREST catalogue fallback. Off unless explicitly opted in.
+ *
+ * FastAPI is the only production source of truth for the programme index.
+ * Direct `v_programs_full` reads used a different mapper, a guessed total
+ * (`offset + length`), and a 1.2s timeout that raced the real API. Those
+ * two paths could disagree on the same page. Re-enable PostgREST only as a
+ * break-glass when FastAPI is down AND this flag is `1`.
+ */
+export function allowCataloguePostgrest(): boolean {
+  return process.env.ALLOW_CATALOGUE_POSTGREST === "1";
+}
+
+/** Headers the BFF must copy onto FastAPI so the session JWT survives the hop. */
+export function proxyRequestHeaders(request: Request): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const contentType = request.headers.get("content-type");
+  if (contentType) headers["Content-Type"] = contentType;
+  const apiKey = request.headers.get("x-api-key");
+  if (apiKey) headers["X-API-KEY"] = apiKey;
+  const authorization = request.headers.get("authorization");
+  if (authorization) headers["Authorization"] = authorization;
+  const reportToken = request.headers.get("x-report-token");
+  if (reportToken) headers["x-report-token"] = reportToken;
+  return headers;
+}
+
 export async function fetchBackend(
   path: string,
   init: FetchBackendInit = {},

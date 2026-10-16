@@ -9,12 +9,11 @@ policies that read a Postgres GUC rather than `auth.uid()`:
 
     USING (user_id = NULLIF(current_setting('app.user_id', true), '')::uuid)
 
-`auth.uid()` is genuinely unusable here — this backend signs its OWN HS256
-token (`api/routers/auth.py:create_access_token`, payload key `sub`) and mints
-a fresh `users.id` on every backend sign-in, so a Supabase-shaped policy would
-evaluate FALSE forever for a genuinely signed-in student. The migration's own
-header says this in full; it is repeated here only because this is the module
-that has to be correct about it.
+Browser sessions are now the Supabase access JWT: `get_current_user` verifies
+it and upserts `public.users.id = auth.uid()` (see `api/supabase_jwt.py` and
+migration 0009). The GUC remains because this process still connects as
+`postgres`, which bypasses RLS; student routers also filter `user_id = :id`
+in SQL. A leftover HS256 token is still accepted as `kind=legacy`.
 
 The mechanism chosen, and why it is safe under connection pooling
 -----------------------------------------------------------------

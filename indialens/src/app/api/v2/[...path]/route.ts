@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
-import { fetchBackend } from "../../../../lib/backend";
+import { fetchBackend, proxyRequestHeaders } from "../../../../lib/backend";
 
 export const dynamic = "force-dynamic";
 
@@ -160,11 +160,7 @@ async function proxy(request: Request, path: string[], method: string) {
   const subpath = (path ?? []).join("/");
   const url = new URL(request.url);
   const qs = url.search;
-  const headers: Record<string, string> = {};
-  const contentType = request.headers.get("content-type");
-  if (contentType) headers["Content-Type"] = contentType;
-  const apiKey = request.headers.get("x-api-key");
-  if (apiKey) headers["X-API-KEY"] = apiKey;
+  const headers = proxyRequestHeaders(request);
 
   const body = method === "GET" || method === "HEAD" ? undefined : await request.text();
 

@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
-import { fetchBackend, unavailablePayload } from "../../../../lib/backend";
+import { fetchBackend, proxyRequestHeaders } from "../../../../lib/backend";
 
 async function proxy(request: Request, path: string[], method: string) {
   const subpath = (path ?? []).join("/");
-  const apiKey = request.headers.get("x-api-key") ?? "";
   const body = method === "GET" || method === "HEAD" ? undefined : await request.text();
 
   const resp = await fetchBackend(`/api/ml/${subpath}`, {
     method,
-    headers: {
-      ...(apiKey ? { "X-API-KEY": apiKey } : {}),
-      ...(body ? { "Content-Type": "application/json" } : {}),
-    },
+    headers: proxyRequestHeaders(request),
     body: body || undefined,
     timeoutMs: 30000,
   });

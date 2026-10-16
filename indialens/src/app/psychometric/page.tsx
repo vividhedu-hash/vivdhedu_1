@@ -10,6 +10,8 @@ import { finiteOrNull } from "@/lib/mock-data";
 import { PageHeader, SectionHeader } from "@/components/PageHeader";
 import { Notice } from "@/components/Notice";
 import { Skeleton } from "@/components/Skeleton";
+import { useAuth } from "@/lib/auth-context";
+import { authHeaders } from "@/lib/authed-fetch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PsychItem {
@@ -198,6 +200,7 @@ const OFFLINE_GATEWAY = [
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function PsychometricPage() {
+  const { token: accessToken } = useAuth();
   const [sessionState, setSessionState] = useState<SessionState | null>(null);
   const [currentItem, setCurrentItem] = useState<PsychItem | null>(null);
   const [itemsCompleted, setItemsCompleted] = useState(0);
@@ -241,7 +244,7 @@ export default function PsychometricPage() {
     try {
       const res = await fetch("/api/v2/psychometric/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders(accessToken) },
         body: JSON.stringify({ stream: "", budget: 15 }),
       });
       if (res.ok) {
@@ -264,7 +267,7 @@ export default function PsychometricPage() {
     setCurrentItem(OFFLINE_GATEWAY[0] as unknown as PsychItem);
     setOfflineIndex(1);
     setPosterior({});
-  }, []);
+  }, [accessToken]);
 
   // ── Handle Answer ──────────────────────────────────────────────────────────
   const handleAnswer = useCallback(async (optionIndex: number) => {
@@ -281,7 +284,7 @@ export default function PsychometricPage() {
       try {
         const res = await fetch("/api/v2/psychometric/respond", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders(accessToken) },
           body: JSON.stringify({ session_id: sessionId, item_id: currentItem.id, option_index: optionIndex }),
         });
         if (res.ok) {
@@ -295,7 +298,9 @@ export default function PsychometricPage() {
 
             if (data.is_converged || !data.item) {
               // Fetch final report
-              const rRes = await fetch(`/api/v2/psychometric/result/${sessionId}`);
+              const rRes = await fetch(`/api/v2/psychometric/result/${sessionId}`, {
+                headers: authHeaders(accessToken),
+              });
               if (rRes.ok) {
                 const rData: FinalReport = await rRes.json();
                 setReport(rData);
@@ -386,7 +391,7 @@ export default function PsychometricPage() {
     }
 
     setIsAnimating(false);
-  }, [currentItem, isAnimating, itemsCompleted, backendAvailable, sessionId, traits, posterior, primaryArchetype, estimatedRemaining, offlineTraits, offlineIndex, offlineAnswered]);
+  }, [accessToken, currentItem, isAnimating, itemsCompleted, backendAvailable, sessionId, traits, posterior, primaryArchetype, estimatedRemaining, offlineTraits, offlineIndex, offlineAnswered]);
 
   const handleRestart = () => {
     setPhase("intro");

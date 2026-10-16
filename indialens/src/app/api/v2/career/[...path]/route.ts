@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchBackend } from "../../../../../lib/backend";
+import { fetchBackend, proxyRequestHeaders } from "../../../../../lib/backend";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +28,7 @@ async function proxy(request: Request, path: string[], method: "GET" | "POST") {
 
   const resp = await fetchBackend(`/api/v2/career/${subpath}${url.search}`, {
     method,
-    headers: body ? { "Content-Type": "application/json" } : {},
+    headers: proxyRequestHeaders(request),
     body: body || undefined,
     timeoutMs: SIMULATION_TIMEOUT_MS,
   });

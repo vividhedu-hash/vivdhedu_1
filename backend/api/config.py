@@ -56,6 +56,16 @@ class Settings(BaseSettings):
     github_client_secret: str = ""
     github_redirect_uri: str = "http://localhost:3000/api/auth/callback/github"
 
+    # Supabase Auth — the browser's identity provider. FastAPI verifies the
+    # same access JWT the client holds; `sub` is `auth.uid()` and becomes
+    # `public.users.id`. SUPABASE_URL is the project origin (no trailing path).
+    # SUPABASE_JWT_SECRET is the legacy HMAC secret from the dashboard; new
+    # projects sign with the JWKS at {SUPABASE_URL}/auth/v1/.well-known/jwks.json
+    # and can leave the secret blank.
+    supabase_url: str = ""
+    supabase_jwt_secret: str = ""
+    supabase_jwt_audience: str = "authenticated"
+
     # Payment Gateways (Razorpay / Stripe)
     razorpay_key_id: str = ""
     razorpay_key_secret: str = ""

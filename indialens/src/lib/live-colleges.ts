@@ -1,5 +1,5 @@
 import { MOCK_DATA, type CollegeDegreeRecord, finiteOrNull, compareNullableAsc, compareNullableDesc } from "./mock-data";
-import { allowMockFallback, fetchBackend } from "./backend";
+import { allowCataloguePostgrest, allowMockFallback, fetchBackend } from "./backend";
 import { fetchSupabaseRest, mapSupabaseRowToRecord, type SupabaseProgramRow } from "./supabase";
 
 const SORT_MAP: Record<string, string> = {
@@ -11,6 +11,8 @@ const SORT_MAP: Record<string, string> = {
   financial_roi: "financial_roi",
   placement_rate: "placement_rate",
 };
+
+const FASTAPI_CATALOGUE_TIMEOUT_MS = Number(process.env.CATALOGUE_TIMEOUT_MS ?? 8_000);
 
 /**
  * Where a set of rows came from.
@@ -52,7 +54,7 @@ export function mapCollegeSort(sortBy?: string | null): string {
   return SORT_MAP[sortBy] ?? "composite_score";
 }
 
-export async function fetchCollegeList(query: {
+function catalogueParams(query: {
   page?: number;
   per_page?: number;
   field?: string | null;
@@ -61,42 +63,7 @@ export async function fetchCollegeList(query: {
   search?: string | null;
   sort_by?: string | null;
   sort_dir?: string | null;
-} = {}): Promise<CollegeListResult> {
-  // 1. Direct Supabase Query (Primary - ultra fast on Vercel Serverless)
-  try {
-    const supabaseParams = new URLSearchParams();
-    if (query.field) supabaseParams.set("degree_field", `eq.${query.field}`);
-    if (query.tier) supabaseParams.set("tier", `eq.${query.tier}`);
-    if (query.state) supabaseParams.set("state", `eq.${query.state}`);
-    if (query.search) {
-      supabaseParams.set(
-        "or",
-        `(college_full_name.ilike.*${query.search}*,degree_full_name.ilike.*${query.search}*)`,
-      );
-    }
-    const sortCol = query.sort_by === "financialRoiPct" ? "financial_roi_pct" : "composite_score";
-    supabaseParams.set("order", `${sortCol}.${query.sort_dir === "asc" ? "asc" : "desc"}`);
-    supabaseParams.set("limit", String(query.per_page ?? 20));
-    supabaseParams.set("offset", String(((query.page ?? 1) - 1) * (query.per_page ?? 20)));
-
-    const rows = await fetchSupabaseRest<SupabaseProgramRow[]>(`v_programs_full?${supabaseParams}`, {
-      timeoutMs: 1200,
-    });
-    if (rows && Array.isArray(rows) && rows.length > 0) {
-      const perPage = query.per_page ?? 20;
-      const offset = ((query.page ?? 1) - 1) * perPage;
-      return {
-        data: rows.map(mapSupabaseRowToRecord),
-        // Lower-bound estimate; PostgREST count headers are not requested here.
-        total: offset + rows.length,
-        source: "database",
-      };
-    }
-  } catch {
-    // Supabase query failed; fall through
-  }
-
-  // 2. Secondary: Backend API if reachable
+}): URLSearchParams {
   const params = new URLSearchParams({
     page: String(query.page ?? 1),
     per_page: String(query.per_page ?? 20),
@@ -107,45 +74,86 @@ export async function fetchCollegeList(query: {
   if (query.tier) params.set("tier", query.tier);
   if (query.state) params.set("state", query.state);
   if (query.search) params.set("q", query.search);
+  return params;
+}
 
-  const resp = await fetchBackend(`/api/colleges?${params}`, {
-    timeoutMs: 1500,
+async function fetchListFromFastApi(query: Parameters<typeof fetchCollegeList>[0]): Promise<CollegeListResult | null> {
+  const resp = await fetchBackend(`/api/colleges?${catalogueParams(query)}`, {
+    timeoutMs: FASTAPI_CATALOGUE_TIMEOUT_MS,
     next: { revalidate: 300 },
   });
+  if (!resp?.ok) return null;
 
-  if (resp?.ok) {
-    const json = await resp.json();
-    // Rows from the FastAPI list endpoint are already in `CollegeDegreeRecord`
-    // shape — same camelCase keys the Supabase mapper produces, including the
-    // `costs` block and `number | null` for every unmeasured figure. The cast
-    // is therefore sound, but it is a cast, not a validation: the endpoint is
-    // a separate deployable and could be an older build whose rows predate the
-    // `costs` block entirely. Consumers must read these fields defensively
-    // (`record.costs?.totalTuitionInr`) rather than assume the block exists.
-    // See the `tuitionInr` helper in src/app/explore/page.tsx.
-    const rows: CollegeDegreeRecord[] = Array.isArray(json.data) ? json.data : [];
-    if (rows.length > 0) {
-      return {
-        data: rows,
-        total: json.total ?? rows.length,
-        source: "database",
-      };
-    }
+  const json = await resp.json();
+  // Rows from the FastAPI list endpoint are already in `CollegeDegreeRecord`
+  // shape. An empty array is a real, measured index — not a reason to fall
+  // through to PostgREST or seed data.
+  const rows: CollegeDegreeRecord[] = Array.isArray(json.data) ? json.data : [];
+  return {
+    data: rows,
+    total: typeof json.total === "number" ? json.total : rows.length,
+    source: "database",
+  };
+}
+
+async function fetchListFromPostgrest(query: Parameters<typeof fetchCollegeList>[0]): Promise<CollegeListResult | null> {
+  if (!allowCataloguePostgrest()) return null;
+
+  const supabaseParams = new URLSearchParams();
+  if (query.field) supabaseParams.set("degree_field", `eq.${query.field}`);
+  if (query.tier) supabaseParams.set("tier", `eq.${query.tier}`);
+  if (query.state) supabaseParams.set("state", `eq.${query.state}`);
+  if (query.search) {
+    supabaseParams.set(
+      "or",
+      `(college_full_name.ilike.*${query.search}*,degree_full_name.ilike.*${query.search}*)`,
+    );
+  }
+  const sortCol = query.sort_by === "financialRoiPct" ? "financial_roi_pct" : "composite_score";
+  supabaseParams.set("order", `${sortCol}.${query.sort_dir === "asc" ? "asc" : "desc"}`);
+  supabaseParams.set("limit", String(query.per_page ?? 20));
+  supabaseParams.set("offset", String(((query.page ?? 1) - 1) * (query.per_page ?? 20)));
+
+  const rows = await fetchSupabaseRest<SupabaseProgramRow[]>(`v_programs_full?${supabaseParams}`, {
+    timeoutMs: 1200,
+  });
+  if (!rows || !Array.isArray(rows) || rows.length === 0) return null;
+
+  const perPage = query.per_page ?? 20;
+  const offset = ((query.page ?? 1) - 1) * perPage;
+  return {
+    data: rows.map(mapSupabaseRowToRecord),
+    total: offset + rows.length,
+    source: "database",
+  };
+}
+
+export async function fetchCollegeList(query: {
+  page?: number;
+  per_page?: number;
+  field?: string | null;
+  tier?: string | null;
+  state?: string | null;
+  search?: string | null;
+  sort_by?: string | null;
+  sort_dir?: string | null;
+} = {}): Promise<CollegeListResult> {
+  // 1. FastAPI is the only production catalogue. Empty results stay empty.
+  try {
+    const fromApi = await fetchListFromFastApi(query);
+    if (fromApi) return fromApi;
+  } catch {
+    // Fall through to the explicit opt-in PostgREST break-glass, then mock.
   }
 
-  // GUARD: seed data is a local-dev affordance, not a fallback.
-  //
-  // Both real sources are unreachable at this point. Returning `MOCK_DATA`
-  // here meant a dead Supabase and a dead FastAPI produced a page that looked
-  // exactly like a working one: 73 fake programmes with plausible composite
-  // scores, tuition, and placement rates, and a `total` that the landing page
-  // renders as a headline figure. The old code carried a `source` field, but
-  // nothing in the render path consulted it — `source` was advisory, so the
-  // honesty was opt-in and the default was the lie.
-  //
-  // With ALLOW_MOCK_FALLBACK unset in production, this returns an explicit
-  // unavailable result and the pages render their empty state. Set
-  // ALLOW_MOCK_FALLBACK=1 in a local .env file to keep the demo dataset.
+  // 2. Break-glass PostgREST — only when ALLOW_CATALOGUE_POSTGREST=1.
+  try {
+    const fromRest = await fetchListFromPostgrest(query);
+    if (fromRest) return fromRest;
+  } catch {
+    // continue
+  }
+
   if (allowMockFallback()) {
     return applyMockFilters(query);
   }
@@ -155,49 +163,42 @@ export async function fetchCollegeList(query: {
     total: null,
     source: "unavailable",
     reason:
-      "The programme index is unreachable. Supabase and the analytics API both did not answer, and seed data is disabled in this environment.",
+      "The programme index is unreachable. The analytics API did not answer, and seed data is disabled in this environment.",
   };
 }
 
 export async function fetchCollegeById(id: string): Promise<CollegeDetailResult> {
-  // 1. Direct Supabase Query (Primary)
-  try {
-    const rows = await fetchSupabaseRest<SupabaseProgramRow[]>(
-      `v_programs_full?program_id=eq.${encodeURIComponent(id)}&limit=1`,
-      { timeoutMs: 3000 },
-    );
-    if (rows && Array.isArray(rows) && rows.length > 0) {
-      return { record: mapSupabaseRowToRecord(rows[0]), source: "database" };
-    }
-  } catch {
-    // continue
-  }
-
-  // 2. Secondary Backend API
   const resp = await fetchBackend(`/api/colleges/${encodeURIComponent(id)}`, {
-    timeoutMs: 1500,
+    timeoutMs: FASTAPI_CATALOGUE_TIMEOUT_MS,
     next: { revalidate: 600 },
   });
 
   if (resp?.ok) {
     return { record: await resp.json(), source: "database" };
   }
+  if (resp?.status === 404) {
+    return { record: null, source: "not_found" };
+  }
 
-  // GUARD: same rule as the list path — a single unreachable store must not
-  // yield a fabricated detail page. This one matters more than the list does:
-  // a programme page is the product, and it renders a composite score, a
-  // placement rate, a median salary and a total cost of degree. Every one of
-  // those is a financial claim about a real institution, and a URL that
-  // resolves to a real institution's fake numbers is worse than a 503.
-  //
-  // The distinction that matters: `null` here now means "could not check",
-  // not "checked and absent". Those used to be the same value, so a dead
-  // database and a typo'd id were indistinguishable to the caller.
+  if (allowCataloguePostgrest()) {
+    try {
+      const rows = await fetchSupabaseRest<SupabaseProgramRow[]>(
+        `v_programs_full?program_id=eq.${encodeURIComponent(id)}&limit=1`,
+        { timeoutMs: 3000 },
+      );
+      if (rows && Array.isArray(rows) && rows.length > 0) {
+        return { record: mapSupabaseRowToRecord(rows[0]), source: "database" };
+      }
+      if (rows && Array.isArray(rows) && rows.length === 0) {
+        return { record: null, source: "not_found" };
+      }
+    } catch {
+      // continue
+    }
+  }
+
   if (allowMockFallback()) {
     const record = MOCK_DATA.find((r) => r.id === id);
-    // `not_found` rather than `source: "mock"` for the miss case: we did check
-    // the seed catalogue, and it does not contain this id. Reporting that as
-    // "mock" would make a genuine absence look like an outage.
     if (record) return { record, source: "mock" };
     return { record: null, source: "not_found" };
   }
@@ -206,7 +207,7 @@ export async function fetchCollegeById(id: string): Promise<CollegeDetailResult>
     record: null,
     source: "unavailable",
     reason:
-      "This programme could not be loaded. The data stores did not answer, and seed data is disabled in this environment.",
+      "This programme could not be loaded. The analytics API did not answer, and seed data is disabled in this environment.",
   };
 }
 
@@ -235,9 +236,6 @@ function applyMockFilters(query: {
 
   const sortBy = query.sort_by ?? "compositeScore";
   const sortDir = query.sort_dir ?? "desc";
-  // Unmeasured scores sort last in both directions. Subtracting null directly
-  // yields NaN, which Array#sort treats as "keep original order" — so the gap
-  // would be arbitrary rather than deliberate.
   filtered.sort((a, b) => {
     const val = (r: CollegeDegreeRecord): number | null => {
       if (sortBy === "financialRoiPct") return finiteOrNull(r.roi.financialRoiPct);

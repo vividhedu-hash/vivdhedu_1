@@ -76,7 +76,12 @@ Do NOT output any text outside the JSON.`;
       if (!FASTAPI_URL) throw new Error("no backend configured");
       const fastapiRes = await fetch(`${FASTAPI_URL}/api/v1/ai/advisor`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(req.headers.get("authorization")
+            ? { Authorization: req.headers.get("authorization") as string }
+            : {}),
+        },
         body: JSON.stringify({
           question: systemPrompt,
           total_budget: context?.budget_band ?? 15.0,

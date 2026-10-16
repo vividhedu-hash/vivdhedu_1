@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { reportStore } from "../../../../lib/report-store";
-import { fetchSupabaseRest } from "../../../../lib/supabase";
+import { fetchBackend, proxyRequestHeaders, unavailablePayload } from "../../../../lib/backend";
 
+/**
+ * Persist a shareable report through FastAPI. The browser no longer INSERTs
+ * into student_reports with the anon key — that was a competing write path
+ * beside `/api/analyze/save`, and RLS had to special-case it.
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -10,46 +14,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "token required" }, { status: 400 });
     }
 
-    const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
-    const profileData = body.student_input || body.profile || {};
-    const resultsData = body.results || body;
+    const headers = proxyRequestHeaders(request);
+    headers["Content-Type"] = "application/json";
 
-    // Save directly to Supabase persistent table
-    await fetchSupabaseRest("student_reports", {
+    const persist = await fetchBackend("/api/analyze/save", {
       method: "POST",
-      // See the note in api/analyze/route.ts: the token-scoped SELECT policy
-      // must also match, because `Prefer: return=representation` makes
-      // PostgREST read the row back after inserting it.
-      reportToken: token,
-      body: JSON.stringify({
-        token,
-        profile_data: profileData,
-        results_data: resultsData,
-        model_version: resultsData.model_version || "v2.0-multivector",
-        generated_at: new Date().toISOString(),
-        viewed_count: 0,
-        expires_at: expiresAt,
-      }),
-    }).catch(() => null);
+      headers,
+      body: JSON.stringify(body),
+      timeoutMs: 8000,
+    });
+    if (!persist?.ok) {
+      return NextResponse.json(
+        unavailablePayload("Could not save the report. The analytics API did not accept the write."),
+        { status: persist?.status && persist.status >= 400 ? persist.status : 503 },
+      );
+    }
 
-    // If caller is authenticated, also link to user_saved_reports under RLS
-    const authHeader = request.headers.get("authorization");
-    if (authHeader && body.user_id) {
-      await fetchSupabaseRest("user_saved_reports", {
+    if (headers.Authorization && body.token) {
+      await fetchBackend("/api/v1/auth/save-report", {
         method: "POST",
-        headers: {
-          Authorization: authHeader,
-          Prefer: "resolution=ignore-duplicates,return=minimal",
-        },
+        headers,
         body: JSON.stringify({
-          user_id: body.user_id,
           report_token: token,
           title: body.title || "Degree ROI Analysis",
         }),
+        timeoutMs: 8000,
       }).catch(() => null);
     }
 
-    return NextResponse.json({ status: "saved", token, _source: "supabase" });
+    const saved = await persist.json().catch(() => ({ status: "saved", token }));
+    return NextResponse.json({ ...saved, token, _source: "database" });
   } catch {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
