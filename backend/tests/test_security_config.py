@@ -277,34 +277,23 @@ class TestStudentDataWriteScope:
             "student-owned tables"
         )
 
-    def test_report_routes_send_their_token_on_write(self):
-        """The wizard posts with the anon key and asks for the row back.
-
-        `Prefer: return=representation` makes PostgREST follow the INSERT with a
-        SELECT. Under the token-scoped SELECT policy that SELECT is denied
-        unless the request carries x-report-token, so omitting it fails the
-        whole save with 42501.
-        """
+    def test_report_routes_write_through_fastapi(self):
+        """Shareable reports persist via FastAPI, not anon PostgREST INSERT."""
         for rel in (
             "src/app/api/analyze/route.ts",
             "src/app/api/report/save/route.ts",
         ):
-            src = (REPO_ROOT / "indialens" / rel).read_text()
-            # Anchor on the student_reports call itself — both files POST to
-            # other endpoints earlier, so searching for the first `method: "POST"`
-            # finds the wrong one.
-            call_idx = src.find('fetchSupabaseRest("student_reports"')
-            assert call_idx != -1, f"{rel} no longer writes to student_reports"
-            window = src[call_idx : call_idx + 500]
-            assert "reportToken" in window, (
-                f"{rel} inserts into a token-scoped table without sending "
-                "reportToken; the save will fail with 42501"
+            src = (REPO_ROOT / "indialens" / rel).read_text(encoding="utf-8")
+            assert 'fetchSupabaseRest("student_reports"' not in src, (
+                f"{rel} still writes student_reports through PostgREST"
             )
+            assert "/api/analyze/save" in src, f"{rel} does not proxy saves to FastAPI"
 
-    def test_view_counter_route_sends_its_token(self):
-        src = (REPO_ROOT / "indialens" / "src/app/api/report/[token]/route.ts").read_text()
-        patch_idx = src.find('method: "PATCH"')
-        assert patch_idx != -1, "view-count bump no longer PATCHes"
-        assert "reportToken" in src[patch_idx : patch_idx + 400], (
-            "the viewed_count bump needs reportToken to satisfy the UPDATE policy"
+    def test_view_counter_is_server_side(self):
+        """Viewed-count bumps belong on the FastAPI GET, not an anon PATCH."""
+        next_src = (REPO_ROOT / "indialens" / "src/app/api/report/[token]/route.ts").read_text(
+            encoding="utf-8"
         )
+        assert "method: \"PATCH\"" not in next_src
+        py = (REPO_ROOT / "backend" / "api" / "routers" / "analyze.py").read_text(encoding="utf-8")
+        assert "viewed_count" in py

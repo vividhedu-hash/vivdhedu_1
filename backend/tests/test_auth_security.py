@@ -302,7 +302,7 @@ class TestEndpointsFailClosed:
         response = client.post(
             "/api/v1/auth/google/callback", json={"id_token": f"{header}.{payload}."}
         )
-        assert response.status_code in (400, 401), response.text
+        assert response.status_code in (400, 401, 410), response.text
         assert "access_token" not in response.json()
 
     def test_google_callback_without_credentials_or_token_rejected(self):
@@ -312,28 +312,33 @@ class TestEndpointsFailClosed:
 
         client = TestClient(app)
         response = client.post("/api/v1/auth/google/callback", json={})
-        assert response.status_code in (400, 401), response.text
+        assert response.status_code in (400, 401, 410), response.text
         assert "access_token" not in response.json()
 
     def test_github_routes_fail_closed_without_credentials(self):
-        """The UI advertises GitHub, so the backend must either work or say it
-        is not configured — never invent a session."""
+        """Minting is retired (410). Never invent a session."""
         from fastapi.testclient import TestClient
 
-        from api.config import settings
         from api.main import app
-
-        if settings.github_client_id and settings.github_client_secret:
-            pytest.skip("GitHub OAuth is configured in this environment")
 
         client = TestClient(app)
         url_response = client.get("/api/v1/auth/github/url")
-        assert url_response.status_code == 503
-        assert url_response.json()["detail"]["error"] == "integration_unavailable"
+        assert url_response.status_code == 410
+        assert url_response.json()["detail"]["error"] == "oauth_minting_retired"
 
         callback = client.post("/api/v1/auth/github/callback", json={"code": "x"})
-        assert callback.status_code == 503
+        assert callback.status_code == 410
         assert "access_token" not in callback.json()
+
+    def test_google_url_is_gone(self):
+        from fastapi.testclient import TestClient
+
+        from api.main import app
+
+        client = TestClient(app)
+        response = client.get("/api/v1/auth/google/url")
+        assert response.status_code == 410
+        assert response.json()["detail"]["error"] == "oauth_minting_retired"
 
     def test_auth_me_requires_a_token(self):
         from fastapi.testclient import TestClient
