@@ -87,6 +87,9 @@ class OpenRouterGroundedClient:
     ) -> GroundedAnswer:
         self._require_key()
         model = self._pick_model(require_grounding)
+        from services.fallback_web_search import apply_to_answer, ground_prompt
+
+        prompt, search_bundle = await ground_prompt(prompt)
 
         body: Dict[str, Any] = {
             "model": model,
@@ -120,7 +123,7 @@ class OpenRouterGroundedClient:
                 status=502,
             )
 
-        answer = self._parse(res.json(), model)
+        answer = apply_to_answer(self._parse(res.json(), model), search_bundle)
 
         if require_grounding and not answer.grounded:
             # Same rule as Gemini: never present an ungrounded answer as live

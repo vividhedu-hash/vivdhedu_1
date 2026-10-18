@@ -8,20 +8,19 @@ import re
 import io
 from typing import List
 from bs4 import BeautifulSoup
-from pdfminer.high_level import extract_text
 
 from .base_scraper import BaseScraper, ScrapeResult
 
 logger = logging.getLogger(__name__)
 
 COLLEGES = {
-    "IIT Bombay": "https://www.iitb.ac.in/placements/placement-statistics",
-    "IIT Delhi": "https://careers.iitd.ac.in/statistics",
-    "IIT Madras": "https://placement.iitm.ac.in/statistics",
+    "IIT Bombay": "https://campus.placements.iitb.ac.in/static/docs/placement_report_2023_24.pdf",
+    "IIT Delhi": "https://home.iitd.ac.in/placement.php",
+    "IIT Madras": "https://placement.iitm.ac.in/",
     "NIT Trichy": "https://www.nitt.edu/home/academics/placements/placement-statistics.html",
-    "BITS Pilani": "https://www.bits-pilani.ac.in/pilani/career-development-centre",
-    "IIM Ahmedabad": "https://www.iima.ac.in/placements",
-    "AIIMS Delhi": "https://www.aiims.edu"
+    "BITS Pilani": "https://www.bits-pilani.ac.in/placements/",
+    "IIM Ahmedabad": "https://www.iima.ac.in/programmes/pgp/placements",
+    "AIIMS Delhi": "https://www.aiims.edu/index.php",
 }
 
 # VERIFIED 2026-09-30, from outside the deployment network. These URLs are a
@@ -68,6 +67,7 @@ class CollegePlacementScraper(BaseScraper):
                 resp = await self.get(url)
                 text = ""
                 if resp.headers.get("content-type", "").startswith("application/pdf") or url.endswith(".pdf"):
+                    from pdfminer.high_level import extract_text
                     text = extract_text(io.BytesIO(resp.content))
                 else:
                     soup = BeautifulSoup(resp.text, 'html.parser')
@@ -80,17 +80,7 @@ class CollegePlacementScraper(BaseScraper):
                 # document actually states a highest package, and emits
                 # nothing otherwise. That is the standard the NIRF branch
                 # below now meets too.
-                highest_matches = re.findall(r'highest(?: salary| package)?.*?([\d,]+(?:?:\.\d+)?)\s*(?:LPA|lakhs?)', text, re.I)
-                if highest_matches:
-                    val = float(highest_matches[0].replace(',', ''))
-                    results.append(ScrapeResult(
-                        program_id=name.lower().replace(" ", "_"),
-                        field_name="official_highest_salary",
-                        raw_value=str(val),
-                        parsed_value=val,
-                        unit="LPA",
-                        source_url=url,
-                    ))
+                results.extend(self._extract_salary_stats(text, url, name))
                     
             except Exception as e:
                 logger.error(f"Error parsing college {name}: {e}")
@@ -114,9 +104,10 @@ class CollegePlacementScraper(BaseScraper):
         # The replacement extracts the rate from the document. A rate is only
         # emitted when a number and a context word appear together, so a PDF
         # that fails to parse produces no row instead of a remembered one.
-        nirf_url = "https://nirfindia.org/nirfpdfcdn/2024/pdf/Engineering.pdf"
+        nirf_url = "https://www.nirfindia.org/nirfpdfcdn/2024/pdf/Report/IR2024_Engineering.pdf"
         try:
             logger.info(f"Scraping NIRF data: {nirf_url}")
+            from pdfminer.high_level import extract_text
             resp = await self.get(nirf_url)
             text = extract_text(io.BytesIO(resp.content))
 
@@ -147,6 +138,49 @@ class CollegePlacementScraper(BaseScraper):
         r"(?:placed|placement|employed|received\s+an?\s+offer)",
         re.I,
     )
+
+    _SALARY_PATTERNS = (
+        ("official_highest_salary", re.compile(
+            r"highest(?:\s+annual)?(?:\s+ctc)?(?:\s+salary|\s+package)?[^0-9]{0,40}"
+            r"([\d,]+(?:\.\d+)?)\s*(?:LPA|lakhs?)",
+            re.I,
+        )),
+        ("official_median_salary", re.compile(
+            r"median(?:\s+annual)?(?:\s+ctc)?(?:\s+salary|\s+package)?[^0-9]{0,40}"
+            r"([\d,]+(?:\.\d+)?)\s*(?:LPA|lakhs?)",
+            re.I,
+        )),
+        ("official_average_salary", re.compile(
+            r"(?:average|avg)(?:\s+annual)?(?:\s+ctc)?(?:\s+salary|\s+package)?[^0-9]{0,40}"
+            r"([\d,]+(?:\.\d+)?)\s*(?:LPA|lakhs?)",
+            re.I,
+        )),
+    )
+
+    def _extract_salary_stats(self, text: str, source_url: str, college: str) -> List[ScrapeResult]:
+        if not text:
+            return []
+        out: List[ScrapeResult] = []
+        for field, pattern in self._SALARY_PATTERNS:
+            match = pattern.search(text)
+            if not match:
+                continue
+            try:
+                val = float(match.group(1).replace(",", ""))
+            except ValueError:
+                continue
+            if not 1.0 <= val <= 200.0:
+                continue
+            out.append(ScrapeResult(
+                program_id=None,
+                field_name=field,
+                raw_value=str(val),
+                parsed_value=val,
+                unit="LPA",
+                source_url=source_url,
+                metadata={"college": college},
+            ))
+        return out
 
     def _extract_placement_rates(self, text: str, source_url: str) -> List[ScrapeResult]:
         """
@@ -179,7 +213,7 @@ class CollegePlacementScraper(BaseScraper):
                     continue
                 seen.add(value)
                 out.append(ScrapeResult(
-                    program_id="nirf_engineering",
+                    program_id=None,
                     field_name="official_placement_rate",
                     raw_value=str(value),
                     parsed_value=value,
@@ -188,6 +222,7 @@ class CollegePlacementScraper(BaseScraper):
                     metadata={
                         "source_name": self.SOURCE_NAME,
                         "extracted_from": "nirf_pdf",
+                        "category": "engineering",
                     },
                 ))
 

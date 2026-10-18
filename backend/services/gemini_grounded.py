@@ -95,11 +95,16 @@ def extract_json_object(text: str) -> Dict[str, Any]:
 
 class GeminiGroundedClient:
     def __init__(self):
-        self.api_key = settings.gemini_api_key
-        self.model = (settings.gemini_model or "gemini-3.7-flash").strip()
         self.base = "https://generativelanguage.googleapis.com/v1beta"
 
+    def _refresh(self) -> None:
+        # Read on every call so a key/model added to .env is picked up after
+        # reload, and so a stale 2.5-flash default cannot 404 a working key.
+        self.api_key = settings.gemini_api_key
+        self.model = (settings.gemini_model or "gemini-3.8-flash").strip()
+
     def _require_key(self) -> None:
+        self._refresh()
         if not self.api_key:
             raise IntegrationUnavailable("gemini", "GEMINI_API_KEY is not set", ["GEMINI_API_KEY"])
 
@@ -108,22 +113,30 @@ class GeminiGroundedClient:
         prompt: str,
         *,
         system: str = SYSTEM_EDUCATION,
-        timeout: float = 45.0,
+        timeout: float = 90.0,
         require_grounding: bool = True,
     ) -> GroundedAnswer:
         self._require_key()
+        from services.fallback_web_search import apply_to_answer, ground_prompt
+
+        prompt, search_bundle = await ground_prompt(prompt)
+        # Interactions is the newer API; this key's working path is
+        # generateContent on gemini-3.8-flash. Probe Interactions briefly,
+        # then spend the remaining budget on generateContent.
+        interact_timeout = min(12.0, timeout)
         try:
-            answer = await self._via_interactions(prompt, system, timeout)
+            answer = await self._via_interactions(prompt, system, interact_timeout)
         except IntegrationUnavailable as first:
             logger.warning("Interactions API failed (%s); trying generateContent", first)
             try:
                 answer = await self._via_generate_content(prompt, system, timeout)
             except IntegrationUnavailable as second:
                 reason = str(first)
-                if "HTTP 404" in reason or "HTTP 400" in reason:
+                if "HTTP 404" in reason or "HTTP 400" in reason or "timed out" in reason.lower():
                     raise second
                 raise first
 
+        answer = apply_to_answer(answer, search_bundle)
         if require_grounding and not answer.grounded:
             raise IntegrationUnavailable(
                 "gemini",

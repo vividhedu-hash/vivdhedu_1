@@ -138,11 +138,9 @@ SOURCES: list[Source] = [
            needs=("TAVILY_API_KEY",),
            why="Search-grounded research. Free tier at tavily.com."),
     Source("jina", "scrapers.jina_scraper", "JinaScraper",
-           needs=("JINA_API_KEY",),
-           why="Reader proxy for JS pages. Free tier at jina.ai."),
-    Source("firecrawl", "scrapers.crawl4ai_scraper", "Crawl4AIScraper",
-           needs=("FIRECRAWL_API_KEY",),
-           why="Heavy-JS college portals. Free 500 pages/month."),
+           why="Reader proxy (r.jina.ai). Optional JINA_API_KEY raises rate limits."),
+    Source("crawl4ai", "scrapers.crawl4ai_scraper", "Crawl4AIScraper",
+           why="JS pages via crawl4ai, or Jina fallback. No Firecrawl key required."),
 ]
 
 BY_KEY = {s.key: s for s in SOURCES}
@@ -193,9 +191,10 @@ def _load_db_url() -> str:
                     # Strip quotes, ignore an inline comment, ignore the
                     # placeholder value shipped in .env.example.
                     raw = line.split("=", 1)[1].split("#")[0].strip().strip("\"'")
-                    if raw and "your-" not in raw and "postgres://" in raw or "postgresql" in raw:
-                        if raw and "your-" not in raw:
-                            return _normalize(raw)
+                    if raw and "your-" not in raw and (
+                        "postgres://" in raw or "postgresql" in raw
+                    ):
+                        return _normalize(raw)
     raise SystemExit(
         "DATABASE_URL is not set.\n"
         "  Put it in backend/.env, or export it before running."
@@ -312,7 +311,9 @@ async def run_one(
             except Exception as exc:
                 detail = f"scrape raised: {type(exc).__name__}: {exc}"
             finally:
-                await _close_run(db, run_id, "skipped", detail)
+                # scrape_status enum is running|success|partial|failed — not skipped.
+                close_status = "partial" if parsed else "failed"
+                await _close_run(db, run_id, close_status, detail)
 
             state = "ok" if parsed > 0 else "failed"
             if parsed == 0:

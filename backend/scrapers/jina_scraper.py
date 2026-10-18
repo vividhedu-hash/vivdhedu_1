@@ -9,6 +9,7 @@ Usage:
     python -m scrapers.jina_scraper --dry-run
 """
 import asyncio
+import os
 import re
 import logging
 from typing import Optional, List
@@ -73,7 +74,7 @@ INDIA_SALARY_TARGETS = [
 
 
 class JinaScraper(BaseScraper):
-    SOURCE_NAME = "jina_reader"
+    SOURCE_NAME = "jina"
 
     async def fetch_as_markdown(self, url: str) -> Optional[str]:
         jina_url = f"{JINA_BASE}{url}"
@@ -81,6 +82,12 @@ class JinaScraper(BaseScraper):
             "Accept": "text/markdown",
             "X-Return-Format": "markdown",
         }
+        key = ""
+        if self.settings:
+            key = (getattr(self.settings, "jina_api_key", None) or "") or ""
+        key = (key or os.getenv("JINA_API_KEY") or "").strip()
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
         try:
             # use self.get which handles retries and backoff
             response = await self.get(jina_url, headers=headers)

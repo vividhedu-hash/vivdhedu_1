@@ -109,9 +109,34 @@ class NaukriScraper(BaseScraper):
                 headers=headers,
             )
             data = resp.json()
-            return data.get("jobDetails", [])
+            jobs = data.get("jobDetails") or data.get("jobDetailsDTOList") or []
+            if jobs:
+                return jobs
         except Exception as e:
             logger.warning(f"[Naukri] API call failed for '{keywords}': {e}")
+        return await self._search_jobs_html(keywords, page)
+
+    async def _search_jobs_html(self, keywords: str, page: int) -> List[dict]:
+        """Listing HTML still exposes a result count when jobapi is recaptcha-gated."""
+        seo = keywords.replace(" ", "-")
+        url = f"https://www.naukri.com/{seo}-jobs-{page}" if page > 1 else f"https://www.naukri.com/{seo}-jobs"
+        try:
+            resp = await self.get(url, headers={"Accept": "text/html", "Referer": "https://www.naukri.com/"})
+            text = resp.text
+            count_match = re.search(r"(?:of|1\s*-\s*\d+\s+of)\s*([\d,]+)", text, re.I)
+            title_match = re.search(r"\"title\"\s*:\s*\"([^\"]{5,80})\"", text)
+            jobs: List[dict] = []
+            if count_match:
+                jobs.append({
+                    "jobId": f"html-{seo}-{page}",
+                    "title": title_match.group(1) if title_match else keywords,
+                    "companyName": "",
+                    "jobDescription": "",
+                    "_html_count": float(count_match.group(1).replace(",", "")),
+                })
+            return jobs
+        except Exception as e:
+            logger.warning(f"[Naukri] HTML search failed for '{keywords}': {e}")
             return []
 
     async def scrape(self) -> List[ScrapeResult]:
@@ -124,58 +149,58 @@ class NaukriScraper(BaseScraper):
             exp = target["exp"]
 
             logger.info(f"[Naukri] Scraping: '{keywords}' exp={exp}")
+            target_count = 0
+            salary_mids: List[int] = []
+            source_url = f"https://www.naukri.com/{keywords.replace(' ', '-')}-jobs"
 
             for page in range(1, self.MAX_PAGES + 1):
                 jobs = await self._search_jobs(keywords, exp, page)
                 if not jobs:
                     break
 
+                html_count = jobs[0].get("_html_count") if jobs else None
+                if html_count:
+                    target_count = max(target_count, int(html_count))
+                    total_jobs_processed += 1
+                    break
+
                 for job in jobs:
                     total_jobs_processed += 1
-
-                    # Extract salary from description
+                    target_count += 1
                     desc = job.get("jobDescription", "") or job.get("description", "")
                     salary_range = self._extract_salary_from_text(desc)
-
-                    # Job posting demand data point
-                    results.append(ScrapeResult(
-                        program_id=None,   # aggregate — no specific program
-                        field_name="naukri_job_demand",
-                        raw_value=job.get("jobId", ""),
-                        parsed_value=1.0,   # 1 job posting = 1 demand unit
-                        unit="COUNT",
-                        source_url=f"https://www.naukri.com/job-listings-{job.get('jobId', '')}",
-                        metadata={
-                            "title": job.get("title", ""),
-                            "company": job.get("companyName", ""),
-                            "city": job.get("placeholders", [{}])[0].get("label", "") if job.get("placeholders") else "",
-                            "skills": self._extract_skills(job),
-                            "degree_field": field,
-                            "exp_range": exp,
-                            "salary_range": salary_range,
-                            "posted_date": job.get("footerPlaceholderLabel", ""),
-                        },
-                    ))
-
-                    # Salary signal if extracted
                     if salary_range and salary_range.get("mid_inr"):
-                        results.append(ScrapeResult(
-                            program_id=None,
-                            field_name=f"naukri_salary_{field}",
-                            raw_value=str(salary_range["mid_inr"]),
-                            parsed_value=float(salary_range["mid_inr"]),
-                            unit="INR",
-                            source_url=f"https://www.naukri.com/job-listings-{job.get('jobId', '')}",
-                            metadata={
-                                "degree_field": field,
-                                "exp_range": exp,
-                                "min_inr": salary_range.get("min_inr"),
-                                "max_inr": salary_range.get("max_inr"),
-                            },
-                        ))
+                        salary_mids.append(int(salary_range["mid_inr"]))
 
                 if len(jobs) < 20:
-                    break  # last page
+                    break
+
+            if target_count:
+                results.append(ScrapeResult(
+                    program_id=None,
+                    field_name="naukri_job_demand",
+                    raw_value=str(target_count),
+                    parsed_value=float(target_count),
+                    unit="COUNT",
+                    source_url=source_url,
+                    metadata={
+                        "degree_field": field,
+                        "exp_range": exp,
+                        "keywords": keywords,
+                    },
+                ))
+            if salary_mids:
+                salary_mids.sort()
+                mid = salary_mids[len(salary_mids) // 2]
+                results.append(ScrapeResult(
+                    program_id=None,
+                    field_name=f"naukri_salary_{field}",
+                    raw_value=str(mid),
+                    parsed_value=float(mid),
+                    unit="INR",
+                    source_url=source_url,
+                    metadata={"degree_field": field, "exp_range": exp},
+                ))
 
         logger.info(f"[Naukri] Processed {total_jobs_processed} jobs → {len(results)} data points")
         return results

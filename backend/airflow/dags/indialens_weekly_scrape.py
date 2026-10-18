@@ -263,7 +263,7 @@ def task_compute_roi_scores(**context):
         async_session = async_sessionmaker(engine, class_=AsyncSession)
 
         async with async_session() as db:
-            from indialens.ml.training_pipeline import run_training_pipeline
+            from ml.training_pipeline import run_training_pipeline
 
             ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")
             version_tag = f"v{ts}_airflow"

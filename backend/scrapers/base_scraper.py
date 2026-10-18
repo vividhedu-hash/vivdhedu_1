@@ -8,6 +8,7 @@ BaseScraper — shared scraping utilities with:
 """
 import asyncio
 import logging
+import re
 import time
 import random
 from abc import ABC, abstractmethod
@@ -62,6 +63,41 @@ class ScrapeStats:
     @property
     def duration_seconds(self) -> float:
         return time.time() - self.start_time
+
+
+def _slug(value: Any, max_len: int = 20) -> str:
+    text = re.sub(r"[^a-zA-Z0-9]+", "_", str(value or "")).strip("_")
+    return text[:max_len]
+
+
+def macro_field_key(result: ScrapeResult) -> str:
+    """Unique current key for macro_indicators (UNIQUE on field_name).
+
+    Salary/demand scrapers reuse one field_name across roles. Without a suffix
+    the unique index keeps only the last row and the rest of a run is discarded.
+    """
+    meta = result.metadata or {}
+    parts = [result.field_name]
+    for key in (
+        "role",
+        "college_name",
+        "college",
+        "degree_field",
+        "education_level",
+        "city",
+        "category",
+        "exp_range",
+        "exp_min",
+        "keywords",
+    ):
+        val = meta.get(key)
+        if val is None or val == "":
+            continue
+        slug = _slug(val)
+        if slug and slug not in parts:
+            parts.append(slug)
+    name = ".".join(parts)
+    return name[:64]
 
 
 class BaseScraper(ABC):
@@ -157,7 +193,7 @@ class BaseScraper(ABC):
             try:
                 college_name = (result.metadata or {}).get("college_name")
                 if result.field_name == "nirf_rank" and college_name and result.parsed_value is not None:
-                    await self.db.execute(text("""
+                    upd = await self.db.execute(text("""
                         UPDATE colleges
                         SET nirf_rank = :rank, updated_at = NOW()
                         WHERE short_name ILIKE :name OR full_name ILIKE :like
@@ -166,11 +202,15 @@ class BaseScraper(ABC):
                         "name": college_name,
                         "like": f"%{college_name}%",
                     })
-                    self.stats.records_updated += 1
-                    self.stats.records_scraped += 1
-                    continue
+                    if getattr(upd, "rowcount", 0):
+                        self.stats.records_updated += 1
+                        self.stats.records_scraped += 1
+                        continue
+                    # Name did not match a colleges row — still keep the rank
+                    # as a macro indicator so the scrape is not a silent no-op.
 
-                if not result.program_id:
+                if result.field_name == "nirf_category":
+                    # colleges has no category column; ranks are the storable field.
                     continue
 
                 is_uuid = False
@@ -182,17 +222,18 @@ class BaseScraper(ABC):
                     is_uuid = False
 
                 if not is_uuid:
+                    field = macro_field_key(result)
                     await self.db.execute(text("""
                         UPDATE macro_indicators SET is_current = FALSE
                         WHERE field_name = :field AND is_current = TRUE
-                    """), {"field": result.field_name})
+                    """), {"field": field})
                     await self.db.execute(text("""
                         INSERT INTO macro_indicators
                             (scrape_run_id, field_name, parsed_value, unit, source_url, is_current)
-                        VALUES (:run_id, :field, :parsed, :unit, :url, TRUE)
+                        VALUES (CAST(:run_id AS uuid), :field, :parsed, :unit, :url, TRUE)
                     """), {
                         "run_id": self.run_id,
-                        "field": result.field_name,
+                        "field": field,
                         "parsed": result.parsed_value,
                         "unit": result.unit,
                         "url": result.source_url,
@@ -230,7 +271,7 @@ class BaseScraper(ABC):
                     await self.db.execute(text("""
                         INSERT INTO data_points
                             (program_id, scrape_run_id, field_name, raw_value, parsed_value, unit, source_url, is_current)
-                        VALUES (:pid, :run_id, :field, :raw, :parsed, :unit, :url, TRUE)
+                        VALUES (CAST(:pid AS uuid), CAST(:run_id AS uuid), :field, :raw, :parsed, :unit, :url, TRUE)
                     """), {
                         "pid": result.program_id,
                         "run_id": self.run_id,

@@ -14,6 +14,7 @@ Rate limit: 1 request / 2s to avoid detection.
 Requires: httpx, BeautifulSoup, fake_useragent (optional)
 """
 import logging
+import re
 from typing import List, Optional, Dict
 
 from .base_scraper import BaseScraper, ScrapeResult
@@ -118,22 +119,56 @@ class AmbitionBoxScraper(BaseScraper):
             )
             data = resp.json()
 
-            # AmbitionBox returns structured salary object
-            if not data.get("data"):
-                return None
+            salary_info = data.get("data") if isinstance(data, dict) else None
+            if salary_info:
+                median = self._parse_salary_inr(salary_info.get("medianSalary"))
+                if median:
+                    return {
+                        "min_salary_inr": self._parse_salary_inr(salary_info.get("minSalary")),
+                        "median_salary_inr": median,
+                        "max_salary_inr": self._parse_salary_inr(salary_info.get("maxSalary")),
+                        "sample_size": salary_info.get("sampleSize", 0),
+                        "role": role,
+                        "exp_min": exp_min,
+                        "exp_max": exp_max,
+                    }
+        except Exception as e:
+            logger.warning(f"[AmbitionBox] API failed for {role} ({exp_min}-{exp_max} yrs): {e}")
 
-            salary_info = data["data"]
+        return await self._fetch_salary_from_html(role, exp_min, exp_max)
+
+    async def _fetch_salary_from_html(self, role: str, exp_min: int, exp_max: int) -> Optional[dict]:
+        """Public profile pages still render a headline salary when the JSON API is blocked."""
+        slug = role.lower().replace(" ", "-")
+        url = f"https://www.ambitionbox.com/profile/{slug}-salary"
+        try:
+            resp = await self.get(url, headers={"Accept": "text/html"})
+            text = resp.text
+            median = None
+            m = re.search(
+                r"(?:average|median)\s+(?:annual\s+)?salary[^₹\d]{0,80}₹\s*([\d.]+)\s*(L|lakh|LPA)?",
+                text,
+                re.I,
+            )
+            if m:
+                median = self._parse_salary_inr(m.group(1) + (m.group(2) or "L"))
+            if median is None:
+                m = re.search(r"₹\s*([\d.]+)\s*(Lakh|LPA|L)\b", text, re.I)
+                if m:
+                    median = self._parse_salary_inr(m.group(1) + m.group(2))
+            if not median:
+                return None
             return {
-                "min_salary_inr": self._parse_salary_inr(salary_info.get("minSalary")),
-                "median_salary_inr": self._parse_salary_inr(salary_info.get("medianSalary")),
-                "max_salary_inr": self._parse_salary_inr(salary_info.get("maxSalary")),
-                "sample_size": salary_info.get("sampleSize", 0),
+                "min_salary_inr": None,
+                "median_salary_inr": median,
+                "max_salary_inr": None,
+                "sample_size": 0,
                 "role": role,
                 "exp_min": exp_min,
                 "exp_max": exp_max,
             }
         except Exception as e:
-            logger.warning(f"[AmbitionBox] Failed for {role} ({exp_min}-{exp_max} yrs): {e}")
+            logger.warning(f"[AmbitionBox] HTML failed for {role}: {e}")
             return None
 
     async def scrape(self) -> List[ScrapeResult]:

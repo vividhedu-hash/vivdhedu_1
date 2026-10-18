@@ -1,4 +1,5 @@
 """Hermetic tests for Supabase access-token verification."""
+from __future__ import annotations
 
 import datetime as dt
 import uuid

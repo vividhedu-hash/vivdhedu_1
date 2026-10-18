@@ -181,7 +181,7 @@ Provide a structured fiduciary analysis:
 
 Cite sources with URLs when referencing cutoffs or current market trends.
 """
-        answer = await gemini_grounded.generate(prompt, timeout=45.0, require_grounding=False)
+        answer = await gemini_grounded.generate(prompt, timeout=90.0, require_grounding=False)
         payload = answer.as_dict()
         payload["summary"] = answer.text[:320]
         payload["context_packet"] = context_packet
@@ -218,7 +218,7 @@ Return valid JSON:
   ]
 }}
 Do not invent ungrounded company packages."""
-        data = await gemini_grounded.generate_json(prompt, timeout=25.0, require_grounding=False)
+        data = await gemini_grounded.generate_json(prompt, timeout=90.0, require_grounding=False)
         data["is_generative"] = True
         data["status"] = "live"
         data["engine"] = settings.gemini_model

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * Previously 1200ms, which guaranteed every call fell through to the
  * serverless handlers below.
  */
-const AI_TIMEOUT_MS = Number(process.env.AI_PROXY_TIMEOUT_MS ?? 60_000);
+const AI_TIMEOUT_MS = Number(process.env.AI_PROXY_TIMEOUT_MS ?? 120_000);
 
 type TraitVector = {
   risk: number;

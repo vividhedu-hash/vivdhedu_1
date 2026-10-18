@@ -187,7 +187,7 @@ INSTRUCTIONS FOR REASONING & SEARCH GROUNDING:
 Return JSON matching this schema:
 {PATH_SCHEMA}
 """
-    data = await gemini_grounded.generate_json(prompt, timeout=55.0, require_grounding=False)
+    data = await gemini_grounded.generate_json(prompt, timeout=90.0, require_grounding=False)
     grounding = data.pop("_grounding", {})
     nodes = []
     for node in data.get("nodes") or []:

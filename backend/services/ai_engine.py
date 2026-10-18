@@ -65,7 +65,7 @@ async def generate_grounded(
     prompt: str,
     *,
     system: str = SYSTEM_EDUCATION,
-    timeout: float = 45.0,
+    timeout: float = 90.0,
     require_grounding: bool = True,
 ) -> GroundedAnswer:
     mode = (settings.ai_engine or "auto").strip().lower()

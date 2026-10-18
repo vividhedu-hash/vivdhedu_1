@@ -39,3 +39,11 @@ def test_backend_exposes_colleges_stats():
     assert '@router.get("/colleges/stats")' in src
     # Must be declared before the {program_id} catch-all.
     assert src.find("/colleges/stats") < src.find("/colleges/{program_id}")
+
+
+def test_migration_0009_accepts_auth_uid():
+    sql = (REPO_ROOT / "backend" / "db" / "migrations" / "0009_supabase_uid_student_rls.sql").read_text(
+        encoding="utf-8"
+    )
+    assert "user_id = auth.uid()" in sql
+    assert "app.user_id" in sql

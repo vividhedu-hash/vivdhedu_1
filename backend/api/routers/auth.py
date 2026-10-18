@@ -1,13 +1,14 @@
 """
 Authentication & OAuth 2.0 Router
 ==================================
-OAuth sign-in for non-browser callers (see docs/AUTH.md for why the browser
-uses Supabase Auth instead):
-- Google OAuth 2.0 (ID token verified against Google's JWKS, or code exchange)
-- GitHub OAuth 2.0 (code exchange + primary verified email via the REST API)
-- Magic link / Email authentication
-- JWT session management (HS256 signed)
-- User profile & Saved Reports association
+Browser sessions are Supabase Auth JWTs verified here (`api/supabase_jwt.py`).
+Google/GitHub minting routes on this router return 410 so a second `users.id`
+cannot be created beside `auth.uid()`.
+
+Still served:
+- GET /me, saved reports
+- Magic link / premium upgrade (501)
+- Legacy HS256 tokens (machine callers only)
 
 Premium is deliberately absent: no route grants entitlement, and
 `/premium/upgrade` fails closed with 501 because billing is not implemented.
@@ -189,8 +190,8 @@ async def _load_user_row(session: AsyncSession, user_id: Any) -> Optional[Dict[s
 async def _upsert_supabase_user(session: AsyncSession, payload: Dict[str, Any]) -> Dict[str, Any]:
     """Ensure ``public.users.id`` equals the Supabase ``auth.uid()`` (JWT sub)."""
     user_id = str(payload.get("sub") or "").strip()
-    email = (payload.get("email") or payload.get("user_metadata", {}).get("email") or "").strip().lower()
     meta = payload.get("user_metadata") if isinstance(payload.get("user_metadata"), dict) else {}
+    email = str(payload.get("email") or meta.get("email") or "").strip().lower()
     name = meta.get("full_name") or meta.get("name") or payload.get("full_name")
     avatar = meta.get("avatar_url") or meta.get("picture") or payload.get("avatar_url")
     if not user_id:

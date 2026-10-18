@@ -15,8 +15,8 @@ export type FetchBackendInit = RequestInit & {
 
 export function getBackendUrl(): string | null {
   const url = (process.env.FASTAPI_URL || process.env.API_BASE_URL || "").replace(/\/$/, "");
-  if (url) return url;
-  if (process.env.NODE_ENV !== "production") return "http://localhost:8000";
+  if (url) return url.replace("localhost", "127.0.0.1");
+  if (process.env.NODE_ENV !== "production") return "http://127.0.0.1:8000";
   return null;
 }
 

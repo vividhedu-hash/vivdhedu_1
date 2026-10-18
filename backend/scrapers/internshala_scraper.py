@@ -41,40 +41,50 @@ class InternshalaScraper(BaseScraper):
             logger.info(f"Scraping category: {category} -> {url}")
             try:
                 resp = await self.get(url)
-                soup = BeautifulSoup(resp.text, 'html.parser')
-                listings = soup.find_all("div", class_="individual_internship")
-                
+                soup = BeautifulSoup(resp.text, "html.parser")
+                listings = soup.select(
+                    "div.individual_internship, div[id^='individual_internship']"
+                )
+                stipend_nodes = soup.select(
+                    "span.stipend, span.stipend_container_text, div.stipend, "
+                    "[class*='stipend']"
+                )
                 stipends = []
-                for listing in listings:
-                    stipend_elem = listing.find("span", class_="stipend")
-                    if stipend_elem:
-                        stipend_text = stipend_elem.get_text(strip=True)
-                        # extract numbers
-                        matches = re.findall(r'(\d+)', stipend_text.replace(',', ''))
-                        if matches:
-                            stipends.extend([float(m) for m in matches])
-                
+                for node in stipend_nodes:
+                    stipend_text = node.get_text(strip=True)
+                    matches = re.findall(r"(\d[\d,]*)", stipend_text.replace(",", ""))
+                    for m in matches:
+                        try:
+                            val = float(m)
+                        except ValueError:
+                            continue
+                        if 1000 <= val <= 200000:
+                            stipends.append(val)
+
+                mapped_field = CATEGORY_MAP[category]
+                demand = float(len(listings) or len(stipend_nodes))
                 if stipends:
                     stipends.sort()
-                    p50 = stipends[len(stipends)//2]
-                    mapped_field = CATEGORY_MAP[category]
-                    
+                    p50 = stipends[len(stipends) // 2]
                     results.append(ScrapeResult(
-                        program_id=mapped_field,
+                        program_id=None,
                         field_name="internshala_stipend_p50",
                         raw_value=str(p50),
                         parsed_value=p50,
                         unit="INR/month",
                         source_url=url,
+                        metadata={"degree_field": mapped_field, "category": category},
                     ))
-                    
+
+                if demand:
                     results.append(ScrapeResult(
-                        program_id=mapped_field,
+                        program_id=None,
                         field_name="internshala_demand_index",
-                        raw_value=str(len(listings)),
-                        parsed_value=float(len(listings)),
+                        raw_value=str(int(demand)),
+                        parsed_value=demand,
                         unit="count",
                         source_url=url,
+                        metadata={"degree_field": mapped_field, "category": category},
                     ))
 
             except Exception as e:

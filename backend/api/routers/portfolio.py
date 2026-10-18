@@ -83,10 +83,10 @@ Output JSON format ONLY:
 }}
 """
     try:
-        data = await gemini_grounded.generate_json(prompt, timeout=25.0, require_grounding=False)
+        data = await gemini_grounded.generate_json(prompt, timeout=90.0, require_grounding=False)
         if data and "transformed_xyz" in data:
             return data
-        res = await gemini_grounded.generate(prompt, timeout=25.0, require_grounding=False)
+        res = await gemini_grounded.generate(prompt, timeout=90.0, require_grounding=False)
         if res and hasattr(res, "text") and res.text:
             import json
             import re

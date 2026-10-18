@@ -12,6 +12,36 @@ from .base_scraper import BaseScraper, ScrapeResult
 
 logger = logging.getLogger(__name__)
 
+def _salary_from_jsonld(node) -> dict:
+    """Pull median / p25 / p75 out of schema.org Occupation JSON-LD."""
+    found = {"median": None, "p25": None, "p75": None}
+    stack = [node]
+    while stack:
+        cur = stack.pop()
+        if isinstance(cur, list):
+            stack.extend(cur)
+            continue
+        if not isinstance(cur, dict):
+            continue
+        types = cur.get("@type") or cur.get("type") or ""
+        if isinstance(types, list):
+            types = " ".join(str(t) for t in types)
+        if "MonetaryAmountDistribution" in str(types) or any(
+            k in cur for k in ("median", "percentile25", "percentile75")
+        ):
+            def _num(key):
+                val = cur.get(key)
+                try:
+                    return float(val)
+                except (TypeError, ValueError):
+                    return None
+            found["median"] = found["median"] or _num("median")
+            found["p25"] = found["p25"] or _num("percentile25")
+            found["p75"] = found["p75"] or _num("percentile75")
+        stack.extend(v for v in cur.values() if isinstance(v, (dict, list)))
+    return found
+
+
 ROLE_MAP = {
     'Software_Engineer': 'engineering-cs',
     'Data_Scientist': 'engineering-cs', 
@@ -40,22 +70,38 @@ class PayscaleScraper(BaseScraper):
             p25 = None
             p75 = None
             sample_size = None
-            
-            # Try to parse ld+json
-            for script in soup.find_all('script', type='application/ld+json'):
+
+            for script in soup.find_all("script", type="application/ld+json"):
+                if not script.string:
+                    continue
                 try:
                     data = json.loads(script.string)
-                    if data.get('@type') == 'Occupation':
-                        # Depending on structure, extract salaries
-                        pass
                 except Exception:
-                    pass
-            
-            # If ld+json didn't have it, look for text
-            # Often median is in paycharts__value
-            median_el = soup.find(class_='paycharts__value')
-            if median_el:
-                median_text = median_el.text.replace('₹', '').replace(',', '').strip()
+                    continue
+                extracted = _salary_from_jsonld(data)
+                if extracted.get("median") is not None:
+                    median = extracted["median"]
+                if extracted.get("p25") is not None:
+                    p25 = extracted["p25"]
+                if extracted.get("p75") is not None:
+                    p75 = extracted["p75"]
+
+            if median is None:
+                page_text = soup.get_text(" ", strip=True)
+                m = re.search(
+                    r"(?:average|median)\s+salary[^₹\d]{0,40}₹\s*([\d,]+(?:\.\d+)?)",
+                    page_text,
+                    re.I,
+                )
+                if m:
+                    try:
+                        median = float(m.group(1).replace(",", ""))
+                    except ValueError:
+                        pass
+
+            median_el = soup.find(class_="paycharts__value")
+            if median is None and median_el:
+                median_text = median_el.text.replace("₹", "").replace(",", "").strip()
                 try:
                     median = float(median_text)
                 except ValueError:
@@ -89,7 +135,7 @@ class PayscaleScraper(BaseScraper):
                 "role": role,
                 "degree_field": degree_field,
                 "sample_size": sample_size,
-                "currency": "INR"
+                "currency": "INR",
             }
 
             if median is not None:

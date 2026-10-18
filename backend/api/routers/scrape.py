@@ -99,7 +99,7 @@ async def trigger_scraper_run(
     try:
         result = await db.execute(text("""
             INSERT INTO scrape_runs (source_name, status)
-            VALUES (:source, 'running')
+            VALUES (:source, CAST('running' AS scrape_status))
             RETURNING id
         """), {"source": source})
         run_id = str(result.scalar())

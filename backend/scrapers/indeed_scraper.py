@@ -35,7 +35,7 @@ class IndeedScraper(BaseScraper):
         results = []
         for role, cities in SEARCH_TARGETS:
             for city in cities:
-                for page in range(5):
+                for page in range(2):
                     url = f"{self.BASE_URL}?q={quote_plus(role)}&l={quote_plus(city)}&start={page*10}"
                     logger.info(f"Scraping Indeed: {role} in {city} (Page {page})")
                     try:
@@ -44,21 +44,23 @@ class IndeedScraper(BaseScraper):
                         
                         # Just getting the results from first page to determine volume
                         if page == 0:
-                            count_elem = soup.find("div", class_="jobsearch-JobCountAndSortPane-jobCount")
-                            if count_elem:
-                                count_text = count_elem.get_text(strip=True)
-                                match = re.search(r'(\d[,0-9]*)', count_text)
-                                if match:
-                                    volume = float(match.group(1).replace(',', ''))
-                                    results.append(ScrapeResult(
-                                        program_id=role.lower().replace(' ', '_'),
-                                        field_name="indeed_job_volume",
-                                        raw_value=str(volume),
-                                        parsed_value=volume,
-                                        unit="count",
-                                        source_url=url,
-                                        metadata={"city": city}
-                                    ))
+                            count_elem = (
+                                soup.find("div", class_="jobsearch-JobCountAndSortPane-jobCount")
+                                or soup.find(attrs={"data-testid": "jobsearch-JobCountAndSortPane-jobCount"})
+                            )
+                            count_text = count_elem.get_text(strip=True) if count_elem else soup.get_text(" ", strip=True)[:400]
+                            match = re.search(r"([\d,]+)\s+jobs", count_text, re.I) or re.search(r"(\d[,0-9]*)", count_text or "")
+                            if match:
+                                volume = float(match.group(1).replace(",", ""))
+                                results.append(ScrapeResult(
+                                    program_id=None,
+                                    field_name="indeed_job_volume",
+                                    raw_value=str(volume),
+                                    parsed_value=volume,
+                                    unit="count",
+                                    source_url=url,
+                                    metadata={"city": city, "role": role},
+                                ))
 
                         salary_snippets = soup.find_all("div", class_="salary-snippet")
                         salaries = []
@@ -73,13 +75,13 @@ class IndeedScraper(BaseScraper):
                             salaries.sort()
                             median_salary = salaries[len(salaries)//2]
                             results.append(ScrapeResult(
-                                program_id=role.lower().replace(' ', '_'),
+                                program_id=None,
                                 field_name="indeed_median_salary_listed",
                                 raw_value=str(median_salary),
                                 parsed_value=median_salary,
                                 unit="INR",
                                 source_url=url,
-                                metadata={"city": city}
+                                metadata={"city": city, "role": role},
                             ))
                             
                     except Exception as e:

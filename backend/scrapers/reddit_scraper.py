@@ -257,7 +257,11 @@ class RedditScraper(BaseScraper):
                     for p in posts
                 ]
             else:
-                posts_data = await self._scrape_with_pushshift(target)
+                logger.warning(
+                    "[Reddit] No PRAW credentials — Pushshift is no longer a public "
+                    "fallback. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET."
+                )
+                break
 
             for post in posts_data:
                 post_id = post["post_id"]
@@ -291,6 +295,35 @@ class RedditScraper(BaseScraper):
                         "range_high": salary.get("range_high_inr"),
                     },
                 ))
+
+        # Collapse anecdotal posts into one median per degree field so the
+        # macro_indicators unique-current index keeps all fields, not one post.
+        by_field: Dict[str, List[ScrapeResult]] = {}
+        for row in results:
+            key = (row.metadata or {}).get("degree_field") or "unknown"
+            by_field.setdefault(key, []).append(row)
+        collapsed: List[ScrapeResult] = []
+        for field, rows in by_field.items():
+            values = sorted(r.parsed_value for r in rows if r.parsed_value is not None)
+            if not values:
+                continue
+            mid = values[len(values) // 2]
+            sample = rows[0]
+            collapsed.append(ScrapeResult(
+                program_id=None,
+                field_name="reddit_salary_signal",
+                raw_value=str(mid),
+                parsed_value=float(mid),
+                unit="INR",
+                source_url=sample.source_url,
+                confidence=sample.confidence,
+                metadata={
+                    "degree_field": field,
+                    "sample_size": len(rows),
+                    "subreddit": (sample.metadata or {}).get("subreddit"),
+                },
+            ))
+        results = collapsed
 
         logger.info(f"[Reddit] Extracted {len(results)} salary signals")
         return results

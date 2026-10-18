@@ -99,10 +99,17 @@ class Settings(BaseSettings):
     rapidapi_jsearch_key: str = ""
     github_token: str = ""
     tavily_api_key: str = ""
+    jina_api_key: str = ""
+    firecrawl_api_key: str = ""
+    exa_api_key: str = ""
+    brave_api_key: str = ""
+    brave_search_api_key: str = ""  # alias of BRAVE_API_KEY
+    you_api_key: str = ""
+    ydc_api_key: str = ""  # alias of YOU_API_KEY
 
     # AI Services
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.8-flash"
     hf_token: str = ""
 
     # OpenRouter — fallback/complementary grounded engine.

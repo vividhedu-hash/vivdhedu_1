@@ -8,6 +8,7 @@ Data extracted per institution:
   - nirf_category
 """
 import logging
+import re
 from typing import List
 import argparse
 import asyncio
@@ -77,32 +78,47 @@ class NIRFScraper(BaseScraper):
             rows = []
             
             categories_map = {
-                'Engineering (Top 10)': 'engineering',
-                'Management (Top 10)': 'management',
-                'Medical (Top 10)': 'medical',
-                'Law (Top 10)': 'law'
+                "engineering": "engineering",
+                "management": "management",
+                "medical": "medical",
+                "law": "law",
+                "overall": "overall",
             }
 
             for t in tables:
-                prev = t.find_previous(['h2', 'h3', 'h4'])
-                if not prev:
+                headline = t.find_previous(class_="mw-headline")
+                prev = t.find_previous(["h2", "h3", "h4"])
+                heading = ""
+                if headline:
+                    heading = headline.get_text(" ", strip=True)
+                elif prev:
+                    heading = prev.get_text(" ", strip=True)
+                heading = re.sub(r"\[.*?\]", "", heading).strip().lower()
+
+                category = None
+                for key, mapped in categories_map.items():
+                    if heading.startswith(key):
+                        category = mapped
+                        break
+                if not category:
                     continue
-                heading = prev.text.strip()
-                if heading in categories_map:
-                    category = categories_map[heading]
-                    for tr in t.find_all('tr')[1:]:
-                        tds = tr.find_all(['td', 'th'])
-                        if len(tds) >= 4:
-                            try:
-                                rank = int(tds[0].text.strip())
-                                name = tds[1].text.strip()
-                                rows.append({
-                                    "rank": rank,
-                                    "name": name,
-                                    "category": category
-                                })
-                            except ValueError:
-                                continue
+                for tr in t.find_all("tr")[1:]:
+                    tds = tr.find_all(["td", "th"])
+                    if len(tds) < 2:
+                        continue
+                    rank_text = re.sub(r"[^\d]", "", tds[0].get_text())
+                    name = tds[1].get_text(" ", strip=True)
+                    if not rank_text or not name:
+                        continue
+                    try:
+                        rank = int(rank_text)
+                    except ValueError:
+                        continue
+                    rows.append({
+                        "rank": rank,
+                        "name": name,
+                        "category": category,
+                    })
             return rows
         except Exception as e:
             logger.error(f"[NIRF] Wikipedia parse error: {e}")

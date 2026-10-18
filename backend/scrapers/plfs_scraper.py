@@ -160,20 +160,30 @@ class PLFSScraper(BaseScraper):
         order to decide between parsing and failing.
         """
         current_year = datetime.now().year
-        year_str = f"{current_year - 1}-{str(current_year)[-2:]}"
-        url = f"{self.BASE_URL}_{year_str}.pdf"
-        try:
-            logger.info(f"Checking for latest PLFS PDF at {url}")
-            response = await self.get(url)
-            if response.status_code == 200:
-                logger.info(f"Successfully found latest PLFS PDF at {url}")
-                return url
-            logger.info(
-                f"PLFS annual report not at {url} (HTTP {response.status_code}). "
-                f"MoSPI moves these files between publication cycles."
+        candidates = []
+        for year in range(current_year, current_year - 4, -1):
+            year_str = f"{year - 1}-{str(year)[-2:]}"
+            candidates.append(f"{self.BASE_URL}_{year_str}.pdf")
+            candidates.append(
+                f"https://www.mospi.gov.in/sites/default/files/publication_reports/"
+                f"PLFS_Annual_Report_{year_str}.pdf"
             )
-        except Exception as e:
-            logger.warning(f"Could not fetch latest PLFS PDF for {year_str}: {e}")
+        seen = set()
+        for url in candidates:
+            if url in seen:
+                continue
+            seen.add(url)
+            try:
+                logger.info(f"Checking for latest PLFS PDF at {url}")
+                response = await self.get(url)
+                if response.status_code == 200 and response.content[:4] == b"%PDF":
+                    logger.info(f"Successfully found latest PLFS PDF at {url}")
+                    return url
+                logger.info(
+                    f"PLFS annual report not at {url} (HTTP {response.status_code})."
+                )
+            except Exception as e:
+                logger.warning(f"Could not fetch PLFS PDF at {url}: {e}")
         return ""
 
     async def scrape(self) -> List[ScrapeResult]:
@@ -228,7 +238,7 @@ class PLFSScraper(BaseScraper):
             )
 
         try:
-            from pdfminer.high_level import extract_text
+            from pdfminer.high_level import extract_text  # optional extra; declared in requirements.txt
 
             resp = await self.get(latest_pdf_url)
             text = extract_text(io.BytesIO(resp.content))

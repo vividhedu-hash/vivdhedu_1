@@ -90,7 +90,7 @@ Structure:
 - What the student should do next (max 3 bullets)
 Cite sources. Do not invent ranks, fees, or CTC."""
     try:
-        answer = await generate_grounded(prompt, timeout=45.0, require_grounding=True)
+        answer = await generate_grounded(prompt, timeout=90.0, require_grounding=True)
         return answer.as_dict()
     except IntegrationUnavailable as e:
         raise HTTPException(status_code=e.status, detail=e.as_http_detail())

@@ -42,6 +42,7 @@ SCRAPER_REGISTRY: Dict[str, Tuple[str, str]] = {
 CREDENTIALED_SOURCES: Dict[str, List[str]] = {
     "reddit": ["REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"],
     "tavily": ["TAVILY_API_KEY"],
+    # jina and crawl4ai work without keys (r.jina.ai / local crawl4ai).
 }
 
 VALID_SOURCES = sorted(SCRAPER_REGISTRY.keys())
@@ -99,10 +100,10 @@ async def _mark_run_failed(run_id: str, message: str) -> None:
                 text(
                     """
                     UPDATE scrape_runs SET
-                        status = 'failed',
+                        status = CAST('failed' AS scrape_status),
                         error_message = :error,
                         completed_at = NOW()
-                    WHERE id = :id
+                    WHERE id = CAST(:id AS uuid)
                 """
                 ),
                 {"id": run_id, "error": message[:2000]},

@@ -9,7 +9,6 @@ from .base_scraper import BaseScraper, ScrapeResult
 
 logger = logging.getLogger(__name__)
 
-TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 TAVILY_API_URL = "https://api.tavily.com/search"
 
 SEARCH_QUERIES = [
@@ -88,11 +87,12 @@ SEARCH_QUERIES = [
 ]
 
 class TavilyScraper(BaseScraper):
-    SOURCE_NAME = "tavily_search"
+    SOURCE_NAME = "tavily"
 
     def __init__(self, db, run_id, settings=None):
         super().__init__(db, run_id, settings)
-        self.api_key = TAVILY_API_KEY
+        from_settings = getattr(settings, "tavily_api_key", None) if settings else None
+        self.api_key = (from_settings or os.getenv("TAVILY_API_KEY") or "").strip()
 
     async def search(self, query: str, max_results: int = 5) -> dict:
         if not self.api_key:
