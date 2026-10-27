@@ -106,13 +106,22 @@ async function tryGeminiDirect(
 ): Promise<NextResponse | null> {
   if (subpath === "ai/status" && method === "GET") {
     const configured = geminiConfigured();
+    const hasOpenRouter = Boolean(process.env.OPENROUTER_API_KEY && process.env.OPENROUTER_API_KEY.length > 10);
     return NextResponse.json({
-      engine: configured ? process.env.GEMINI_MODEL || "gemini-3.8-flash" : "",
-      mode: "gemini",
-      grounding: configured ? "google_search" : "none",
+      engine: configured
+        ? hasOpenRouter
+          ? process.env.OPENROUTER_PRIMARY_MODEL || "thinkingmachines/inkling:free"
+          : process.env.GEMINI_MODEL || "gemma-4-26b-a4b-it"
+        : "",
+      mode: hasOpenRouter ? "openrouter" : "gemini",
+      grounding: configured ? "tavily_search" : "none",
       configured,
-      engines: { gemini: configured, openrouter: false },
-      _source: "gemini-direct",
+      engines: { gemini: Boolean(process.env.GEMINI_API_KEY), openrouter: hasOpenRouter },
+      models: {
+        primary: process.env.OPENROUTER_PRIMARY_MODEL || "thinkingmachines/inkling:free",
+        fallback: process.env.OPENROUTER_FALLBACK_MODEL || "nvidia/nemotron-3-ultra-550b-a55b:free",
+      },
+      _source: hasOpenRouter ? "openrouter-direct" : "gemini-direct",
     });
   }
 

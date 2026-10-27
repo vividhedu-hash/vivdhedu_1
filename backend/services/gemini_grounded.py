@@ -257,11 +257,11 @@ class GeminiGroundedClient:
             api="interactions",
         )
 
-    async def _via_generate_content(self, prompt: str, system: str, timeout: float) -> GroundedAnswer:
+    async def _via_generate_content(self, prompt: str, system: str, timeout: float, use_search_tool: bool = True) -> GroundedAnswer:
         body = {
             "system_instruction": {"parts": [{"text": system}]},
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-            "tools": [{"google_search": {}}],
+            **({"tools": [{"google_search": {}}]} if use_search_tool else {}),
             "generationConfig": {"temperature": 0.2, "maxOutputTokens": 8192},
         }
         try:

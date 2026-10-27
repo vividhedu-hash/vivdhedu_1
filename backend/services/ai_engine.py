@@ -72,8 +72,8 @@ async def generate_grounded(
     order = {
         "gemini": [gemini_grounded],
         "openrouter": [openrouter_grounded],
-        "auto": [gemini_grounded, openrouter_grounded],
-    }.get(mode, [gemini_grounded, openrouter_grounded])
+        "auto": [openrouter_grounded, gemini_grounded],
+    }.get(mode, [openrouter_grounded, gemini_grounded])
 
     if len(order) == 1 and mode != "auto":
         # Explicit single-engine choice: surface its error directly.

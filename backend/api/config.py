@@ -109,7 +109,7 @@ class Settings(BaseSettings):
 
     # AI Services
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-3.8-flash"
+    gemini_model: str = "gemma-4-26b-a4b-it"
     hf_token: str = ""
 
     # OpenRouter — fallback/complementary grounded engine.
@@ -119,11 +119,11 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     # Cheap, fast, grounded models. Overridable per deployment.
-    openrouter_primary_model: str = "perplexity/sonar"
-    openrouter_fallback_model: str = "deepseek/deepseek-chat"
+    openrouter_primary_model: str = "thinkingmachines/inkling:free"
+    openrouter_fallback_model: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
     # "auto" = try Gemini, fall back to OpenRouter. "openrouter" = OpenRouter
     # first. "gemini" = Gemini only, never fall back.
-    ai_engine: str = "auto"
+    ai_engine: str = "openrouter"
 
     # Email
     resend_api_key: str = ""
