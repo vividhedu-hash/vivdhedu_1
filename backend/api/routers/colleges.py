@@ -404,7 +404,7 @@ async def get_college_roi_index(
 
         start = (page - 1) * per_page
         return {
-            "index_name": "IndiaLens College ROI Index (ICRI)",
+            "index_name": "VividhEdu College ROI Index (VCRI)",
             "version": settings.current_model_version,
             "total_colleges_evaluated": len(index_results),
             "page": page,
@@ -497,7 +497,7 @@ async def export_colleges_csv(
         return StreamingResponse(
             iter([output.getvalue()]),
             media_type="text/csv",
-            headers={"Content-Disposition": "attachment; filename=indialens-export.csv"},
+            headers={"Content-Disposition": "attachment; filename=vividhedu-export.csv"},
         )
     except Exception as e:
         raise HTTPException(status_code=503, detail={"error": "database_unavailable", "reason": str(e)})

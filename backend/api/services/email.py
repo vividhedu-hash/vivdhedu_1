@@ -14,8 +14,8 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-FROM_EMAIL = os.getenv("FROM_EMAIL", "IndiaLens <reports@indialens.in>")
-APP_URL = os.getenv("FRONTEND_URL", "https://indialens.in")
+FROM_EMAIL = os.getenv("FROM_EMAIL", "VividhEdu <reports@vivdhedu-1.vercel.app>")
+APP_URL = os.getenv("FRONTEND_URL", "https://vivdhedu-1.vercel.app")
 
 
 def _is_configured() -> bool:
@@ -40,9 +40,9 @@ async def send_report_email(
 
     report_url = f"{APP_URL}/report/{token}"
     
-    subject = f"Your IndiaLens ROI Report — Score: {roi_score}/100"
+    subject = f"Your VividhEdu ROI Report — Score: {roi_score}/100"
     if college_name and degree_name:
-        subject = f"{college_name} {degree_name} — ROI Score {roi_score}/100 | IndiaLens"
+        subject = f"{college_name} {degree_name} — ROI Score {roi_score}/100 | VividhEdu"
 
     html_body = f"""
 <!DOCTYPE html>
@@ -57,7 +57,7 @@ async def send_report_email(
     <!-- Header -->
     <div style="text-align:center;margin-bottom:40px;">
       <div style="display:inline-block;background:linear-gradient(135deg,#4F6EF7,#7C3AED);padding:12px 24px;border-radius:8px;">
-        <span style="color:#fff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">IndiaLens</span>
+        <span style="color:#fff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">VividhEdu</span>
       </div>
       <p style="color:#6B7280;font-size:13px;margin-top:12px;">India's Degree ROI Index</p>
     </div>
@@ -94,9 +94,9 @@ async def send_report_email(
     <!-- Footer -->
     <div style="text-align:center;border-top:1px solid #1E1E2E;padding-top:24px;">
       <p style="color:#4B5563;font-size:12px;line-height:1.8;margin:0;">
-        IndiaLens · India's first quantitative education ROI platform<br>
-        Data updated weekly · Methodology at <a href="{APP_URL}/methodology" style="color:#4F6EF7;">indialens.in/methodology</a><br>
-        <a href="{APP_URL}" style="color:#4B5563;">indialens.in</a>
+        VividhEdu · India's first quantitative education ROI platform<br>
+        Data updated weekly · Methodology at <a href="{APP_URL}/methodology" style="color:#4F6EF7;">vivdhedu-1.vercel.app/methodology</a><br>
+        <a href="{APP_URL}" style="color:#4B5563;">vivdhedu-1.vercel.app</a>
       </p>
     </div>
   </div>
@@ -105,7 +105,7 @@ async def send_report_email(
 """
 
     text_body = f"""
-Your IndiaLens ROI Report
+Your VividhEdu ROI Report
 
 ROI Score: {roi_score}/100
 {f'Program: {college_name} — {degree_name}' if college_name else ''}
@@ -115,7 +115,7 @@ View your full report: {report_url}
 This link expires in 90 days.
 
 ---
-IndiaLens · indialens.in
+VividhEdu · vivdhedu-1.vercel.app
 Data methodology: {APP_URL}/methodology
 """
 
@@ -169,7 +169,7 @@ async def send_admin_alert(
 <body style="background:#0A0A12;font-family:monospace;padding:40px;">
   <div style="max-width:600px;margin:0 auto;">
     <div style="background:{severity_color};color:#fff;padding:8px 16px;border-radius:6px 6px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:1px;">
-      IndiaLens Alert · {severity.upper()} · {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+      VividhEdu Alert · {severity.upper()} · {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
     </div>
     <div style="background:#13131F;border:1px solid {severity_color};border-top:0;border-radius:0 0 6px 6px;padding:24px;">
       <h2 style="color:#E5E7EB;margin:0 0 16px;">{subject}</h2>
@@ -191,7 +191,7 @@ async def send_admin_alert(
                 json={
                     "from": FROM_EMAIL,
                     "to": [admin_email],
-                    "subject": f"[IndiaLens {severity.upper()}] {subject}",
+                    "subject": f"[VividhEdu {severity.upper()}] {subject}",
                     "html": html_body,
                 },
             )

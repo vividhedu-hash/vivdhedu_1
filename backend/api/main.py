@@ -1,5 +1,5 @@
 """
-IndiaLens Backend — FastAPI Application
+VividhEdu Backend — FastAPI Application
 Week 3: ML model loading at startup, new ML management router
 """
 import logging
@@ -28,7 +28,7 @@ if os.getenv('SENTRY_DSN'):
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
-    title="IndiaLens API",
+    title="VividhEdu API",
     description="India's quantitative education and career intelligence platform — backend API",
     version="2.0.0-week3",
     docs_url="/api/docs",
@@ -43,7 +43,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         os.getenv('FRONTEND_URL', 'http://localhost:3000'),
-        "https://indialens.in",
+        "https://vivdhedu-1.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -92,7 +92,7 @@ async def startup():
     except Exception as e:
         logger.warning(f"[Startup] NER warmup skipped: {e}")
 
-    logger.info("[Startup] IndiaLens API ready")
+    logger.info("[Startup] VividhEdu API ready")
 
 
 @app.get("/health")

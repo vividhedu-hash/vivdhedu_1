@@ -34,7 +34,7 @@ from dataclasses import dataclass
 
 CONSENT_COOKIE = "vividhedu_consent"
 
-# Mirrors indialens/src/lib/session-policy.ts. A cookie written by an older
+# Mirrors frontend/src/lib/session-policy.ts. A cookie written by an older
 # policy version is treated as absent, not as consent.
 POLICY_VERSION = 2
 

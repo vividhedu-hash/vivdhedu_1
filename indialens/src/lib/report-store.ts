@@ -16,7 +16,7 @@ export interface SavedReport {
 // is unreachable). The store now writes through to disk and lazily rehydrates.
 // On serverless hosts the disk layer degrades gracefully to memory-only.
 
-const DISK_DIR = path.join(os.tmpdir(), "indialens-reports");
+const DISK_DIR = path.join(os.tmpdir(), "vividhedu-reports");
 
 function diskPath(token: string): string | null {
   // Tokens are base64url / alphanumeric; refuse anything path-like.

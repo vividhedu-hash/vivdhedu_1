@@ -1,5 +1,5 @@
 """
-IndiaLens Backend — On-Demand Auto-Trigger Service for Tavily Smart Search
+VividhEdu Backend — On-Demand Auto-Trigger Service for Tavily Smart Search
 Automatically triggers web scraping when users request analysis for a college or degree field,
 keeping placement stats, salary distributions, and NIRF ranks continuously fresh.
 """

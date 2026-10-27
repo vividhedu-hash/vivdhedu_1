@@ -1,5 +1,5 @@
 """
-IndiaLens backend configuration — reads from environment variables / .env file
+VividhEdu backend configuration — reads from environment variables / .env file
 """
 from pathlib import Path
 from pydantic import model_validator
@@ -73,7 +73,7 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
 
     # Scraper settings
-    user_agent: str = "IndiaLensBot/1.0 (research; contact@indialens.in)"
+    user_agent: str = "VividhEduBot/1.0 (research; contact@vividhedu.in)"
     scrape_delay_seconds: float = 1.5     # politeness delay between requests
     anomaly_threshold_pct: float = 25.0   # flag deltas > 25%
     auto_accept_threshold_pct: float = 5.0  # auto-accept deltas < 5%
@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     # Reddit API (PRAW)
     reddit_client_id: str = ""
     reddit_client_secret: str = ""
-    reddit_user_agent: str = "IndiaLensBot/1.0"
+    reddit_user_agent: str = "VividhEduBot/1.0"
 
     # World Bank API
     worldbank_api_base: str = "https://api.worldbank.org/v2"

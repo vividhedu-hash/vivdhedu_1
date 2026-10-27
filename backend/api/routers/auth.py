@@ -612,7 +612,7 @@ async def upgrade_to_premium(
         detail={
             "error": "billing_not_enabled",
             "message": (
-                "Premium upgrades are not available. IndiaLens has not enabled "
+                "Premium upgrades are not available. VividhEdu has not enabled "
                 "billing, so no payment can be taken and no premium tier can be "
                 "granted. No charge was made and your account is unchanged."
             ),

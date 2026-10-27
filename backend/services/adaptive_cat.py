@@ -1,5 +1,5 @@
 """
-IndiaLens Backend — 3PL Computerized Adaptive Testing (CAT) Engine
+VividhEdu Backend — 3PL Computerized Adaptive Testing (CAT) Engine
 
 3-Parameter Logistic IRT Model:
   P(x = 1 | θ) = c + (1 - c) / (1 + exp(-a * (θ - b)))

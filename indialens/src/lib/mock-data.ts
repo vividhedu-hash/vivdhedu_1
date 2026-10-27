@@ -1,4 +1,4 @@
-// IndiaLens Mock Data — 40 Premier Verified College-Degree Records
+// VividhEdu Mock Data — 40 Premier Verified College-Degree Records
 // Derived from NIRF 2024, Official Placement Reports, and MoSPI PLFS benchmarks
 
 export type CollegeTier = 1 | 2 | 3;

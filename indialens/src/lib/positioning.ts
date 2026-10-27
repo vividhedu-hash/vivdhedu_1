@@ -4,7 +4,7 @@
  *
  * Competitive fact (2026): NIRF, Shiksha/CollegeDunia-class aggregators, and
  * browser ROI calculators all treat the *college* as the unit of analysis and
- * a *median package* as the outcome. IndiaLens treats the *student × program*
+ * a *median package* as the outcome. VividhEdu treats the *student × program*
  * as an asset with a return distribution and a risk surface.
  */
 

@@ -4,14 +4,14 @@
  * These exist so the name, the canonical domain, and the support address are
  * defined once. They previously lived as inline strings spread across
  * layout metadata, the navbar, the footer, the OG image and sitemap.ts, and
- * they had drifted into three different names ("IndiaLens", "Your Student
+ * they had drifted into three different names ("VividhEdu", "Your Student
  * OS", "TheProject.edu.in").
  *
  * Every value is overridable by env so a deployment can point at its own
  * domain or support inbox without a code change.
  */
 
-const DEFAULT_APP_URL = "https://indialens.in";
+const DEFAULT_APP_URL = "https://vivdhedu-1.vercel.app";
 
 /** Canonical public origin, no trailing slash. */
 export const APP_URL: string = (() => {
@@ -29,9 +29,9 @@ export const BRAND = {
   /** Longer positioning line used in metadata. */
   descriptor: "Student decision operating system for India",
   /** Where legal notices and support requests go. */
-  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@indialens.in",
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@vividhedu.com",
   /** Privacy / data-deletion requests go here, per the DPDP grievance route. */
-  privacyEmail: process.env.NEXT_PRIVACY_EMAIL || "privacy@indialens.in",
+  privacyEmail: process.env.NEXT_PRIVACY_EMAIL || "privacy@vividhedu.com",
   /**
    * Operating entity. Stated as a trade name rather than an invented
    * registered-company number — no incorporation details exist in this repo,

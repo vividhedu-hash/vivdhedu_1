@@ -9,7 +9,7 @@
  * §8 of `/privacy`. Every row in it was traced to a line of code:
  *
  *   - `theproject_auth_token`  → `lib/supabase-client.ts:20` (`storageKey`)
- *   - `indialens_report_token` → `hooks/useAnalyze.ts:113`
+ *   - `vividhedu_report_token` → `hooks/useAnalyze.ts:113`
  *   - `vividhedu_auth_return_to` → `lib/auth-context.tsx` sign-in redirect
  *   - `il-theme`               → `lib/theme-context.tsx` (functional gate)
  *   - `vividhedu:person-memory:v1` → `lib/person-memory.ts` (functional gate)
@@ -49,7 +49,7 @@ export const SUPABASE_SESSION_KEY = "theproject_auth_token";
 export const LEGACY_ACCESS_TOKEN_KEY = "vividhedu_auth_token";
 
 export const RETURN_TO_KEY = "vividhedu_auth_return_to";
-export const REPORT_TOKEN_KEY = "indialens_report_token";
+export const REPORT_TOKEN_KEY = "vividhedu_report_token";
 export const THEME_KEY = "il-theme";
 export const PERSON_MEMORY_STORAGE_KEY = "vividhedu:person-memory:v1";
 export const PERSON_ANON_STORAGE_KEY = "vividhedu:person-anon:v1";

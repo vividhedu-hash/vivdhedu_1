@@ -79,7 +79,7 @@ export async function GET(request: Request) {
   const body = await resp.arrayBuffer();
   const disposition =
     resp.headers.get("content-disposition") ??
-    'attachment; filename="indialens-export.csv"';
+    'attachment; filename="vividhedu-export.csv"';
 
   return new NextResponse(body, {
     status: 200,

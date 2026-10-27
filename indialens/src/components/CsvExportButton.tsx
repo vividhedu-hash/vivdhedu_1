@@ -92,7 +92,7 @@ export function CsvExportButton({ field, state }: { field?: string; state?: stri
 
       const disposition = res.headers.get("content-disposition") ?? "";
       const filename =
-        disposition.match(/filename="?([^"]+)"?/)?.[1] ?? "indialens-export.csv";
+        disposition.match(/filename="?([^"]+)"?/)?.[1] ?? "vividhedu-export.csv";
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

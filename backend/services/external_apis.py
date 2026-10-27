@@ -1,5 +1,5 @@
 """
-IndiaLens Backend — External API Integration Service
+VividhEdu Backend — External API Integration Service
 Live fetches only. Missing keys and upstream failures return structured errors,
 never invented job volumes, alumni counts, or university founding years.
 """
