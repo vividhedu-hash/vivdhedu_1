@@ -48,6 +48,8 @@ export const metadata: Metadata = {
 
 import { AppShell } from "@/components/AppShell";
 import { CookieConsent } from "@/components/CookieConsent";
+import { CommandPalette } from "@/components/ui/CommandPalette";
+import { FloatingDock } from "@/components/ui/FloatingDock";
 import { PersonMemoryProvider } from "@/lib/person-memory-context";
 
 export default function RootLayout({
@@ -90,6 +92,8 @@ export default function RootLayout({
             <PersonMemoryProvider>
               <AppShell>{children}</AppShell>
               <AuthModal />
+              <CommandPalette />
+              <FloatingDock />
               <CookieConsent />
             </PersonMemoryProvider>
           </AuthProvider>

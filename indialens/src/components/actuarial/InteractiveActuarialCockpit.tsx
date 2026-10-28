@@ -14,7 +14,13 @@ import {
   ArrowRight,
   Info,
   Calendar,
+  Layers,
+  GraduationCap,
+  Briefcase,
+  CheckCircle2,
+  Award,
 } from "lucide-react";
+import { TiltCard } from "@/components/ui/TiltCard";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { playSliderTick, playUiPop, playSuccessChime, isAudioMuted, setAudioMuted } from "@/lib/ui-sound";
@@ -73,8 +79,18 @@ const ARCHETYPES: Archetype[] = [
   },
 ];
 
+const CAREER_MILESTONES = [
+  { year: 0, label: "Matriculation", icon: GraduationCap, tip: "Initial tuition outlay & living investment" },
+  { year: 4, label: "First Placement", icon: Briefcase, tip: "Graduation and entry into formal labour market" },
+  { year: 7, label: "Zero Debt Breakeven", icon: CheckCircle2, tip: "Full payback of tuition & living capital outlay" },
+  { year: 12, label: "Senior/Lead Inflection", icon: TrendingUp, tip: "High leverage domain leadership & equity vesting" },
+  { year: 20, label: "20-Year Terminal Wealth", icon: Award, tip: "Cumulative discounted actuarial net capital" },
+];
+
 export function InteractiveActuarialCockpit() {
   const [selectedArchId, setSelectedArchId] = useState<string>("premier-tech");
+  const [compareArchId, setCompareArchId] = useState<string | null>("private-stem");
+  const [isCompareActive, setIsCompareActive] = useState<boolean>(true);
   const [discountRate, setDiscountRate] = useState<number>(8.5);
   const [growthVolatility, setGrowthVolatility] = useState<"standard" | "recession" | "expansion">("standard");
   const [aiExposureShock, setAiExposureShock] = useState<number>(15);
@@ -85,6 +101,11 @@ export function InteractiveActuarialCockpit() {
   const currentArchetype = useMemo(() => {
     return ARCHETYPES.find((a) => a.id === selectedArchId) || ARCHETYPES[0];
   }, [selectedArchId]);
+
+  const compareArchetype = useMemo(() => {
+    if (!compareArchId || !isCompareActive) return null;
+    return ARCHETYPES.find((a) => a.id === compareArchId) || null;
+  }, [compareArchId, isCompareActive]);
 
   const toggleSound = useCallback(() => {
     const nextState = !muted;
@@ -119,128 +140,134 @@ export function InteractiveActuarialCockpit() {
     return 1.0;
   }, [growthVolatility]);
 
-  // 20-Year Actuarial Cashflow Engine
-  const simulationData = useMemo(() => {
-    const cost = currentArchetype.costLakhs;
-    const baseSalary = currentArchetype.startingLpa;
-    const annualOutlay = cost / 4; // 4-year degree
-    const annualGrowth = (currentArchetype.baseGrowthPct * macroMultiplier) / 100;
-    const aiDrag = (aiExposureShock * 0.45) / 100;
-    const effectiveGrowth = Math.max(0.02, annualGrowth - aiDrag);
-    const discount = discountRate / 100;
+  // Helper: Compute 20-Year Cashflow Trajectory for any Archetype
+  const computeTrajectory = useCallback(
+    (arch: Archetype, customAiShock: number) => {
+      const cost = arch.costLakhs;
+      const baseSalary = arch.startingLpa;
+      const annualOutlay = cost / 4;
+      const annualGrowth = (arch.baseGrowthPct * macroMultiplier) / 100;
+      const aiDrag = (customAiShock * 0.45) / 100;
+      const effectiveGrowth = Math.max(0.02, annualGrowth - aiDrag);
+      const discount = discountRate / 100;
 
-    let cumulativeCashflow = 0;
-    let cumulativeP10 = 0;
-    let cumulativeP90 = 0;
-    let paybackYear: number | null = null;
+      let cumulativeCashflow = 0;
+      let cumulativeP10 = 0;
+      let cumulativeP90 = 0;
+      let paybackYear: number | null = null;
 
-    const trajectory: Array<{
-      year: number;
-      label: string;
-      annualIncome: number;
-      cumulativeNpv: number;
-      p10Npv: number;
-      p90Npv: number;
-    }> = [];
+      const trajectory: Array<{
+        year: number;
+        label: string;
+        annualIncome: number;
+        cumulativeNpv: number;
+        p10Npv: number;
+        p90Npv: number;
+      }> = [];
 
-    // Years 0 to 4: Education Phase
-    for (let yr = 0; yr <= 4; yr++) {
-      if (yr === 0) {
-        trajectory.push({
-          year: 0,
-          label: "Year 0",
-          annualIncome: 0,
-          cumulativeNpv: 0,
-          p10Npv: 0,
-          p90Npv: 0,
-        });
-      } else {
-        const discountedOutlay = annualOutlay / Math.pow(1 + discount, yr);
-        cumulativeCashflow -= discountedOutlay;
-        cumulativeP10 -= discountedOutlay * 1.1; // 10% contingency
-        cumulativeP90 -= discountedOutlay * 0.95;
+      for (let yr = 0; yr <= 4; yr++) {
+        if (yr === 0) {
+          trajectory.push({
+            year: 0,
+            label: "Year 0",
+            annualIncome: 0,
+            cumulativeNpv: 0,
+            p10Npv: 0,
+            p90Npv: 0,
+          });
+        } else {
+          const discountedOutlay = annualOutlay / Math.pow(1 + discount, yr);
+          cumulativeCashflow -= discountedOutlay;
+          cumulativeP10 -= discountedOutlay * 1.1;
+          cumulativeP90 -= discountedOutlay * 0.95;
+
+          trajectory.push({
+            year: yr,
+            label: `Yr ${yr}`,
+            annualIncome: 0,
+            cumulativeNpv: cumulativeCashflow,
+            p10Npv: cumulativeP10,
+            p90Npv: cumulativeP90,
+          });
+        }
+      }
+
+      let currentSalary = baseSalary;
+      for (let yr = 5; yr <= 20; yr++) {
+        const careerYear = yr - 4;
+        const yearSalary = currentSalary;
+        const discountFactor = Math.pow(1 + discount, yr);
+
+        const livingCost = 4 * Math.pow(1.05, careerYear - 1);
+        const netSavings = Math.max(yearSalary * 0.4, yearSalary - livingCost);
+        const loanService = careerYear <= 7 ? cost * 0.18 : 0;
+        const netAnnualCash = netSavings - loanService;
+
+        const discountedNet = netAnnualCash / discountFactor;
+        cumulativeCashflow += discountedNet;
+
+        const p10Net = (netAnnualCash * 0.72) / discountFactor;
+        cumulativeP10 += p10Net;
+
+        const p90Net = (netAnnualCash * 1.35) / discountFactor;
+        cumulativeP90 += p90Net;
+
+        if (paybackYear === null && cumulativeCashflow >= 0) {
+          const prevNpv = trajectory[trajectory.length - 1].cumulativeNpv;
+          const delta = cumulativeCashflow - prevNpv;
+          const fraction = delta > 0 ? (0 - prevNpv) / delta : 0;
+          paybackYear = Number((yr - 1 + Math.max(0, Math.min(1, fraction))).toFixed(1));
+        }
 
         trajectory.push({
           year: yr,
           label: `Yr ${yr}`,
-          annualIncome: 0,
-          cumulativeNpv: cumulativeCashflow,
-          p10Npv: cumulativeP10,
-          p90Npv: cumulativeP90,
+          annualIncome: Number(yearSalary.toFixed(1)),
+          cumulativeNpv: Number(cumulativeCashflow.toFixed(1)),
+          p10Npv: Number(cumulativeP10.toFixed(1)),
+          p90Npv: Number(cumulativeP90.toFixed(1)),
         });
-      }
-    }
 
-    // Years 5 to 20: Career Expansion
-    let currentSalary = baseSalary;
-    for (let yr = 5; yr <= 20; yr++) {
-      const careerYear = yr - 4; // 1 to 16
-      const yearSalary = currentSalary;
-      const discountFactor = Math.pow(1 + discount, yr);
-
-      // Living cost assumption (₹4L/yr inflating at 5%)
-      const livingCost = 4 * Math.pow(1.05, careerYear - 1);
-      const netSavings = Math.max(yearSalary * 0.4, yearSalary - livingCost);
-
-      // Loan repayment deduction in years 5 to 11 (7-year tenure)
-      const loanService = careerYear <= 7 ? (cost * 0.18) : 0;
-      const netAnnualCash = netSavings - loanService;
-
-      const discountedNet = netAnnualCash / discountFactor;
-      cumulativeCashflow += discountedNet;
-
-      // P10: 25% lower salary & higher shock
-      const p10Net = (netAnnualCash * 0.72) / discountFactor;
-      cumulativeP10 += p10Net;
-
-      // P90: 30% upper-quartile promotion upside
-      const p90Net = (netAnnualCash * 1.35) / discountFactor;
-      cumulativeP90 += p90Net;
-
-      if (paybackYear === null && cumulativeCashflow >= 0) {
-        // Interpolate exact fractional payback year
-        const prevNpv = trajectory[trajectory.length - 1].cumulativeNpv;
-        const delta = cumulativeCashflow - prevNpv;
-        const fraction = delta > 0 ? (0 - prevNpv) / delta : 0;
-        paybackYear = Number((yr - 1 + Math.max(0, Math.min(1, fraction))).toFixed(1));
+        currentSalary = currentSalary * (1 + effectiveGrowth);
       }
 
-      trajectory.push({
-        year: yr,
-        label: `Yr ${yr}`,
-        annualIncome: Number(yearSalary.toFixed(1)),
-        cumulativeNpv: Number(cumulativeCashflow.toFixed(1)),
-        p10Npv: Number(cumulativeP10.toFixed(1)),
-        p90Npv: Number(cumulativeP90.toFixed(1)),
-      });
+      const aiResilienceScore = Math.max(10, Math.min(99, Math.round(100 - customAiShock * 1.6)));
 
-      currentSalary = currentSalary * (1 + effectiveGrowth);
-    }
+      return {
+        trajectory,
+        finalNpv: Number(cumulativeCashflow.toFixed(1)),
+        finalP10: Number(cumulativeP10.toFixed(1)),
+        paybackYear: paybackYear ?? 20,
+        aiResilienceScore,
+      };
+    },
+    [discountRate, macroMultiplier]
+  );
 
-    const finalNpv = cumulativeCashflow;
-    const finalP10 = cumulativeP10;
-    const aiResilienceScore = Math.max(10, Math.min(99, Math.round(100 - aiExposureShock * 1.6)));
+  const primarySim = useMemo(() => {
+    return computeTrajectory(currentArchetype, aiExposureShock);
+  }, [computeTrajectory, currentArchetype, aiExposureShock]);
 
-    return {
-      trajectory,
-      finalNpv: Number(finalNpv.toFixed(1)),
-      finalP10: Number(finalP10.toFixed(1)),
-      paybackYear: paybackYear ?? 20,
-      aiResilienceScore,
-    };
-  }, [currentArchetype, discountRate, macroMultiplier, aiExposureShock]);
+  const compareSim = useMemo(() => {
+    if (!compareArchetype) return null;
+    return computeTrajectory(compareArchetype, compareArchetype.baseAiExposurePct);
+  }, [computeTrajectory, compareArchetype]);
 
-  // SVG Chart Dimensions & Coordinates
+  // SVG Chart Geometry
   const chartPoints = useMemo(() => {
-    const list = simulationData.trajectory;
-    const minVal = Math.min(...list.map((d) => d.p10Npv), -25);
-    const maxVal = Math.max(...list.map((d) => d.p90Npv), 80);
+    const list = primarySim.trajectory;
+    const compareList = compareSim ? compareSim.trajectory : [];
+    const allP10 = [...list.map((d) => d.p10Npv), ...compareList.map((d) => d.p10Npv)];
+    const allP90 = [...list.map((d) => d.p90Npv), ...compareList.map((d) => d.p90Npv)];
+
+    const minVal = Math.min(...allP10, -25);
+    const maxVal = Math.max(...allP90, 85);
     const range = maxVal - minVal;
 
     const width = 640;
-    const height = 220;
+    const height = 230;
     const padX = 35;
-    const padY = 20;
+    const padY = 22;
 
     const getY = (val: number) => {
       const normalized = (val - minVal) / range;
@@ -253,22 +280,19 @@ export function InteractiveActuarialCockpit() {
 
     const zeroY = getY(0);
 
-    // Median curve path
+    // Primary median path
     const medianPath = list
       .map((d, i) => `${i === 0 ? "M" : "L"} ${getX(i).toFixed(1)} ${getY(d.cumulativeNpv).toFixed(1)}`)
       .join(" ");
 
-    // P10 curve path
+    // Primary P10 & P90
     const p10Path = list
       .map((d, i) => `${i === 0 ? "M" : "L"} ${getX(i).toFixed(1)} ${getY(d.p10Npv).toFixed(1)}`)
       .join(" ");
-
-    // P90 curve path
     const p90Path = list
       .map((d, i) => `${i === 0 ? "M" : "L"} ${getX(i).toFixed(1)} ${getY(d.p90Npv).toFixed(1)}`)
       .join(" ");
 
-    // Shaded confidence envelope (P90 to P10 reversed)
     const envelopePath =
       p90Path +
       " " +
@@ -279,6 +303,13 @@ export function InteractiveActuarialCockpit() {
         .join(" ") +
       " Z";
 
+    // Secondary compare curve path
+    const comparePath = compareList.length
+      ? compareList
+          .map((d, i) => `${i === 0 ? "M" : "L"} ${getX(i).toFixed(1)} ${getY(d.cumulativeNpv).toFixed(1)}`)
+          .join(" ")
+      : "";
+
     return {
       width,
       height,
@@ -287,16 +318,23 @@ export function InteractiveActuarialCockpit() {
       p10Path,
       p90Path,
       envelopePath,
+      comparePath,
       list,
       getX,
       getY,
     };
-  }, [simulationData.trajectory]);
+  }, [primarySim.trajectory, compareSim]);
 
   const activeHoverData = useMemo(() => {
     if (hoverYear == null) return null;
-    return simulationData.trajectory.find((d) => d.year === hoverYear) || null;
-  }, [hoverYear, simulationData.trajectory]);
+    const primary = primarySim.trajectory.find((d) => d.year === hoverYear) || null;
+    const compare = compareSim ? compareSim.trajectory.find((d) => d.year === hoverYear) || null : null;
+    return { primary, compare };
+  }, [hoverYear, primarySim.trajectory, compareSim]);
+
+  // Delta calculation when comparing
+  const deltaNpv = compareSim ? primarySim.finalNpv - compareSim.finalNpv : 0;
+  const deltaPayback = compareSim ? compareSim.paybackYear - primarySim.paybackYear : 0;
 
   return (
     <div className="space-y-6">
@@ -306,18 +344,31 @@ export function InteractiveActuarialCockpit() {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-ink-3">
-              Actuarial Cockpit · Live Simulation
+              Actuarial Cockpit · Live 20-Year Model
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-ink mt-0.5">
-            20-Year Monte Carlo Valuation Surface
+            Real-Time Valuation Surface & Dual Degree Arena
           </h2>
           <p className="text-xs text-ink-2 mt-0.5">
-            Scrub actuarial parameters in real-time. Notice how P10 downside bands stretch as macro and AI shocks fluctuate.
+            Scrub financial assumptions at 60 FPS. Notice how confidence bands deform and compare two programs simultaneously.
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => setIsCompareActive(!isCompareActive)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
+              isCompareActive
+                ? "bg-accent/10 border-accent/30 text-accent font-bold"
+                : "bg-elevated hover:bg-surface border-line/10 text-ink-2"
+            }`}
+            title="Toggle head-to-head comparison curve"
+          >
+            <Layers size={13} />
+            <span className="text-[11px]">{isCompareActive ? "Comparing: ON" : "Compare Dual"}</span>
+          </button>
+
           <button
             onClick={toggleSound}
             aria-label={muted ? "Enable tactile sounds" : "Mute tactile sounds"}
@@ -325,7 +376,7 @@ export function InteractiveActuarialCockpit() {
             title={muted ? "Sound: Off (Click to enable)" : "Sound: On (Click to mute)"}
           >
             {muted ? <VolumeX size={13} className="text-ink-3" /> : <Volume2 size={13} className="text-emerald-500" />}
-            <span className="text-[11px]">{muted ? "Muted" : "Haptics"}</span>
+            <span className="text-[11px]">{muted ? "Muted" : "Audio"}</span>
           </button>
 
           <button
@@ -340,39 +391,62 @@ export function InteractiveActuarialCockpit() {
       </div>
 
       {/* ── ARCHETYPE SELECTOR CHIPS ── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        <span className="text-[11px] font-mono text-ink-3 whitespace-nowrap mr-1">Archetype:</span>
-        {ARCHETYPES.map((arch) => {
-          const isSelected = arch.id === selectedArchId;
-          return (
-            <button
-              key={arch.id}
-              onClick={() => handleArchetypeSelect(arch.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border flex items-center gap-1.5 ${
-                isSelected
-                  ? "bg-ink text-bg border-ink shadow-sm scale-[1.02]"
-                  : "bg-elevated hover:bg-surface text-ink-2 border-line/10 hover:border-line/25"
-              }`}
-            >
-              <span>{arch.name}</span>
-              <span
-                className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full ${
-                  isSelected ? "bg-bg/20 text-bg" : "bg-chip text-ink-3"
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <span className="text-[11px] font-mono text-ink-3 whitespace-nowrap mr-1">Primary:</span>
+          {ARCHETYPES.map((arch) => {
+            const isSelected = arch.id === selectedArchId;
+            return (
+              <button
+                key={arch.id}
+                onClick={() => handleArchetypeSelect(arch.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border flex items-center gap-1.5 ${
+                  isSelected
+                    ? "bg-ink text-bg border-ink shadow-sm scale-[1.02]"
+                    : "bg-elevated hover:bg-surface text-ink-2 border-line/10 hover:border-line/25"
                 }`}
               >
-                {arch.badge}
-              </span>
-            </button>
-          );
-        })}
+                <span>{arch.name}</span>
+                <span
+                  className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full ${
+                    isSelected ? "bg-bg/20 text-bg" : "bg-chip text-ink-3"
+                  }`}
+                >
+                  {arch.badge}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Competitor Select (When Comparison is Active) */}
+        {isCompareActive && (
+          <div className="flex items-center gap-2 text-xs font-mono shrink-0">
+            <span className="text-indigo-400 font-bold text-[11px]">vs:</span>
+            <select
+              value={compareArchId || ""}
+              onChange={(e) => {
+                setCompareArchId(e.target.value);
+                playUiPop(500);
+              }}
+              className="bg-elevated border border-line/15 rounded-lg px-2.5 py-1 text-xs text-ink focus:outline-none"
+            >
+              {ARCHETYPES.filter((a) => a.id !== selectedArchId).map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* ── TOP KPI BENTO CARDS WITH SPOTLIGHT & ODOMETER ── */}
+      {/* ── 3D PERSPECTIVE TILT KPI BENTO CARDS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: 20Y Net Present Value */}
-        <SpotlightCard
-          spotlightColor="rgba(16, 185, 129, 0.12)"
-          borderColor="rgba(16, 185, 129, 0.35)"
+        <TiltCard
+          spotlightColor="rgba(16, 185, 129, 0.14)"
+          glareColor="rgba(16, 185, 129, 0.25)"
           className="p-4"
         >
           <div className="flex items-center justify-between text-xs text-ink-3 font-mono">
@@ -382,22 +456,22 @@ export function InteractiveActuarialCockpit() {
             </span>
           </div>
           <div className="text-2xl sm:text-3xl font-bold font-mono text-ink mt-2">
-            <AnimatedNumber
-              value={simulationData.finalNpv}
-              prefix="₹"
-              suffix="L"
-              decimals={1}
-            />
+            <AnimatedNumber value={primarySim.finalNpv} prefix="₹" suffix="L" decimals={1} />
           </div>
-          <p className="text-[11px] text-ink-2 mt-1 leading-tight">
-            Net career capital gain discounted at {discountRate}%.
-          </p>
-        </SpotlightCard>
+          <div className="flex items-center justify-between mt-1.5 text-[11px]">
+            <span className="text-ink-2">Discounted at {discountRate}%</span>
+            {compareSim && (
+              <span className={`font-mono font-bold ${deltaNpv >= 0 ? "text-emerald-500" : "text-amber-500"}`}>
+                {deltaNpv >= 0 ? `+₹${deltaNpv.toFixed(1)}L` : `-₹${Math.abs(deltaNpv).toFixed(1)}L`}
+              </span>
+            )}
+          </div>
+        </TiltCard>
 
         {/* Card 2: P10 Downside Tail Risk */}
-        <SpotlightCard
-          spotlightColor="rgba(245, 158, 11, 0.12)"
-          borderColor="rgba(245, 158, 11, 0.35)"
+        <TiltCard
+          spotlightColor="rgba(245, 158, 11, 0.14)"
+          glareColor="rgba(245, 158, 11, 0.25)"
           className="p-4"
         >
           <div className="flex items-center justify-between text-xs text-ink-3 font-mono">
@@ -407,46 +481,43 @@ export function InteractiveActuarialCockpit() {
             </span>
           </div>
           <div className="text-2xl sm:text-3xl font-bold font-mono text-ink mt-2">
-            <AnimatedNumber
-              value={simulationData.finalP10}
-              prefix="₹"
-              suffix="L"
-              decimals={1}
-            />
+            <AnimatedNumber value={primarySim.finalP10} prefix="₹" suffix="L" decimals={1} />
           </div>
-          <p className="text-[11px] text-ink-2 mt-1 leading-tight">
-            Stress floor under persistent macro friction.
-          </p>
-        </SpotlightCard>
+          <div className="flex items-center justify-between mt-1.5 text-[11px]">
+            <span className="text-ink-2">Macro stress floor</span>
+            <span className="text-amber-500 font-mono text-[10px] font-bold">90% Safety</span>
+          </div>
+        </TiltCard>
 
         {/* Card 3: Break-Even Payback */}
-        <SpotlightCard
-          spotlightColor="rgba(99, 102, 241, 0.12)"
-          borderColor="rgba(99, 102, 241, 0.35)"
+        <TiltCard
+          spotlightColor="rgba(99, 102, 241, 0.14)"
+          glareColor="rgba(99, 102, 241, 0.25)"
           className="p-4"
         >
           <div className="flex items-center justify-between text-xs text-ink-3 font-mono">
             <span>Payback Horizon</span>
             <span className="text-indigo-500 font-bold text-[10px] bg-indigo-500/10 px-1.5 py-0.5 rounded">
-              Break-Even
+              Breakeven
             </span>
           </div>
           <div className="text-2xl sm:text-3xl font-bold font-mono text-ink mt-2">
-            <AnimatedNumber
-              value={simulationData.paybackYear}
-              suffix=" yrs"
-              decimals={1}
-            />
+            <AnimatedNumber value={primarySim.paybackYear} suffix=" yrs" decimals={1} />
           </div>
-          <p className="text-[11px] text-ink-2 mt-1 leading-tight">
-            From enrollment to total financial neutrality.
-          </p>
-        </SpotlightCard>
+          <div className="flex items-center justify-between mt-1.5 text-[11px]">
+            <span className="text-ink-2">Tuition amortized</span>
+            {compareSim && (
+              <span className={`font-mono font-bold ${deltaPayback >= 0 ? "text-emerald-500" : "text-amber-500"}`}>
+                {deltaPayback >= 0 ? `${deltaPayback.toFixed(1)}y faster` : `${Math.abs(deltaPayback).toFixed(1)}y slower`}
+              </span>
+            )}
+          </div>
+        </TiltCard>
 
         {/* Card 4: AI Displacement Resilience */}
-        <SpotlightCard
-          spotlightColor="rgba(var(--c-accent-rgb, 225 29 72) / 0.12)"
-          borderColor="rgba(var(--c-accent-rgb, 225 29 72) / 0.35)"
+        <TiltCard
+          spotlightColor="rgba(var(--c-accent-rgb, 225 29 72) / 0.14)"
+          glareColor="rgba(var(--c-accent-rgb, 225 29 72) / 0.25)"
           className="p-4"
         >
           <div className="flex items-center justify-between text-xs text-ink-3 font-mono">
@@ -456,48 +527,47 @@ export function InteractiveActuarialCockpit() {
             </span>
           </div>
           <div className="text-2xl sm:text-3xl font-bold font-mono text-ink mt-2">
-            <AnimatedNumber
-              value={simulationData.aiResilienceScore}
-              suffix="/100"
-              decimals={0}
-            />
+            <AnimatedNumber value={primarySim.aiResilienceScore} suffix="/100" decimals={0} />
           </div>
-          <p className="text-[11px] text-ink-2 mt-1 leading-tight">
-            Insulation index against routine task automation.
-          </p>
-        </SpotlightCard>
+          <div className="flex items-center justify-between mt-1.5 text-[11px]">
+            <span className="text-ink-2">Displacement shelter</span>
+            <span className="text-accent font-mono text-[10px] font-bold">O*NET Grounded</span>
+          </div>
+        </TiltCard>
       </div>
 
       {/* ── INTERACTIVE 20-YEAR TRAJECTORY GRAPH & SCRUBBER ── */}
-      <SpotlightCard className="p-5 sm:p-6" glowSize={420}>
+      <SpotlightCard className="p-5 sm:p-6" glowSize={450}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <div>
             <div className="flex items-center gap-2">
               <TrendingUp size={15} className="text-accent" />
               <h3 className="text-sm font-bold text-ink tracking-tight">
-                Cumulative Discounted Cash Flow Envelope (Years 0–20)
+                20-Year Cumulative Cash Flow Surface
               </h3>
             </div>
             <p className="text-xs text-ink-2 mt-0.5">
-              Hover along the curve to inspect milestone cash balances. The shaded band shows the P10–P90 uncertainty margin.
+              Hover along the graph or click milestone tags below to analyze inflection points across decades.
             </p>
           </div>
 
-          {activeHoverData && (
-            <div className="flex items-center gap-3 bg-surface border border-line/15 rounded-xl px-3 py-1.5 text-xs font-mono">
-              <span className="text-ink-3 font-semibold">{activeHoverData.label}:</span>
+          {activeHoverData?.primary && (
+            <div className="flex items-center gap-3 bg-surface border border-line/15 rounded-xl px-3 py-1.5 text-xs font-mono shadow-xs">
+              <span className="text-ink-3 font-semibold">{activeHoverData.primary.label}:</span>
               <span className="text-ink font-bold">
-                NPV: ₹{activeHoverData.cumulativeNpv}L
+                NPV: ₹{activeHoverData.primary.cumulativeNpv}L
               </span>
-              <span className="text-ink-2 text-[11px]">
-                (Salary: ₹{activeHoverData.annualIncome} LPA)
-              </span>
+              {activeHoverData.compare && (
+                <span className="text-indigo-400 font-bold border-l border-line/15 pl-2">
+                  vs: ₹{activeHoverData.compare.cumulativeNpv}L
+                </span>
+              )}
             </div>
           )}
         </div>
 
         {/* SVG Dynamic Responsive Chart */}
-        <div className="relative w-full aspect-[2.9/1] max-h-[260px] bg-surface/50 rounded-xl border border-line/10 overflow-hidden select-none">
+        <div className="relative w-full aspect-[2.8/1] max-h-[270px] bg-surface/50 rounded-xl border border-line/10 overflow-hidden select-none">
           <svg
             viewBox={`0 0 ${chartPoints.width} ${chartPoints.height}`}
             className="w-full h-full"
@@ -505,7 +575,7 @@ export function InteractiveActuarialCockpit() {
           >
             <defs>
               <linearGradient id="envelopeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="rgb(var(--c-accent-rgb, 225 29 72))" stopOpacity="0.18" />
+                <stop offset="0%" stopColor="rgb(var(--c-accent-rgb, 225 29 72))" stopOpacity="0.16" />
                 <stop offset="100%" stopColor="rgb(var(--c-accent-rgb, 225 29 72))" stopOpacity="0.02" />
               </linearGradient>
             </defs>
@@ -520,11 +590,7 @@ export function InteractiveActuarialCockpit() {
               strokeDasharray="4 4"
               className="text-line/25"
             />
-            <text
-              x="8"
-              y={chartPoints.zeroY - 4}
-              className="fill-ink-3 text-[9px] font-mono select-none"
-            >
+            <text x="8" y={chartPoints.zeroY - 4} className="fill-ink-3 text-[9px] font-mono select-none">
               ₹0 Break-Even Line
             </text>
 
@@ -538,7 +604,7 @@ export function InteractiveActuarialCockpit() {
               stroke="rgb(245, 158, 11)"
               strokeWidth="1.2"
               strokeDasharray="3 3"
-              opacity="0.65"
+              opacity="0.6"
             />
 
             {/* P90 Upside Bound */}
@@ -548,25 +614,38 @@ export function InteractiveActuarialCockpit() {
               stroke="rgb(16, 185, 129)"
               strokeWidth="1.2"
               strokeDasharray="3 3"
-              opacity="0.65"
+              opacity="0.6"
             />
 
-            {/* Median P50 Trajectory */}
+            {/* Competitor Curve (Dual Degree Comparison) */}
+            {chartPoints.comparePath && (
+              <path
+                d={chartPoints.comparePath}
+                fill="none"
+                stroke="rgb(99, 102, 241)"
+                strokeWidth="2.2"
+                strokeDasharray="4 2"
+                strokeLinecap="round"
+                opacity="0.9"
+              />
+            )}
+
+            {/* Primary Median P50 Trajectory */}
             <path
               d={chartPoints.medianPath}
               fill="none"
               stroke="rgb(var(--c-accent-rgb, 225 29 72))"
-              strokeWidth="2.5"
+              strokeWidth="2.8"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
 
-            {/* Break-even crossover dot */}
-            {simulationData.paybackYear < 20 && (
+            {/* Break-even crossover ping */}
+            {primarySim.paybackYear < 20 && (
               <g
-                transform={`translate(${chartPoints.getX(Math.min(20, Math.floor(simulationData.paybackYear)))}, ${chartPoints.zeroY})`}
+                transform={`translate(${chartPoints.getX(Math.min(20, Math.floor(primarySim.paybackYear)))}, ${chartPoints.zeroY})`}
               >
-                <circle r="6" className="fill-accent/20 animate-ping" />
+                <circle r="7" className="fill-accent/20 animate-ping" />
                 <circle r="3.5" className="fill-accent stroke-surface stroke-[1.5]" />
               </g>
             )}
@@ -584,12 +663,20 @@ export function InteractiveActuarialCockpit() {
                   className="text-ink/40"
                   strokeDasharray="2 2"
                 />
-                {activeHoverData && (
+                {activeHoverData?.primary && (
                   <circle
                     cx="0"
-                    cy={chartPoints.getY(activeHoverData.cumulativeNpv)}
+                    cy={chartPoints.getY(activeHoverData.primary.cumulativeNpv)}
                     r="5"
                     className="fill-accent stroke-bg stroke-2"
+                  />
+                )}
+                {activeHoverData?.compare && (
+                  <circle
+                    cx="0"
+                    cy={chartPoints.getY(activeHoverData.compare.cumulativeNpv)}
+                    r="4.5"
+                    className="fill-indigo-500 stroke-bg stroke-2"
                   />
                 )}
               </g>
@@ -605,29 +692,63 @@ export function InteractiveActuarialCockpit() {
               const yr = Math.round(ratio * 20);
               if (yr !== hoverYear) {
                 setHoverYear(yr);
-                playSliderTick(380 + yr * 15);
+                playSliderTick(360 + yr * 14);
               }
             }}
             onMouseLeave={() => setHoverYear(null)}
           />
         </div>
 
+        {/* ── INTERACTIVE CAREER MILESTONE CHIPS ── */}
+        <div className="mt-3.5 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <span className="text-[10px] font-mono font-bold uppercase text-ink-3 shrink-0 mr-1">
+            Inflections:
+          </span>
+          {CAREER_MILESTONES.map((m) => {
+            const Icon = m.icon;
+            const isHovered = hoverYear === m.year;
+            return (
+              <button
+                key={m.year}
+                onClick={() => {
+                  setHoverYear(m.year);
+                  playUiPop(500 + m.year * 10);
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer border shrink-0 flex items-center gap-1.5 ${
+                  isHovered
+                    ? "bg-accent text-white border-accent shadow-xs scale-105"
+                    : "bg-surface hover:bg-elevated text-ink-2 border-line/10 hover:border-line/20"
+                }`}
+                title={m.tip}
+              >
+                <Icon size={11} />
+                <span>Yr {m.year}: {m.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Legend */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-[11px] font-mono text-ink-3 mt-3 pt-3 border-t border-line/10">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-0.5 bg-accent rounded" /> P50 Median Trajectory
+              <span className="w-3 h-0.5 bg-accent rounded" /> {currentArchetype.name}
+            </span>
+            {compareArchetype && (
+              <span className="flex items-center gap-1.5 text-indigo-400 font-bold">
+                <span className="w-3 h-0.5 bg-indigo-500 rounded stroke-dash" /> {compareArchetype.name}
+              </span>
+            )}
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-0.5 bg-emerald-500 rounded stroke-dash" /> P90 Upside
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-0.5 bg-emerald-500 rounded stroke-dash" /> P90 High-Upside
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-0.5 bg-amber-500 rounded stroke-dash" /> P10 Downside Stress
+              <span className="w-3 h-0.5 bg-amber-500 rounded stroke-dash" /> P10 Downside
             </span>
           </div>
 
           <span className="text-ink-2">
-            Degree Cost: <strong className="text-ink">₹{currentArchetype.costLakhs}L</strong> · Starting Salary: <strong className="text-ink">₹{currentArchetype.startingLpa} LPA</strong>
+            Primary Outlay: <strong className="text-ink">₹{currentArchetype.costLakhs}L</strong> · Starting: <strong className="text-ink">₹{currentArchetype.startingLpa} LPA</strong>
           </span>
         </div>
       </SpotlightCard>

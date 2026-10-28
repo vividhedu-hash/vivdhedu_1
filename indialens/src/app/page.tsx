@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { DashboardRedirect } from "@/components/DashboardRedirect";
 import { InteractiveActuarialCockpit } from "@/components/actuarial/InteractiveActuarialCockpit";
+import { AmbientParticleBackground } from "@/components/ui/AmbientParticleBackground";
 import { HeroCta } from "@/components/HeroCta";
 import {
   ArrowRight, CheckCircle2,
@@ -326,6 +327,7 @@ export default async function LandingPage({
         <div aria-hidden className="pointer-events-none absolute inset-0">
           <div className="absolute inset-0 bg-hero-glow" />
           <div className="absolute inset-0 bg-hero-glow-bottom" />
+          <AmbientParticleBackground />
         </div>
 
         {/* A hairline rule system rather than decoration. It gives the centred
