@@ -1,25 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { reportStore } from "../../../../lib/report-store";
+import { reportStore, SavedReport } from "../../../../lib/report-store";
 import { fetchBackend } from "../../../../lib/backend";
 
 export const dynamic = "force-dynamic";
 
-function toClientReport(payload: Record<string, unknown>, token: string) {
+function toClientReport(payload: Record<string, unknown>, token: string): SavedReport {
   const results =
     payload.results && typeof payload.results === "object"
       ? payload.results
       : payload;
   return {
-    token: payload.token ?? token,
-    created_at: payload.created_at ?? payload.generated_at ?? null,
-    expires_at: payload.expires_at ?? null,
+    token: typeof payload.token === "string" ? payload.token : token,
+    created_at: String(payload.created_at ?? payload.generated_at ?? new Date().toISOString()),
+    expires_at: String(payload.expires_at ?? ""),
     student_input: payload.student_input ?? payload.profile_parsed ?? payload.profile_data ?? {},
     results,
-    recommendations: payload.recommendations,
-    pathways: payload.pathways,
-    model_version: payload.model_version,
-    generated_at: payload.generated_at ?? payload.created_at,
-    _source: payload._source ?? "database",
+    _source: (payload._source === "mock" ? "mock" : "database") as "database" | "mock",
   };
 }
 

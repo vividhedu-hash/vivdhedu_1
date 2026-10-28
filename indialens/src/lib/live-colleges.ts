@@ -49,12 +49,7 @@ export type CollegeDetailResult =
   /** Could not check. Distinct from `not_found` — see the docstring below. */
   | { record: null; source: "unavailable"; reason: string };
 
-export function mapCollegeSort(sortBy?: string | null): string {
-  if (!sortBy) return "composite_score";
-  return SORT_MAP[sortBy] ?? "composite_score";
-}
-
-function catalogueParams(query: {
+export type CollegeQueryParams = {
   page?: number;
   per_page?: number;
   field?: string | null;
@@ -63,7 +58,14 @@ function catalogueParams(query: {
   search?: string | null;
   sort_by?: string | null;
   sort_dir?: string | null;
-}): URLSearchParams {
+};
+
+export function mapCollegeSort(sortBy?: string | null): string {
+  if (!sortBy) return "composite_score";
+  return SORT_MAP[sortBy] ?? "composite_score";
+}
+
+function catalogueParams(query: CollegeQueryParams = {}): URLSearchParams {
   const params = new URLSearchParams({
     page: String(query.page ?? 1),
     per_page: String(query.per_page ?? 20),
@@ -77,7 +79,7 @@ function catalogueParams(query: {
   return params;
 }
 
-async function fetchListFromFastApi(query: Parameters<typeof fetchCollegeList>[0]): Promise<CollegeListResult | null> {
+async function fetchListFromFastApi(query: CollegeQueryParams = {}): Promise<CollegeListResult | null> {
   const resp = await fetchBackend(`/api/colleges?${catalogueParams(query)}`, {
     timeoutMs: FASTAPI_CATALOGUE_TIMEOUT_MS,
     next: { revalidate: 300 },
@@ -96,7 +98,7 @@ async function fetchListFromFastApi(query: Parameters<typeof fetchCollegeList>[0
   };
 }
 
-async function fetchListFromPostgrest(query: Parameters<typeof fetchCollegeList>[0]): Promise<CollegeListResult | null> {
+async function fetchListFromPostgrest(query: CollegeQueryParams = {}): Promise<CollegeListResult | null> {
   if (!allowCataloguePostgrest()) return null;
 
   const supabaseParams = new URLSearchParams();
@@ -128,16 +130,7 @@ async function fetchListFromPostgrest(query: Parameters<typeof fetchCollegeList>
   };
 }
 
-export async function fetchCollegeList(query: {
-  page?: number;
-  per_page?: number;
-  field?: string | null;
-  tier?: string | null;
-  state?: string | null;
-  search?: string | null;
-  sort_by?: string | null;
-  sort_dir?: string | null;
-} = {}): Promise<CollegeListResult> {
+export async function fetchCollegeList(query: CollegeQueryParams = {}): Promise<CollegeListResult> {
   // 1. FastAPI is the only production catalogue. Empty results stay empty.
   try {
     const fromApi = await fetchListFromFastApi(query);
@@ -211,16 +204,7 @@ export async function fetchCollegeById(id: string): Promise<CollegeDetailResult>
   };
 }
 
-function applyMockFilters(query: {
-  page?: number;
-  per_page?: number;
-  field?: string | null;
-  tier?: string | null;
-  state?: string | null;
-  search?: string | null;
-  sort_by?: string | null;
-  sort_dir?: string | null;
-}): { data: CollegeDegreeRecord[]; total: number; source: "mock" } {
+function applyMockFilters(query: CollegeQueryParams = {}): { data: CollegeDegreeRecord[]; total: number; source: "mock" } {
   let filtered = [...MOCK_DATA];
   if (query.field) filtered = filtered.filter((r) => r.degree.field === query.field);
   if (query.tier) filtered = filtered.filter((r) => String(r.college.tier) === query.tier);

@@ -1,73 +1,70 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
-import { functionalAllowed } from "@/lib/consent";
-import { THEME_KEY } from "@/lib/session-policy";
-
-type Theme = "dark" | "light";
+import { useTheme } from "@/lib/theme";
 
 /**
  * The theme switch.
  *
- * There was a `.theme-toggle` class in globals.css and a `ThemeProvider` in
- * `lib/theme-context.tsx`, but neither was ever mounted: no route rendered a
- * toggle and the provider was imported nowhere. So `[data-theme="dark"]` was
- * unreachable and the "dual-mode" claim in the stylesheet was not true. This
- * component is what makes dark mode real, and it is self-contained so it does
- * not depend on a context provider that is not in the tree.
- *
- * `lib/theme-boot.ts` has already written `data-theme` before first paint, so
- * the initial state here is read from the DOM rather than guessed — reading it
- * avoids a second render that would flash the wrong icon.
- *
- * The choice is stored under the `functional` consent category. If functional
- * storage is not allowed the toggle still works for the session (the attribute
- * is set either way) but nothing is persisted, which is the whole point of
- * gating storage on consent.
+ * Backed by `lib/theme.ts` with reactive multi-component synchronization,
+ * zero-flash document head boot script, and accessibility attributes.
+ * Also binds `Alt+T` / `⌘Shift+L` as a quick power-user toggle anywhere on the site.
  */
-export function ThemeToggle({ className = "" }: { className?: string }) {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
+export function ThemeToggle({
+  className = "",
+  showLabel = false,
+}: {
+  className?: string;
+  showLabel?: boolean;
+}) {
+  const { active, isDark, toggle, mounted } = useTheme();
 
+  // Power user keyboard shortcut (Alt+T or Cmd/Ctrl+Shift+L)
   useEffect(() => {
-    const current = document.documentElement.getAttribute("data-theme");
-    setTheme(current === "dark" ? "dark" : "light");
-    setMounted(true);
-  }, []);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger when inside an input or textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement)?.isContentEditable
+      ) {
+        return;
+      }
 
-  const apply = useCallback((next: Theme) => {
-    setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
-    if (!functionalAllowed()) return;
-    try {
-      window.localStorage.setItem(THEME_KEY, next);
-    } catch {
-      /* private mode */
-    }
-  }, []);
+      if ((e.altKey && e.key.toLowerCase() === "t") || ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "l")) {
+        e.preventDefault();
+        toggle();
+      }
+    };
 
-  const next: Theme = theme === "dark" ? "light" : "dark";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggle]);
+
+  const nextLabel = isDark ? "Switch to light theme" : "Switch to dark theme";
 
   return (
     <button
       type="button"
-      onClick={() => apply(next)}
-      // `mounted` is not read in the class, but until it flips the button must
-      // not be announced with a label that contradicts what is on screen.
-      aria-label={mounted ? `Switch to ${next} theme` : "Switch theme"}
-      title={mounted ? `Switch to ${next} theme` : "Switch theme"}
+      onClick={toggle}
+      aria-label={mounted ? `${nextLabel} (Alt+T)` : "Switch theme"}
+      title={mounted ? `${nextLabel} (Alt+T)` : "Switch theme"}
       className={
         "theme-toggle " +
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] " +
-        "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] " + className
+        "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] " +
+        (showLabel ? " !w-auto !px-3 gap-2 text-xs font-medium" : "") +
+        " " +
+        className
       }
     >
-      {theme === "dark" ? (
-        <Sun size={14} aria-hidden="true" />
+      {isDark ? (
+        <Sun size={14} className="text-amber-400 shrink-0" aria-hidden="true" />
       ) : (
-        <Moon size={14} aria-hidden="true" />
+        <Moon size={14} className="shrink-0" aria-hidden="true" />
       )}
+      {showLabel && <span>{isDark ? "Light mode" : "Dark mode"}</span>}
     </button>
   );
 }

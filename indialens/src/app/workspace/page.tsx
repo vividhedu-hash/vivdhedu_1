@@ -33,6 +33,9 @@ import { BRAND } from "@/lib/brand";
 import { fetchOwnedReports, fetchStoredProfile, type ReportLink } from "@/lib/profile-store";
 import { getStoredReportToken } from "@/lib/session-policy";
 import { usePersonMemory } from "@/lib/person-memory-context";
+import { InteractiveActuarialCockpit } from "@/components/actuarial/InteractiveActuarialCockpit";
+import { SpotlightCard } from "@/components/ui/SpotlightCard";
+
 
 /**
  * The workspace previously rendered a hardcoded persona.
@@ -750,6 +753,12 @@ function WorkspaceView() {
                     />
                   </div>
 
+                  
+                  {/* ── INTERACTIVE ACTUARIAL COCKPIT ── */}
+                  <div className="pt-2">
+                    <InteractiveActuarialCockpit />
+                  </div>
+
                   <div className="pt-2">
                     <RecentWavesFeed />
                   </div>
@@ -827,17 +836,17 @@ function WorkspaceView() {
                   */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
-                      { label: "20-Year Career NPV", note: "Needs a program and a verified salary" },
-                      { label: "Debt Payback Horizon", note: "Needs a verified total cost of degree" },
-                      { label: "Downside Tail Risk (P10)", note: "Needs the same two inputs" },
+                      { label: "20-Year Career NPV", note: "Needs a program and a verified salary", color: "rgba(16, 185, 129, 0.12)" },
+                      { label: "Debt Payback Horizon", note: "Needs a verified total cost of degree", color: "rgba(99, 102, 241, 0.12)" },
+                      { label: "Downside Tail Risk (P10)", note: "Needs the same two inputs", color: "rgba(245, 158, 11, 0.12)" },
                     ].map((c) => (
-                      <div key={c.label} className="bg-elevated border border-line/10 rounded-xl p-4 shadow-sm">
+                      <SpotlightCard key={c.label} spotlightColor={c.color} className="p-4 shadow-sm">
                         <span className="text-[10px] font-mono font-bold text-ink-3 uppercase">
                           {c.label}
                         </span>
                         <div className="text-xl font-bold font-mono text-ink-3 mt-1">{NO_DATA}</div>
                         <span className="text-[11px] text-ink-2 font-mono">{c.note}</span>
-                      </div>
+                      </SpotlightCard>
                     ))}
                   </div>
 

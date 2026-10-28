@@ -62,9 +62,6 @@ export default function RootLayout({
     // this, React logs a mismatch on every page load.
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Inter + JetBrains Mono. Loaded twice (here and via the @import in
-            globals.css) — see DESIGN-SYSTEM.md; the @import is the one to
-            remove, and it was left alone here to keep this diff reviewable. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -76,12 +73,10 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var m=/(?:^|;\\s*)vividhedu_consent=([^;]*)/.exec(document.cookie);" +
-              "var r=m?decodeURIComponent(m[1]).replace(/^\"|\"$/g,''):'';" +
-              "if(!r){try{r=(localStorage.getItem('vividhedu_consent')||'').replace(/^\"|\"$/g,'')}catch(e){}}" +
-              "if(/^\\d+\\.1\\.[01]\\.\\d+$/.test(r)){var s=null;try{s=localStorage.getItem('vividhedu-theme')||localStorage.getItem('il-theme')}catch(e){}" +
-              "if(s==='dark'||s==='light'){document.documentElement.setAttribute('data-theme',s);return}}}" +
-              "document.documentElement.setAttribute('data-theme','light')})();",
+              "(function(){try{var s=localStorage.getItem('vividhedu-theme')||localStorage.getItem('il-theme');" +
+              "if(s==='system'){var d=window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',d?'dark':'light');return;}" +
+              "if(s==='dark'||s==='light'){document.documentElement.setAttribute('data-theme',s);return;}" +
+              "}catch(e){}document.documentElement.setAttribute('data-theme','light');})();",
           }}
         />
       </head>

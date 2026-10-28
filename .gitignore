@@ -84,3 +84,6 @@ patch_*.py
 tsconfig.tsbuildinfo
 EOF
 .env*
+
+.venv*
+
