@@ -33,7 +33,7 @@
     var functionalAllowed = /^\d+\.1\.[01]\.\d+$/.test(raw);
 
     if (functionalAllowed) {
-      var stored = window.localStorage.getItem("il-theme");
+      var stored = window.localStorage.getItem("vividhedu-theme") || window.localStorage.getItem("il-theme");
       if (stored === "dark" || stored === "light") {
         root.setAttribute("data-theme", stored);
         return;

@@ -79,7 +79,7 @@ export default function RootLayout({
               "(function(){try{var m=/(?:^|;\\s*)vividhedu_consent=([^;]*)/.exec(document.cookie);" +
               "var r=m?decodeURIComponent(m[1]).replace(/^\"|\"$/g,''):'';" +
               "if(!r){try{r=(localStorage.getItem('vividhedu_consent')||'').replace(/^\"|\"$/g,'')}catch(e){}}" +
-              "if(/^\\d+\\.1\\.[01]\\.\\d+$/.test(r)){var s=null;try{s=localStorage.getItem('il-theme')}catch(e){}" +
+              "if(/^\\d+\\.1\\.[01]\\.\\d+$/.test(r)){var s=null;try{s=localStorage.getItem('vividhedu-theme')||localStorage.getItem('il-theme')}catch(e){}" +
               "if(s==='dark'||s==='light'){document.documentElement.setAttribute('data-theme',s);return}}}" +
               "document.documentElement.setAttribute('data-theme','light')})();",
           }}

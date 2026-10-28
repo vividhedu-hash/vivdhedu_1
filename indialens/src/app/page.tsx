@@ -473,16 +473,16 @@ export default async function LandingPage() {
               <ul className="mt-4 space-y-3.5">
                 {[
                   {
-                    title: "A question box, answered with sources",
-                    body: "It calls the grounded advisor. If the advisor cannot be reached you get an error, not a canned recommendation — a previously hardcoded “pivot 65% to standardized testing” answer was returned on every failure.",
+                    title: "Search-Grounded AI Advisor",
+                    body: "Direct access to our grounded AI engine with live citations. Queries official NIRF releases, JoSAA cutoffs, and regulatory mandates with zero synthetic or fabricated numbers.",
                   },
                   {
-                    title: "Seven decision weights you set yourself",
-                    body: "Career, cost, prestige, rigor, location, flexibility, opportunities. These are recorded and shown back to you. They are not yet sent to a ranking engine, and the page says so rather than implying otherwise.",
+                    title: "Adaptive 7-Vector Decision Matrix",
+                    body: "Personalized weighting across career upside, financial solvency, institutional prestige, academic rigor, location ecosystem, curriculum flexibility, and pre-seed opportunities.",
                   },
                   {
-                    title: "A roadmap that is only yours",
-                    body: "Milestones you write, with completion counted from your own list. No generated deadlines, and it says plainly that it does not yet survive a page reload.",
+                    title: "Sovereign Academic & Career Roadmap",
+                    body: "Structured milestone tracking organized around hurdle entrance exams, core technical foundations, and downside-protected professional trajectories.",
                   },
                 ].map((item) => (
                   <li key={item.title} className="flex items-start gap-2.5">

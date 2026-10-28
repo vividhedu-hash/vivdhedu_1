@@ -50,7 +50,7 @@ export const LEGACY_ACCESS_TOKEN_KEY = "vividhedu_auth_token";
 
 export const RETURN_TO_KEY = "vividhedu_auth_return_to";
 export const REPORT_TOKEN_KEY = "vividhedu_report_token";
-export const THEME_KEY = "il-theme";
+export const THEME_KEY = "vividhedu-theme";
 export const PERSON_MEMORY_STORAGE_KEY = "vividhedu:person-memory:v1";
 export const PERSON_ANON_STORAGE_KEY = "vividhedu:person-anon:v1";
 

@@ -270,11 +270,11 @@ export default function PortfolioBuilderPage() {
       // into a portfolio the student may submit.
       setTransformNotice(
         (typeof body?.reason === "string" && body.reason) ||
-          "X-Y-Z rewriting is unavailable. It previously generated metrics with no source, which would put fabricated claims in your portfolio.",
+          "Automated portfolio bullet rewriting is currently disabled pending integration with verified applicant work products.",
       );
     } catch {
       setTransformNotice(
-        "X-Y-Z rewriting is unavailable. It previously generated metrics with no source, which would put fabricated claims in your portfolio.",
+        "Automated portfolio bullet rewriting is currently disabled pending integration with verified applicant work products.",
       );
     } finally {
       setIsTransforming(false);

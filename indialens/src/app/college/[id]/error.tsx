@@ -17,7 +17,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       reset={reset}
       kicker="Program page failed"
       title="This program page failed to load"
-      body="The underlying data store did not answer. We would rather show this than render a detail page with invented cost or salary figures."
+      body="The underlying data store did not answer. The program record could not be loaded from the registry. Please retry to establish a fresh connection."
       fallbackHref="/explore"
       fallbackLabel="Back to the index"
     />

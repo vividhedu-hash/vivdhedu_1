@@ -17,7 +17,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       reset={reset}
       kicker="Model unavailable"
       title="The job-security engine did not respond"
-      body="No safety scores are shown. This page ranks careers by automation exposure, and a ranking invented at read-time would be worse than no ranking at all."
+      body="Career automation metrics are momentarily unavailable. Please retry or consult our methodology documentation."
       fallbackHref="/explore"
       fallbackLabel="Browse programmes"
     />
