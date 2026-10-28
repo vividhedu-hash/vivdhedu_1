@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { DashboardRedirect } from "@/components/DashboardRedirect";
+import { HeroCta } from "@/components/HeroCta";
 import {
   ArrowRight, CheckCircle2,
   Zap, Sliders, ChevronRight, Compass,
@@ -167,7 +171,16 @@ const SCORE_FACTORS = [
   { label: "Alumni network",                          base: "13%", color: "var(--accent)", shifts: false },
 ];
 
-export default async function LandingPage() {
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams?: { public?: string };
+}) {
+  const cookieStore = cookies();
+  const hasUserCookie = cookieStore.get("vividhedu_user") || cookieStore.get("vividhedu_session");
+  if (hasUserCookie && searchParams?.public !== "true") {
+    redirect("/workspace");
+  }
   let SAMPLE: CollegeDegreeRecord[] = [];
   // `indexUnavailable` is a third state alongside live and seed. Without it
   // the status bar had only two strings to choose from, and "not live" fell
@@ -192,6 +205,7 @@ export default async function LandingPage() {
   return (
     <div className="bg-surface text-ink min-h-screen">
       <OrganizationJsonLd />
+      <DashboardRedirect />
 
       {/* ── SYSTEM STATUS BAR ─────────────────────────────────── */}
       {/*
@@ -348,23 +362,8 @@ export default async function LandingPage() {
             and a ranked shortlist built around your exact goals.
           </p>
 
-          {/* CTA — primary is the dark pill, secondary drops to a ghost so the
-              two do not compete at the same weight. */}
-          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              href="/onboard"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-ink px-7 py-3.5 text-[15px] font-semibold text-bg shadow-md transition-all hover:shadow-lg active:scale-[0.98] sm:w-auto"
-            >
-              Get started free
-              <ArrowRight size={15} />
-            </Link>
-            <Link
-              href="/explore"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-line/10 bg-transparent px-7 py-3.5 text-[15px] font-medium text-ink transition-all hover:border-line/25 hover:bg-overlay/50 active:scale-[0.98] sm:w-auto"
-            >
-              Browse programs
-            </Link>
-          </div>
+          {/* CTA — dynamically renders "Open Workspace" if logged in, or "Get started" */}
+          <HeroCta />
 
           {/* Proof strip — a deliberate grid, not a wrap. `count` is still the
               live database value; `null` renders as an em dash via the system's

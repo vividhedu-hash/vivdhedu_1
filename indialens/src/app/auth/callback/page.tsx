@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase-client";
-import { consumeReturnTo } from "@/lib/auth-context";
+import { consumeReturnTo, setSessionCookies } from "@/lib/auth-context";
 import { getStoredReportToken } from "@/lib/session-policy";
 import { linkReportToAccount, readLocalProfile, saveProfile } from "@/lib/profile-store";
 import { Loader2, AlertCircle, ShieldCheck } from "lucide-react";
@@ -29,10 +29,9 @@ export default function AuthCallbackPage() {
         const supabase = getSupabaseClient();
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
-        // Precedence: an explicit `?next=` wins, otherwise fall back to the
-        // destination the user was on when they hit "Sign in", so a gated
-        // route is returned to rather than dropped on the landing page.
-        const next = safeNext(urlParams.get("next") ?? consumeReturnTo() ?? "/");
+        // Precedence: explicit ?next= wins; if none or root was requested, default straight to /workspace (Dashboard)
+        const target = urlParams.get("next") ?? consumeReturnTo();
+        const next = safeNext(target && target !== "/" ? target : "/workspace");
 
         let currentSession = null;
         if (code) {
@@ -48,8 +47,9 @@ export default function AuthCallbackPage() {
           currentSession = data.session;
         }
 
-        // Sync pending report token and local draft profile to the account
+        // Sync session cookies, pending report token, and local draft profile to the account
         if (currentSession?.access_token && currentSession?.user?.id) {
+          setSessionCookies(currentSession);
           const pendingReportToken = getStoredReportToken();
           if (pendingReportToken) {
             await linkReportToAccount({

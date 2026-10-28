@@ -22,25 +22,32 @@ export type ConsentCategories = { functional: boolean; analytics: boolean };
 
 export function readConsent(): ConsentChoice | null {
   if (typeof document === "undefined") return null;
+
+  // 1. Try cookie first
   const cookieChoice = readConsentCookie(document.cookie);
   if (cookieChoice) {
-    // Keep localStorage synchronized
     try {
       window.localStorage.setItem(CONSENT_COOKIE, encodeConsent(cookieChoice));
+      window.localStorage.setItem("indialens_consent", encodeConsent(cookieChoice));
+      window.localStorage.setItem("cookie_consent", "true");
     } catch {}
     return cookieChoice;
   }
 
-  // Resilient fallback to localStorage if cookie was blocked, wiped by ITP, or not sent
+  // 2. Resilient fallback across all possible localStorage keys
   try {
-    const rawLocal = window.localStorage.getItem(CONSENT_COOKIE);
-    if (rawLocal) {
-      const localChoice = decodeConsent(rawLocal);
-      if (localChoice) {
-        // Restore to cookie so server/edge can also read it
-        const secure = window.location.protocol === "https:" ? "; Secure" : "";
-        document.cookie = `${CONSENT_COOKIE}=${encodeConsent(localChoice)}; Path=/; Max-Age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${secure}`;
-        return localChoice;
+    const candidateKeys = [CONSENT_COOKIE, "indialens_consent", "cookie_consent", "cookie-consent", "vividhedu-consent"];
+    for (const key of candidateKeys) {
+      const rawLocal = window.localStorage.getItem(key);
+      if (rawLocal) {
+        const localChoice = decodeConsent(rawLocal);
+        if (localChoice) {
+          const secure = window.location.protocol === "https:" ? "; Secure" : "";
+          const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+          document.cookie = `${CONSENT_COOKIE}=${encodeConsent(localChoice)}; Path=/; Max-Age=${CONSENT_MAX_AGE_SECONDS}; Expires=${expires}; SameSite=Lax${secure}`;
+          document.cookie = `indialens_consent=${encodeConsent(localChoice)}; Path=/; Max-Age=${CONSENT_MAX_AGE_SECONDS}; Expires=${expires}; SameSite=Lax${secure}`;
+          return localChoice;
+        }
       }
     }
   } catch {
@@ -73,9 +80,16 @@ export function writeConsent(choice: ConsentCategories): ConsentChoice {
   };
   const encoded = encodeConsent(saved);
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${CONSENT_COOKIE}=${encoded}; Path=/; Max-Age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${secure}`;
+  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+
+  // Persist to both current and legacy cookie names with full Expires attribute to survive restarts
+  document.cookie = `${CONSENT_COOKIE}=${encoded}; Path=/; Max-Age=${CONSENT_MAX_AGE_SECONDS}; Expires=${expires}; SameSite=Lax${secure}`;
+  document.cookie = `indialens_consent=${encoded}; Path=/; Max-Age=${CONSENT_MAX_AGE_SECONDS}; Expires=${expires}; SameSite=Lax${secure}`;
+
   try {
     window.localStorage.setItem(CONSENT_COOKIE, encoded);
+    window.localStorage.setItem("indialens_consent", encoded);
+    window.localStorage.setItem("cookie_consent", "true");
   } catch {
     /* private mode */
   }

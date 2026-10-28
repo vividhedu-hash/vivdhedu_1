@@ -132,6 +132,34 @@ export function clearStoredTokens(): void {
   clearBrowserSession();
 }
 
+export function setSessionCookies(session: { access_token?: string; user?: any }): void {
+  if (typeof document === "undefined" || !session?.user) return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  const maxAge = 60 * 60 * 24 * 30; // 30 days
+  const expires = new Date(Date.now() + maxAge * 1000).toUTCString();
+  const meta = session.user.user_metadata || {};
+  const email = session.user.email || "";
+  const name = meta.full_name || meta.name || (email.includes("@") ? email.split("@")[0] : "User");
+
+  const userSummary = {
+    id: session.user.id,
+    email,
+    name,
+    avatar_url: meta.avatar_url || meta.picture || null,
+  };
+
+  document.cookie = `vividhedu_user=${encodeURIComponent(JSON.stringify(userSummary))}; Path=/; Max-Age=${maxAge}; Expires=${expires}; SameSite=Lax${secure}`;
+  if (session.access_token) {
+    document.cookie = `vividhedu_session=${encodeURIComponent(session.access_token)}; Path=/; Max-Age=${maxAge}; Expires=${expires}; SameSite=Lax${secure}`;
+  }
+}
+
+export function clearSessionCookies(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = "vividhedu_user=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+  document.cookie = "vividhedu_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -165,6 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           setUser(mapSupabaseUser(session.user));
           setToken(session.access_token);
+          setSessionCookies(session);
           syncLocalReport(session.user, session.access_token);
         } else {
           setUser(null);
@@ -189,10 +218,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         setUser(mapSupabaseUser(session.user));
         setToken(session.access_token);
+        setSessionCookies(session);
         syncLocalReport(session.user, session.access_token);
       } else {
         setUser(null);
         setToken(null);
+        clearSessionCookies();
         if (event === "SIGNED_OUT") {
           clearStoredTokens();
         }
@@ -292,6 +323,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("[Auth] Sign-out request failed; clearing local session:", err);
     } finally {
       clearStoredTokens();
+      clearSessionCookies();
       setToken(null);
       setUser(null);
     }

@@ -121,7 +121,7 @@ export function Navbar() {
         <div className="flex items-center justify-between gap-3 h-11">
 
           {/* ── Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0 whitespace-nowrap">
+          <Link href={user ? "/workspace" : "/"} className="flex items-center gap-2.5 group flex-shrink-0 whitespace-nowrap">
             <div className="w-7 h-7 rounded-lg t-accent flex items-center justify-center">
               <span className="font-bold text-white text-[11px] tracking-tight">VE</span>
             </div>
@@ -286,12 +286,22 @@ export function Navbar() {
               </button>
             )}
 
-            <Link
-              href="/onboard"
-              className="btn-accent px-4 py-1.5 text-[13px] shadow-sm transition-all cursor-pointer whitespace-nowrap flex-shrink-0"
-            >
-              Get started
-            </Link>
+            {user ? (
+              <Link
+                href="/workspace"
+                className="btn-accent px-4 py-1.5 text-[13px] shadow-sm transition-all cursor-pointer whitespace-nowrap flex-shrink-0 flex items-center gap-1.5"
+              >
+                <Zap size={13} className="text-white" />
+                Workspace
+              </Link>
+            ) : (
+              <Link
+                href="/onboard"
+                className="btn-accent px-4 py-1.5 text-[13px] shadow-sm transition-all cursor-pointer whitespace-nowrap flex-shrink-0"
+              >
+                Get started
+              </Link>
+            )}
           </div>
 
           {/* Mobile toggle */}
@@ -351,13 +361,23 @@ export function Navbar() {
                 <UserRound size={14} /> Sign in
               </button>
             )}
-            <Link
-              href="/onboard"
-              onClick={() => setMobileOpen(false)}
-              className="btn-accent w-full py-2.5 text-sm font-bold block transition"
-            >
-              Start free — run my analysis
-            </Link>
+            {user ? (
+              <Link
+                href="/workspace"
+                onClick={() => setMobileOpen(false)}
+                className="btn-accent w-full py-2.5 text-sm font-bold block transition text-center"
+              >
+                Open Workspace
+              </Link>
+            ) : (
+              <Link
+                href="/onboard"
+                onClick={() => setMobileOpen(false)}
+                className="btn-accent w-full py-2.5 text-sm font-bold block transition text-center"
+              >
+                Start free — run my analysis
+              </Link>
+            )}
           </div>
         </div>
       )}

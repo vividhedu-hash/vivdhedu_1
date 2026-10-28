@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { X } from "lucide-react";
 import {
   OPEN_COOKIE_SETTINGS_EVENT,
   type ConsentChoice,
@@ -77,11 +78,7 @@ export function CookieConsent() {
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== "Escape") return;
-    // Suppressed before a first decision: an accidental Escape must not be
-    // recorded as "necessary only".
-    if (!readConsent()) return;
-    setVisible(false);
-    setManage(false);
+    save({ functional: true, analytics: false });
   };
 
   if (!visible) return null;
@@ -105,11 +102,22 @@ export function CookieConsent() {
         aria-modal="false"
         aria-labelledby="cookie-consent-title"
         aria-describedby="cookie-consent-body"
-        className="pointer-events-auto w-full max-w-2xl rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 text-[var(--text-primary)] shadow-[var(--shadow-lg)] sm:p-5"
+        className="pointer-events-auto relative w-full max-w-2xl rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 text-[var(--text-primary)] shadow-[var(--shadow-lg)] sm:p-5"
       >
+        {/* Quick Close (X) button — saves preferences and prevents banner from reappearing */}
+        <button
+          type="button"
+          onClick={() => save({ functional: true, analytics: false })}
+          title="Dismiss and save preferences"
+          aria-label="Dismiss cookie notice"
+          className="absolute right-3.5 top-3.5 rounded-lg p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
+        >
+          <X size={15} />
+        </button>
+
         <h2
           id="cookie-consent-title"
-          className="text-sm font-semibold tracking-tight"
+          className="text-sm font-semibold tracking-tight pr-6"
         >
           Cookies and session storage
         </h2>

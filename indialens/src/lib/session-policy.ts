@@ -215,28 +215,60 @@ export function encodeConsent(choice: ConsentChoice): string {
 export function decodeConsent(raw: string | null | undefined): ConsentChoice | null {
   if (!raw) return null;
   const cleaned = raw.trim().replace(/^"|"$/g, "");
+
+  // 1. Standard format: version.functional.analytics.timestamp
   const match = /^(\d+)\.([01])\.([01])\.(\d+)$/.exec(cleaned);
-  if (!match) return null;
-  const version = Number(match[1]);
-  // Honour existing consent versions (e.g. version 1 or 2) without aggressively invalidating
-  if (version !== POLICY_VERSION && version !== 1) return null;
-  const decidedAt = Number(match[4]);
-  if (!Number.isFinite(decidedAt) || decidedAt <= 0) return null;
-  return {
-    version: POLICY_VERSION,
-    necessary: true,
-    functional: match[2] === "1",
-    analytics: match[3] === "1",
-    decidedAt,
-  };
+  if (match) {
+    const decidedAt = Number(match[4]);
+    return {
+      version: POLICY_VERSION,
+      necessary: true,
+      functional: match[2] === "1",
+      analytics: match[3] === "1",
+      decidedAt: Number.isFinite(decidedAt) && decidedAt > 0 ? decidedAt : Math.floor(Date.now() / 1000),
+    };
+  }
+
+  // 2. Simple boolean or accepted tokens from previous versions or simple storage
+  if (cleaned === "true" || cleaned === "accepted" || cleaned === "all" || cleaned === "1" || cleaned === "yes") {
+    return {
+      version: POLICY_VERSION,
+      necessary: true,
+      functional: true,
+      analytics: true,
+      decidedAt: Math.floor(Date.now() / 1000),
+    };
+  }
+
+  // 3. JSON representation fallback
+  if (cleaned.startsWith("{") && cleaned.endsWith("}")) {
+    try {
+      const parsed = JSON.parse(cleaned);
+      return {
+        version: POLICY_VERSION,
+        necessary: true,
+        functional: parsed.functional !== false,
+        analytics: parsed.analytics === true,
+        decidedAt: Number(parsed.decidedAt) || Math.floor(Date.now() / 1000),
+      };
+    } catch {}
+  }
+
+  return null;
 }
 
 export function readConsentCookie(cookieHeader: string | null | undefined): ConsentChoice | null {
   if (!cookieHeader) return null;
   const parts = cookieHeader.split(";").map((part) => part.trim());
-  const row = parts.find((part) => part.startsWith(`${CONSENT_COOKIE}=`));
+  const row = parts.find(
+    (part) =>
+      part.startsWith(`${CONSENT_COOKIE}=`) ||
+      part.startsWith("indialens_consent=") ||
+      part.startsWith("cookie_consent=")
+  );
   if (!row) return null;
-  return decodeConsent(decodeURIComponent(row.slice(CONSENT_COOKIE.length + 1)));
+  const eqIdx = row.indexOf("=");
+  return decodeConsent(decodeURIComponent(row.slice(eqIdx + 1)));
 }
 
 /** Robust cross-tab and cross-session report token recovery */
