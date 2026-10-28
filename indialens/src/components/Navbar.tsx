@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Compass, Brain, Zap, ShoppingBag, Sparkles,
   Menu, X, UserRound, LogOut, Lock, Route, Shield, GraduationCap,
-  MoreHorizontal, ChevronDown, Fingerprint, Settings, Sun,
+  MoreHorizontal, ChevronDown, Fingerprint, Settings, Sun, Search,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -241,6 +241,20 @@ export function Navbar() {
               </span>
             </div>
 
+                        {/* Quick Command Search (Cmd+K) button */}
+            <button
+              onClick={() => {
+                window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+              }}
+              className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-line/10 bg-surface hover:bg-elevated text-ink-2 hover:text-ink text-xs font-mono transition-all cursor-pointer"
+              title="Search programs, simulations, or tools (⌘K)"
+              aria-label="Search programs and tools"
+            >
+              <Search size={12} className="text-ink-3" />
+              <span className="text-[11px] font-sans">Search</span>
+              <kbd className="text-[10px] bg-chip px-1.5 py-0.5 rounded border border-line/10 text-ink-3">⌘K</kbd>
+            </button>
+
             <ThemeToggle />
 
             {/* Auth */}
@@ -327,6 +341,20 @@ export function Navbar() {
               <Sun size={14} className="text-amber-500" />
               <span>Theme & Appearance</span>
             </div>
+                        {/* Quick Command Search (Cmd+K) button */}
+            <button
+              onClick={() => {
+                window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+              }}
+              className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-line/10 bg-surface hover:bg-elevated text-ink-2 hover:text-ink text-xs font-mono transition-all cursor-pointer"
+              title="Search programs, simulations, or tools (⌘K)"
+              aria-label="Search programs and tools"
+            >
+              <Search size={12} className="text-ink-3" />
+              <span className="text-[11px] font-sans">Search</span>
+              <kbd className="text-[10px] bg-chip px-1.5 py-0.5 rounded border border-line/10 text-ink-3">⌘K</kbd>
+            </button>
+
             <ThemeToggle />
           </div>
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { DashboardRedirect } from "@/components/DashboardRedirect";
+import { InteractiveActuarialCockpit } from "@/components/actuarial/InteractiveActuarialCockpit";
 import { HeroCta } from "@/components/HeroCta";
 import {
   ArrowRight, CheckCircle2,
@@ -417,6 +418,29 @@ export default async function LandingPage({
               <p className="text-[12px] text-ink-2 leading-relaxed mt-1.5">{s.b}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      
+      {/* ── LIVE INTERACTIVE ACTUARIAL COCKPIT ──────────────────── */}
+      <section className="py-20 px-5 border-t border-line/10 bg-elevated/40">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <div className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent mb-2.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Interactive Simulation
+            </div>
+            <h2 className="text-[clamp(1.8rem,3.5vw,2.6rem)] font-bold tracking-tight text-ink leading-tight">
+              Test the Actuarial Valuation Engine Live
+            </h2>
+            <p className="text-sm text-ink-2 mt-2 leading-relaxed">
+              Price degree programs as multi-decade financial assets. Scrub hurdle discount rates, routine AI exposure, and macro wage volatility in real time to visualize the 20-year net cash flow envelope and break-even payback horizon.
+            </p>
+          </div>
+
+          <div className="bg-surface border border-line/10 rounded-3xl p-6 sm:p-8 shadow-sm">
+            <InteractiveActuarialCockpit />
+          </div>
         </div>
       </section>
 
