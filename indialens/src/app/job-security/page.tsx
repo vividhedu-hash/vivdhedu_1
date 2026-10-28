@@ -82,7 +82,7 @@ function pct(v: number | null | undefined, suffix = "%"): string {
 
 function scoreTone(score: number | null | undefined): string {
   const n = finiteOrNull(score);
-  if (n === null) return "text-slate-400";
+  if (n === null) return "t-faint";
   if (n >= 85) return "text-emerald-600";
   if (n >= 70) return "text-amber-600";
   return "text-rose-600";
@@ -100,11 +100,11 @@ function JobSecurityCard({ result, sourceNote }: { result: JobSecurityResult; so
     <div className="rounded-2xl border t-border t-surface shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b t-border-subtle flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+          <p className="text-[11px] font-mono font-bold uppercase tracking-wider t-faint">
             AI Resilience Index
           </p>
-          <h3 className="text-base font-bold text-slate-950 truncate">{result.profession ?? "This field"}</h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h3 className="text-base font-bold t-text truncate">{result.profession ?? "This field"}</h3>
+          <p className="text-xs t-muted mt-0.5">
             {result.evaluation_mode ?? "Field-level evaluation"}
             {result.category ? ` · ${result.category}` : ""}
           </p>
@@ -112,7 +112,7 @@ function JobSecurityCard({ result, sourceNote }: { result: JobSecurityResult; so
         <div className="text-right">
           <div className={`text-3xl font-black font-mono ${scoreTone(score)}`}>
             {score === null ? NO_DATA : score}
-            {score !== null && <span className="text-sm font-semibold text-slate-400">/100</span>}
+            {score !== null && <span className="text-sm font-semibold t-faint">/100</span>}
           </div>
           {result.security_label && (
             <span
@@ -129,14 +129,14 @@ function JobSecurityCard({ result, sourceNote }: { result: JobSecurityResult; so
         </div>
       </div>
 
-      <div className="px-5 py-4 border-b t-border-subtle bg-slate-50/60">
-        <p className="text-[11px] text-slate-500 leading-relaxed">
+      <div className="px-5 py-4 border-b t-border-subtle t-chip">
+        <p className="text-[11px] t-muted leading-relaxed">
           <Info size={11} className="inline mr-1 -mt-0.5" />
           {sourceNote}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-slate-100 border-b t-border-subtle">
+      <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-line/10 border-b t-border-subtle">
         <Metric label="5y layoff risk" value={pct(displacement?.layoff_probability_5y_pct)} />
         <Metric label="10y layoff risk" value={pct(displacement?.layoff_probability_10y_pct)} />
         <Metric label="Disruption" value={pct(result.base_disruption_pct)} />
@@ -162,14 +162,14 @@ function JobSecurityCard({ result, sourceNote }: { result: JobSecurityResult; so
         </div>
 
         {upskill && (
-          <div className="rounded-xl border t-border bg-slate-50 p-3.5">
-            <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+          <div className="rounded-xl border t-border t-chip p-3.5">
+            <p className="text-[11px] font-mono font-bold uppercase tracking-wider t-faint mb-2 flex items-center gap-1.5">
               <Target size={12} /> Upskilling estimate to 2035
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-[11px] text-slate-500">Estimated capital</p>
-                <p className="text-sm font-bold text-slate-900 font-mono">
+                <p className="text-[11px] t-muted">Estimated capital</p>
+                <p className="text-sm font-bold t-text font-mono">
                   {(() => {
                     const v = finiteOrNull(upskill.estimated_capital_10y_inr);
                     return v === null ? NO_DATA : `₹${(v / 100000).toFixed(1)}L`;
@@ -177,8 +177,8 @@ function JobSecurityCard({ result, sourceNote }: { result: JobSecurityResult; so
                 </p>
               </div>
               <div>
-                <p className="text-[11px] text-slate-500">Study time</p>
-                <p className="text-sm font-bold text-slate-900 font-mono">
+                <p className="text-[11px] t-muted">Study time</p>
+                <p className="text-sm font-bold t-text font-mono">
                   {(() => {
                     const v = finiteOrNull(upskill.recommended_annual_hours);
                     return v === null ? NO_DATA : `${v} hrs/yr`;
@@ -186,7 +186,7 @@ function JobSecurityCard({ result, sourceNote }: { result: JobSecurityResult; so
                 </p>
               </div>
             </div>
-            <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
+            <p className="text-[10px] t-faint mt-2 leading-relaxed">
               A linear formula on the safety score, not a costing of an actual curriculum. Treat it
               as an order of magnitude.
             </p>
@@ -195,10 +195,10 @@ function JobSecurityCard({ result, sourceNote }: { result: JobSecurityResult; so
 
         {result.strategic_advice && (
           <div>
-            <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+            <p className="text-[11px] font-mono font-bold uppercase tracking-wider t-faint mb-1.5">
               Strategy
             </p>
-            <p className="text-sm text-slate-700 leading-relaxed">{result.strategic_advice}</p>
+            <p className="text-sm t-muted leading-relaxed">{result.strategic_advice}</p>
           </div>
         )}
       </div>
@@ -209,8 +209,8 @@ function JobSecurityCard({ result, sourceNote }: { result: JobSecurityResult; so
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="px-4 py-3.5">
-      <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">{label}</p>
-      <p className="text-lg font-black text-slate-900 font-mono">{value}</p>
+      <p className="text-[10px] t-muted uppercase tracking-wide mb-0.5">{label}</p>
+      <p className="text-lg font-black t-text font-mono">{value}</p>
     </div>
   );
 }
@@ -242,14 +242,14 @@ function TaskList({
       {list && list.length > 0 ? (
         <ul className="space-y-1.5">
           {list.map((item) => (
-            <li key={item} className="text-xs text-slate-600 leading-relaxed flex gap-2">
+            <li key={item} className="text-xs t-muted leading-relaxed flex gap-2">
               <span className={tone === "rose" ? "text-rose-400" : "text-emerald-500"}>·</span>
               {item}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-slate-400 italic">{empty}</p>
+        <p className="text-xs t-faint italic">{empty}</p>
       )}
     </div>
   );
@@ -268,9 +268,9 @@ function TaskList({
 function EvaluationPrompt() {
   return (
     <div className="rounded-2xl border-2 border-dashed t-border t-surface p-12 text-center">
-      <ShieldCheck size={26} className="mx-auto text-slate-300 mb-3" />
-      <p className="text-sm font-semibold text-slate-700">No profession evaluated yet</p>
-      <p className="text-xs text-slate-500 mt-1.5 max-w-sm mx-auto leading-relaxed">
+      <ShieldCheck size={26} className="mx-auto t-faint mb-3" />
+      <p className="text-sm font-semibold t-muted">No profession evaluated yet</p>
+      <p className="text-xs t-muted mt-1.5 max-w-sm mx-auto leading-relaxed">
         Pick a field above, or type any profession. Every score here comes from a model with
         published assumptions — we show which one produced it.
       </p>
@@ -377,7 +377,7 @@ export default function JobSecurityPage() {
     : [];
 
   return (
-    <div className="min-h-screen t-bg text-slate-900 pb-24">
+    <div className="page-shell pb-24">
       {/* ── Honesty banner ── */}
       <div className="t-surface border-b t-border py-2.5">
         <div className="container-lg">
@@ -385,8 +385,8 @@ export default function JobSecurityPage() {
             <span className="text-amber-600 shrink-0">
               <AlertTriangle size={14} />
             </span>
-            <span className="text-xs text-slate-600">
-              <strong className="text-slate-900 font-semibold">Model priors, not measured outcomes.</strong>{" "}
+            <span className="text-xs t-muted">
+              <strong className="t-text font-semibold">Model priors, not measured outcomes.</strong>{" "}
               The safety matrix is a hand-curated set of 12 professions. No longitudinal study of
               Indian AI displacement rates underpins these numbers. Use it to compare orders of
               magnitude, never as a forecast.
@@ -402,10 +402,10 @@ export default function JobSecurityPage() {
           modelled
         </div>
 
-        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-950 tracking-tight mb-3">
+        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold t-text tracking-tight mb-3">
           Is this career safe in 2035?
         </h1>
-        <p className="text-base text-slate-600 mb-8 max-w-2xl leading-relaxed">
+        <p className="text-base t-muted mb-8 max-w-2xl leading-relaxed">
           Every degree decision is also an automation-risk decision. Pick a field, or type any
           profession, and we show which model produced the number — including when the answer is
           only a keyword-matched guess.
@@ -417,7 +417,7 @@ export default function JobSecurityPage() {
             <div>
               <label
                 htmlFor="js-field"
-                className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400"
+                className="text-[11px] font-mono font-bold uppercase tracking-wider t-faint"
               >
                 Field
               </label>
@@ -425,7 +425,7 @@ export default function JobSecurityPage() {
                 id="js-field"
                 value={field}
                 onChange={(e) => setField(e.target.value)}
-                className="mt-1.5 w-full t-surface border t-border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:t-border-focus"
+                className="mt-1.5 w-full t-surface border t-border rounded-lg px-3 py-2 text-sm t-text focus:outline-none focus:t-border-focus"
               >
                 {FIELDS.map((f) => (
                   <option key={f.value} value={f.value}>
@@ -438,7 +438,7 @@ export default function JobSecurityPage() {
             <div>
               <label
                 htmlFor="js-tier"
-                className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400"
+                className="text-[11px] font-mono font-bold uppercase tracking-wider t-faint"
               >
                 College tier
               </label>
@@ -446,7 +446,7 @@ export default function JobSecurityPage() {
                 id="js-tier"
                 value={tier}
                 onChange={(e) => setTier(e.target.value)}
-                className="mt-1.5 w-full t-surface border t-border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:t-border-focus"
+                className="mt-1.5 w-full t-surface border t-border rounded-lg px-3 py-2 text-sm t-text focus:outline-none focus:t-border-focus"
               >
                 {TIERS.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -454,13 +454,13 @@ export default function JobSecurityPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-[10px] text-slate-400 mt-1">Worth ±4 points on a 100 scale.</p>
+              <p className="text-[10px] t-faint mt-1">Worth ±4 points on a 100 scale.</p>
             </div>
 
             <div>
               <label
                 htmlFor="js-adapt"
-                className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400"
+                className="text-[11px] font-mono font-bold uppercase tracking-wider t-faint"
               >
                 Your AI adaptability
               </label>
@@ -472,9 +472,9 @@ export default function JobSecurityPage() {
                 step={0.05}
                 value={adaptability}
                 onChange={(e) => setAdaptability(Number(e.target.value))}
-                className="mt-3 w-full accent-slate-900"
+                className="mt-3 w-full accent-accent"
               />
-              <p className="text-[10px] text-slate-400 mt-0.5">
+              <p className="text-[10px] t-faint mt-0.5">
                 {adaptability.toFixed(2)} — self-reported. Worth up to +3.5 points.
               </p>
             </div>
@@ -520,7 +520,7 @@ export default function JobSecurityPage() {
                   void runProfessionEvaluation(p);
                 }}
                 disabled={loading}
-                className="px-2.5 py-1 rounded-full border t-border text-[11px] text-slate-600 hover:t-border-focus hover:text-slate-900 transition disabled:opacity-50"
+                className="px-2.5 py-1 rounded-full border t-border text-[11px] t-muted hover:t-border-focus hover:t-text transition disabled:opacity-50"
               >
                 {p}
               </button>
@@ -531,8 +531,8 @@ export default function JobSecurityPage() {
         {/* ── Result ── */}
         {loading && (
           <div className="rounded-2xl border t-border t-surface p-12 text-center mb-8">
-            <Loader2 size={22} className="mx-auto text-slate-400 animate-spin mb-3" />
-            <p className="text-xs text-slate-500">Running the resilience model…</p>
+            <Loader2 size={22} className="mx-auto t-faint animate-spin mb-3" />
+            <p className="text-xs t-muted">Running the resilience model…</p>
           </div>
         )}
 
@@ -553,7 +553,7 @@ export default function JobSecurityPage() {
         {/* ── Full matrix ── */}
         <section className="mt-12">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-slate-950">The full 12-profession matrix</h2>
+            <h2 className="text-lg font-bold t-text">The full 12-profession matrix</h2>
             <button onClick={loadMatrix} className="btn-ghost" disabled={matrixLoading}>
               <RefreshCw size={12} className={matrixLoading ? "animate-spin" : ""} /> Refresh
             </button>
@@ -561,8 +561,8 @@ export default function JobSecurityPage() {
 
           {matrixLoading && (
             <div className="rounded-2xl border t-border t-surface p-10 text-center">
-              <Loader2 size={20} className="mx-auto text-slate-400 animate-spin mb-2" />
-              <p className="text-xs text-slate-500">Loading safety matrix…</p>
+              <Loader2 size={20} className="mx-auto t-faint animate-spin mb-2" />
+              <p className="text-xs t-muted">Loading safety matrix…</p>
             </div>
           )}
 
@@ -585,7 +585,7 @@ export default function JobSecurityPage() {
             <div className="rounded-2xl border t-border t-surface shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs min-w-[680px]">
-                  <thead className="bg-slate-50 border-b t-border">
+                  <thead className="t-chip border-b t-border">
                     <tr>
                       {(
                         [
@@ -598,7 +598,7 @@ export default function JobSecurityPage() {
                       ).map(([h, cls]) => (
                         <th
                           key={h}
-                          className={`py-2.5 font-mono font-bold uppercase tracking-wider text-[10px] text-slate-400 ${cls}`}
+                          className={`py-2.5 font-mono font-bold uppercase tracking-wider text-[10px] t-faint ${cls}`}
                         >
                           {h}
                         </th>
@@ -609,18 +609,18 @@ export default function JobSecurityPage() {
                     {rows.map(([name, row]) => (
                       <tr
                         key={name}
-                        className="border-b t-border-subtle last:border-0 hover:bg-slate-50/70 cursor-pointer"
+                        className="border-b t-border-subtle last:border-0 hover:bg-[var(--bg-hover)] cursor-pointer"
                         onClick={() => {
                           setProfessionInput(name);
                           void runProfessionEvaluation(name);
                         }}
                       >
-                        <td className="px-4 py-3 font-semibold text-slate-800">{name}</td>
+                        <td className="px-4 py-3 font-semibold t-text">{name}</td>
                         <td className={`px-3 py-3 text-right font-mono font-bold text-sm ${scoreTone(row.safety_score)}`}>
                           {finiteOrNull(row.safety_score) ?? NO_DATA}
                         </td>
-                        <td className="px-3 py-3 text-right font-mono text-slate-600">{pct(row["5y_layoff_risk_pct"])}</td>
-                        <td className="px-3 py-3 text-right font-mono text-slate-600">{pct(row["10y_layoff_risk_pct"])}</td>
+                        <td className="px-3 py-3 text-right font-mono t-muted">{pct(row["5y_layoff_risk_pct"])}</td>
+                        <td className="px-3 py-3 text-right font-mono t-muted">{pct(row["10y_layoff_risk_pct"])}</td>
                         <td className="px-4 py-3">
                           <span
                             className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold"
@@ -637,8 +637,8 @@ export default function JobSecurityPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="px-4 py-3 border-t t-border-subtle bg-slate-50/60">
-                <p className="text-[10px] text-slate-500 leading-relaxed">
+              <div className="px-4 py-3 border-t t-border-subtle t-chip">
+                <p className="text-[10px] t-muted leading-relaxed">
                   Click any row for its task-level breakdown. Scores are curated priors held in{" "}
                   <code className="font-mono">ml/nextgen_engine.py</code>; the 5y/10y columns are that
                   matrix&apos;s own assumptions, not observed displacement rates.
@@ -654,7 +654,7 @@ export default function JobSecurityPage() {
             <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-700 mb-2">
               What this model cannot see
             </p>
-            <ul className="space-y-1.5 text-xs text-slate-600 leading-relaxed">
+            <ul className="space-y-1.5 text-xs t-muted leading-relaxed">
               <li>· No employer or regional variation — the same score applies to every city.</li>
               <li>· No within-profession variation: &quot;accountant&quot; and &quot;forensic accountant&quot; score identically.</li>
               <li>· No macroeconomic cycle and no policy change.</li>
@@ -662,23 +662,23 @@ export default function JobSecurityPage() {
             </ul>
           </div>
           <div className="rounded-2xl border t-border t-surface p-5">
-            <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-2">
+            <p className="text-[11px] font-mono font-bold uppercase tracking-wider t-faint mb-2">
               Model it alongside
             </p>
             <div className="space-y-2">
               <Link
                 href="/career-trajectory"
-                className="flex items-center justify-between text-xs font-semibold text-slate-800 hover:text-slate-950 group"
+                className="flex items-center justify-between text-xs font-semibold t-text hover:t-text group"
               >
                 <span>Career trajectory — where people actually end up</span>
-                <ExternalLink size={12} className="text-slate-400 group-hover:text-slate-700" />
+                <ExternalLink size={12} className="t-faint group-hover:t-muted" />
               </Link>
               <Link
                 href="/methodology"
-                className="flex items-center justify-between text-xs font-semibold text-slate-800 hover:text-slate-950 group"
+                className="flex items-center justify-between text-xs font-semibold t-text hover:t-text group"
               >
                 <span>How every score on this site is computed</span>
-                <ExternalLink size={12} className="text-slate-400 group-hover:text-slate-700" />
+                <ExternalLink size={12} className="t-faint group-hover:t-muted" />
               </Link>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Compass, Brain, Zap, ShoppingBag, Sparkles,
   Menu, X, UserRound, LogOut, Lock, Route, Shield, GraduationCap,
-  MoreHorizontal, ChevronDown, Fingerprint,
+  MoreHorizontal, ChevronDown, Fingerprint, Settings, Sun,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -47,6 +47,7 @@ const NAV_LINKS: NavLink[] = [
   { href: "/psychometric", label: "Psychometric", icon: <Brain size={13} />,        desc: "IRT adaptive diagnostic",     priority: 8, requiresAuth: true },
   { href: "/career-trajectory", label: "Career path", icon: <Route size={13} />,   desc: "Markov state distribution",   priority: 9 },
   { href: "/job-security", label: "Job security", icon: <Shield size={13} />,      desc: "AI exposure by profession",   priority: 10 },
+  { href: "/settings",     label: "Settings",     icon: <Settings size={13} />,    desc: "Theme & preferences",         priority: 11 },
 ];
 
 /** Shown in the bar from `md` up; everything else collapses into "More". */
@@ -100,121 +101,127 @@ export function Navbar() {
     return null;
   }
 
+  // Active state in the "More" dropdown
+  const moreIsActive = OVERFLOW_NAV.some((l) => pathname.startsWith(l.href));
+
   return (
     <nav
+      aria-label="Main"
       className={[
-        "fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-xl transition-all duration-300",
+        "sticky top-0 z-50 transition-all duration-200 border-b",
         scrolled
-          ? "t-border t-elevated border-b shadow-md"
-          : "border-line/10 t-elevated/80",
-        "py-2.5",
+          ? "t-border bg-[var(--nav-bg-scrolled)] backdrop-blur-xl shadow-xs"
+          : "border-transparent bg-[var(--nav-bg)] backdrop-blur-md",
       ].join(" ")}
     >
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-        {/*
-          `min-w-0` + `whitespace-nowrap` on every cluster is what actually stops
-          the wrap. The row is a flex container with three children; without a
-          shrinkable middle cluster the links keep their intrinsic width, overflow
-          the 960px content box at 1024px, and wrap — which is what pushed the CTA
-          off the right edge. Nothing here may wrap onto a second line.
-        */}
-        <div className="flex items-center justify-between gap-3 h-11">
-
-          {/* ── Logo */}
-          <Link href={user ? "/workspace" : "/"} className="flex items-center gap-2.5 group flex-shrink-0 whitespace-nowrap">
-            <div className="w-7 h-7 rounded-lg t-accent flex items-center justify-center">
-              <span className="font-bold text-white text-[11px] tracking-tight">VE</span>
+      <div className="container-xl">
+        <div className="flex items-center justify-between h-14 gap-2">
+          {/* ── Left: Brand ── */}
+          <Link
+            href="/"
+            className="flex items-center gap-2 group flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded-lg py-1 px-1.5 -ml-1.5"
+          >
+            <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center font-bold text-white text-[12px] shadow-xs group-hover:scale-105 transition-transform">
+              V
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-[14px] t-text tracking-tight">{BRAND.name}</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-sys-green inline-block animate-pulse" />
-            </div>
+            <span className="font-semibold tracking-tight text-[14px] t-text">
+              {BRAND.name}
+            </span>
+            <span className="hidden sm:inline font-mono text-[9px] font-bold uppercase tracking-wider text-accent border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 rounded-full">
+              Beta
+            </span>
           </Link>
 
-          {/* ── Desktop Nav */}
-          <div className="hidden md:flex items-center gap-0.5 min-w-0 justify-center">
+          {/* ── Center: Links (Desktop) ── */}
+          <div className="hidden md:flex items-center gap-0.5 min-w-0">
             {PERMANENT_NAV.map((link) => {
-              const active = pathname.startsWith(link.href);
-              // Routes behind `AuthGate` advertise that up front rather than
-              // letting the click dead-end on a sign-in wall. The lock is a
-              // visual cue only — the guard on the page is what enforces it.
+              const isActive = pathname.startsWith(link.href);
               const locked = link.requiresAuth && !user && !isLoading;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
                   className={[
-                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-all whitespace-nowrap",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg)]",
-                    active
-                      ? "t-chip t-text font-semibold"
-                      : "t-muted hover:t-text hover:bg-[var(--bg-hover)]",
-                    link.highlight && !active ? "text-accent hover:opacity-80" : "",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all whitespace-nowrap",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
+                    isActive
+                      ? "t-chip t-text font-semibold shadow-xs"
+                      : "t-muted hover:bg-[var(--bg-hover)] hover:t-text",
                   ].join(" ")}
-                  title={locked ? `Sign in to open ${link.label}` : link.desc}
                 >
-                  {link.icon}
-                  {link.label}
-                  {locked && <Lock size={10} className="t-faint" />}
+                  <span className={isActive ? "text-accent" : "t-faint"}>
+                    {link.icon}
+                  </span>
+                  <span>{link.label}</span>
+                  {locked && (
+                    <Lock
+                      size={10}
+                      className="t-faint"
+                      aria-label="Requires sign-in"
+                    />
+                  )}
                 </Link>
               );
             })}
 
-            {/* Overflow. The five lower-priority routes live here instead of
-                permanently competing for width in a 56px bar. The button only
-                appears when something is actually in the menu, and it carries a
-                visible count-free dot state when one of its routes is the page
-                you are on, so the menu is never a dead end. */}
+            {/* Overflow "More" menu */}
             {OVERFLOW_NAV.length > 0 && (
-              <div className="relative flex-shrink-0" data-nav-more>
+              <div className="relative" data-nav-more>
                 <button
                   type="button"
                   onClick={() => setMoreOpen((v) => !v)}
                   aria-expanded={moreOpen}
                   aria-haspopup="true"
-                  aria-label="More pages"
                   className={[
-                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-all whitespace-nowrap",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg)]",
-                    moreOpen || OVERFLOW_NAV.some((l) => pathname.startsWith(l.href))
+                    "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-all whitespace-nowrap cursor-pointer",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
+                    moreIsActive
                       ? "t-chip t-text font-semibold"
-                      : "t-muted hover:t-text hover:bg-[var(--bg-hover)]",
+                      : "t-muted hover:bg-[var(--bg-hover)] hover:t-text",
                   ].join(" ")}
                 >
-                  <MoreHorizontal size={13} />
-                  More
+                  <MoreHorizontal size={14} className={moreIsActive ? "text-accent" : "t-faint"} />
+                  <span>More</span>
                   <ChevronDown
-                    size={12}
-                    className={`transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`}
+                    size={11}
+                    className={`t-faint transition-transform duration-150 ${moreOpen ? "rotate-180" : ""}`}
                   />
                 </button>
 
                 {moreOpen && (
-                  <div className="absolute right-0 top-[calc(100%+8px)] w-60 t-border border t-elevated rounded-xl shadow-lg p-1.5 animate-slide-down">
+                  <div
+                    role="menu"
+                    className="absolute left-0 mt-2 w-64 rounded-xl t-elevated t-border border shadow-lg py-1.5 z-50 animate-slide-down backdrop-blur-xl"
+                  >
                     {OVERFLOW_NAV.map((link) => {
-                      const active = pathname.startsWith(link.href);
+                      const isActive = pathname.startsWith(link.href);
                       const locked = link.requiresAuth && !user && !isLoading;
                       return (
                         <Link
                           key={link.href}
                           href={link.href}
+                          role="menuitem"
                           onClick={() => setMoreOpen(false)}
                           className={[
-                            "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors",
+                            "flex items-start gap-3 px-3.5 py-2 text-[12px] transition-colors",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
-                            active ? "t-chip" : "hover:bg-[var(--bg-hover)]",
+                            isActive
+                              ? "bg-[var(--bg-hover)] t-text font-semibold"
+                              : "t-muted hover:bg-[var(--bg-hover)] hover:t-text",
                           ].join(" ")}
                         >
-                          <span className={active ? "t-accent" : "t-muted"}>{link.icon}</span>
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-center gap-1.5 text-[13px] font-medium t-text">
-                              {link.label}
-                              {locked && <Lock size={10} className="t-faint" />}
-                            </span>
-                            <span className="block text-[11px] t-muted truncate">
-                              {locked ? `Sign in to open ${link.label}` : link.desc}
-                            </span>
+                          <span className={`mt-0.5 shrink-0 ${isActive ? "text-accent" : "t-faint"}`}>
+                            {link.icon}
                           </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium t-text">{link.label}</span>
+                              {locked && <Lock size={10} className="t-faint" />}
+                            </div>
+                            <p className="text-[11px] t-faint truncate font-normal mt-0.5">
+                              {link.desc}
+                            </p>
+                          </div>
                         </Link>
                       );
                     })}
@@ -224,10 +231,7 @@ export function Navbar() {
             )}
           </div>
 
-          {/* ── Right: Status + Theme + Auth + CTA
-              `flex-shrink-0` + `whitespace-nowrap` here as well: "Sign in" and
-              "Get started" were both wrapping to two lines and the CTA was being
-              clipped, because this cluster could shrink and the CTA could not. */}
+          {/* ── Right: Status + Theme + Auth + CTA ── */}
           <div className="hidden md:flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
             {/* Live indicator */}
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full t-chip t-border border text-xs whitespace-nowrap">
@@ -239,11 +243,7 @@ export function Navbar() {
 
             <ThemeToggle />
 
-            {/* Auth.
-                While the Supabase session is still hydrating the control renders
-                a neutral placeholder rather than "Sign in": a signed-in user
-                would otherwise watch the navbar flip to signed-out and back on
-                every full page load. */}
+            {/* Auth */}
             {isLoading ? (
               <div className="h-8 w-24 rounded-lg t-chip t-border border skeleton" aria-hidden />
             ) : user && (user.full_name || user.email) ? (
@@ -258,15 +258,16 @@ export function Navbar() {
                 <span className="t-text font-medium max-w-[80px] truncate text-[12px]">
                   {user.full_name || user.email?.split("@")[0] || "User"}
                 </span>
-                {/*
-                  No PRO badge here. Entitlement used to be read from Supabase
-                  `user_metadata`, which the account holder can write themselves,
-                  so anyone could grant themselves the badge by editing their own
-                  profile. Nothing in the product gates a feature on premium yet,
-                  so the honest state is to show no entitlement at all rather than
-                  show one we cannot verify. This renders again only when
-                  entitlement is served from a server-owned source.
-                */}
+
+                <Link
+                  href="/settings"
+                  title="Settings & Appearance"
+                  aria-label="Settings"
+                  className="t-faint hover:text-accent transition ml-0.5 p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded"
+                >
+                  <Settings size={12} />
+                </Link>
+
                 <button
                   onClick={logout}
                   title="Sign out"
@@ -320,6 +321,15 @@ export function Navbar() {
       {/* Mobile drawer */}
       {mobileOpen && (
         <div id="mobile-nav" className="md:hidden t-border border-t t-elevated backdrop-blur-2xl px-5 py-4 space-y-1 animate-slide-down">
+          {/* Mobile Theme Switcher */}
+          <div className="flex items-center justify-between px-3 py-2.5 rounded-xl t-chip t-border border mb-2">
+            <div className="flex items-center gap-2 text-xs font-semibold t-text">
+              <Sun size={14} className="text-amber-500" />
+              <span>Theme & Appearance</span>
+            </div>
+            <ThemeToggle />
+          </div>
+
           {NAV_LINKS.map((link) => {
             const locked = link.requiresAuth && !user && !isLoading;
             return (
@@ -351,9 +361,6 @@ export function Navbar() {
                 <LogOut size={14} /> Sign out
               </button>
             ) : (
-              // The desktop navbar hides its auth control below `md`, so the
-              // drawer is the only sign-in affordance on a phone. Without this
-              // there was no way to sign in at all on mobile.
               <button
                 onClick={() => { setMobileOpen(false); setIsAuthModalOpen(true); }}
                 className="w-full py-2.5 text-center text-sm font-semibold t-text t-chip hover:t-elevated t-border border rounded-xl flex items-center justify-center gap-2"

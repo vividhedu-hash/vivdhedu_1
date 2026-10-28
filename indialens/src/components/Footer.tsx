@@ -9,6 +9,7 @@ import { BRAND } from "@/lib/brand";
 
 const PLATFORM_LINKS = [
   { href: "/workspace",        label: "Decision Workspace"      },
+  { href: "/settings",         label: "Settings & Appearance"   },
   { href: "/you",              label: "For You graph"           },
   { href: "/onboard",          label: "Calibration Onboarding"  },
   { href: "/explore",          label: "Program Asset Index"      },
@@ -48,35 +49,32 @@ export function Footer() {
               <span className="h-[1.5px] w-2.5 bg-accent" />
               Free during launch
             </p>
-            <h2 className="mt-3 text-[clamp(1.4rem,3vw,1.9rem)] font-bold tracking-tight t-text">
-              Get launch pricing before it goes live
-            </h2>
-            <p className="mt-2 text-[13px] leading-relaxed t-muted">
-              The product is free right now, with no card and no cap. Join the
-              list and we will send the real prices the moment paid tiers open.
+            <h3 className="mt-2 text-xl font-bold tracking-tight t-text">
+              Run your degree through the decision engine.
+            </h3>
+            <p className="mt-1.5 text-[13px] t-muted leading-relaxed">
+              Full access to NPV calculations, debt stress modeling, and AI
+              displacement scoring. No payment required during our public launch.
             </p>
-            <Link
-              href="/pricing"
-              className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent hover:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded"
-            >
-              See what is free today <ArrowRight size={13} />
-            </Link>
           </div>
-          <WaitlistForm source="footer" compact />
+          <WaitlistForm />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-          {/* Brand */}
+        {/* ── Link Columns ─────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-4 pb-12 border-b t-divider">
+          {/* Brand block */}
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-7 h-7 rounded-lg t-accent flex items-center justify-center text-white font-bold text-[11px]">
-                VE
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 mb-4 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded"
+            >
+              <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center font-bold text-white text-[12px] group-hover:scale-105 transition-transform">
+                V
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[15px] t-text tracking-tight">{BRAND.name}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-sys-green inline-block animate-pulse" />
-              </div>
-            </div>
+              <span className="font-semibold text-base t-text">
+                {BRAND.name}
+              </span>
+            </Link>
             <p className="t-muted text-[13px] leading-relaxed max-w-xs">
               {BRAND.tagline} Degrees valued as capital assets, AI displacement
               scored, and admissions engineered on published methodology.
@@ -139,20 +137,25 @@ export function Footer() {
           </nav>
         </div>
 
-        {/* Bottom bar */}
-        <div className="t-border-subtle border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-5 text-[11px] t-faint font-mono">
-            <span>© 2026 {BRAND.name}. All rights reserved.</span>
-            <Link href="/methodology" className="hover:t-text flex items-center gap-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded">
-              <ExternalLink size={10} aria-hidden="true" /> Epistemic Standard
+        {/* ── Sub-footer ───────────────────────────────────────────── */}
+        <div className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-[12px] t-faint font-mono">
+          <p>© {new Date().getFullYear()} {BRAND.legalEntity}. All rights reserved.</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span>Operated under {BRAND.governingLaw}</span>
+            <span aria-hidden="true">·</span>
+            <Link
+              href="/privacy"
+              className="hover:t-text transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded"
+            >
+              DPDP compliant
             </Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="font-mono t-faint text-[11px]">Model v4.2-active</span>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-sys-green inline-block animate-pulse" />
-              <span className="text-sys-green font-semibold text-[11px] font-mono">Telemetry Live</span>
-            </div>
+            <span aria-hidden="true">·</span>
+            <Link
+              href="/terms"
+              className="hover:t-text transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded"
+            >
+              Terms
+            </Link>
           </div>
         </div>
       </div>

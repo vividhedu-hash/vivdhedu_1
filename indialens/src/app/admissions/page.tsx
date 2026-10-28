@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, GraduationCap, CheckCircle2 } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { Notice } from "@/components/Notice";
 
 /**
  * Admissions odds from the cutoffs table.
@@ -84,93 +86,149 @@ export default function AdmissionsPage() {
   }
 
   return (
-    <div className="min-h-screen t-bg text-slate-900">
-      <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Admissions odds</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">Where this rank actually lands</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
-          Probabilities use closing ranks stored in the database, with the category multiplier
-          applied at calculation time. A row marked unverified was imported without a source URL.
-          It is not a published cutoff.
-        </p>
+    <div className="page-shell">
+      <div className="container-xl page-header">
+        <PageHeader
+          kicker="Admissions odds"
+          eyebrow={
+            <span className="badge badge-purple">
+              <GraduationCap size={10} aria-hidden="true" />
+              Verified cutoff probabilities
+            </span>
+          }
+          title="Where this rank actually lands"
+          lead="Probabilities use closing ranks stored in the database, with the category multiplier applied at calculation time. A row marked unverified was imported without a source URL. It is not a published cutoff."
+        />
+      </div>
 
+      <main className="container-xl pb-16">
         <form
-          className="mt-8 grid gap-4 rounded-2xl border t-border t-surface p-5 sm:grid-cols-2"
+          className="panel panel-pad grid gap-4 sm:grid-cols-2"
           onSubmit={(event) => {
             event.preventDefault();
             void evaluate();
           }}
         >
-          <label className="text-sm">
-            <span className="mb-1 block font-medium">Expected rank</span>
-            <input className="w-full rounded-lg border t-border px-3 py-2" value={rank} onChange={(e) => setRank(e.target.value)} inputMode="numeric" required />
+          <label className="text-xs font-medium t-muted block">
+            <span className="mb-1.5 block t-text font-semibold">Expected rank</span>
+            <input
+              className="form-input w-full"
+              value={rank}
+              onChange={(e) => setRank(e.target.value)}
+              inputMode="numeric"
+              required
+            />
           </label>
-          <label className="text-sm">
-            <span className="mb-1 block font-medium">Exam</span>
-            <select className="w-full rounded-lg border t-border px-3 py-2" value={exam} onChange={(e) => setExam(e.target.value)}>
-              {EXAMS.map((item) => <option key={item}>{item}</option>)}
+          <label className="text-xs font-medium t-muted block">
+            <span className="mb-1.5 block t-text font-semibold">Exam</span>
+            <select
+              className="form-input w-full"
+              value={exam}
+              onChange={(e) => setExam(e.target.value)}
+            >
+              {EXAMS.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
             </select>
           </label>
-          <label className="text-sm">
-            <span className="mb-1 block font-medium">Category</span>
-            <select className="w-full rounded-lg border t-border px-3 py-2" value={category} onChange={(e) => setCategory(e.target.value)}>
-              {CATEGORIES.map((item) => <option key={item}>{item}</option>)}
+          <label className="text-xs font-medium t-muted block">
+            <span className="mb-1.5 block t-text font-semibold">Category</span>
+            <select
+              className="form-input w-full"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              {CATEGORIES.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
             </select>
           </label>
-          <label className="text-sm">
-            <span className="mb-1 block font-medium">Home state</span>
-            <input className="w-full rounded-lg border t-border px-3 py-2" value={homeState} onChange={(e) => setHomeState(e.target.value)} required />
+          <label className="text-xs font-medium t-muted block">
+            <span className="mb-1.5 block t-text font-semibold">Home state</span>
+            <input
+              className="form-input w-full"
+              value={homeState}
+              onChange={(e) => setHomeState(e.target.value)}
+              required
+            />
           </label>
-          <label className="text-sm sm:col-span-2">
-            <span className="mb-1 block font-medium">Budget, INR</span>
-            <input className="w-full rounded-lg border t-border px-3 py-2" value={budget} onChange={(e) => setBudget(e.target.value)} inputMode="numeric" required />
+          <label className="text-xs font-medium t-muted block sm:col-span-2">
+            <span className="mb-1.5 block t-text font-semibold">Budget (₹ INR)</span>
+            <input
+              className="form-input w-full"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              inputMode="numeric"
+              required
+            />
           </label>
-          <div className="sm:col-span-2">
-            <button type="submit" disabled={running} className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
-              {running && <Loader2 className="h-4 w-4 animate-spin" />}
+          <div className="sm:col-span-2 pt-2">
+            <button
+              type="submit"
+              disabled={running}
+              className="btn-primary"
+            >
+              {running && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {running ? "Computing…" : "Compute odds"}
             </button>
           </div>
         </form>
 
         {error && (
-          <div className="mt-6 flex gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>{error}</p>
+          <div className="mt-6">
+            <Notice tone="error">{error}</Notice>
           </div>
         )}
 
         {result?.provenance && (
-          <p className="mt-6 text-sm text-slate-600">
-            {result.provenance.verified_rows} verified, {result.provenance.unverified_rows} unverified. {result.provenance.note}
-          </p>
+          <div className="mt-6 p-4 rounded-xl t-chip border t-border flex items-center justify-between text-xs t-muted">
+            <span className="flex items-center gap-2">
+              <CheckCircle2 size={14} className="text-emerald-500" />
+              <span>
+                <strong>{result.provenance.verified_rows}</strong> verified rows,{" "}
+                <strong>{result.provenance.unverified_rows}</strong> unverified. {result.provenance.note}
+              </span>
+            </span>
+          </div>
         )}
 
-        {result?.tiers && TIER_ORDER.map((key) => {
-          const rows = result.tiers?.[key] ?? [];
-          if (rows.length === 0) return null;
-          return (
-            <section key={key} className="mt-6">
-              <h2 className="text-lg font-semibold text-slate-950">{TIER_LABEL[key]} ({rows.length})</h2>
-              <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-2xl border t-border t-surface">
-                {rows.map((row) => (
-                  <li key={`${row.college}-${row.degree}-${row.exam}`} className="px-4 py-3 text-sm">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <span className="font-medium text-slate-900">{row.college}</span>
-                      <span className="font-mono text-slate-700">{row.admission_probability_pct}%</span>
-                    </div>
-                    <p className="text-slate-600">{row.degree} · {row.exam}{row.vintage_year ? ` · ${row.vintage_year}` : ""}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {row.is_verified ? "Verified" : "Unverified — imported, no source URL"}
-                      {row.tier_badge ? ` · ${row.tier_badge}` : ""}
-                      {row.pruning_reason ? ` · ${row.pruning_reason}` : ""}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          );
-        })}
+        {result?.tiers &&
+          TIER_ORDER.map((key) => {
+            const rows = result.tiers?.[key] ?? [];
+            if (rows.length === 0) return null;
+            return (
+              <section key={key} className="mt-8 panel">
+                <div className="panel-head flex items-center justify-between">
+                  <span className="panel-title">{TIER_LABEL[key]} Cohorts</span>
+                  <span className="badge badge-teal font-mono">{rows.length} matches</span>
+                </div>
+                <ul className="divide-y t-divider">
+                  {rows.map((row) => (
+                    <li
+                      key={`${row.college}-${row.degree}-${row.exam}`}
+                      className="px-5 py-3.5 text-sm hover:bg-[var(--bg-hover)] transition-colors"
+                    >
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <span className="font-semibold t-text">{row.college}</span>
+                        <span className="font-mono font-bold text-accent">
+                          {row.admission_probability_pct}%
+                        </span>
+                      </div>
+                      <p className="t-muted text-xs mt-0.5">
+                        {row.degree} · {row.exam}
+                        {row.vintage_year ? ` · ${row.vintage_year}` : ""}
+                      </p>
+                      <p className="mt-1 text-[11px] t-faint font-mono">
+                        {row.is_verified ? "Verified Cutoff" : "Unverified — imported, no source URL"}
+                        {row.tier_badge ? ` · ${row.tier_badge}` : ""}
+                        {row.pruning_reason ? ` · ${row.pruning_reason}` : ""}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
       </main>
     </div>
   );

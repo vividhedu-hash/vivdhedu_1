@@ -21,8 +21,14 @@ import {
   Check,
   TrendingUp,
   MapPin,
+  LogOut,
+  Moon,
+  Sun,
+  Laptop,
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useTheme } from "@/lib/theme";
 import { WorkspaceTelemetrySidebar, type TelemetryProps } from "@/components/WorkspaceTelemetrySidebar";
 import { AIDecisionCard, type AIDecisionResult } from "@/components/AIDecisionCard";
 import { RecentWavesFeed } from "@/components/RecentWavesFeed";
@@ -130,7 +136,8 @@ function WorkspaceView() {
   const [question, setQuestion] = useState("");
   const [decisionResult, setDecisionResult] = useState<AIDecisionResult | null>(null);
   const [telemetry, setTelemetry] = useState<TelemetryProps>(EMPTY_TELEMETRY);
-  const [activeNav, setActiveNav] = useState<"overview" | "matrix" | "roi" | "roadmap">("overview");
+  const [activeNav, setActiveNav] = useState<"overview" | "matrix" | "roi" | "roadmap" | "settings">("overview");
+  const { choice: themeChoice, setTheme } = useTheme();
   const [roadmap, setRoadmap] = useState<RoadmapItem[]>([]);
   const [newRoadmapTask, setNewRoadmapTask] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -467,6 +474,7 @@ function WorkspaceView() {
               { id: "matrix", label: "Decision Weights", icon: <Sliders size={15} /> },
               { id: "roi", label: "What we model", icon: <TrendingUp size={15} /> },
               { id: "roadmap", label: "Your Roadmap", icon: <Target size={15} /> },
+              { id: "settings", label: "Settings", icon: <Settings size={15} /> },
             ].map((item) => {
               const isActive = activeNav === item.id;
               return (
@@ -518,9 +526,9 @@ function WorkspaceView() {
           </Link>
           <button
             onClick={logout}
-            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-ink-2 hover:text-ink transition-colors cursor-pointer"
+            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-ink-2 hover:text-rose-600 transition-colors cursor-pointer"
           >
-            <Settings size={14} className="text-ink-3" />
+            <LogOut size={14} className="text-ink-3" />
             <span>Sign out</span>
           </button>
 
@@ -548,7 +556,8 @@ function WorkspaceView() {
             <span className="text-ink">{displayName}</span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             {token ? (
               <Link
                 href={`/report/${token}`}
@@ -916,6 +925,130 @@ function WorkspaceView() {
                       gap. When these become real measurements they will appear here,
                       with their source and vintage.
                     </p>
+                  </div>
+                </div>
+              )}
+
+
+              {/* ── SETTINGS ── */}
+              {activeNav === "settings" && (
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Settings size={16} className="text-accent" />
+                      <span className="text-xs font-mono font-bold text-ink-3 uppercase tracking-wider">
+                        Workspace Configuration
+                      </span>
+                    </div>
+                    <h2 className="text-2xl font-bold tracking-tight text-ink">
+                      Workspace Settings
+                    </h2>
+                    <p className="text-sm text-ink-2 mt-1 max-w-2xl leading-relaxed">
+                      Configure your workspace interface theme, dark mode preferences, decision model thresholds, and telemetry options.
+                    </p>
+                  </div>
+
+                  {/* Dark Mode & Theme Card */}
+                  <div className="bg-elevated border border-line/10 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-bold text-ink">Interface Theme & Dark Mode</h3>
+                        <p className="text-xs text-ink-2 mt-0.5">
+                          Toggle between daylight clarity and OLED dark mode terminal styling.
+                        </p>
+                      </div>
+                      <ThemeToggle showLabel />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setTheme("light")}
+                        className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                          themeChoice === "light"
+                            ? "border-accent ring-1 ring-accent bg-surface"
+                            : "border-line/10 hover:bg-surface/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Sun size={15} className="text-amber-500" />
+                          <div>
+                            <span className="text-xs font-bold text-ink block">Light Mode</span>
+                            <span className="text-[10px] text-ink-3">Daylight contrast</span>
+                          </div>
+                        </div>
+                        {themeChoice === "light" && <Check size={14} className="text-accent" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTheme("dark")}
+                        className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                          themeChoice === "dark"
+                            ? "border-accent ring-1 ring-accent bg-surface"
+                            : "border-line/10 hover:bg-surface/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Moon size={15} className="text-indigo-400" />
+                          <div>
+                            <span className="text-xs font-bold text-ink block">Dark Mode</span>
+                            <span className="text-[10px] text-ink-3">OLED black</span>
+                          </div>
+                        </div>
+                        {themeChoice === "dark" && <Check size={14} className="text-accent" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTheme("system")}
+                        className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                          themeChoice === "system"
+                            ? "border-accent ring-1 ring-accent bg-surface"
+                            : "border-line/10 hover:bg-surface/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Laptop size={15} className="text-teal-500" />
+                          <div>
+                            <span className="text-xs font-bold text-ink block">System Auto</span>
+                            <span className="text-[10px] text-ink-3">Matches OS</span>
+                          </div>
+                        </div>
+                        {themeChoice === "system" && <Check size={14} className="text-accent" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Actuarial & Display Preferences */}
+                  <div className="bg-elevated border border-line/10 rounded-2xl p-5 shadow-sm space-y-4">
+                    <h3 className="text-sm font-bold text-ink">Decision OS Preferences</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="p-3.5 rounded-xl bg-surface border border-line/10">
+                        <span className="text-xs font-semibold text-ink block">Currency Display</span>
+                        <span className="text-[11px] text-ink-2 mt-0.5 block">
+                          Primary valuation in ₹ INR (Indian Rupee)
+                        </span>
+                        <span className="inline-block mt-2 text-[10px] font-mono font-bold text-accent">Active: ₹ INR</span>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-surface border border-line/10">
+                        <span className="text-xs font-semibold text-ink block">NPV Projection Window</span>
+                        <span className="text-[11px] text-ink-2 mt-0.5 block">
+                          20-Year Lifetime Capital Asset standard
+                        </span>
+                        <span className="inline-block mt-2 text-[10px] font-mono font-bold text-accent">Active: 20-Year Asset Horizon</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 flex items-center justify-between border-t border-line/10">
+                      <span className="text-xs text-ink-2">Need more granular configuration?</span>
+                      <Link
+                        href="/settings"
+                        className="text-xs font-bold text-accent hover:underline flex items-center gap-1"
+                      >
+                        Open Full Settings & Preferences →
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )}
