@@ -14,7 +14,7 @@
  */
 import { NextResponse } from "next/server";
 import { fetchBackend, getBackendUrl, proxyRequestHeaders } from "../../../../lib/backend";
-import { geminiConfigured, geminiGenerate } from "../../../../lib/gemini-direct";
+import { geminiConfigured, geminiGenerate, openrouterKey } from "../../../../lib/gemini-direct";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -106,7 +106,7 @@ async function tryGeminiDirect(
 ): Promise<NextResponse | null> {
   if (subpath === "ai/status" && method === "GET") {
     const configured = geminiConfigured();
-    const hasOpenRouter = Boolean(process.env.OPENROUTER_API_KEY && process.env.OPENROUTER_API_KEY.length > 10);
+    const hasOpenRouter = openrouterKey().length > 10;
     return NextResponse.json({
       engine: configured
         ? hasOpenRouter
