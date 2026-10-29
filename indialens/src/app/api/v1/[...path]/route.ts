@@ -110,7 +110,7 @@ async function tryGeminiDirect(
     return NextResponse.json({
       engine: configured
         ? hasOpenRouter
-          ? process.env.OPENROUTER_PRIMARY_MODEL || "thinkingmachines/inkling:free"
+          ? process.env.OPENROUTER_PRIMARY_MODEL || "nvidia/nemotron-3.5-lightning:free"
           : process.env.GEMINI_MODEL || "gemma-4-26b-a4b-it"
         : "",
       mode: hasOpenRouter ? "openrouter" : "gemini",
@@ -118,8 +118,8 @@ async function tryGeminiDirect(
       configured,
       engines: { gemini: Boolean(process.env.GEMINI_API_KEY), openrouter: hasOpenRouter },
       models: {
-        primary: process.env.OPENROUTER_PRIMARY_MODEL || "thinkingmachines/inkling:free",
-        fallback: process.env.OPENROUTER_FALLBACK_MODEL || "nvidia/nemotron-3-ultra-550b-a55b:free",
+        primary: process.env.OPENROUTER_PRIMARY_MODEL || "nvidia/nemotron-3.5-lightning:free",
+        fallback: process.env.OPENROUTER_FALLBACK_MODEL || "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
       },
       _source: hasOpenRouter ? "openrouter-direct" : "gemini-direct",
     });
@@ -128,7 +128,7 @@ async function tryGeminiDirect(
   if (!geminiConfigured()) return null;
 
   if (subpath === "ai/mode" && method === "POST") {
-    let parsed: { query?: string; question?: string; prompt?: string; context?: unknown; person_context?: string } = {};
+    let parsed: { query?: string; question?: string; prompt?: string; context?: unknown; person_context?: string; model?: string } = {};
     try {
       if (body) parsed = JSON.parse(body);
     } catch {
@@ -146,19 +146,22 @@ async function tryGeminiDirect(
         ? `\nStudent context (user-stated): ${JSON.stringify(parsed.context)}\n`
         : "";
       const person = parsed.person_context
-        ? `\nPERSON MEMORY:\n${parsed.person_context}\n`
+        ? `\nSTUDENT PERSONAL MEMORY:\n${parsed.person_context}\n`
         : "";
       const answer = await geminiGenerate(
-        `Answer this India higher-education / career question with live web evidence.
+        `Answer this India higher-education / student research question like Google AI Mode with live web evidence and structured clarity.
 
 Question: ${query}
 ${extra}${person}
-Structure:
-- Direct answer (2–6 sentences)
-- What is verified vs unverified
-- What the student should do next (max 3 bullets)
-Cite sources. Do not invent ranks, fees, or CTC.`,
-        { personContext: parsed.person_context },
+Formatting requirements:
+1. Direct Verdict: Start with a clear 2-3 sentence executive answer for the student.
+2. Key Student Takeaways: Highlight essential numbers (fees, real median CTC, cutoffs, ROI).
+3. Deep Dive: Clear factual breakdown, comparing programs/colleges where applicable.
+4. What is Verified vs Unverified: State what official data confirms vs unverified claims.
+5. Action Steps: Bullet points on what the student should do next.
+
+Cite all sources. Do not invent fees, cutoffs, or ranks.`,
+        { personContext: parsed.person_context, model: parsed.model },
       );
       return NextResponse.json(answer);
     } catch (err) {

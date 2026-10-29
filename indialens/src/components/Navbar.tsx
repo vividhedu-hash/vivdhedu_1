@@ -43,7 +43,7 @@ const NAV_LINKS: NavLink[] = [
   { href: "/pricing",      label: "Pricing",      icon: <TagIcon />,               desc: "Free during launch",         priority: 4 },
   { href: "/you",          label: "For You",      icon: <Fingerprint size={13} />, desc: "Your interest graph",        priority: 5 },
   { href: "/marketplace",  label: "Marketplace",  icon: <ShoppingBag size={13} />,  desc: "Matched courses & programs",  priority: 6 },
-  { href: "/advisor",      label: "AI Mode",      icon: <Sparkles size={13} />,    desc: "Gemini + Search grounding",   priority: 7 },
+  { href: "/advisor",      label: "AI Mode",      icon: <Sparkles size={13} />,    desc: "Google AI Mode + Tavily grounding",   priority: 7 },
   { href: "/psychometric", label: "Psychometric", icon: <Brain size={13} />,        desc: "IRT adaptive diagnostic",     priority: 8, requiresAuth: true },
   { href: "/career-trajectory", label: "Career path", icon: <Route size={13} />,   desc: "Markov state distribution",   priority: 9 },
   { href: "/job-security", label: "Job security", icon: <Shield size={13} />,      desc: "AI exposure by profession",   priority: 10 },
@@ -255,6 +255,20 @@ export function Navbar() {
               <kbd className="text-[10px] bg-chip px-1.5 py-0.5 rounded border border-line/10 text-ink-3">⌘K</kbd>
             </button>
 
+            {/* AI Slide Quick Toggle */}
+            <button
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("open-ai-slide", { detail: {} }));
+              }}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-600 dark:text-teal-400 text-[12px] font-medium transition cursor-pointer"
+              title="Open Google AI Slide Mode (⌘J)"
+              aria-label="Open AI Mode Slide"
+            >
+              <Sparkles size={12} className="text-teal-500" />
+              <span>AI Slide</span>
+              <kbd className="text-[10px] bg-teal-500/15 px-1 rounded border border-teal-500/20 font-mono">⌘J</kbd>
+            </button>
+
             <ThemeToggle />
 
             {/* Auth */}
@@ -353,6 +367,20 @@ export function Navbar() {
               <Search size={12} className="text-ink-3" />
               <span className="text-[11px] font-sans">Search</span>
               <kbd className="text-[10px] bg-chip px-1.5 py-0.5 rounded border border-line/10 text-ink-3">⌘K</kbd>
+            </button>
+
+            {/* AI Slide Quick Toggle */}
+            <button
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("open-ai-slide", { detail: {} }));
+              }}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-600 dark:text-teal-400 text-[12px] font-medium transition cursor-pointer"
+              title="Open Google AI Slide Mode (⌘J)"
+              aria-label="Open AI Mode Slide"
+            >
+              <Sparkles size={12} className="text-teal-500" />
+              <span>AI Slide</span>
+              <kbd className="text-[10px] bg-teal-500/15 px-1 rounded border border-teal-500/20 font-mono">⌘J</kbd>
             </button>
 
             <ThemeToggle />

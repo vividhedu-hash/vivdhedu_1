@@ -21,6 +21,17 @@ from services.gemini_grounded import SYSTEM_EDUCATION, Citation, GroundedAnswer
 
 logger = logging.getLogger(__name__)
 
+FREE_MODELS_POOL = [
+    "nvidia/nemotron-3.5-lightning:free",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "nvidia/nemotron-3.5-super-vl:free",
+    "dots-studio/dots-3-note-preview:free",
+    "poolside/laguna-xs-2.1:free",
+    "cohere/north-mini-code:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+]
+
 # Keywords indicating need for strict factual numerical verification (Nemotron sweet spot)
 FACTUAL_KEYWORDS = {
     "ctc", "salary", "lpa", "package", "fees", "fee", "cutoff", "cutoffs",
@@ -57,20 +68,25 @@ class OpenRouterGroundedClient:
         self._refresh()
         return bool(self.api_key)
 
-    def _choose_model_order(self, prompt: str) -> List[str]:
-        """Intelligently order models based on query type."""
+    def _choose_model_order(self, prompt: str, requested_model: Optional[str] = None) -> List[str]:
+        """Intelligently order models based on query type and candidate pool."""
         self._refresh()
         lowered = (prompt or "").lower()
         words = set(re.findall(r"\b\w+\b", lowered))
         is_factual = bool(words & FACTUAL_KEYWORDS)
 
-        # If question is heavy on factual cutoffs/salaries, Nemotron 3 Ultra leads
-        if is_factual and "nemotron" in self.fallback_model.lower():
-            ordered = [self.fallback_model, self.primary_model]
-        else:
-            ordered = [self.primary_model, self.fallback_model]
+        ordered: List[str] = []
+        if requested_model and requested_model.strip():
+            ordered.append(requested_model.strip())
 
-        # Deduplicate while preserving order
+        if is_factual and "reasoning" in self.fallback_model.lower():
+            ordered.extend([self.fallback_model, self.primary_model])
+        else:
+            ordered.extend([self.primary_model, self.fallback_model])
+
+        # Append remaining free models for high resilience
+        ordered.extend(FREE_MODELS_POOL)
+
         seen = set()
         return [m for m in ordered if m and not (m in seen or seen.add(m))]
 
@@ -81,6 +97,7 @@ class OpenRouterGroundedClient:
         system: str = SYSTEM_EDUCATION,
         timeout: float = 60.0,
         require_grounding: bool = True,
+        model: Optional[str] = None,
     ) -> GroundedAnswer:
         self._require_key()
         from services.fallback_web_search import apply_to_answer, ground_prompt
@@ -89,7 +106,7 @@ class OpenRouterGroundedClient:
         prompt, search_bundle = await ground_prompt(prompt)
 
         # Step 2: Determine model candidates (Inkling & Nemotron Ultra)
-        candidate_models = self._choose_model_order(prompt)
+        candidate_models = self._choose_model_order(prompt, requested_model=model)
         last_error: Optional[Exception] = None
 
         headers = {
@@ -147,6 +164,25 @@ class OpenRouterGroundedClient:
             except Exception as e:
                 logger.warning("OpenRouter model %s failed: %s", model, str(e))
                 last_error = e
+
+        # If all LLMs were rate-limited or unavailable, fall back to Tavily direct search synthesis
+        if search_bundle and (search_bundle.hits or search_bundle.direct_answer):
+            logger.info("Using Tavily grounded direct synthesis as reliable fallback")
+            text = search_bundle.direct_answer
+            if not text and search_bundle.hits:
+                text = "### Verified Overview\n\n" + "\n\n".join([f"**{h.title}**: {h.content}" for h in search_bundle.hits[:4]])
+            citations = [Citation(url=h.url, title=h.title, snippet=h.content) for h in search_bundle.hits]
+            ans = GroundedAnswer(
+                text=text,
+                citations=citations,
+                search_queries=[search_bundle.query] if search_bundle.query else [],
+                model="tavily-grounded-direct",
+                grounded=True,
+                api="tavily-direct",
+                images=search_bundle.images,
+                direct_answer=search_bundle.direct_answer,
+            )
+            return ans
 
         if last_error:
             if isinstance(last_error, IntegrationUnavailable):

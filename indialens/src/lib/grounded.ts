@@ -6,6 +6,12 @@ export type Citation = {
   snippet?: string | null;
 };
 
+export type GroundedMediaImage = {
+  url: string;
+  title?: string;
+  description?: string;
+};
+
 export type GroundedPayload = {
   engine?: string;
   status?: string;
@@ -16,6 +22,10 @@ export type GroundedPayload = {
   citations?: Citation[];
   search_queries?: string[];
   search_suggestions_html?: string | null;
+  images?: GroundedMediaImage[];
+  direct_answer?: string | null;
+  key_takeaways?: string[];
+  related_questions?: string[];
   error?: string;
 };
 

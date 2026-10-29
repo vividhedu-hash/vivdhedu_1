@@ -67,6 +67,7 @@ async def generate_grounded(
     system: str = SYSTEM_EDUCATION,
     timeout: float = 90.0,
     require_grounding: bool = True,
+    model: Optional[str] = None,
 ) -> GroundedAnswer:
     mode = (settings.ai_engine or "auto").strip().lower()
     order = {
@@ -78,14 +79,14 @@ async def generate_grounded(
     if len(order) == 1 and mode != "auto":
         # Explicit single-engine choice: surface its error directly.
         return await order[0].generate(
-            prompt, system=system, timeout=timeout, require_grounding=require_grounding
+            prompt, system=system, timeout=timeout, require_grounding=require_grounding, **({'model': model} if hasattr(order[0], '_choose_model_order') and model else {})
         )
 
     errors = []
     for engine in order:
         try:
             return await engine.generate(
-                prompt, system=system, timeout=timeout, require_grounding=require_grounding
+                prompt, system=system, timeout=timeout, require_grounding=require_grounding, **({'model': model} if hasattr(engine, '_choose_model_order') and model else {})
             )
         except IntegrationUnavailable as e:
             errors.append(f"{e.integration}: {e.reason}")

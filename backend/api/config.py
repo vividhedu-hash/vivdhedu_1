@@ -119,8 +119,8 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     # Cheap, fast, grounded models. Overridable per deployment.
-    openrouter_primary_model: str = "thinkingmachines/inkling:free"
-    openrouter_fallback_model: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
+    openrouter_primary_model: str = "nvidia/nemotron-3.5-lightning:free"
+    openrouter_fallback_model: str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
     # "auto" = try Gemini, fall back to OpenRouter. "openrouter" = OpenRouter
     # first. "gemini" = Gemini only, never fall back.
     ai_engine: str = "openrouter"

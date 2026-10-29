@@ -59,6 +59,10 @@ class GroundedAnswer:
     model: str = ""
     grounded: bool = False
     api: str = ""
+    images: List[Dict[str, Any]] = field(default_factory=list)
+    direct_answer: Optional[str] = None
+    key_takeaways: List[str] = field(default_factory=list)
+    related_questions: List[str] = field(default_factory=list)
 
     def as_dict(self) -> Dict[str, Any]:
         return {
@@ -71,6 +75,10 @@ class GroundedAnswer:
             "citations": [c.as_dict() for c in self.citations],
             "search_queries": self.search_queries,
             "search_suggestions_html": self.search_suggestions_html,
+            "images": self.images,
+            "direct_answer": self.direct_answer,
+            "key_takeaways": self.key_takeaways,
+            "related_questions": self.related_questions,
         }
 
 

@@ -40,6 +40,7 @@ class ModeRequest(BaseModel):
     query: str = Field(..., min_length=3, max_length=2000)
     context: Optional[Dict[str, Any]] = None
     person_context: Optional[str] = Field(None, max_length=8000)
+    model: Optional[str] = None
 
 
 class IntelligenceRequest(BaseModel):
@@ -74,24 +75,28 @@ async def ai_status():
 
 @router.post("/mode")
 async def ai_mode(payload: ModeRequest):
-    """Google AI Mode equivalent: Gemini 3.7 Flash + live Search citations."""
+    """Google AI Mode equivalent: Frontier Open Models / Gemini + Tavily live Search & media."""
     extra = ""
     if payload.context:
         extra = f"\nStudent context (user-stated): {payload.context}\n"
     if payload.person_context:
-        extra += f"\nPERSON MEMORY (do not contradict; do not invent missing biography):\n{payload.person_context}\n"
-    prompt = f"""Answer this India higher-education / career question with live web evidence.
+        extra += f"\nSTUDENT PERSONAL MEMORY (tailor advice directly to this student profile):\n{payload.person_context}\n"
+    prompt = f"""Answer this India higher-education / student research question like Google AI Mode with live web evidence and structured clarity.
 
 Question: {payload.query}
 {extra}
-Structure:
-- Direct answer (2–6 sentences)
-- What is verified vs unverified
-- What the student should do next (max 3 bullets)
-Cite sources. Do not invent ranks, fees, or CTC."""
+Formatting requirements:
+1. Direct Verdict: Start with a clear 2-3 sentence executive answer for the student.
+2. Key Student Takeaways: Highlight essential numbers (fees, real median CTC, cutoffs, ROI).
+3. Deep Dive: Clear factual breakdown, comparing programs/colleges where applicable.
+4. What is Verified vs Unverified: State what official data confirms vs unverified claims.
+5. Action Steps: Bullet points on what the student should do next.
+
+Cite all sources. Do not invent fees, cutoffs, or ranks."""
     try:
-        answer = await generate_grounded(prompt, timeout=90.0, require_grounding=True)
-        return answer.as_dict()
+        answer = await generate_grounded(prompt, timeout=90.0, require_grounding=True, model=payload.model)
+        result = answer.as_dict()
+        return result
     except IntegrationUnavailable as e:
         raise HTTPException(status_code=e.status, detail=e.as_http_detail())
 

@@ -52,6 +52,8 @@ class SearchBundle:
     provider: str
     query: str
     hits: List[SearchHit] = field(default_factory=list)
+    images: List[Dict[str, Any]] = field(default_factory=list)
+    direct_answer: str = ""
 
     def as_markdown(self) -> str:
         if not self.hits:
@@ -142,7 +144,13 @@ async def _request(
     return res
 
 
+_LAST_SEARCH_IMAGES: List[Dict[str, Any]] = []
+_LAST_SEARCH_ANSWER: str = ""
+
 async def _tavily(client: httpx.AsyncClient, query: str, n: int) -> List[SearchHit]:
+    global _LAST_SEARCH_IMAGES, _LAST_SEARCH_ANSWER
+    _LAST_SEARCH_IMAGES = []
+    _LAST_SEARCH_ANSWER = ""
     key = _key("TAVILY_API_KEY", setting=settings.tavily_api_key)
     if not key:
         raise _Skip("no key")
@@ -150,10 +158,31 @@ async def _tavily(client: httpx.AsyncClient, query: str, n: int) -> List[SearchH
         client,
         "POST",
         "https://api.tavily.com/search",
-        json={"api_key": key, "query": query, "search_depth": "basic", "max_results": n},
+        json={
+            "api_key": key,
+            "query": query,
+            "search_depth": "basic",
+            "max_results": n,
+            "include_images": True,
+            "include_image_descriptions": True,
+            "include_answer": True,
+        },
     )
     data = res.json()
     rows = data.get("results") or []
+    raw_images = data.get("images") or []
+    imgs: List[Dict[str, Any]] = []
+    for item in raw_images:
+        if isinstance(item, dict) and item.get("url"):
+            imgs.append({
+                "url": item.get("url", ""),
+                "title": item.get("title") or item.get("description") or "",
+                "description": item.get("description") or "",
+            })
+        elif isinstance(item, str) and item.startswith("http"):
+            imgs.append({"url": item, "title": "", "description": ""})
+    _LAST_SEARCH_IMAGES = imgs
+    _LAST_SEARCH_ANSWER = str(data.get("answer") or "").strip()
     return _hits_from_rows(rows, "tavily", n)
 
 
@@ -449,7 +478,9 @@ async def search_web(query: str, max_results: int = MAX_RESULTS) -> SearchBundle
                 continue
             if hits:
                 logger.info("web search used %s (%s hits)", name, len(hits))
-                return SearchBundle(provider=name, query=query, hits=hits)
+                imgs = list(_LAST_SEARCH_IMAGES) if name == "tavily" else []
+                ans = str(_LAST_SEARCH_ANSWER) if name == "tavily" else ""
+                return SearchBundle(provider=name, query=query, hits=hits, images=imgs, direct_answer=ans)
     logger.warning("web search: every provider failed for %r", query[:80])
     return SearchBundle(provider="", query=query, hits=[])
 
@@ -497,4 +528,8 @@ def apply_to_answer(answer: Any, bundle: Optional[SearchBundle]) -> Any:
     suffix = f"web_search:{bundle.provider}"
     if suffix not in api:
         answer.api = f"{api}+{suffix}" if api else suffix
+    if getattr(bundle, "images", None):
+        answer.images = list(bundle.images)
+    if getattr(bundle, "direct_answer", None):
+        answer.direct_answer = str(bundle.direct_answer)
     return answer

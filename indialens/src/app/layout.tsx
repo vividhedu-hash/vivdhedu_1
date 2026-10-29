@@ -51,6 +51,7 @@ import { CookieConsent } from "@/components/CookieConsent";
 import { CommandPalette } from "@/components/ui/CommandPalette";
 import { FloatingDock } from "@/components/ui/FloatingDock";
 import { PersonMemoryProvider } from "@/lib/person-memory-context";
+import { AIModeSlideDrawer } from "@/components/AIModeSlideDrawer";
 
 export default function RootLayout({
   children,
@@ -94,6 +95,7 @@ export default function RootLayout({
               <AuthModal />
               <CommandPalette />
               <FloatingDock />
+              <AIModeSlideDrawer />
               <CookieConsent />
             </PersonMemoryProvider>
           </AuthProvider>

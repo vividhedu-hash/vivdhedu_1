@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, GitBranch, UserRound, Sparkles } from "lucide-react";
 import { AcademicPathChart } from "./AcademicPathChart";
 import { GroundedAnswer } from "./GroundedAnswer";
+import { GoogleAIModeView } from "./GoogleAIModeView";
+import { AIModeSlideDeck } from "./AIModeSlideDeck";
+import { OPENROUTER_FREE_MODELS } from "@/lib/gemini-direct";
 import { AIUnavailable } from "./AIUnavailable";
 import { Notice } from "./Notice";
 import {
@@ -61,6 +64,8 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
   const [mode, setMode] = useState<GroundedPayload | null>(null);
   const [modeError, setModeError] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("nvidia/nemotron-3.5-lightning:free");
+  const [viewMode, setViewMode] = useState<"canvas" | "slides">("canvas");
 
   const [token, setToken] = useState(initialToken ?? "");
   const [budget, setBudget] = useState(12);
@@ -122,9 +127,27 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
     setModeError(null);
     track({ signal: "ask", text: q, path: "/advisor" });
     remember({ key: "target_field", value: field, confidence: 0.75, source: "ai-mode" });
+
+    // Auto extract college or exam entities for durable student memory
+    const lower = q.toLowerCase();
+    if (lower.includes("iit")) {
+      remember({ key: "interest_tier", value: "IIT", confidence: 0.85, source: "ai-mode" });
+    }
+    if (lower.includes("bits")) {
+      remember({ key: "target_college", value: "BITS Pilani", confidence: 0.9, source: "ai-mode" });
+    }
+    if (lower.includes("nit")) {
+      remember({ key: "interest_tier", value: "NIT", confidence: 0.85, source: "ai-mode" });
+    }
+
     const { ok, status, data } = await postAi<
       GroundedPayload | { detail?: { reason?: string } }
-    >("/api/v1/ai/mode", { query: q, context: profile, person_context: packet.prompt_block });
+    >("/api/v1/ai/mode", {
+      query: q,
+      context: profile,
+      person_context: packet.prompt_block,
+      model: selectedModel,
+    });
     setAsking(false);
     if (!ok) {
       setMode(null);
@@ -234,13 +257,44 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
                   ))}
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={asking || busy || query.trim().length < 3}
-                  className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {asking ? "Searching official and news sources…" : "Ask with citations"}
-                </button>
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] text-ink-3">Free Model:</span>
+                    <select
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      disabled={busy || asking}
+                      className="form-input form-select text-[12px] font-mono py-1 px-2.5 max-w-[260px]"
+                    >
+                      {OPENROUTER_FREE_MODELS.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("open-ai-slide", { detail: { query } }));
+                      }}
+                      className="px-3 py-1.5 rounded-lg border border-line/20 hover:bg-chip text-[12px] text-ink-2 font-medium flex items-center gap-1.5"
+                    >
+                      <Sparkles size={12} className="text-accent" />
+                      <span>Slide Panel (⌘J)</span>
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={asking || busy || query.trim().length < 3}
+                      className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {asking ? "Searching live web & official data…" : "Search in AI Mode"}
+                    </button>
+                  </div>
+                </div>
               </form>
 
               {modeError && (
@@ -248,7 +302,57 @@ export function AIModeStudio({ initialToken }: { initialToken?: string }) {
                   {modeError}
                 </Notice>
               )}
-              {mode && <GroundedAnswer payload={mode} />}
+
+              {mode && (
+                <div className="space-y-4 pt-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border border-line/15 bg-chip/40">
+                    <span className="text-[11px] font-mono uppercase text-ink-3 tracking-wider">
+                      Presentation Mode:
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("canvas")}
+                        className={`px-3 py-1 rounded-lg text-[12px] font-medium transition-colors ${
+                          viewMode === "canvas" ? "bg-accent text-white" : "hover:bg-chip text-ink-2"
+                        }`}
+                      >
+                        Google AI Canvas
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("slides")}
+                        className={`px-3 py-1 rounded-lg text-[12px] font-medium transition-colors ${
+                          viewMode === "slides" ? "bg-accent text-white" : "hover:bg-chip text-ink-2"
+                        }`}
+                      >
+                        Slide Deck (5 Slides)
+                      </button>
+                    </div>
+                  </div>
+
+                  {viewMode === "canvas" ? (
+                    <GoogleAIModeView
+                      payload={mode}
+                      query={query}
+                      selectedModel={selectedModel}
+                      onAskFollowUp={(nextQ) => {
+                        setQuery(nextQ);
+                        void ask(nextQ);
+                      }}
+                    />
+                  ) : (
+                    <AIModeSlideDeck
+                      payload={mode}
+                      query={query}
+                      onAskFollowUp={(nextQ) => {
+                        setQuery(nextQ);
+                        void ask(nextQ);
+                      }}
+                    />
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>

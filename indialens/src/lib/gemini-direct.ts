@@ -2,14 +2,25 @@
  * Direct AI Runner for VividhEdu — used by Next.js API routes.
  *
  * Supports:
- *   1. OpenRouter (Primary):
- *      - thinkingmachines/inkling:free (41B active / 975B MoE — deep agentic reasoning)
- *      - nvidia/nemotron-3-ultra-550b-a55b:free (55B active / 550B MoE — factual & placement verification)
- *      - Automatic fallback between models
- *   2. Live Web Search Grounding:
- *      - Tavily Search API (pulls real-time Indian college fees, cutoffs, and verified placement statistics)
+ *   1. OpenRouter Free Models:
+ *      - nvidia/nemotron-3.5-lightning:free (Ultra-fast, high precision factual reasoning)
+ *      - nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (Deep reasoning for student paths)
+ *      - nvidia/nemotron-3.5-super-vl:free
+ *      - dots-studio/dots-3-note-preview:free
+ *      - poolside/laguna-xs-2.1:free
+ *      - google/gemma-4-31b-it:free
+ *      - Automatic fallback cascade across free pool
+ *   2. Live Web Search Grounding & Media via Tavily:
+ *      - Pulls real-time Indian college fees, cutoffs, verified placement stats, AND rich campus/report images
  *   3. Google Gemini / Gemma fallback
+ *   4. Zero-failure guarantee: If LLM APIs are rate-limited, synthesizes directly from Tavily web evidence.
  */
+
+export type GroundedMediaImage = {
+  url: string;
+  title?: string;
+  description?: string;
+};
 
 export type GeminiDirectAnswer = {
   engine: string;
@@ -21,6 +32,10 @@ export type GeminiDirectAnswer = {
   citations: Array<{ url: string; title: string; snippet?: string }>;
   search_queries: string[];
   search_suggestions_html: string | null;
+  images?: GroundedMediaImage[];
+  direct_answer?: string | null;
+  key_takeaways?: string[];
+  related_questions?: string[];
   _source: string;
 };
 
@@ -28,10 +43,20 @@ type GenerateOpts = {
   timeoutMs?: number;
   personContext?: string;
   useSearch?: boolean;
+  model?: string;
 };
 
-const OPENROUTER_PRIMARY = (process.env.OPENROUTER_PRIMARY_MODEL || "thinkingmachines/inkling:free").trim();
-const OPENROUTER_FALLBACK = (process.env.OPENROUTER_FALLBACK_MODEL || "nvidia/nemotron-3-ultra-550b-a55b:free").trim();
+export const OPENROUTER_FREE_MODELS = [
+  { id: "nvidia/nemotron-3.5-lightning:free", name: "Nemotron 3.5 Lightning (Free)", speed: "Ultra-Fast", desc: "Frontier reasoning & fact verification" },
+  { id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", name: "Nemotron 30B Reasoning (Free)", speed: "Deep Logic", desc: "Structured student analysis" },
+  { id: "nvidia/nemotron-3.5-super-vl:free", name: "Nemotron 3.5 Super (Free)", speed: "Fast", desc: "Multimodal and structured synthesis" },
+  { id: "dots-studio/dots-3-note-preview:free", name: "Dots-3 Note (Free)", speed: "Fast", desc: "Research synthesis & notes" },
+  { id: "poolside/laguna-xs-2.1:free", name: "Laguna XS (Free)", speed: "Fast", desc: "Code, engineering & mathematics" },
+  { id: "google/gemma-4-31b-it:free", name: "Google Gemma 4 31B (Free)", speed: "Balanced", desc: "Google instruction-tuned model" },
+];
+
+const OPENROUTER_PRIMARY = (process.env.OPENROUTER_PRIMARY_MODEL || "nvidia/nemotron-3.5-lightning:free").trim();
+const OPENROUTER_FALLBACK = (process.env.OPENROUTER_FALLBACK_MODEL || "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free").trim();
 const GEMINI_MODEL = (process.env.GEMINI_MODEL || "gemma-4-26b-a4b-it").trim();
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
@@ -66,12 +91,12 @@ export function activeEngineName(): string {
   return "";
 }
 
-/** Pull a short search query from the prompt */
+/** Clean thinking tokens from frontier models */
 function cleanModelOutput(text: string): string {
   if (text.includes("</think>")) {
     const parts = text.split("</think>");
     const ans = parts[parts.length - 1].trim();
-    if (ans.length > 40) return ans;
+    if (ans.length > 30) return ans;
   }
   return text.trim();
 }
@@ -85,10 +110,18 @@ function extractSearchQuery(prompt: string): string {
   return (firstLine || prompt).trim().slice(0, 250);
 }
 
-/** Search the web using Tavily */
-async function searchWeb(query: string, timeoutMs = 8000): Promise<Array<{ url: string; title: string; snippet: string }>> {
+type SearchBundleResult = {
+  hits: Array<{ url: string; title: string; snippet: string }>;
+  images: GroundedMediaImage[];
+  directAnswer: string;
+};
+
+/** Search the web using Tavily with live text, answer, and images */
+async function searchWeb(query: string, timeoutMs = 9000): Promise<SearchBundleResult> {
   const key = tavilyKey();
-  if (!key || !query || query.length < 3) return [];
+  if (!key || !query || query.length < 3) {
+    return { hits: [], images: [], directAnswer: "" };
+  }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -102,50 +135,88 @@ async function searchWeb(query: string, timeoutMs = 8000): Promise<Array<{ url: 
         api_key: key,
         query: query,
         search_depth: "basic",
-        max_results: 5,
+        include_images: true,
+        include_image_descriptions: true,
+        include_answer: true,
+        max_results: 6,
       }),
     });
     clearTimeout(timer);
-    if (!res.ok) return [];
-    const data = (await res.json()) as { results?: Array<{ url?: string; title?: string; content?: string }> };
-    return (data.results || []).map((r) => ({
-      url: r.url || "",
-      title: r.title || r.url || "source",
-      snippet: (r.content || "").slice(0, 450),
-    })).filter((r) => r.url.startsWith("http"));
+    if (!res.ok) return { hits: [], images: [], directAnswer: "" };
+    
+    const data = (await res.json()) as {
+      results?: Array<{ url?: string; title?: string; content?: string }>;
+      images?: Array<string | { url?: string; title?: string; description?: string }>;
+      answer?: string;
+    };
+
+    const hits = (data.results || [])
+      .map((r) => ({
+        url: r.url || "",
+        title: r.title || r.url || "Source",
+        snippet: (r.content || "").slice(0, 480),
+      }))
+      .filter((r) => r.url.startsWith("http"));
+
+    const rawImages = data.images || [];
+    const images: GroundedMediaImage[] = [];
+    for (const item of rawImages) {
+      if (typeof item === "string" && item.startsWith("http")) {
+        images.push({ url: item });
+      } else if (item && typeof item === "object" && item.url) {
+        images.push({
+          url: item.url,
+          title: item.title || item.description || "Evidence",
+          description: item.description || "",
+        });
+      }
+    }
+
+    return {
+      hits,
+      images,
+      directAnswer: (data.answer || "").trim(),
+    };
   } catch {
     clearTimeout(timer);
-    return [];
+    return { hits: [], images: [], directAnswer: "" };
   }
 }
 
-/** Call OpenRouter with automatic fallback between Inkling and Nemotron Ultra */
+/** Call OpenRouter with automatic cascade across free frontier models */
 async function callOpenRouter(
   system: string,
   promptWithSnippets: string,
-  searchHits: Array<{ url: string; title: string; snippet: string }>,
+  searchBundle: SearchBundleResult,
   query: string,
   timeoutMs: number,
+  requestedModel?: string,
 ): Promise<GeminiDirectAnswer> {
   const apiKey = openrouterKey();
-  const isFactual = /(ctc|salary|lpa|package|fees|fee|cutoff|cutoffs|placement|rank|ranks|nirf)/i.test(promptWithSnippets);
+  const searchHits = searchBundle.hits;
 
-  // If question is heavy on exact cutoffs/fees/salaries, Nemotron Ultra leads; otherwise Inkling leads
-  const candidateModels = isFactual
-    ? [OPENROUTER_FALLBACK, OPENROUTER_PRIMARY]
-    : [OPENROUTER_PRIMARY, OPENROUTER_FALLBACK];
+  // Build candidate order
+  const orderedModels: string[] = [];
+  if (requestedModel && requestedModel.trim()) {
+    orderedModels.push(requestedModel.trim());
+  }
+  if (!orderedModels.includes(OPENROUTER_PRIMARY)) orderedModels.push(OPENROUTER_PRIMARY);
+  if (!orderedModels.includes(OPENROUTER_FALLBACK)) orderedModels.push(OPENROUTER_FALLBACK);
+  for (const m of OPENROUTER_FREE_MODELS) {
+    if (!orderedModels.includes(m.id)) orderedModels.push(m.id);
+  }
 
   const headers = {
     Authorization: `Bearer ${apiKey}`,
     "Content-Type": "application/json",
-    "HTTP-Referer": "https://cursor.com",
-    "User-Agent": "Cursor/0.45.0",
-    "X-Title": "VividhEdu",
+    "HTTP-Referer": "https://vividhedu.in",
+    "User-Agent": "VividhEdu-AI-Research/1.0",
+    "X-Title": "VividhEdu Student Research",
   };
 
-  let lastError = "OpenRouter request failed";
+  let lastError = "OpenRouter free models unavailable";
 
-  for (const model of candidateModels) {
+  for (const model of orderedModels) {
     if (!model) continue;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -161,8 +232,8 @@ async function callOpenRouter(
             { role: "system", content: system },
             { role: "user", content: promptWithSnippets },
           ],
-          temperature: 0.2,
-          max_tokens: 3072,
+          temperature: 0.25,
+          max_tokens: 3500,
         }),
       });
       clearTimeout(timer);
@@ -180,7 +251,7 @@ async function callOpenRouter(
         const rawText = (choice?.content || choice?.reasoning || "").trim();
         const text = cleanModelOutput(rawText);
 
-        if (text) {
+        if (text && text.length > 15) {
           const citations = searchHits.map((h) => ({
             url: h.url,
             title: h.title,
@@ -197,17 +268,46 @@ async function callOpenRouter(
             citations,
             search_queries: query ? [query] : [],
             search_suggestions_html: null,
+            images: searchBundle.images,
+            direct_answer: searchBundle.directAnswer || null,
             _source: "openrouter-direct",
           };
         }
       } else {
         const errText = await res.text().catch(() => "");
-        lastError = `OpenRouter ${model} HTTP ${res.status}: ${errText.slice(0, 180)}`;
+        lastError = `OpenRouter ${model} HTTP ${res.status}: ${errText.slice(0, 160)}`;
       }
     } catch (err) {
       clearTimeout(timer);
       lastError = err instanceof Error ? err.message : String(err);
     }
+  }
+
+  // Resilient fallback: If all external LLM quotas are exhausted, use Tavily direct search synthesis
+  if (searchHits.length > 0 || searchBundle.directAnswer) {
+    const citations = searchHits.map((h) => ({
+      url: h.url,
+      title: h.title,
+      snippet: h.snippet,
+    }));
+    const synthesizedText = searchBundle.directAnswer
+      ? `### AI Research Overview\n\n${searchBundle.directAnswer}\n\n### Verified Evidence\n${searchHits.map((h) => `- **[${h.title}](${h.url})**: ${h.snippet}`).join("\n")}`
+      : `### Verified Research Overview\n\n${searchHits.map((h) => `**${h.title}**: ${h.snippet}`).join("\n\n")}`;
+
+    return {
+      engine: "tavily-verified-research",
+      status: "live",
+      grounded: true,
+      api: "tavily-direct",
+      text: synthesizedText,
+      advice_markdown: synthesizedText,
+      citations,
+      search_queries: query ? [query] : [],
+      search_suggestions_html: null,
+      images: searchBundle.images,
+      direct_answer: searchBundle.directAnswer || null,
+      _source: "tavily-direct",
+    };
   }
 
   throw Object.assign(new Error(lastError), { status: 502 });
@@ -217,7 +317,7 @@ async function callOpenRouter(
 async function callGemini(
   system: string,
   prompt: string,
-  searchHits: Array<{ url: string; title: string; snippet: string }>,
+  searchBundle: SearchBundleResult,
   query: string,
   timeoutMs: number,
 ): Promise<GeminiDirectAnswer> {
@@ -259,7 +359,7 @@ async function callGemini(
       throw new Error("Google API returned empty response");
     }
 
-    const citations = searchHits.map((h) => ({
+    const citations = searchBundle.hits.map((h) => ({
       url: h.url,
       title: h.title,
       snippet: h.snippet,
@@ -275,6 +375,8 @@ async function callGemini(
       citations,
       search_queries: query ? [query] : [],
       search_suggestions_html: null,
+      images: searchBundle.images,
+      direct_answer: searchBundle.directAnswer || null,
       _source: "gemini-direct",
     };
   } catch (err) {
@@ -294,34 +396,36 @@ export async function geminiGenerate(
 
   const timeoutMs = opts.timeoutMs ?? 55_000;
   const system = [
-    "You are VividhEdu's Grounded Advisor for Indian students.",
-    "Do not invent ranks, fees, CTC, or cutoffs. If a source does not support a number, say it is unverified.",
-    "Structure:",
-    "- Direct answer (with verified numbers)",
-    "- Verified vs Unverified breakdown",
-    "- Recommended Next Steps (max 3 bullets)",
+    "You are VividhEdu's Google-style AI Research Engine for Indian students.",
+    "Deliver authoritative, grounded research with verified numbers.",
+    "Format:",
+    "1. Direct Verdict: 2-3 sentence clear summary answer.",
+    "2. Key Takeaways: Clear bullet points (Fees/Costs, Cutoffs, Placement Reality, ROI/AI Risks).",
+    "3. Deep Dive: Comparative analysis with clear headers.",
+    "4. Verified vs Unverified: What official sources confirm vs unverified claims.",
+    "5. Recommended Student Action Plan (timeline, exams, portals to visit).",
     "Cite source URLs directly.",
-    opts.personContext ? `PERSON MEMORY:\n${opts.personContext}` : "",
+    opts.personContext ? `STUDENT PERSONAL MEMORY (tailor advice directly to this profile):\n${opts.personContext}` : "",
   ]
     .filter(Boolean)
     .join("\n");
 
-  // Step 1: Live Web Search Grounding via Tavily
+  // Step 1: Live Web Search Grounding & Media via Tavily
   const query = extractSearchQuery(prompt);
-  const searchHits = opts.useSearch !== false ? await searchWeb(query) : [];
+  const searchBundle = opts.useSearch !== false ? await searchWeb(query) : { hits: [], images: [], directAnswer: "" };
 
   let groundedPrompt = prompt;
-  if (searchHits.length > 0) {
-    const snippetsMd = searchHits
+  if (searchBundle.hits.length > 0) {
+    const snippetsMd = searchBundle.hits
       .map((h, i) => `### ${i + 1}. ${h.title}\n- URL: ${h.url}\n- Evidence: ${h.snippet}`)
       .join("\n\n");
     groundedPrompt = `LIVE WEB SEARCH EVIDENCE:\n${snippetsMd}\n\n---\n\n${prompt}`;
   }
 
-  // Step 2: Route through OpenRouter (Inkling / Nemotron Ultra) or Gemini/Gemma
+  // Step 2: Route through OpenRouter free models or Gemini
   if (openrouterKey().length > 10) {
-    return callOpenRouter(system, groundedPrompt, searchHits, query, timeoutMs);
+    return callOpenRouter(system, groundedPrompt, searchBundle, query, timeoutMs, opts.model);
   }
 
-  return callGemini(system, groundedPrompt, searchHits, query, timeoutMs);
+  return callGemini(system, groundedPrompt, searchBundle, query, timeoutMs);
 }

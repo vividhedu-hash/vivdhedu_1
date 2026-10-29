@@ -138,6 +138,16 @@ export function FloatingDock() {
         onClick={() => router.push("/explore")}
       />
 
+      {/* 4. AI Research Slide */}
+      <DockIcon
+        mouseX={mouseX}
+        icon={<Sparkles size={16} className="text-teal-400" />}
+        label="AI Research Slide (⌘J)"
+        onClick={() => {
+          window.dispatchEvent(new CustomEvent("open-ai-slide", { detail: {} }));
+        }}
+      />
+
       {/* Divider */}
       <div className="h-6 w-px bg-line/15 mx-0.5" />
 
