@@ -63,7 +63,6 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moreOpen, setMoreOpen]     = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
-  const [dataSource, setDataSource] = useState<"database" | "mock" | null>(null);
   const { user, isLoading, setIsAuthModalOpen, logout } = useAuth();
 
   // Close the overflow menu on Escape or an outside click. Without this it stays
@@ -88,14 +87,6 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/colleges/stats")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => { if (!cancelled && j?._source) setDataSource(j._source); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
 
   if (pathname.startsWith("/workspace") || pathname.startsWith("/onboard")) {
     return null;
@@ -133,16 +124,18 @@ export function Navbar() {
           </Link>
 
           {/* ── Center: Links (Desktop) ── */}
-          <div className="hidden md:flex items-center gap-0.5 min-w-0">
+          <div className="hidden md:flex items-center gap-1 shrink-0">
             {PERMANENT_NAV.map((link) => {
               const isActive = pathname.startsWith(link.href);
               const locked = link.requiresAuth && !user && !isLoading;
+              const hideOnMd = link.priority === 4;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
                   className={[
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all whitespace-nowrap",
+                    hideOnMd ? "hidden lg:flex" : "flex",
+                    "items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all whitespace-nowrap",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
                     isActive
                       ? "t-chip t-text font-semibold shadow-xs"
@@ -231,27 +224,19 @@ export function Navbar() {
             )}
           </div>
 
-          {/* ── Right: Status + Theme + Auth + CTA ── */}
-          <div className="hidden md:flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
-            {/* Live indicator */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full t-chip t-border border text-xs whitespace-nowrap">
-              <span className="w-1.5 h-1.5 rounded-full bg-sys-green animate-pulse" />
-              <span className="font-mono t-muted text-[11px]">
-                {dataSource === "database" ? "Live" : "Calibrated"}
-              </span>
-            </div>
-
-                        {/* Quick Command Search (Cmd+K) button */}
+          {/* ── Right: Search + AI Slide + Theme + Auth + CTA ── */}
+          <div className="hidden md:flex items-center gap-2 shrink-0 whitespace-nowrap">
+            {/* Quick Command Search (Cmd+K) button */}
             <button
               onClick={() => {
                 window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
               }}
-              className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-line/10 bg-surface hover:bg-elevated text-ink-2 hover:text-ink text-xs font-mono transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-line/15 bg-surface hover:bg-elevated text-ink-2 hover:text-ink text-xs font-mono transition-all cursor-pointer shadow-2xs"
               title="Search programs, simulations, or tools (⌘K)"
               aria-label="Search programs and tools"
             >
-              <Search size={12} className="text-ink-3" />
-              <span className="text-[11px] font-sans">Search</span>
+              <Search size={13} className="text-ink-3" />
+              <span className="hidden xl:inline text-[12px] font-sans">Search</span>
               <kbd className="text-[10px] bg-chip px-1.5 py-0.5 rounded border border-line/10 text-ink-3">⌘K</kbd>
             </button>
 
@@ -348,41 +333,37 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div id="mobile-nav" className="md:hidden t-border border-t t-elevated backdrop-blur-2xl px-5 py-4 space-y-1 animate-slide-down">
+        <div id="mobile-nav" className="md:hidden t-border border-t t-elevated backdrop-blur-2xl px-5 py-4 space-y-2 animate-slide-down">
+          {/* Mobile Quick Action Bar: Search & AI Slide */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <button
+              onClick={() => {
+                setMobileOpen(false);
+                window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+              }}
+              className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-line/15 bg-chip/60 hover:bg-chip text-ink text-xs font-mono transition"
+            >
+              <Search size={13} className="text-ink-3" />
+              <span>Search (⌘K)</span>
+            </button>
+            <button
+              onClick={() => {
+                setMobileOpen(false);
+                window.dispatchEvent(new CustomEvent("open-ai-slide", { detail: {} }));
+              }}
+              className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-600 dark:text-teal-400 text-xs font-medium transition"
+            >
+              <Sparkles size={13} className="text-teal-500" />
+              <span>AI Slide (⌘J)</span>
+            </button>
+          </div>
+
           {/* Mobile Theme Switcher */}
-          <div className="flex items-center justify-between px-3 py-2.5 rounded-xl t-chip t-border border mb-2">
+          <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl t-chip t-border border mb-2">
             <div className="flex items-center gap-2 text-xs font-semibold t-text">
               <Sun size={14} className="text-amber-500" />
               <span>Theme & Appearance</span>
             </div>
-                        {/* Quick Command Search (Cmd+K) button */}
-            <button
-              onClick={() => {
-                window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
-              }}
-              className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-line/10 bg-surface hover:bg-elevated text-ink-2 hover:text-ink text-xs font-mono transition-all cursor-pointer"
-              title="Search programs, simulations, or tools (⌘K)"
-              aria-label="Search programs and tools"
-            >
-              <Search size={12} className="text-ink-3" />
-              <span className="text-[11px] font-sans">Search</span>
-              <kbd className="text-[10px] bg-chip px-1.5 py-0.5 rounded border border-line/10 text-ink-3">⌘K</kbd>
-            </button>
-
-            {/* AI Slide Quick Toggle */}
-            <button
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent("open-ai-slide", { detail: {} }));
-              }}
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-600 dark:text-teal-400 text-[12px] font-medium transition cursor-pointer"
-              title="Open Google AI Slide Mode (⌘J)"
-              aria-label="Open AI Mode Slide"
-            >
-              <Sparkles size={12} className="text-teal-500" />
-              <span>AI Slide</span>
-              <kbd className="text-[10px] bg-teal-500/15 px-1 rounded border border-teal-500/20 font-mono">⌘J</kbd>
-            </button>
-
             <ThemeToggle />
           </div>
 

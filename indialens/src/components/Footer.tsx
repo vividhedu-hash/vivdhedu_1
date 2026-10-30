@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ExternalLink, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { openCookieSettings } from "@/lib/consent";
@@ -34,6 +35,16 @@ const DATA_SOURCES = ["NIRF", "AmbitionBox", "PLFS / MoSPI", "World Bank ICP", "
 
 export function Footer() {
   const pathname = usePathname();
+  const [dataSource, setDataSource] = useState<"database" | "mock" | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/colleges/stats")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!cancelled && j?._source) setDataSource(j._source); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   if (pathname.startsWith("/workspace") || pathname.startsWith("/onboard")) {
     return null;
@@ -141,6 +152,11 @@ export function Footer() {
         <div className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-[12px] t-faint font-mono">
           <p>© {new Date().getFullYear()} {BRAND.legalEntity}. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="inline-flex items-center gap-1.5 text-ink-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Data Engine: {dataSource === "database" ? "Live Connected" : "Calibrated Baseline"}</span>
+            </span>
+            <span aria-hidden="true">·</span>
             <span>Operated under {BRAND.governingLaw}</span>
             <span aria-hidden="true">·</span>
             <Link
